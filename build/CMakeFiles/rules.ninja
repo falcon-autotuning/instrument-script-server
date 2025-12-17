@@ -140,7 +140,7 @@ rule CXX_EXECUTABLE_LINKER__instrument_configuration_generator_
 #############################################
 # Rule for compiling CXX files.
 
-rule CXX_COMPILER__instrument_api_validator_unscanned_
+rule CXX_COMPILER__validate_instrument_api_unscanned_
   depfile = $DEP_FILE
   deps = gcc
   command = ${LAUNCHER}${CODE_CHECK}/usr/bin/ccache  clang++ $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
@@ -150,7 +150,7 @@ rule CXX_COMPILER__instrument_api_validator_unscanned_
 #############################################
 # Rule for linking CXX executable.
 
-rule CXX_EXECUTABLE_LINKER__instrument_api_validator_
+rule CXX_EXECUTABLE_LINKER__validate_instrument_api_
   depfile = $DEP_FILE
   deps = gcc
   command = $PRE_LINK && /usr/bin/ccache  clang++ $FLAGS $LINK_FLAGS $in -o $TARGET_FILE $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
@@ -161,7 +161,7 @@ rule CXX_EXECUTABLE_LINKER__instrument_api_validator_
 #############################################
 # Rule for compiling CXX files.
 
-rule CXX_COMPILER__quantum_dot_config_validator_unscanned_
+rule CXX_COMPILER__validate_quantum_dot_config_unscanned_
   depfile = $DEP_FILE
   deps = gcc
   command = ${LAUNCHER}${CODE_CHECK}/usr/bin/ccache  clang++ $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
@@ -171,7 +171,7 @@ rule CXX_COMPILER__quantum_dot_config_validator_unscanned_
 #############################################
 # Rule for linking CXX executable.
 
-rule CXX_EXECUTABLE_LINKER__quantum_dot_config_validator_
+rule CXX_EXECUTABLE_LINKER__validate_quantum_dot_config_
   depfile = $DEP_FILE
   deps = gcc
   command = $PRE_LINK && /usr/bin/ccache  clang++ $FLAGS $LINK_FLAGS $in -o $TARGET_FILE $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
@@ -182,7 +182,7 @@ rule CXX_EXECUTABLE_LINKER__quantum_dot_config_validator_
 #############################################
 # Rule for compiling CXX files.
 
-rule CXX_COMPILER__instrument_config_validator_unscanned_
+rule CXX_COMPILER__validate_instrument_config_unscanned_
   depfile = $DEP_FILE
   deps = gcc
   command = ${LAUNCHER}${CODE_CHECK}/usr/bin/ccache  clang++ $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
@@ -192,7 +192,7 @@ rule CXX_COMPILER__instrument_config_validator_unscanned_
 #############################################
 # Rule for linking CXX executable.
 
-rule CXX_EXECUTABLE_LINKER__instrument_config_validator_
+rule CXX_EXECUTABLE_LINKER__validate_instrument_config_
   depfile = $DEP_FILE
   deps = gcc
   command = $PRE_LINK && /usr/bin/ccache  clang++ $FLAGS $LINK_FLAGS $in -o $TARGET_FILE $LINK_PATH $LINK_LIBRARIES && $POST_BUILD

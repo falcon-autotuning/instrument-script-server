@@ -4,9 +4,9 @@
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument-setup.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/template_expander.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_configuration_generator.dir
-/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_api_validator.dir
-/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/quantum_dot_config_validator.dir
-/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_config_validator.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/validate_instrument_api.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/validate_quantum_dot_config.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/validate_instrument_config.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/package.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/package_source.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/test.dir

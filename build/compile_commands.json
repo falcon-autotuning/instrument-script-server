@@ -91,21 +91,21 @@
 },
 {
   "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
-  "command": "/usr/bin/ccache  clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o CMakeFiles/instrument_api_validator.dir/src/instrument_api_validator_main.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/instrument_api_validator_main.cpp",
+  "command": "/usr/bin/ccache  clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o CMakeFiles/validate_instrument_api.dir/src/instrument_api_validator_main.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/instrument_api_validator_main.cpp",
   "file": "/home/tylerk/falcon-dev/instrument-script-server/src/instrument_api_validator_main.cpp",
-  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_api_validator.dir/src/instrument_api_validator_main.cpp.o"
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/validate_instrument_api.dir/src/instrument_api_validator_main.cpp.o"
 },
 {
   "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
-  "command": "/usr/bin/ccache  clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o CMakeFiles/quantum_dot_config_validator.dir/src/quantum_dot_config_validator_main.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/quantum_dot_config_validator_main.cpp",
+  "command": "/usr/bin/ccache  clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o CMakeFiles/validate_quantum_dot_config.dir/src/quantum_dot_config_validator_main.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/quantum_dot_config_validator_main.cpp",
   "file": "/home/tylerk/falcon-dev/instrument-script-server/src/quantum_dot_config_validator_main.cpp",
-  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/quantum_dot_config_validator.dir/src/quantum_dot_config_validator_main.cpp.o"
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/validate_quantum_dot_config.dir/src/quantum_dot_config_validator_main.cpp.o"
 },
 {
   "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
-  "command": "/usr/bin/ccache  clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o CMakeFiles/instrument_config_validator.dir/src/instrument_config_validator_main.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/instrument_config_validator_main.cpp",
+  "command": "/usr/bin/ccache  clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o CMakeFiles/validate_instrument_config.dir/src/instrument_config_validator_main.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/instrument_config_validator_main.cpp",
   "file": "/home/tylerk/falcon-dev/instrument-script-server/src/instrument_config_validator_main.cpp",
-  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_config_validator.dir/src/instrument_config_validator_main.cpp.o"
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/validate_instrument_config.dir/src/instrument_config_validator_main.cpp.o"
 },
 {
   "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",

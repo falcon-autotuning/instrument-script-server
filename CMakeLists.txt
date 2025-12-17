@@ -98,17 +98,17 @@ if(BUILD_TOOLS)
   target_link_libraries(instrument_configuration_generator
                         PRIVATE yaml-cpp::yaml-cpp)
 
-  add_executable(instrument_api_validator src/instrument_api_validator_main.cpp)
-  target_link_libraries(instrument_api_validator PRIVATE instrument_server_lib)
+  add_executable(validate_instrument_api src/instrument_api_validator_main.cpp)
+  target_link_libraries(validate_instrument_api PRIVATE instrument_server_lib)
 
-  add_executable(quantum_dot_config_validator
+  add_executable(validate_quantum_dot_config
                  src/quantum_dot_config_validator_main.cpp)
-  target_link_libraries(quantum_dot_config_validator
+  target_link_libraries(validate_quantum_dot_config
                         PRIVATE instrument_server_lib)
 
-  add_executable(instrument_config_validator
+  add_executable(validate_instrument_config
                  src/instrument_config_validator_main.cpp)
-  target_link_libraries(instrument_config_validator
+  target_link_libraries(validate_instrument_config
                         PRIVATE instrument_server_lib)
 endif()
 

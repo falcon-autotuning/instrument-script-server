@@ -55,7 +55,7 @@ TEST(SchemaValidatorTest, ValidateSystemContext) {
 }
 
 TEST(SchemaValidatorTest, ValidateQuantumDotDeviceConfig) {
-  int ret = run_validator("validate_quantum_dot_device",
+  int ret = run_validator("validate_quantum_dot_config",
                           "examples/one_charge_sensor_quantum_dot_device.yaml");
   EXPECT_EQ(ret, 0) << "Validation failed for quantum dot device config";
 }

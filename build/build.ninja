@@ -379,127 +379,127 @@ build instrument_configuration_generator: CXX_EXECUTABLE_LINKER__instrument_conf
   TARGET_SUPPORT_DIR = CMakeFiles/instrument_configuration_generator.dir
 
 # =============================================================================
-# Object build statements for EXECUTABLE target instrument_api_validator
+# Object build statements for EXECUTABLE target validate_instrument_api
 
 
 #############################################
-# Order-only phony target for instrument_api_validator
+# Order-only phony target for validate_instrument_api
 
-build cmake_object_order_depends_target_instrument_api_validator: phony || cmake_object_order_depends_target_instrument_server_lib
+build cmake_object_order_depends_target_validate_instrument_api: phony || cmake_object_order_depends_target_instrument_server_lib
 
-build CMakeFiles/instrument_api_validator.dir/src/instrument_api_validator_main.cpp.o: CXX_COMPILER__instrument_api_validator_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/instrument_api_validator_main.cpp || cmake_object_order_depends_target_instrument_api_validator
+build CMakeFiles/validate_instrument_api.dir/src/instrument_api_validator_main.cpp.o: CXX_COMPILER__validate_instrument_api_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/instrument_api_validator_main.cpp || cmake_object_order_depends_target_validate_instrument_api
   DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
-  DEP_FILE = CMakeFiles/instrument_api_validator.dir/src/instrument_api_validator_main.cpp.o.d
+  DEP_FILE = CMakeFiles/validate_instrument_api.dir/src/instrument_api_validator_main.cpp.o.d
   FLAGS = -Oz -std=gnu++17
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
-  OBJECT_DIR = CMakeFiles/instrument_api_validator.dir
-  OBJECT_FILE_DIR = CMakeFiles/instrument_api_validator.dir/src
-  TARGET_COMPILE_PDB = CMakeFiles/instrument_api_validator.dir/
-  TARGET_PDB = instrument_api_validator.pdb
-  TARGET_SUPPORT_DIR = CMakeFiles/instrument_api_validator.dir
+  OBJECT_DIR = CMakeFiles/validate_instrument_api.dir
+  OBJECT_FILE_DIR = CMakeFiles/validate_instrument_api.dir/src
+  TARGET_COMPILE_PDB = CMakeFiles/validate_instrument_api.dir/
+  TARGET_PDB = validate_instrument_api.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/validate_instrument_api.dir
 
 
 # =============================================================================
-# Link build statements for EXECUTABLE target instrument_api_validator
+# Link build statements for EXECUTABLE target validate_instrument_api
 
 
 #############################################
-# Link the executable instrument_api_validator
+# Link the executable validate_instrument_api
 
-build instrument_api_validator: CXX_EXECUTABLE_LINKER__instrument_api_validator_ CMakeFiles/instrument_api_validator.dir/src/instrument_api_validator_main.cpp.o | libinstrument_server_lib.so /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument_server_lib.so
-  DEP_FILE = CMakeFiles/instrument_api_validator.dir/link.d
+build validate_instrument_api: CXX_EXECUTABLE_LINKER__validate_instrument_api_ CMakeFiles/validate_instrument_api.dir/src/instrument_api_validator_main.cpp.o | libinstrument_server_lib.so /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument_server_lib.so
+  DEP_FILE = CMakeFiles/validate_instrument_api.dir/link.d
   FLAGS = -Oz
-  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/instrument_api_validator.dir/link.d
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/validate_instrument_api.dir/link.d
   LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument_server_lib.so  /usr/lib/libboost_filesystem.so.1.89.0  /usr/lib/libyaml-cpp.so.0.8.0  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  /usr/lib/liblua5.4.so  -lm  -lpthread  -ldl  -lrt
-  OBJECT_DIR = CMakeFiles/instrument_api_validator.dir
+  OBJECT_DIR = CMakeFiles/validate_instrument_api.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = CMakeFiles/instrument_api_validator.dir/
-  TARGET_FILE = instrument_api_validator
-  TARGET_PDB = instrument_api_validator.pdb
-  TARGET_SUPPORT_DIR = CMakeFiles/instrument_api_validator.dir
+  TARGET_COMPILE_PDB = CMakeFiles/validate_instrument_api.dir/
+  TARGET_FILE = validate_instrument_api
+  TARGET_PDB = validate_instrument_api.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/validate_instrument_api.dir
 
 # =============================================================================
-# Object build statements for EXECUTABLE target quantum_dot_config_validator
+# Object build statements for EXECUTABLE target validate_quantum_dot_config
 
 
 #############################################
-# Order-only phony target for quantum_dot_config_validator
+# Order-only phony target for validate_quantum_dot_config
 
-build cmake_object_order_depends_target_quantum_dot_config_validator: phony || cmake_object_order_depends_target_instrument_server_lib
+build cmake_object_order_depends_target_validate_quantum_dot_config: phony || cmake_object_order_depends_target_instrument_server_lib
 
-build CMakeFiles/quantum_dot_config_validator.dir/src/quantum_dot_config_validator_main.cpp.o: CXX_COMPILER__quantum_dot_config_validator_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/quantum_dot_config_validator_main.cpp || cmake_object_order_depends_target_quantum_dot_config_validator
+build CMakeFiles/validate_quantum_dot_config.dir/src/quantum_dot_config_validator_main.cpp.o: CXX_COMPILER__validate_quantum_dot_config_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/quantum_dot_config_validator_main.cpp || cmake_object_order_depends_target_validate_quantum_dot_config
   DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
-  DEP_FILE = CMakeFiles/quantum_dot_config_validator.dir/src/quantum_dot_config_validator_main.cpp.o.d
+  DEP_FILE = CMakeFiles/validate_quantum_dot_config.dir/src/quantum_dot_config_validator_main.cpp.o.d
   FLAGS = -Oz -std=gnu++17
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
-  OBJECT_DIR = CMakeFiles/quantum_dot_config_validator.dir
-  OBJECT_FILE_DIR = CMakeFiles/quantum_dot_config_validator.dir/src
-  TARGET_COMPILE_PDB = CMakeFiles/quantum_dot_config_validator.dir/
-  TARGET_PDB = quantum_dot_config_validator.pdb
-  TARGET_SUPPORT_DIR = CMakeFiles/quantum_dot_config_validator.dir
+  OBJECT_DIR = CMakeFiles/validate_quantum_dot_config.dir
+  OBJECT_FILE_DIR = CMakeFiles/validate_quantum_dot_config.dir/src
+  TARGET_COMPILE_PDB = CMakeFiles/validate_quantum_dot_config.dir/
+  TARGET_PDB = validate_quantum_dot_config.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/validate_quantum_dot_config.dir
 
 
 # =============================================================================
-# Link build statements for EXECUTABLE target quantum_dot_config_validator
+# Link build statements for EXECUTABLE target validate_quantum_dot_config
 
 
 #############################################
-# Link the executable quantum_dot_config_validator
+# Link the executable validate_quantum_dot_config
 
-build quantum_dot_config_validator: CXX_EXECUTABLE_LINKER__quantum_dot_config_validator_ CMakeFiles/quantum_dot_config_validator.dir/src/quantum_dot_config_validator_main.cpp.o | libinstrument_server_lib.so /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument_server_lib.so
-  DEP_FILE = CMakeFiles/quantum_dot_config_validator.dir/link.d
+build validate_quantum_dot_config: CXX_EXECUTABLE_LINKER__validate_quantum_dot_config_ CMakeFiles/validate_quantum_dot_config.dir/src/quantum_dot_config_validator_main.cpp.o | libinstrument_server_lib.so /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument_server_lib.so
+  DEP_FILE = CMakeFiles/validate_quantum_dot_config.dir/link.d
   FLAGS = -Oz
-  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/quantum_dot_config_validator.dir/link.d
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/validate_quantum_dot_config.dir/link.d
   LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument_server_lib.so  /usr/lib/libboost_filesystem.so.1.89.0  /usr/lib/libyaml-cpp.so.0.8.0  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  /usr/lib/liblua5.4.so  -lm  -lpthread  -ldl  -lrt
-  OBJECT_DIR = CMakeFiles/quantum_dot_config_validator.dir
+  OBJECT_DIR = CMakeFiles/validate_quantum_dot_config.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = CMakeFiles/quantum_dot_config_validator.dir/
-  TARGET_FILE = quantum_dot_config_validator
-  TARGET_PDB = quantum_dot_config_validator.pdb
-  TARGET_SUPPORT_DIR = CMakeFiles/quantum_dot_config_validator.dir
+  TARGET_COMPILE_PDB = CMakeFiles/validate_quantum_dot_config.dir/
+  TARGET_FILE = validate_quantum_dot_config
+  TARGET_PDB = validate_quantum_dot_config.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/validate_quantum_dot_config.dir
 
 # =============================================================================
-# Object build statements for EXECUTABLE target instrument_config_validator
+# Object build statements for EXECUTABLE target validate_instrument_config
 
 
 #############################################
-# Order-only phony target for instrument_config_validator
+# Order-only phony target for validate_instrument_config
 
-build cmake_object_order_depends_target_instrument_config_validator: phony || cmake_object_order_depends_target_instrument_server_lib
+build cmake_object_order_depends_target_validate_instrument_config: phony || cmake_object_order_depends_target_instrument_server_lib
 
-build CMakeFiles/instrument_config_validator.dir/src/instrument_config_validator_main.cpp.o: CXX_COMPILER__instrument_config_validator_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/instrument_config_validator_main.cpp || cmake_object_order_depends_target_instrument_config_validator
+build CMakeFiles/validate_instrument_config.dir/src/instrument_config_validator_main.cpp.o: CXX_COMPILER__validate_instrument_config_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/instrument_config_validator_main.cpp || cmake_object_order_depends_target_validate_instrument_config
   DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
-  DEP_FILE = CMakeFiles/instrument_config_validator.dir/src/instrument_config_validator_main.cpp.o.d
+  DEP_FILE = CMakeFiles/validate_instrument_config.dir/src/instrument_config_validator_main.cpp.o.d
   FLAGS = -Oz -std=gnu++17
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
-  OBJECT_DIR = CMakeFiles/instrument_config_validator.dir
-  OBJECT_FILE_DIR = CMakeFiles/instrument_config_validator.dir/src
-  TARGET_COMPILE_PDB = CMakeFiles/instrument_config_validator.dir/
-  TARGET_PDB = instrument_config_validator.pdb
-  TARGET_SUPPORT_DIR = CMakeFiles/instrument_config_validator.dir
+  OBJECT_DIR = CMakeFiles/validate_instrument_config.dir
+  OBJECT_FILE_DIR = CMakeFiles/validate_instrument_config.dir/src
+  TARGET_COMPILE_PDB = CMakeFiles/validate_instrument_config.dir/
+  TARGET_PDB = validate_instrument_config.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/validate_instrument_config.dir
 
 
 # =============================================================================
-# Link build statements for EXECUTABLE target instrument_config_validator
+# Link build statements for EXECUTABLE target validate_instrument_config
 
 
 #############################################
-# Link the executable instrument_config_validator
+# Link the executable validate_instrument_config
 
-build instrument_config_validator: CXX_EXECUTABLE_LINKER__instrument_config_validator_ CMakeFiles/instrument_config_validator.dir/src/instrument_config_validator_main.cpp.o | libinstrument_server_lib.so /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument_server_lib.so
-  DEP_FILE = CMakeFiles/instrument_config_validator.dir/link.d
+build validate_instrument_config: CXX_EXECUTABLE_LINKER__validate_instrument_config_ CMakeFiles/validate_instrument_config.dir/src/instrument_config_validator_main.cpp.o | libinstrument_server_lib.so /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument_server_lib.so
+  DEP_FILE = CMakeFiles/validate_instrument_config.dir/link.d
   FLAGS = -Oz
-  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/instrument_config_validator.dir/link.d
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/validate_instrument_config.dir/link.d
   LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument_server_lib.so  /usr/lib/libboost_filesystem.so.1.89.0  /usr/lib/libyaml-cpp.so.0.8.0  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  /usr/lib/liblua5.4.so  -lm  -lpthread  -ldl  -lrt
-  OBJECT_DIR = CMakeFiles/instrument_config_validator.dir
+  OBJECT_DIR = CMakeFiles/validate_instrument_config.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = CMakeFiles/instrument_config_validator.dir/
-  TARGET_FILE = instrument_config_validator
-  TARGET_PDB = instrument_config_validator.pdb
-  TARGET_SUPPORT_DIR = CMakeFiles/instrument_config_validator.dir
+  TARGET_COMPILE_PDB = CMakeFiles/validate_instrument_config.dir/
+  TARGET_FILE = validate_instrument_config
+  TARGET_PDB = validate_instrument_config.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/validate_instrument_config.dir
 
 
 #############################################
@@ -1005,7 +1005,7 @@ build test_validator: phony tests/test_validator
 #############################################
 # Folder: /home/tylerk/falcon-dev/instrument-script-server/build
 
-build all: phony libinstrument_server_lib.so instrument-worker instrument-server instrument-setup template_expander instrument_configuration_generator instrument_api_validator quantum_dot_config_validator instrument_config_validator tests/all examples/plugins/simple_serial/all
+build all: phony libinstrument_server_lib.so instrument-worker instrument-server instrument-setup template_expander instrument_configuration_generator validate_instrument_api validate_quantum_dot_config validate_instrument_config tests/all examples/plugins/simple_serial/all
 
 # =============================================================================
 
