@@ -2,8 +2,7 @@
 #include "instrument-server/plugin/PluginRegistry.hpp"
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include <iostream>
-#include <yaml-cpp/node/node.h>
-#include <yaml-cpp/node/parse.h>
+#include <yaml-cpp/yaml.h>
 
 void print_usage(const char *prog) {
   std::cout << "Usage: " << prog << " <command> [options]\n\n";

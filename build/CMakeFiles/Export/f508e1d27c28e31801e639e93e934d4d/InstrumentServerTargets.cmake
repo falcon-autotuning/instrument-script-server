@@ -60,7 +60,7 @@ add_library(instserver::instrument_server_lib SHARED IMPORTED)
 
 set_target_properties(instserver::instrument_server_lib PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include"
-  INTERFACE_LINK_LIBRARIES "Boost::filesystem;nlohmann_json::nlohmann_json;yaml-cpp;fmt::fmt;spdlog::spdlog;sol2::sol2;/usr/lib/liblua5.4.so;/usr/lib/libm.so;pthread;dl;rt"
+  INTERFACE_LINK_LIBRARIES "Boost::filesystem;nlohmann_json::nlohmann_json;yaml-cpp::yaml-cpp;fmt::fmt;spdlog::spdlog;sol2::sol2;/usr/lib/liblua5.4.so;/usr/lib/libm.so;pthread;dl;rt"
 )
 
 # Create imported target instserver::instrument-worker

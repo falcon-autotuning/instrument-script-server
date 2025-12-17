@@ -16,7 +16,7 @@ option(BUILD_TOOLS "Build command-line tools" ON)
 # Find dependencies
 find_package(Boost REQUIRED COMPONENTS filesystem)
 find_package(nlohmann_json REQUIRED)
-find_package(yaml-cpp REQUIRED)
+find_package(yaml-cpp REQUIRED CONFIG)
 find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(sol2 REQUIRED)
@@ -60,6 +60,9 @@ add_library(
   src/schema_validator.cpp
   src/template_expander.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/embedded_schemas.cpp)
+set_target_properties(
+  instrument_server_lib PROPERTIES CXX_VISIBILITY_PRESET default
+                                   VISIBILITY_INLINES_HIDDEN OFF)
 target_include_directories(
   instrument_server_lib
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -68,7 +71,7 @@ target_link_libraries(
   instrument_server_lib
   PUBLIC Boost::filesystem
          nlohmann_json::nlohmann_json
-         yaml-cpp
+         yaml-cpp::yaml-cpp
          fmt::fmt
          spdlog::spdlog
          sol2::sol2
@@ -89,7 +92,8 @@ if(HAVE_VISA)
 endif()
 if(BUILD_TOOLS)
   add_executable(instrument-setup src/tools/instrument_setup.cpp)
-  target_link_libraries(instrument-setup PUBLIC instrument_server_lib)
+  target_link_libraries(instrument-setup PUBLIC yaml-cpp::yaml-cpp
+                                                instrument_server_lib)
 endif()
 
 # Install
