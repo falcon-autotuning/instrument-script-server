@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://falcon.io/schemas/system-context.json",
+  "title": "Falcon System Context",
+  "description": "System-provided special functions available in all scripts",
+  "type": "object",
+  "required": [
+    "version",
+    "special_functions"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "special_functions": {
+      "type": "object",
+      "patternProperties": {
+        "^[A-Z][A-Z0-9_]*$": {
+          "$ref": "#/definitions/special_function"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "special_function": {
+      "type": "object",
+      "required": [
+        "handler",
+        "async"
+      ],
+      "properties": {
+        "handler": {
+          "type": "string",
+          "description": "C++ process handler name"
+        },
+        "async": {
+          "type": "boolean",
+          "description": "Whether function executes asynchronously"
+        },
+        "description": {
+          "type": "string"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "type"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "int",
+                  "float",
+                  "string",
+                  "bool",
+                  "array<float>",
+                  "array<int>",
+                  "DataHandle"
+                ]
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

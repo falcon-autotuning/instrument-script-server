@@ -1,19 +1,18 @@
-#include "instrument_script/ipc/SharedQueue.hpp"
-#include "instrument_script/ipc/WorkerProtocol.hpp"
+#include "instrument-server/ipc/SharedQueue.hpp"
+#include "instrument-server/ipc/WorkerProtocol.hpp"
 #include <gtest/gtest.h>
-#include <thread>
 
-using namespace instrument_script;
-using namespace instrument_script::ipc;
+using namespace instserver;
+using namespace instserver::ipc;
 
 TEST(IPCTest, QueueCreation) {
   // Create server queue
   auto server_queue = SharedQueue::create_server_queue("test_instrument");
-  EXPECT_TRUE(server_queue.is_valid());
+  EXPECT_TRUE(server_queue->is_valid());
 
   // Create worker queue
   auto worker_queue = SharedQueue::create_worker_queue("test_instrument");
-  EXPECT_TRUE(worker_queue.is_valid());
+  EXPECT_TRUE(worker_queue->is_valid());
 
   // Cleanup
   SharedQueue::cleanup("test_instrument");
@@ -30,10 +29,10 @@ TEST(IPCTest, MessageSendReceive) {
   msg.payload_size = 10;
   std::memcpy(msg.payload, "test_data", 10);
 
-  EXPECT_TRUE(server_queue.send(msg, std::chrono::milliseconds(1000)));
+  EXPECT_TRUE(server_queue->send(msg, std::chrono::milliseconds(1000)));
 
   // Receive on worker side
-  auto received = worker_queue.receive(std::chrono::milliseconds(1000));
+  auto received = worker_queue->receive(std::chrono::milliseconds(1000));
   ASSERT_TRUE(received.has_value());
   EXPECT_EQ(received->type, IPCMessage::Type::COMMAND);
   EXPECT_EQ(received->id, 42);

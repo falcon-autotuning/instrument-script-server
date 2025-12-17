@@ -1,12 +1,12 @@
-#include "instrument_script/Logger.hpp"
-#include "instrument_script/ipc/SharedQueue.hpp"
-#include "instrument_script/ipc/WorkerProtocol.hpp"
-#include "instrument_script/plugin/PluginLoader.hpp"
+#include "instrument-server/Logger.hpp"
+#include "instrument-server/ipc/SharedQueue.hpp"
+#include "instrument-server/ipc/WorkerProtocol.hpp"
+#include "instrument-server/plugin/PluginLoader.hpp"
 #include <atomic>
 #include <csignal>
 #include <cstring>
 
-using namespace instrument_script;
+using namespace instserver;
 
 static std::atomic<bool> g_running{true};
 
@@ -16,8 +16,8 @@ void signal_handler(int signal) {
 }
 
 // Convert SerializedCommand to PluginCommand
-plugin::PluginCommand to_plugin_command(const SerializedCommand &cmd) {
-  plugin::PluginCommand plugin_cmd = {};
+PluginCommand to_plugin_command(const SerializedCommand &cmd) {
+  PluginCommand plugin_cmd = {};
 
   strncpy(plugin_cmd.id, cmd.id.c_str(), PLUGIN_MAX_STRING_LEN - 1);
   strncpy(plugin_cmd.instrument_name, cmd.instrument_name.c_str(),
@@ -77,8 +77,7 @@ plugin::PluginCommand to_plugin_command(const SerializedCommand &cmd) {
 }
 
 // Convert PluginResponse to CommandResponse
-CommandResponse
-from_plugin_response(const plugin::PluginResponse &plugin_resp) {
+CommandResponse from_plugin_response(const PluginResponse &plugin_resp) {
   CommandResponse resp;
   resp.command_id = plugin_resp.command_id;
   resp.instrument_name = plugin_resp.instrument_name;
@@ -163,7 +162,7 @@ int main(int argc, char **argv) {
     // Open IPC queues
     auto ipc_queue = ipc::SharedQueue::create_worker_queue(instrument_name);
 
-    if (!ipc_queue.is_valid()) {
+    if (!ipc_queue->is_valid()) {
       LOG_ERROR(instrument_name, "WORKER_MAIN", "Failed to open IPC queues");
       return 1;
     }
@@ -172,7 +171,7 @@ int main(int argc, char **argv) {
 
     // Initialize plugin (config will be sent via first message or loaded
     // separately) For now, we'll pass empty config
-    plugin::PluginConfig config = {};
+    PluginConfig config = {};
     strncpy(config.instrument_name, instrument_name.c_str(),
             PLUGIN_MAX_STRING_LEN - 1);
 
@@ -188,7 +187,7 @@ int main(int argc, char **argv) {
 
     // Main message loop
     while (g_running) {
-      auto msg_opt = ipc_queue.receive(std::chrono::milliseconds(1000));
+      auto msg_opt = ipc_queue->receive(std::chrono::milliseconds(1000));
 
       if (!msg_opt) {
         // Timeout, send heartbeat
@@ -196,7 +195,7 @@ int main(int argc, char **argv) {
         heartbeat.type = ipc::IPCMessage::Type::HEARTBEAT;
         heartbeat.id = 0;
         heartbeat.payload_size = 0;
-        ipc_queue.send(heartbeat, std::chrono::milliseconds(100));
+        ipc_queue->send(heartbeat, std::chrono::milliseconds(100));
         continue;
       }
 
@@ -222,7 +221,7 @@ int main(int argc, char **argv) {
 
       // Convert to plugin format
       auto plugin_cmd = to_plugin_command(cmd);
-      plugin::PluginResponse plugin_resp = {};
+      PluginResponse plugin_resp = {};
 
       // Execute command
       int32_t exec_result = plugin.execute_command(plugin_cmd, plugin_resp);
@@ -250,7 +249,7 @@ int main(int argc, char **argv) {
           std::min(resp_payload.size(), sizeof(resp_msg.payload));
       std::memcpy(resp_msg.payload, resp_payload.data(), resp_msg.payload_size);
 
-      if (!ipc_queue.send(resp_msg, std::chrono::milliseconds(1000))) {
+      if (!ipc_queue->send(resp_msg, std::chrono::milliseconds(1000))) {
         LOG_ERROR(instrument_name, cmd.id, "Failed to send response");
       }
     }

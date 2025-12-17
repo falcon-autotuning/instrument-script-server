@@ -1,0 +1,26 @@
+# ninja log v7
+3	30	1765954877350971006	CMakeFiles/instrument_server_lib.dir/embedded_schemas.cpp.o	a84432c503e2bfa4
+6	66	1765954877353667796	examples/plugins/simple_serial/CMakeFiles/simple_serial_plugin.dir/simple_serial.c.o	7ff9e286c32f46ff
+2	871	1765954877349891681	CMakeFiles/instrument_server_lib.dir/src/plugin/PluginLoader.cpp.o	12d3ad153c881790
+3	1904	1765954877350864858	CMakeFiles/instrument_server_lib.dir/src/template_expander.cpp.o	ca004ec90425811a
+5	1937	1765954877353614147	tests/CMakeFiles/test_validator.dir/test_validator.cpp.o	a8c34414b7d6d018
+1	1993	1765954877349658986	CMakeFiles/instrument_server_lib.dir/src/ipc/ProcessManager.cpp.o	8ef831498f3a71f3
+5	2087	1765954877353473296	tests/CMakeFiles/test_plugin.dir/test_plugin.cpp.o	b3f08c97292f8a37
+4	2506	1765954877351667793	CMakeFiles/instrument-worker.dir/src/workers/generic_worker_main.cpp.o	5c60cfe94d767ab9
+4	3055	1765954877352710938	CMakeFiles/instrument-setup.dir/src/tools/instrument_setup.cpp.o	1b3fd1952054ae7f
+5	3155	1765954877353291384	tests/CMakeFiles/test_ipc.dir/test_ipc.cpp.o	128b80aa2b6fd06a
+2	3156	1765954877350016201	CMakeFiles/instrument_server_lib.dir/src/plugin/PluginRegistry.cpp.o	98ad9b6f587137bc
+1	3232	1765954877348667787	CMakeFiles/instrument_server_lib.dir/src/ipc/SharedQueue.cpp.o	78da61ba7f437982
+4	3607	1765954877352507192	CMakeFiles/instrument-server.dir/src/server/instrument_server_main.cpp.o	270b28bc759623db
+2	3720	1765954877350181507	CMakeFiles/instrument_server_lib.dir/src/server/InstrumentRegistry.cpp.o	a473612c0c03657c
+2	4145	1765954877350105238	CMakeFiles/instrument_server_lib.dir/src/server/InstrumentWorkerProxy.cpp.o	49c7e731a3c4a61c
+1	4843	1765954877349751541	CMakeFiles/instrument_server_lib.dir/src/ipc/WorkerProtocol.cpp.o	5c34e7573e39aa83
+2	4855	1765954877350715301	CMakeFiles/instrument_server_lib.dir/src/schema_validator.cpp.o	6abbcda523fe076d
+2	8234	1765954877350298274	CMakeFiles/instrument_server_lib.dir/src/server/RuntimeContext.cpp.o	817a3456984fd64e
+8234	8359	1765954885581682285	libinstrument_server_lib.so	f759afa2a7484e4f
+8362	8396	1765954885709682511	examples/plugins/simple_serial/simple_serial_plugin.so	8cbb101f96ae4228
+8360	8441	1765954885708682509	tests/test_ipc	462588e7718a765f
+8361	8442	1765954885709445755	tests/test_plugin	c15fbbcc69d9a22d
+8361	8443	1765954885709606979	tests/test_validator	da5aa314a31b7400
+8359	8451	1765954885706682505	instrument-worker	22bea07cc2e2f90d
+8359	8465	1765954885707723207	instrument-server	32385f0992e37454

@@ -236,7 +236,7 @@ Here's a complete example for NI-DAQmx:
 
 ```C
 
-# include <instrument_script/plugin/PluginInterface.h>
+# include <instrument-server/plugin/PluginInterface.h>
 
 # include <NIDAQmx.h>
 

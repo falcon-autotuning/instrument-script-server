@@ -4,7 +4,7 @@ project(
   VERSION 1.0.0
   LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 
@@ -14,7 +14,7 @@ option(BUILD_EXAMPLES "Build example plugins" ON)
 option(BUILD_TOOLS "Build command-line tools" ON)
 
 # Find dependencies
-find_package(Boost REQUIRED COMPONENTS system filesystem)
+find_package(Boost REQUIRED COMPONENTS filesystem)
 find_package(nlohmann_json REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(fmt REQUIRED)
@@ -37,99 +37,77 @@ else()
     STATUS "VISA library not found - built-in VISA plugin will not be built")
 endif()
 
-# Main library
+# Embed JSON schemas into C++ source
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/schemas/instrument_api.schema.json"
+     INSTRUMENT_API_SCHEMA)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/schemas/system_context.schema.json"
+     SYSTEM_CONTEXT_SCHEMA)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/schemas/runtime_contexts.schema.json"
+     RUNTIME_CONTEXTS_SCHEMA)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/embedded_schemas.cpp.in"
+               "${CMAKE_CURRENT_BINARY_DIR}/embedded_schemas.cpp" @ONLY)
+
 add_library(
-  instrument_script SHARED
-  # IPC
+  instrument_server_lib SHARED
   src/ipc/SharedQueue.cpp
   src/ipc/ProcessManager.cpp
   src/ipc/WorkerProtocol.cpp
-  # Plugin
   src/plugin/PluginLoader.cpp
   src/plugin/PluginRegistry.cpp
-  # Server
   src/server/InstrumentWorkerProxy.cpp
   src/server/InstrumentRegistry.cpp
   src/server/RuntimeContext.cpp
-  # Existing schema code
-  src/schema_validator.
-  cpp
-  src/template_expander.cpp)
-
+  src/schema_validator.cpp
+  src/template_expander.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/embedded_schemas.cpp)
 target_include_directories(
-  instrument_script
+  instrument_server_lib
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
          $<INSTALL_INTERFACE:include> ${LUA_INCLUDE_DIR})
-
 target_link_libraries(
-  instrument_script
-  PUBLIC Boost::system
-         Boost::
-         filesystem
+  instrument_server_lib
+  PUBLIC Boost::filesystem
          nlohmann_json::nlohmann_json
          yaml-cpp
          fmt::fmt
          spdlog::spdlog
          sol2::sol2
          ${LUA_LIBRARIES})
-
-# Platform-specific libraries
 if(UNIX)
-  target_link_libraries(instrument_script PUBLIC pthread dl rt)
+  target_link_libraries(instrument_server_lib PUBLIC pthread dl rt)
 endif()
-
-# Generic worker executable
 add_executable(instrument-worker src/workers/generic_worker_main.cpp)
-target_link_libraries(instrument-worker PRIVATE instrument_script)
-
-# Server executable
+target_link_libraries(instrument-worker PRIVATE instrument_server_lib)
 add_executable(instrument-server src/server/instrument_server_main.cpp)
-target_link_libraries(instrument-server PRIVATE instrument_script)
-
-# Built-in VISA plugin
+target_link_libraries(instrument-server PRIVATE instrument_server_lib)
 if(HAVE_VISA)
-  add_library(visa_builtin_plugin SHARED src/workers/visa_builtin. cpp)
-  target_link_libraries(visa_builtin_plugin PRIVATE instrument_script
+  add_library(visa_builtin_plugin SHARED src/workers/visa_builtin.cpp)
+  target_link_libraries(visa_builtin_plugin PRIVATE instrument_server_lib
                                                     ${VISA_LIBRARY})
   set_target_properties(visa_builtin_plugin PROPERTIES PREFIX "" OUTPUT_NAME
                                                                  "visa_builtin")
 endif()
-
-# Tools
 if(BUILD_TOOLS)
   add_executable(instrument-setup src/tools/instrument_setup.cpp)
-  target_link_libraries(instrument-setup PRIVATE instrument_script)
-endif()
-
-# Tests
-if(BUILD_TESTS)
-  enable_testing()
-  add_subdirectory(tests)
-endif()
-
-# Examples
-if(BUILD_EXAMPLES)
-  add_subdirectory(examples/plugins/simple_serial)
+  target_link_libraries(instrument-setup PUBLIC instrument_server_lib)
 endif()
 
 # Install
 install(
-  TARGETS instrument_script instrument-worker instrument-server
+  TARGETS instrument_server_lib instrument-worker instrument-server
   EXPORT InstrumentServerTargets
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin)
-
 if(HAVE_VISA)
   install(TARGETS visa_builtin_plugin
           LIBRARY DESTINATION lib/instrument-plugins)
 endif()
-
 if(BUILD_TOOLS)
   install(TARGETS instrument-setup RUNTIME DESTINATION bin)
 endif()
 
-install(DIRECTORY include/instrument_script DESTINATION include)
+install(DIRECTORY include/instrument-server DESTINATION include)
 
 install(FILES cmake/Plugin.cmake DESTINATION lib/cmake/InstrumentServer)
 
@@ -153,11 +131,21 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfig.cmake
 install(
   EXPORT InstrumentServerTargets
   FILE InstrumentServerTargets.cmake
-  NAMESPACE InstrumentServer::
+  NAMESPACE instserver::
   DESTINATION lib/cmake/InstrumentServer)
 
 # Create plugin directory
 install(DIRECTORY DESTINATION lib/instrument-plugins)
+# Tests
+if(BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(tests)
+endif()
+# Examples
+if(BUILD_EXAMPLES)
+  set(CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}" ${CMAKE_PREFIX_PATH})
+  add_subdirectory(examples/plugins/simple_serial)
+endif()
 
 # Package
 set(CPACK_PACKAGE_NAME "InstrumentServer")

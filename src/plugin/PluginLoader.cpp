@@ -1,8 +1,8 @@
-#include "instrument_script/plugin/PluginLoader.hpp"
-#include "instrument_script/Logger.hpp"
+#include "instrument-server/plugin/PluginLoader.hpp"
+#include "instrument-server/Logger.hpp"
 #include <stdexcept>
 
-namespace instrument_script {
+namespace instserver {
 namespace plugin {
 
 #ifdef _WIN32
@@ -148,4 +148,4 @@ void PluginLoader::shutdown() {
 }
 
 } // namespace plugin
-} // namespace instrument_script
+} // namespace instserver

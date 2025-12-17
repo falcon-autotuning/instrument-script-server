@@ -1,7 +1,6 @@
-#include "instrument_script/ipc/WorkerProtocol. hpp"
-#include <sstream>
+#include "instrument-server/ipc/WorkerProtocol.hpp"
 
-namespace instrument_script {
+namespace instserver {
 namespace ipc {
 
 nlohmann::json param_value_to_json(const ParamValue &val) {
@@ -147,4 +146,4 @@ CommandResponse deserialize_response(const std::string &json_str) {
 }
 
 } // namespace ipc
-} // namespace instrument_script
+} // namespace instserver

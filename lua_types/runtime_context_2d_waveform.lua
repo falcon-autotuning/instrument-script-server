@@ -1,0 +1,25 @@
+---@meta
+
+--- RuntimeContext_2DWaveform provides a context for scripts that generate and acquire 2D waveform data.
+--- This context is designed for experiments where a two voltages or other parameters are swept in discrete steps,
+--- from one or more instruments. It supports configuring voltage domains,
+--- sample rates, and acquisition parameters, as well as batch operations, parallel execution, and logging.
+--- Typical use cases include time-domain measurements, pulsed experiments, and waveform acquisition synchronized
+--- with parameter sweeps.
+---@class RuntimeContext_2DWaveform
+---@field setters InstrumentTarget[] Instruments to write to. These are the targets whose voltages or parameters are set once during the operation.
+---@field bufferedGetters InstrumentTarget[] Buffered Instruments to read from. These are the sources from which waveform data will be acquired at each step.
+---@field bufferedXSetters InstrumentTarget[] Buffered Instruments to write to. These are the targets whose voltages or parameters are set for each step in the x sweep.
+---@field bufferedYSetters InstrumentTarget[] Buffered Instruments to write to. These are the targets whose voltages or parameters are set for each step in the y sweep.
+---@field setXVoltageDomains table<string, Domain> X Voltage ranges per channel. This table maps instrument target identifiers to their allowed or intended voltage sweep domains.
+---@field setYVoltageDomains table<string, Domain> Y Voltage ranges per channel. This table maps instrument target identifiers to their allowed or intended voltage sweep domains.
+---@field sampleRate number Sampling rate in Hz. Defines the rate at which waveform data is sampled during acquisition.
+---@field numPoints integer Number of points to acquire per datapoint. Specifies the length of each acquired waveform.
+---@field numXSteps integer Number of steps in the x axis waveform. Determines how many discrete parameter values will be swept.
+---@field numYSteps integer Number of steps in the y axis waveform. Determines how many discrete parameter values will be swept.
+---@field call fun(funcName: string, ... ): any
+--- Calls an instrument command or system function by name, passing additional arguments as needed. Used for advanced or custom operations.
+---@field parallel fun(block: function)
+--- Executes a block of commands in parallel, allowing for concurrent instrument operations or acquisitions.
+---@field log fun(msg: string)
+--- Logs a message to the runtime context's logging system for debugging or informational purposes.

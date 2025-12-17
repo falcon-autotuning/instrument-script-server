@@ -1,6 +1,5 @@
-#include "instrument_script/ipc/ProcessManager.hpp"
-#include "instrument_script/Logger.hpp"
-#include <sstream>
+#include "instrument-server/ipc/ProcessManager.hpp"
+#include "instrument-server/Logger.hpp"
 
 #ifdef _WIN32
 #include <processthreadsapi.h>
@@ -11,7 +10,7 @@
 extern char **environ;
 #endif
 
-namespace instrument_script {
+namespace instserver {
 namespace ipc {
 
 ProcessManager::~ProcessManager() { cleanup_all(); }
@@ -284,4 +283,4 @@ bool ProcessManager::is_alive_impl(ProcessHandle handle) const {
 #endif
 
 } // namespace ipc
-} // namespace instrument_script
+} // namespace instserver

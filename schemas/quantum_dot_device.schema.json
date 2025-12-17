@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://falcon.io/schemas/device-config.json",
+  "title": "Quantum Dot Device Configuration",
+  "description": "Schema for configuring 1D array style quantum dot devices with parallel charge sensors.",
+  "type": "object",
+  "required": [
+    "global",
+    "groups",
+    "wiringDC"
+  ],
+  "properties": {
+    "global": {
+      "type": "object",
+      "description": "**Global Name Categorization** (required)\n\nDefines the gates and ohmics present in the device.",
+      "required": [
+        "ScreeningGates",
+        "PlungerGates",
+        "Ohmics",
+        "BarrierGates",
+        "ReservoirGates",
+        "num-unique-channels"
+      ],
+      "properties": {
+        "ScreeningGates": {
+          "type": "string",
+          "pattern": "^[^.;]+(;[^.;]+)*$",
+          "description": "**Screening Gates** (required, string)\n\nSemicolon-delimited list of screening gate names (no '.' allowed)."
+        },
+        "PlungerGates": {
+          "type": "string",
+          "pattern": "^[^.;]+(;[^.;]+)*$",
+          "description": "**Plunger Gates** (required, string)\n\nSemicolon-delimited list of plunger gate names (no '.' allowed)."
+        },
+        "Ohmics": {
+          "type": "string",
+          "pattern": "^[^.;]+(;[^.;]+)*$",
+          "description": "**Ohmics** (required, string)\n\nSemicolon-delimited list of ohmic contact names (no '.' allowed)."
+        },
+        "BarrierGates": {
+          "type": "string",
+          "pattern": "^[^.;]+(;[^.;]+)*$",
+          "description": "**Barrier Gates** (required, string)\n\nSemicolon-delimited list of barrier gate names (no '.' allowed)."
+        },
+        "ReservoirGates": {
+          "type": "string",
+          "pattern": "^[^.;]+(;[^.;]+)*$",
+          "description": "**Reservoir Gates** (required, string)\n\nSemicolon-delimited list of reservoir gate names (no '.' allowed)."
+        },
+        "num-unique-channels": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "**Number of Unique Channels** (required, integer)\n\nNumber of unique readout channels/groups."
+        }
+      },
+      "additionalProperties": false
+    },
+    "groups": {
+      "type": "object",
+      "description": "**Groups** (required, object)\n\nMapping of group names to group configuration objects.",
+      "patternProperties": {
+        "^group[0-9]+$": {
+          "type": "object",
+          "required": [
+            "Name",
+            "NumDots",
+            "ScreeningGates",
+            "ReservoirGates",
+            "PlungerGates",
+            "BarrierGates",
+            "Order"
+          ],
+          "properties": {
+            "Name": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_]+$",
+              "description": "**Group Name** (required, string)\n\nUnique name for the group (e.g., I_O2)."
+            },
+            "NumDots": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "**Number of Dots** (required, integer)\n\nNumber of quantum dots in this group."
+            },
+            "ScreeningGates": {
+              "type": "string",
+              "pattern": "^[^.;]+(;[^.;]+)*$",
+              "description": "**Screening Gates** (required, string)\n\nSemicolon-delimited screening gates for this group."
+            },
+            "ReservoirGates": {
+              "type": "string",
+              "pattern": "^[^.;]+(;[^.;]+)*$",
+              "description": "**Reservoir Gates** (required, string)\n\nSemicolon-delimited reservoir gates for this group."
+            },
+            "PlungerGates": {
+              "type": "string",
+              "pattern": "^[^.;]+(;[^.;]+)*$",
+              "description": "**Plunger Gates** (required, string)\n\nSemicolon-delimited plunger gates for this group."
+            },
+            "BarrierGates": {
+              "type": "string",
+              "pattern": "^[^.;]+(;[^.;]+)*$",
+              "description": "**Barrier Gates** (required, string)\n\nSemicolon-delimited barrier gates for this group."
+            },
+            "Order": {
+              "type": "string",
+              "pattern": "^[^.;]+(;[^.;]+)*$",
+              "description": "**Order** (required, string)\n\nSemicolon-delimited ordered list of all gates for this group."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "wiringDC": {
+      "type": "object",
+      "description": "**DC Wiring** (required, object)\n\nDC wiring configuration for each connection.",
+      "patternProperties": {
+        "^[A-Za-z0-9_]+$": {
+          "type": "object",
+          "required": [
+            "resistance",
+            "capacitance"
+          ],
+          "properties": {
+            "resistance": {
+              "type": "number",
+              "minimum": 0,
+              "description": "**Resistance** (required, number)\n\nBulk resistance in Ohms."
+            },
+            "capacitance": {
+              "type": "number",
+              "minimum": 0,
+              "description": "**Capacitance** (required, number)\n\nBulk capacitance in Farads."
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

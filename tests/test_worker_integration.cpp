@@ -1,9 +1,9 @@
-#include "instrument_script/InstrumentRegistry.hpp"
-#include "instrument_script/InstrumentWorkerProxy.hpp"
+#include "instrument-server/server/InstrumentRegistry.hpp"
+#include "instrument-server/server/InstrumentWorkerProxy.hpp"
 #include <fstream>
 #include <gtest/gtest.h>
 
-using namespace instrument_script;
+using namespace instserver;
 
 // This test requires the simple_serial plugin to be built
 TEST(WorkerIntegrationTest, DISABLED_EndToEndSerial) {

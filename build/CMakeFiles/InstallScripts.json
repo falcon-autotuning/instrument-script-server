@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/tylerk/falcon-dev/instrument-script-server/build/cmake_install.cmake",
+		"/home/tylerk/falcon-dev/instrument-script-server/build/tests/cmake_install.cmake",
+		"/home/tylerk/falcon-dev/instrument-script-server/build/examples/plugins/simple_serial/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

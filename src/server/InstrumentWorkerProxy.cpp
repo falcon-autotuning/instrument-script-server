@@ -1,8 +1,9 @@
-#include "instrument_script/InstrumentWorkerProxy.hpp"
-#include "instrument_script/Logger.hpp"
-#include "instrument_script/ipc/ProcessManager.hpp"
+#include "instrument-server/server/InstrumentWorkerProxy.hpp"
+#include "instrument-server/Logger.hpp"
+#include "instrument-server/ipc/ProcessManager.hpp"
+#include "instrument-server/ipc/WorkerProtocol.hpp"
 
-namespace instrument_script {
+namespace instserver {
 
 // Global process manager instance
 static ipc::ProcessManager g_process_manager;
@@ -21,8 +22,7 @@ bool InstrumentWorkerProxy::start() {
 
   // Create IPC queues
   try {
-    ipc_queue_ = std::make_unique<ipc::SharedQueue>(
-        ipc::SharedQueue::create_server_queue(instrument_name_));
+    ipc_queue_ = ipc::SharedQueue::create_server_queue(instrument_name_);
   } catch (const std::exception &ex) {
     LOG_ERROR(instrument_name_, "PROXY", "Failed to create IPC queues: {}",
               ex.what());
@@ -240,4 +240,4 @@ void InstrumentWorkerProxy::handle_worker_death() {
   pending_responses_.clear();
 }
 
-} // namespace instrument_script
+} // namespace instserver

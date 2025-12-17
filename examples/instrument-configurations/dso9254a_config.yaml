@@ -1,0 +1,30 @@
+name: INSTRUMENT_NAME
+api_ref: examples/instrument-apis/dso9254a_extended.yaml
+connection:
+  type: VISA
+  address: TCPIP::192.168.0.1::INSTR::0
+io_config:
+  analog1_waveform:
+    type: float
+    role: output
+    unit: V
+    offset: 0
+    scale: 1
+  analog2_waveform:
+    type: float
+    role: output
+    unit: V
+    offset: 0
+    scale: 1
+  analog3_waveform:
+    type: float
+    role: output
+    unit: V
+    offset: 0
+    scale: 1
+  analog4_waveform:
+    type: float
+    role: output
+    unit: V
+    offset: 0
+    scale: 1

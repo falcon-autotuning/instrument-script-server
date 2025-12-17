@@ -1,0 +1,104 @@
+api_version: "1.0.0"
+instrument:
+  vendor: "Keysight"
+  model: "DSO9254A"
+  identifier: "GPI1"
+  description: "High-Performance Oscilloscope"
+  firmware_version: "6.30.00"
+protocol:
+  type: "VISA"
+channel_groups:
+  - name: analog
+    description: "Analog input channels"
+    channel_parameter:
+      name: channel
+      type: int
+      min: 1
+      max: 4
+      description: "Oscilloscope channel number (1-4)"
+    io_types:
+      - suffix: waveform
+        type: float
+        role: output
+        unit: "V"
+        description: "Waveform data"
+      - suffix: sample_rate
+        type: float
+        role: setting
+        unit: "Hz"
+        description: "Sample rate in Hz"
+      - suffix: voltage_range
+        type: float
+        role: setting
+        unit: "V"
+        description: "Voltage range in volts"
+      - suffix: trigger_level
+        type: float
+        role: setting
+        unit: "V"
+        description: "Trigger level"
+io:
+  - name: timebase
+    type: float
+    role: setting
+    description: "Global timebase setting"
+    unit: "s"
+  - name: ext_trigger
+    type: bool
+    role: trigger-in
+    description: "External trigger input"
+commands:
+  SET_SAMPLE_RATE:
+    template: "ACQ:SRAT {analog},{value}"
+    description: "Set acquisition sample rate for specified channel"
+    parameters:
+      - name: value
+        type: float
+        description: "Sample rate in Hz"
+        unit: "Hz"
+    channel_group: analog
+    outputs: [sample_rate]
+    returns: void
+  GET_SAMPLE_RATE:
+    template: "ACQ:SRAT? {analog}"
+    description: "Get acquisition sample rate for specified channel"
+    parameters: []
+    channel_group: analog
+    outputs: [sample_rate]
+    returns: float
+    query: true
+  GET_DATA:
+    template: "WAV:DATA? {analog}"
+    description: "Retrieve waveform data from the specified channel"
+    parameters: []
+    channel_group: analog
+    outputs: [waveform]
+    returns: array<float>
+    query: true
+  SET_VOLTAGE_RANGE:
+    template: "CHAN{analog}:RANG {value}"
+    description: "Set voltage range for channel"
+    parameters:
+      - name: value
+        type: float
+        description: "Voltage range in volts"
+        unit: "V"
+    channel_group: analog
+    outputs: [voltage_range]
+    returns: void
+  GET_VOLTAGE_RANGE:
+    template: "CHAN{analog}:RANG?"
+    description: "Get voltage range for channel"
+    parameters: []
+    channel_group: analog
+    outputs: [voltage_range]
+    returns: float
+    query: true
+  GET_TRIGGER_LEVEL:
+    template: "TRIG:LEV? {analog}"
+    description: "Query trigger level for channel"
+    parameters: []
+    channel_group: analog
+    outputs: [trigger_level]
+    returns: float
+    query: true

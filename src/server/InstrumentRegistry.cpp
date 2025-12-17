@@ -1,10 +1,9 @@
-#include "instrument_script/InstrumentRegistry.hpp"
-#include "instrument_script/Logger.hpp"
-#include "instrument_script/plugin/PluginRegistry.hpp"
-#include <fstream>
+#include "instrument-server/server/InstrumentRegistry.hpp"
+#include "instrument-server/Logger.hpp"
+#include "instrument-server/plugin/PluginRegistry.hpp"
 #include <yaml-cpp/yaml.h>
 
-namespace instrument_script {
+namespace instserver {
 
 bool InstrumentRegistry::create_instrument(const std::string &config_path) {
   LOG_INFO("REGISTRY", "CREATE", "Loading instrument from: {}", config_path);
@@ -129,4 +128,4 @@ std::vector<std::string> InstrumentRegistry::list_instruments() const {
   return names;
 }
 
-} // namespace instrument_script
+} // namespace instserver

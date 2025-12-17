@@ -1,5 +1,4 @@
-#include "instrument_script/plugin/PluginInterface.h"
-#include <NIDAQmx.h>
+#include "instrument-server/plugin/PluginInterface.h"
 #include <cstring>
 #include <string>
 #include <visa.h>

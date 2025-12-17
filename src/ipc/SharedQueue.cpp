@@ -1,9 +1,10 @@
-#include "instrument_script/ipc/SharedQueue.hpp"
-#include "instrument_script/Logger.hpp"
+#include "instrument-server/ipc/SharedQueue.hpp"
+#include "instrument-server/Logger.hpp"
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/interprocess/creation_tags.hpp>
 #include <string>
 
-namespace instrument_script {
+namespace instserver {
 namespace ipc {
 
 static std::string make_queue_name(const std::string &instrument_name,
@@ -11,7 +12,7 @@ static std::string make_queue_name(const std::string &instrument_name,
   return "instrument_" + instrument_name + "_" + suffix;
 }
 
-SharedQueue
+std::unique_ptr<SharedQueue>
 SharedQueue::create_server_queue(const std::string &instrument_name) {
   using namespace boost::interprocess;
 
@@ -26,24 +27,26 @@ SharedQueue::create_server_queue(const std::string &instrument_name) {
     auto req_queue =
         std::make_unique<message_queue>(create_only, req_name.c_str(),
                                         100, // max messages
-                                        sizeof(IPCMessage));
+                                        sizeof(instserver::ipc::IPCMessage));
 
-    auto resp_queue = std::make_unique<message_queue>(
-        create_only, resp_name.c_str(), 100, sizeof(IPCMessage));
+    auto resp_queue =
+        std::make_unique<message_queue>(create_only, resp_name.c_str(), 100,
+                                        sizeof(instserver::ipc::IPCMessage));
 
     LOG_INFO("IPC", "QUEUE_CREATE", "Created queues for instrument: {}",
              instrument_name);
 
-    return SharedQueue(std::move(req_queue), std::move(resp_queue), req_name,
-                       resp_name);
+    return std::make_unique<SharedQueue>(
+        std::move(req_queue), std::move(resp_queue), req_name, resp_name);
+
   } catch (const interprocess_exception &ex) {
     LOG_ERROR("IPC", "QUEUE_CREATE", "Failed to create queues:  {}", ex.what());
     throw;
   }
 }
 
-SharedQueue
-SharedQueue::create_worker_queue(const std::string &instrument_name) {
+std::unique_ptr<SharedQueue> instserver::ipc::SharedQueue::create_worker_queue(
+    const std::string &instrument_name) {
   using namespace boost::interprocess;
 
   std::string req_name = make_queue_name(instrument_name, "req");
@@ -59,15 +62,15 @@ SharedQueue::create_worker_queue(const std::string &instrument_name) {
     LOG_INFO("IPC", "QUEUE_OPEN", "Opened queues for instrument: {}",
              instrument_name);
 
-    return SharedQueue(std::move(req_queue), std::move(resp_queue), req_name,
-                       resp_name);
+    return std::make_unique<SharedQueue>(
+        std::move(req_queue), std::move(resp_queue), req_name, resp_name);
   } catch (const interprocess_exception &ex) {
     LOG_ERROR("IPC", "QUEUE_OPEN", "Failed to open queues: {}", ex.what());
     throw;
   }
 }
 
-SharedQueue::SharedQueue(
+instserver::ipc::SharedQueue::SharedQueue(
     std::unique_ptr<boost::interprocess::message_queue> req_queue,
     std::unique_ptr<boost::interprocess::message_queue> resp_queue,
     const std::string &req_name, const std::string &resp_name)
@@ -75,12 +78,12 @@ SharedQueue::SharedQueue(
       response_queue_(std::move(resp_queue)), request_queue_name_(req_name),
       response_queue_name_(resp_name) {}
 
-SharedQueue::~SharedQueue() {
+instserver::ipc::SharedQueue::~SharedQueue() {
   // Queues are automatically closed when unique_ptr is destroyed
 }
 
-bool SharedQueue::send(const IPCMessage &msg,
-                       std::chrono::milliseconds timeout) {
+bool instserver::ipc::SharedQueue::send(const IPCMessage &msg,
+                                        std::chrono::milliseconds timeout) {
   if (!is_valid())
     return false;
 
@@ -153,4 +156,4 @@ void SharedQueue::cleanup(const std::string &instrument_name) {
 }
 
 } // namespace ipc
-} // namespace instrument_script
+} // namespace instserver

@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://falcon.io/schemas/instrument-configuration.json",
+  "title": "Instrument Configuration",
+  "description": "Schema for specifying a concrete instrument instance to be started on the server. References an instrument API definition and provides connection details.",
+  "type": "object",
+  "required": [
+    "name",
+    "api_ref",
+    "connection",
+    "io_config"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$",
+      "description": "**Instrument Name** (required, string)\n\nUnique identifier for this instrument instance (e.g., 'SMU1')."
+    },
+    "api_ref": {
+      "type": "string",
+      "description": "**API Reference** (required, string)\n\nPath or URI to the instrument API definition (instrument-api.json) for this instrument type."
+    },
+    "connection": {
+      "type": "object",
+      "description": "**Connection Details** (required, object)\n\nHow to access this instrument on the system.",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "VISA",
+            "Serial",
+            "USB",
+            "Custom"
+          ],
+          "description": "**Connection Type** (required, string)\n\nHow to connect: 'VISA', 'Serial', 'USB', or 'Custom'."
+        },
+        "address": {
+          "type": "string",
+          "description": "**Address** (optional, string)\n\nVISA resource string, serial port, USB path, or custom address."
+        },
+        "baudrate": {
+          "type": "integer",
+          "description": "**Baudrate** (optional, integer)\n\nSerial baudrate if using serial connection."
+        },
+        "custom": {
+          "type": "object",
+          "description": "**Custom Connection Info** (optional, object)\n\nAdditional fields for custom connection types.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "startup": {
+      "type": "object",
+      "description": "**Startup Options** (optional, object)\n\nAdditional startup configuration (e.g., initialization commands, delays).",
+      "properties": {
+        "init_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "**Initialization Commands** (optional, array)\n\nCommands to send on startup."
+        },
+        "delay_ms": {
+          "type": "integer",
+          "description": "**Startup Delay** (optional, integer)\n\nDelay in milliseconds after connecting before use."
+        }
+      },
+      "additionalProperties": false
+    },
+    "io_config": {
+      "type": "object",
+      "description": "**IO Configuration** (required, object)\n\nConfiguration for each IO port that is an input, output, or inout. Each property key must match the name of an IO port defined in the instrument API with one of these roles. For each IO, you must specify the IO's data type, its role, its physical unit (if applicable), and optional offset and scale values to be applied to the connection.",
+      "patternProperties": {
+        "^[A-Za-z_][A-Za-z0-9_]*$": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "int",
+                "float",
+                "string",
+                "bool"
+              ],
+              "description": "**IO Data Type** (required, string)\n\nThe data type of the IO port. Must be one of: 'int', 'float', 'string', or 'bool'."
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "input",
+                "output",
+                "inout"
+              ],
+              "description": "**IO Role** (required, string)\n\nThe functional role of the IO port. Must be one of: 'input', 'output', or 'inout'."
+            },
+            "unit": {
+              "type": "string",
+              "description": "**Physical Unit** (optional, string)\n\nThe physical unit for the IO port value, such as 'V' for volts, 'Hz' for hertz, or 's' for seconds."
+            },
+            "offset": {
+              "type": "number",
+              "default": 0,
+              "description": "**Offset** (optional, number)\n\nA numeric offset to apply to the IO value. If not specified, the default is 0."
+            },
+            "scale": {
+              "type": "number",
+              "default": 1,
+              "description": "**Scale** (optional, number)\n\nA numeric scale factor to apply to the IO value. If not specified, the default is 1."
+            }
+          },
+          "required": [
+            "type",
+            "role"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

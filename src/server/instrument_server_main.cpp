@@ -1,7 +1,7 @@
-#include "instrument_script/InstrumentRegistry.hpp"
-#include "instrument_script/Logger.hpp"
-#include "instrument_script/RuntimeContext.hpp"
-#include "instrument_script/plugin/PluginRegistry.hpp"
+#include "instrument-server/Logger.hpp"
+#include "instrument-server/plugin/PluginRegistry.hpp"
+#include "instrument-server/server/InstrumentRegistry.hpp"
+#include "instrument-server/server/RuntimeContext.hpp"
 #include <atomic>
 #include <csignal>
 #include <sol/sol.hpp>
@@ -11,7 +11,7 @@ static std::atomic<bool> g_running{true};
 void signal_handler(int signal) { g_running = false; }
 
 int main(int argc, char **argv) {
-  using namespace instrument_script;
+  using namespace instserver;
 
   // Parse command line
   std::string config_file;

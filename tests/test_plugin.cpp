@@ -1,8 +1,8 @@
-#include "instrument_script/plugin/PluginLoader.hpp"
-#include "instrument_script/plugin/PluginRegistry.hpp"
+#include "instrument-server/plugin/PluginLoader.hpp"
+#include "instrument-server/plugin/PluginRegistry.hpp"
 #include <gtest/gtest.h>
 
-using namespace instrument_script::plugin;
+using namespace instserver::plugin;
 
 TEST(PluginTest, LoadInvalidPath) {
   EXPECT_THROW(

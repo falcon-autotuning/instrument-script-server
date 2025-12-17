@@ -1,8 +1,8 @@
-#include "instrument_script/plugin/PluginRegistry.hpp"
-#include "instrument_script/Logger. hpp"
+#include "instrument-server/plugin/PluginRegistry.hpp"
+#include "instrument-server/Logger.hpp"
 #include <filesystem>
 
-namespace instrument_script {
+namespace instserver {
 namespace plugin {
 
 bool PluginRegistry::load_plugin(const std::string &protocol_type,
@@ -112,10 +112,12 @@ void PluginRegistry::discover_plugins(
 
       // Check for plugin library extension
 #ifdef _WIN32
-      if (!filename.ends_with(".dll"))
+      if (filename.length() < 4 ||
+          filename.compare(filename.length() - 4, 4, ".dll") != 0)
         continue;
 #else
-      if (!filename.ends_with(".so"))
+      if (filename.length() < 3 ||
+          filename.compare(filename.length() - 3, 3, ".so") != 0)
         continue;
 #endif
 
@@ -144,4 +146,4 @@ void PluginRegistry::discover_plugins(
 }
 
 } // namespace plugin
-} // namespace instrument_script
+} // namespace instserver

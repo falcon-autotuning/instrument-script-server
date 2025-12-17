@@ -1,8 +1,9 @@
-#include "instrument_script/InstrumentRegistry.hpp"
-#include "instrument_script/Logger. hpp"
-#include "instrument_script/plugin/PluginRegistry.hpp"
-#include <fstream>
+#include "instrument-server/Logger.hpp"
+#include "instrument-server/plugin/PluginRegistry.hpp"
+#include "instrument-server/server/InstrumentRegistry.hpp"
 #include <iostream>
+#include <yaml-cpp/node/node.h>
+#include <yaml-cpp/node/parse.h>
 
 void print_usage(const char *prog) {
   std::cout << "Usage: " << prog << " <command> [options]\n\n";
@@ -22,7 +23,7 @@ void print_usage(const char *prog) {
 }
 
 int main(int argc, char **argv) {
-  using namespace instrument_script;
+  using namespace instserver;
 
   if (argc < 2) {
     print_usage(argv[0]);

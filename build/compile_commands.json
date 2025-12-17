@@ -1,0 +1,110 @@
+[
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -fPIC -o CMakeFiles/instrument_server_lib.dir/src/ipc/SharedQueue.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/ipc/SharedQueue.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/ipc/SharedQueue.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_server_lib.dir/src/ipc/SharedQueue.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -fPIC -o CMakeFiles/instrument_server_lib.dir/src/ipc/ProcessManager.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/ipc/ProcessManager.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/ipc/ProcessManager.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_server_lib.dir/src/ipc/ProcessManager.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -fPIC -o CMakeFiles/instrument_server_lib.dir/src/ipc/WorkerProtocol.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/ipc/WorkerProtocol.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/ipc/WorkerProtocol.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_server_lib.dir/src/ipc/WorkerProtocol.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -fPIC -o CMakeFiles/instrument_server_lib.dir/src/plugin/PluginLoader.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/plugin/PluginLoader.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/plugin/PluginLoader.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_server_lib.dir/src/plugin/PluginLoader.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -fPIC -o CMakeFiles/instrument_server_lib.dir/src/plugin/PluginRegistry.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/plugin/PluginRegistry.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/plugin/PluginRegistry.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_server_lib.dir/src/plugin/PluginRegistry.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -fPIC -o CMakeFiles/instrument_server_lib.dir/src/server/InstrumentWorkerProxy.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/server/InstrumentWorkerProxy.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/server/InstrumentWorkerProxy.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_server_lib.dir/src/server/InstrumentWorkerProxy.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -fPIC -o CMakeFiles/instrument_server_lib.dir/src/server/InstrumentRegistry.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/server/InstrumentRegistry.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/server/InstrumentRegistry.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_server_lib.dir/src/server/InstrumentRegistry.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -fPIC -o CMakeFiles/instrument_server_lib.dir/src/server/RuntimeContext.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/server/RuntimeContext.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/server/RuntimeContext.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_server_lib.dir/src/server/RuntimeContext.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -fPIC -o CMakeFiles/instrument_server_lib.dir/src/schema_validator.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/schema_validator.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/schema_validator.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_server_lib.dir/src/schema_validator.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -fPIC -o CMakeFiles/instrument_server_lib.dir/src/template_expander.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/template_expander.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/template_expander.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_server_lib.dir/src/template_expander.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -fPIC -o CMakeFiles/instrument_server_lib.dir/embedded_schemas.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/build/embedded_schemas.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/build/embedded_schemas.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument_server_lib.dir/embedded_schemas.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o CMakeFiles/instrument-worker.dir/src/workers/generic_worker_main.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/workers/generic_worker_main.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/workers/generic_worker_main.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument-worker.dir/src/workers/generic_worker_main.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o CMakeFiles/instrument-server.dir/src/server/instrument_server_main.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/server/instrument_server_main.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/server/instrument_server_main.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument-server.dir/src/server/instrument_server_main.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o CMakeFiles/instrument-setup.dir/src/tools/instrument_setup.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/tools/instrument_setup.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/tools/instrument_setup.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument-setup.dir/src/tools/instrument_setup.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o tests/CMakeFiles/test_ipc.dir/test_ipc.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/tests/test_ipc.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/tests/test_ipc.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_ipc.dir/test_ipc.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o tests/CMakeFiles/test_plugin.dir/test_plugin.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/tests/test_plugin.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/tests/test_plugin.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_plugin.dir/test_plugin.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang++ -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o tests/CMakeFiles/test_validator.dir/test_validator.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/tests/test_validator.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/tests/test_validator.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_validator.dir/test_validator.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/clang -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DPLUGIN_EXPORT=\"__attribute__((visibility(\\\"default\\\")))\" -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dsimple_serial_plugin_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -std=gnu11 -fPIC -fvisibility=hidden -o examples/plugins/simple_serial/CMakeFiles/simple_serial_plugin.dir/simple_serial.c.o -c /home/tylerk/falcon-dev/instrument-script-server/examples/plugins/simple_serial/simple_serial.c",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/examples/plugins/simple_serial/simple_serial.c",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/examples/plugins/simple_serial/CMakeFiles/simple_serial_plugin.dir/simple_serial.c.o"
+}
+]

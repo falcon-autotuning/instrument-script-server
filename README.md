@@ -1,7 +1,7 @@
-# Instrument Script Schema
+# Instrument Script Server
 
 <!--toc:start-->
-- [Instrument Script Schema](#instrument-script-schema)
+- [Instrument Script Server](#instrument-script-server)
   - [Features](#features)
   - [Quick Start](#quick-start)
     - [Installation](#installation)
@@ -174,7 +174,7 @@ sudo apt-get install instrument-server-dev
 
 ```C
 // my_instrument_plugin.c
-# include <instrument_script/plugin/PluginInterface.h>
+# include <instrument-server/plugin/PluginInterface.h>
 # include <my_instrument_sdk. h>  // Your instrument's SDK
 
 static HANDLE g_device = NULL;

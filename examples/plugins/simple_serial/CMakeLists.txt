@@ -6,6 +6,7 @@ find_package(InstrumentServer REQUIRED)
 
 # Create plugin
 add_instrument_plugin(simple_serial_plugin SOURCES simple_serial.c)
+target_link_libraries(simple_serial_plugin PRIVATE instrument_server_lib)
 
 # Install plugin
 install(TARGETS simple_serial_plugin LIBRARY DESTINATION lib/instrument-plugins)

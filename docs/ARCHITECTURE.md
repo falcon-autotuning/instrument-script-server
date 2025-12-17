@@ -94,7 +94,7 @@ int32_t plugin_execute_command(const PluginCommand* cmd, PluginResponse* resp);
 void plugin_shutdown(void);
 ```
 
-See [PluginInterface.h](../include/instrument_script/plugin/PluginInterface.h) for full details.
+See [PluginInterface.h](../include/instrument-server/plugin/PluginInterface.h) for full details.
 
 ## Lua Runtime Context
 
