@@ -1,0 +1,15 @@
+@PACKAGE_INIT@
+
+set(InstrumentServer_VERSION @PROJECT_VERSION@)
+
+# Include directories
+set(InstrumentServer_INCLUDE_DIRS "@CMAKE_INSTALL_PREFIX@/include")
+
+# Libraries
+set(InstrumentServer_LIBRARIES
+    "@CMAKE_INSTALL_PREFIX@/lib/libinstrument_script.so")
+
+# Plugin helper
+include("@CMAKE_INSTALL_PREFIX@/lib/cmake/InstrumentServer/Plugin.cmake")
+
+check_required_components(InstrumentServer)

@@ -1,0 +1,156 @@
+#include "instrument_script/ipc/SharedQueue.hpp"
+#include "instrument_script/Logger.hpp"
+#include <boost/interprocess/creation_tags.hpp>
+#include <string>
+
+namespace instrument_script {
+namespace ipc {
+
+static std::string make_queue_name(const std::string &instrument_name,
+                                   const std::string &suffix) {
+  return "instrument_" + instrument_name + "_" + suffix;
+}
+
+SharedQueue
+SharedQueue::create_server_queue(const std::string &instrument_name) {
+  using namespace boost::interprocess;
+
+  std::string req_name = make_queue_name(instrument_name, "req");
+  std::string resp_name = make_queue_name(instrument_name, "resp");
+
+  // Remove existing queues if any
+  message_queue::remove(req_name.c_str());
+  message_queue::remove(resp_name.c_str());
+
+  try {
+    auto req_queue =
+        std::make_unique<message_queue>(create_only, req_name.c_str(),
+                                        100, // max messages
+                                        sizeof(IPCMessage));
+
+    auto resp_queue = std::make_unique<message_queue>(
+        create_only, resp_name.c_str(), 100, sizeof(IPCMessage));
+
+    LOG_INFO("IPC", "QUEUE_CREATE", "Created queues for instrument: {}",
+             instrument_name);
+
+    return SharedQueue(std::move(req_queue), std::move(resp_queue), req_name,
+                       resp_name);
+  } catch (const interprocess_exception &ex) {
+    LOG_ERROR("IPC", "QUEUE_CREATE", "Failed to create queues:  {}", ex.what());
+    throw;
+  }
+}
+
+SharedQueue
+SharedQueue::create_worker_queue(const std::string &instrument_name) {
+  using namespace boost::interprocess;
+
+  std::string req_name = make_queue_name(instrument_name, "req");
+  std::string resp_name = make_queue_name(instrument_name, "resp");
+
+  try {
+    auto req_queue =
+        std::make_unique<message_queue>(open_only, req_name.c_str());
+
+    auto resp_queue =
+        std::make_unique<message_queue>(open_only, resp_name.c_str());
+
+    LOG_INFO("IPC", "QUEUE_OPEN", "Opened queues for instrument: {}",
+             instrument_name);
+
+    return SharedQueue(std::move(req_queue), std::move(resp_queue), req_name,
+                       resp_name);
+  } catch (const interprocess_exception &ex) {
+    LOG_ERROR("IPC", "QUEUE_OPEN", "Failed to open queues: {}", ex.what());
+    throw;
+  }
+}
+
+SharedQueue::SharedQueue(
+    std::unique_ptr<boost::interprocess::message_queue> req_queue,
+    std::unique_ptr<boost::interprocess::message_queue> resp_queue,
+    const std::string &req_name, const std::string &resp_name)
+    : request_queue_(std::move(req_queue)),
+      response_queue_(std::move(resp_queue)), request_queue_name_(req_name),
+      response_queue_name_(resp_name) {}
+
+SharedQueue::~SharedQueue() {
+  // Queues are automatically closed when unique_ptr is destroyed
+}
+
+bool SharedQueue::send(const IPCMessage &msg,
+                       std::chrono::milliseconds timeout) {
+  if (!is_valid())
+    return false;
+
+  try {
+    auto deadline = std::chrono::steady_clock::now() + timeout;
+    auto abs_time = boost::posix_time::microsec_clock::universal_time() +
+                    boost::posix_time::milliseconds(timeout.count());
+
+    // Send to request queue
+    bool sent = request_queue_->timed_send(&msg, sizeof(msg), 0, abs_time);
+
+    if (!sent) {
+      LOG_WARN("IPC", "SEND_TIMEOUT", "Send timeout on queue: {}",
+               request_queue_name_);
+    }
+
+    return sent;
+  } catch (const boost::interprocess::interprocess_exception &ex) {
+    LOG_ERROR("IPC", "SEND_ERROR", "Send failed: {}", ex.what());
+    return false;
+  }
+}
+
+std::optional<IPCMessage>
+SharedQueue::receive(std::chrono::milliseconds timeout) {
+  if (!is_valid())
+    return std::nullopt;
+
+  try {
+    IPCMessage msg;
+    size_t received_size;
+    unsigned int priority;
+
+    auto abs_time = boost::posix_time::microsec_clock::universal_time() +
+                    boost::posix_time::milliseconds(timeout.count());
+
+    bool received = response_queue_->timed_receive(
+        &msg, sizeof(msg), received_size, priority, abs_time);
+
+    if (!received) {
+      LOG_TRACE("IPC", "RECV_TIMEOUT", "Receive timeout on queue: {}",
+                response_queue_name_);
+      return std::nullopt;
+    }
+
+    if (received_size != sizeof(IPCMessage)) {
+      LOG_ERROR("IPC", "RECV_SIZE", "Received message size mismatch: {} vs {}",
+                received_size, sizeof(IPCMessage));
+      return std::nullopt;
+    }
+
+    return msg;
+  } catch (const boost::interprocess::interprocess_exception &ex) {
+    LOG_ERROR("IPC", "RECV_ERROR", "Receive failed: {}", ex.what());
+    return std::nullopt;
+  }
+}
+
+void SharedQueue::cleanup(const std::string &instrument_name) {
+  using namespace boost::interprocess;
+
+  std::string req_name = make_queue_name(instrument_name, "req");
+  std::string resp_name = make_queue_name(instrument_name, "resp");
+
+  message_queue::remove(req_name.c_str());
+  message_queue::remove(resp_name.c_str());
+
+  LOG_INFO("IPC", "QUEUE_CLEANUP", "Cleaned up queues for:  {}",
+           instrument_name);
+}
+
+} // namespace ipc
+} // namespace instrument_script
