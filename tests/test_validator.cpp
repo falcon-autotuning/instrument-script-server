@@ -1,11 +1,9 @@
-#include "instrument-server/schema_validator.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <string>
 
-using namespace instserver;
 namespace fs = std::filesystem;
 
 // Helper to expand template using the template_expander tool
@@ -21,109 +19,45 @@ std::string expand_template(const std::string &tmpl_path) {
   return expanded_path;
 }
 
+// Helper to run a CLI validator tool
+int run_validator(const std::string &tool, const std::string &yaml_path) {
+  std::string cmd = tool + " " + yaml_path + " > /dev/null 2>&1";
+  return std::system(cmd.c_str());
+}
+
 TEST(SchemaValidatorTest, ValidateAgilentInstrumentDirect) {
-  // Validate the Agilent instrument directly (not a template)
-  auto result = SchemaValidator::validate_instrument_api(
-      "examples/instrument-apis/agi_34401a.yaml");
-  EXPECT_TRUE(result.valid)
-      << "Validation failed:\n"
-      << [&result] {
-           std::string msg;
-           for (const auto &err : result.errors)
-             msg += "  - " + err.path + ": " + err.message + "\n";
-           return msg;
-         }();
+  int ret = run_validator("validate_instrument_api",
+                          "examples/instrument-apis/agi_34401a.yaml");
+  EXPECT_EQ(ret, 0) << "Validation failed for Agilent instrument API";
 }
 
 TEST(SchemaValidatorTest, ValidateAgilentInstrumentWithExpander) {
-  // Validate the Agilent instrument after running through the expander (should
-  // still work)
+  // ... expand_template as before ...
   std::string expanded_path =
       expand_template("examples/instrument-apis/agi_34401a.yaml");
-  auto result = SchemaValidator::validate_instrument_api(expanded_path);
-  EXPECT_TRUE(result.valid)
-      << "Validation failed:\n"
-      << [&result] {
-           std::string msg;
-           for (const auto &err : result.errors)
-             msg += "  - " + err.path + ": " + err.message + "\n";
-           return msg;
-         }();
+  int ret = run_validator("validate_instrument_api", expanded_path);
+  EXPECT_EQ(ret, 0) << "Validation failed for expanded Agilent instrument API";
   std::remove(expanded_path.c_str());
 }
 
 TEST(SchemaValidatorTest, ValidateKeysightInstrument) {
   std::string expanded_path =
       expand_template("examples/instrument-apis/dso9254a.yaml.tmpl");
-  auto result = SchemaValidator::validate_instrument_api(expanded_path);
-  EXPECT_TRUE(result.valid)
-      << "Validation failed:\n"
-      << [&result] {
-           std::string msg;
-           for (const auto &err : result.errors)
-             msg += "  - " + err.path + ": " + err.message + "\n";
-           return msg;
-         }();
-  std::remove(expanded_path.c_str());
-}
-
-TEST(SchemaValidatorTest, ParseKeysightInstrument) {
-  std::string expanded_path =
-      expand_template("examples/instrument-apis/dso9254a.yaml.tmpl");
-  EXPECT_NO_THROW({
-    auto api = SchemaValidator::parse_instrument_api(expanded_path);
-    EXPECT_EQ(api.instrument.vendor, "Keysight");
-    EXPECT_EQ(api.instrument.model, "DSO9254A");
-    EXPECT_EQ(api.protocol.type, "VISA");
-  });
+  int ret = run_validator("validate_instrument_api", expanded_path);
+  EXPECT_EQ(ret, 0) << "Validation failed for expanded Keysight instrument API";
   std::remove(expanded_path.c_str());
 }
 
 TEST(SchemaValidatorTest, ValidateSystemContext) {
-  auto result =
-      SchemaValidator::validate_system_context("examples/system_context.yaml");
-  EXPECT_TRUE(result.valid)
-      << "Validation failed:\n"
-      << [&result] {
-           std::string msg;
-           for (const auto &err : result.errors)
-             msg += "  - " + err.path + ": " + err.message + "\n";
-           return msg;
-         }();
-}
-
-TEST(SchemaValidatorTest, ValidateRuntimeContexts) {
-  // If you have a validate_runtime_contexts, use it here.
-  // Otherwise, just check that parsing works.
-  EXPECT_NO_THROW({
-    auto contexts = SchemaValidator::parse_runtime_contexts(
-        "examples/runtime_contexts.yaml");
-    EXPECT_GT(contexts.size(), 0);
-  });
-}
-
-TEST(SchemaValidatorTest, ParseRuntimeContexts) {
-  EXPECT_NO_THROW({
-    auto contexts = SchemaValidator::parse_runtime_contexts(
-        "examples/runtime_contexts.yaml");
-    EXPECT_GT(contexts.size(), 0);
-    for (const auto &[id, ctx] : contexts) {
-      EXPECT_FALSE(ctx.name.empty());
-    }
-  });
+  int ret =
+      run_validator("validate_system_context", "examples/system_context.yaml");
+  EXPECT_EQ(ret, 0) << "Validation failed for system context";
 }
 
 TEST(SchemaValidatorTest, ValidateQuantumDotDeviceConfig) {
-  auto result = SchemaValidator::validate_quantum_dot_device(
-      "examples/one_charge_sensor_quantum_dot_device.yaml");
-  EXPECT_TRUE(result.valid)
-      << "Validation failed:\n"
-      << [&result] {
-           std::string msg;
-           for (const auto &err : result.errors)
-             msg += "  - " + err.path + ": " + err.message + "\n";
-           return msg;
-         }();
+  int ret = run_validator("validate_quantum_dot_device",
+                          "examples/one_charge_sensor_quantum_dot_device.yaml");
+  EXPECT_EQ(ret, 0) << "Validation failed for quantum dot device config";
 }
 
 TEST(SchemaValidatorTest, GenerateAndValidateAgilentInstrumentConfiguration) {
@@ -135,15 +69,9 @@ TEST(SchemaValidatorTest, GenerateAndValidateAgilentInstrumentConfiguration) {
   int ret = std::system(cmd.c_str());
   ASSERT_EQ(ret, 0)
       << "Failed to generate instrument configuration for Agilent";
-  auto result = SchemaValidator::validate_instrument_configuration(config_path);
-  EXPECT_TRUE(result.valid)
-      << "Validation failed:\n"
-      << [&result] {
-           std::string msg;
-           for (const auto &err : result.errors)
-             msg += "  - " + err.path + ": " + err.message + "\n";
-           return msg;
-         }();
+  ret = run_validator("validate_instrument_configuration", config_path);
+  EXPECT_EQ(ret, 0)
+      << "Validation failed for generated Agilent instrument configuration";
   std::remove(config_path.c_str());
 }
 
@@ -157,14 +85,9 @@ TEST(SchemaValidatorTest, GenerateAndValidateKeysightInstrumentConfiguration) {
   int ret = std::system(cmd.c_str());
   ASSERT_EQ(ret, 0)
       << "Failed to generate instrument configuration for Keysight";
-  auto result = SchemaValidator::validate_instrument_configuration(config_path);
-  EXPECT_TRUE(result.valid)
-      << "Validation failed:\n"
-      << [&result] {
-           std::string msg;
-           for (const auto &err : result.errors)
-             msg += "  - " + err.path + ": " + err.message + "\n";
-           return msg;
-         }();
+  ret = run_validator("validate_instrument_configuration", config_path);
+  EXPECT_EQ(ret, 0)
+      << "Validation failed for generated Keysight instrument configuration";
+  std::remove(api_path.c_str());
   std::remove(config_path.c_str());
 }

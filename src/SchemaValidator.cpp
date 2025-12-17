@@ -1,5 +1,5 @@
-#include "instrument-server/schema_validator.hpp"
-#include <map>
+#include "instrument-server/SchemaValidator.hpp"
+
 #include <regex>
 #include <set>
 #include <string>
@@ -10,8 +10,7 @@ namespace instserver {
 
 // Forward declarations for embedded schemas
 extern const char *INSTRUMENT_API_SCHEMA;
-extern const char *SYSTEM_CONTEXT_SCHEMA;
-extern const char *RUNTIME_CONTEXTS_SCHEMA;
+extern const char *INSTRUMENT_CONFIGURATION_SCHEMA;
 
 static std::string get_yaml_type(const YAML::Node &node) {
   if (node.IsScalar())
@@ -276,114 +275,13 @@ SchemaValidator::validate_instrument_api(const std::string &yaml_path) {
   return result;
 }
 
-ValidationResult
-SchemaValidator::validate_system_context(const std::string &yaml_path) {
-  ValidationResult result;
-  result.valid = true;
-
-  try {
-    YAML::Node doc = YAML::LoadFile(yaml_path);
-
-    if (!doc["version"]) {
-      result.valid = false;
-      result.errors.push_back({"/version", "Missing required field", 0, 0});
-    }
-
-    if (!doc["special_functions"]) {
-      result.valid = false;
-      result.errors.push_back(
-          {"/special_functions", "Missing required field", 0, 0});
-    }
-
-  } catch (const YAML::Exception &e) {
-    result.valid = false;
-    result.errors.push_back(
-        {"", std::string("YAML parse error: ") + e.what(), 0, 0});
-  }
-
-  return result;
-}
-
-InstrumentAPI
-SchemaValidator::parse_instrument_api(const std::string &yaml_path) {
-  YAML::Node doc = YAML::LoadFile(yaml_path);
-
-  InstrumentAPI api;
-  api.api_version = doc["api_version"].as<std::string>();
-
-  // Parse instrument metadata
-  auto inst = doc["instrument"];
-  api.instrument.vendor = inst["vendor"].as<std::string>();
-  api.instrument.model = inst["model"].as<std::string>();
-  api.instrument.identifier = inst["identifier"].as<std::string>();
-
-  if (inst["description"]) {
-    api.instrument.description = inst["description"].as<std::string>();
-  }
-  if (inst["firmware_version"]) {
-    api.instrument.firmware_version =
-        inst["firmware_version"].as<std::string>();
-  }
-
-  // Parse protocol
-  auto proto = doc["protocol"];
-  api.protocol.type = proto["type"].as<std::string>();
-
-  // TODO: Parse commands, io, etc. as needed...
-
-  return api;
-}
-
-std::map<std::string, RuntimeContext>
-SchemaValidator::parse_runtime_contexts(const std::string &yaml_path) {
-  YAML::Node doc = YAML::LoadFile(yaml_path);
-  std::map<std::string, RuntimeContext> contexts;
-
-  if (doc["contexts"]) {
-    for (const auto &ctx : doc["contexts"]) {
-      std::string ctx_id = ctx.first.as<std::string>();
-      auto ctx_node = ctx.second;
-
-      RuntimeContext context;
-      context.name = ctx_node["name"].as<std::string>();
-      context.description = ctx_node["description"].as<std::string>();
-
-      if (ctx_node["fields"]) {
-        for (const auto &field_node : ctx_node["fields"]) {
-          ContextField field;
-          field.name = field_node["name"].as<std::string>();
-          field.type = field_node["type"].as<std::string>();
-
-          if (field_node["description"]) {
-            field.description = field_node["description"].as<std::string>();
-          }
-
-          field.optional = field_node["optional"]
-                               ? field_node["optional"].as<bool>()
-                               : false;
-
-          context.fields.push_back(field);
-        }
-      }
-
-      contexts[ctx_id] = context;
-    }
-  }
-
-  return contexts;
-}
-
 std::string SchemaValidator::get_instrument_api_schema() {
   return INSTRUMENT_API_SCHEMA;
 }
-
-std::string SchemaValidator::get_system_context_schema() {
-  return SYSTEM_CONTEXT_SCHEMA;
+std::string SchemaValidator::get_instrument_configuration_schema() {
+  return INSTRUMENT_CONFIGURATION_SCHEMA;
 }
 
-std::string SchemaValidator::get_runtime_contexts_schema() {
-  return RUNTIME_CONTEXTS_SCHEMA;
-}
 // Helper: split semicolon-delimited string into vector
 static std::vector<std::string> split_semicolon(const std::string &s) {
   std::vector<std::string> out;

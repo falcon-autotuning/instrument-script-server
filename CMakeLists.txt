@@ -40,10 +40,9 @@ endif()
 # Embed JSON schemas into C++ source
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/schemas/instrument_api.schema.json"
      INSTRUMENT_API_SCHEMA)
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/schemas/system_context.schema.json"
-     SYSTEM_CONTEXT_SCHEMA)
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/schemas/runtime_contexts.schema.json"
-     RUNTIME_CONTEXTS_SCHEMA)
+file(READ
+     "${CMAKE_CURRENT_SOURCE_DIR}/schemas/instrument_configuration.schema.json"
+     INSTRUMENT_CONFIGURATION_SCHEMA)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/embedded_schemas.cpp.in"
                "${CMAKE_CURRENT_BINARY_DIR}/embedded_schemas.cpp" @ONLY)
 
@@ -57,12 +56,8 @@ add_library(
   src/server/InstrumentWorkerProxy.cpp
   src/server/InstrumentRegistry.cpp
   src/server/RuntimeContext.cpp
-  src/schema_validator.cpp
-  src/template_expander.cpp
+  src/SchemaValidator.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/embedded_schemas.cpp)
-set_target_properties(
-  instrument_server_lib PROPERTIES CXX_VISIBILITY_PRESET default
-                                   VISIBILITY_INLINES_HIDDEN OFF)
 target_include_directories(
   instrument_server_lib
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -94,6 +89,27 @@ if(BUILD_TOOLS)
   add_executable(instrument-setup src/tools/instrument_setup.cpp)
   target_link_libraries(instrument-setup PUBLIC yaml-cpp::yaml-cpp
                                                 instrument_server_lib)
+
+  add_executable(template_expander src/template_expander.cpp)
+  target_link_libraries(template_expander PRIVATE yaml-cpp::yaml-cpp)
+
+  add_executable(instrument_configuration_generator
+                 src/instrument_configuration_generator.cpp)
+  target_link_libraries(instrument_configuration_generator
+                        PRIVATE yaml-cpp::yaml-cpp)
+
+  add_executable(instrument_api_validator src/instrument_api_validator_main.cpp)
+  target_link_libraries(instrument_api_validator PRIVATE instrument_server_lib)
+
+  add_executable(quantum_dot_config_validator
+                 src/quantum_dot_config_validator_main.cpp)
+  target_link_libraries(quantum_dot_config_validator
+                        PRIVATE instrument_server_lib)
+
+  add_executable(instrument_config_validator
+                 src/instrument_config_validator_main.cpp)
+  target_link_libraries(instrument_config_validator
+                        PRIVATE instrument_server_lib)
 endif()
 
 # Install

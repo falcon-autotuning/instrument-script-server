@@ -3,7 +3,6 @@
 namespace instserver {
 
 const char *INSTRUMENT_API_SCHEMA = R"delim(@INSTRUMENT_API_SCHEMA@)delim";
-const char *SYSTEM_CONTEXT_SCHEMA = R"delim(@SYSTEM_CONTEXT_SCHEMA@)delim";
-const char *RUNTIME_CONTEXTS_SCHEMA = R"delim(@RUNTIME_CONTEXTS_SCHEMA@)delim";
-
+const char *INSTRUMENT_CONFIGURATION_SCHEMA =
+    R"delim(@INSTRUMENT_CONFIGURATION_SCHEMA@)delim";
 } // namespace instserver

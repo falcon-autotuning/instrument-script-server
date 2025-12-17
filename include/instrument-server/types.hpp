@@ -60,4 +60,17 @@ struct RuntimeContext {
   std::vector<ContextField> fields;
 };
 
+struct ValidationError {
+  std::string path;
+  std::string message;
+  int line;
+  int column;
+};
+
+struct ValidationResult {
+  bool valid;
+  std::vector<ValidationError> errors;
+  std::vector<std::string> warnings;
+};
+
 } // namespace instserver

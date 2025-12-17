@@ -504,153 +504,132 @@ const char *INSTRUMENT_API_SCHEMA = R"delim({
   }
 }
 )delim";
-const char *SYSTEM_CONTEXT_SCHEMA = R"delim({
+const char *INSTRUMENT_CONFIGURATION_SCHEMA =
+    R"delim({
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://falcon.io/schemas/system-context.json",
-  "title": "Falcon System Context",
-  "description": "System-provided special functions available in all scripts",
+  "$id": "https://falcon.io/schemas/instrument-configuration.json",
+  "title": "Instrument Configuration",
+  "description": "Schema for specifying a concrete instrument instance to be started on the server. References an instrument API definition and provides connection details.",
   "type": "object",
   "required": [
-    "version",
-    "special_functions"
+    "name",
+    "api_ref",
+    "connection",
+    "io_config"
   ],
   "properties": {
-    "version": {
+    "name": {
       "type": "string",
-      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+      "pattern": "^[A-Z][A-Z0-9_]*$",
+      "description": "**Instrument Name** (required, string)\n\nUnique identifier for this instrument instance (e.g., 'SMU1')."
     },
-    "special_functions": {
-      "type": "object",
-      "patternProperties": {
-        "^[A-Z][A-Z0-9_]*$": {
-          "$ref": "#/definitions/special_function"
-        }
-      }
-    }
-  },
-  "definitions": {
-    "special_function": {
-      "type": "object",
-      "required": [
-        "handler",
-        "async"
-      ],
-      "properties": {
-        "handler": {
-          "type": "string",
-          "description": "C++ process handler name"
-        },
-        "async": {
-          "type": "boolean",
-          "description": "Whether function executes asynchronously"
-        },
-        "description": {
-          "type": "string"
-        },
-        "parameters": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": [
-              "name",
-              "type"
-            ],
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "int",
-                  "float",
-                  "string",
-                  "bool",
-                  "array<float>",
-                  "array<int>",
-                  "DataHandle"
-                ]
-              },
-              "description": {
-                "type": "string"
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-)delim";
-const char *RUNTIME_CONTEXTS_SCHEMA = R"delim({
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://falcon.io/schemas/runtime-contexts.json",
-  "title": "Runtime Context Definitions",
-  "description": "Defines different program types and their available context fields",
-  "type": "object",
-  "required": [
-    "contexts"
-  ],
-  "properties": {
-    "contexts": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-z][a-z0-9_]*$": {
-          "$ref": "#/definitions/context"
-        }
-      }
-    }
-  },
-  "definitions": {
-    "context": {
-      "type": "object",
-      "required": [
-        "name",
-        "description",
-        "fields"
-      ],
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "Display name for this context type"
-        },
-        "description": {
-          "type": "string"
-        },
-        "fields": {
-          "type": "array",
-          "description": "Available fields in this runtime context",
-          "items": {
-            "$ref": "#/definitions/field"
-          }
-        }
-      }
+    "api_ref": {
+      "type": "string",
+      "description": "**API Reference** (required, string)\n\nPath or URI to the instrument API definition (instrument-api.json) for this instrument type."
     },
-    "field": {
+    "connection": {
       "type": "object",
+      "description": "**Connection Details** (required, object)\n\nHow to access this instrument on the system.",
       "required": [
-        "name",
         "type"
       ],
       "properties": {
-        "name": {
-          "type": "string",
-          "pattern": "^[a-z][a-zA-Z0-9]*$"
-        },
         "type": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "VISA",
+            "Serial",
+            "USB",
+            "Custom"
+          ],
+          "description": "**Connection Type** (required, string)\n\nHow to connect: 'VISA', 'Serial', 'USB', or 'Custom'."
         },
-        "description": {
-          "type": "string"
+        "address": {
+          "type": "string",
+          "description": "**Address** (optional, string)\n\nVISA resource string, serial port, USB path, or custom address."
         },
-        "optional": {
-          "type": "boolean",
-          "default": false
+        "baudrate": {
+          "type": "integer",
+          "description": "**Baudrate** (optional, integer)\n\nSerial baudrate if using serial connection."
+        },
+        "custom": {
+          "type": "object",
+          "description": "**Custom Connection Info** (optional, object)\n\nAdditional fields for custom connection types.",
+          "additionalProperties": true
         }
-      }
+      },
+      "additionalProperties": false
+    },
+    "startup": {
+      "type": "object",
+      "description": "**Startup Options** (optional, object)\n\nAdditional startup configuration (e.g., initialization commands, delays).",
+      "properties": {
+        "init_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "**Initialization Commands** (optional, array)\n\nCommands to send on startup."
+        },
+        "delay_ms": {
+          "type": "integer",
+          "description": "**Startup Delay** (optional, integer)\n\nDelay in milliseconds after connecting before use."
+        }
+      },
+      "additionalProperties": false
+    },
+    "io_config": {
+      "type": "object",
+      "description": "**IO Configuration** (required, object)\n\nConfiguration for each IO port that is an input, output, or inout. Each property key must match the name of an IO port defined in the instrument API with one of these roles. For each IO, you must specify the IO's data type, its role, its physical unit (if applicable), and optional offset and scale values to be applied to the connection.",
+      "patternProperties": {
+        "^[A-Za-z_][A-Za-z0-9_]*$": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "int",
+                "float",
+                "string",
+                "bool"
+              ],
+              "description": "**IO Data Type** (required, string)\n\nThe data type of the IO port. Must be one of: 'int', 'float', 'string', or 'bool'."
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "input",
+                "output",
+                "inout"
+              ],
+              "description": "**IO Role** (required, string)\n\nThe functional role of the IO port. Must be one of: 'input', 'output', or 'inout'."
+            },
+            "unit": {
+              "type": "string",
+              "description": "**Physical Unit** (optional, string)\n\nThe physical unit for the IO port value, such as 'V' for volts, 'Hz' for hertz, or 's' for seconds."
+            },
+            "offset": {
+              "type": "number",
+              "default": 0,
+              "description": "**Offset** (optional, number)\n\nA numeric offset to apply to the IO value. If not specified, the default is 0."
+            },
+            "scale": {
+              "type": "number",
+              "default": 1,
+              "description": "**Scale** (optional, number)\n\nA numeric scale factor to apply to the IO value. If not specified, the default is 1."
+            }
+          },
+          "required": [
+            "type",
+            "role"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
-  }
+  },
+  "additionalProperties": false
 }
 )delim";
-
 } // namespace instserver
