@@ -93,6 +93,8 @@ add_test(
   NAME MockIntegration
   COMMAND test_mock_integration
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(
+  MockIntegration PROPERTIES ENVIRONMENT "PATH=${CMAKE_BINARY_DIR}:$ENV{PATH}")
 # Build mock plugin as part of tests
 add_library(mock_visa_plugin SHARED test_mock_plugin.c)
 target_include_directories(mock_visa_plugin PRIVATE ${CMAKE_SOURCE_DIR}/include)

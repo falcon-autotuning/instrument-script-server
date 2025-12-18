@@ -259,10 +259,11 @@ ProcessManager::spawn_process_impl(const std::vector<std::string> &args) {
 
   pid_t pid;
   int status =
-      posix_spawn(&pid, argv[0], nullptr, nullptr, argv.data(), environ);
+      posix_spawnp(&pid, argv[0], nullptr, nullptr, argv.data(), environ);
 
   if (status != 0) {
-    LOG_ERROR("PROCESS", "SPAWN", "posix_spawn failed: {}", strerror(status));
+    LOG_ERROR("PROCESS", "SPAWN", "posix_spawn failed: {} with arg {}",
+              strerror(status), argv[0]);
     return 0;
   }
 

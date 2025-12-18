@@ -56,7 +56,6 @@ private:
   nlohmann::json api_def_;
 
   std::unique_ptr<ipc::SharedQueue> ipc_queue_;
-  ipc::ProcessManager &process_manager_;
   ipc::ProcessId worker_pid_{0};
 
   // Pending responses (command_id -> promise)
@@ -77,6 +76,13 @@ private:
 
   void response_listener_loop();
   void handle_worker_death();
+  void send_shutdown_message();
+  void stop_worker_process();
+  void join_response_thread_with_timeout();
+  void cleanup_pending_promises();
+  void cleanup_ipc();
+  void handle_ipc_message(const ipc::IPCMessage &msg);
+  void handle_response_message(const ipc::IPCMessage &msg);
 };
 
 } // namespace instserver

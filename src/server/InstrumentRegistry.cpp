@@ -5,19 +5,52 @@
 
 namespace instserver {
 
+static nlohmann::json yaml_to_json(const YAML::Node &node) {
+  if (node.IsNull()) {
+    return nullptr;
+  } else if (node.IsScalar()) {
+    try {
+      return node.as<int64_t>();
+    } catch (...) {
+      try {
+        return node.as<double>();
+      } catch (...) {
+        try {
+          return node.as<bool>();
+        } catch (...) {
+          return node.as<std::string>();
+        }
+      }
+    }
+  } else if (node.IsSequence()) {
+    nlohmann::json arr = nlohmann::json::array();
+    for (const auto &item : node) {
+      arr.push_back(yaml_to_json(item));
+    }
+    return arr;
+  } else if (node.IsMap()) {
+    nlohmann::json obj = nlohmann::json::object();
+    for (const auto &kv : node) {
+      obj[kv.first.as<std::string>()] = yaml_to_json(kv.second);
+    }
+    return obj;
+  }
+  return nullptr;
+}
+
 bool InstrumentRegistry::create_instrument(const std::string &config_path) {
   LOG_INFO("REGISTRY", "CREATE", "Loading instrument from: {}", config_path);
 
   try {
     YAML::Node config_yaml = YAML::LoadFile(config_path);
-    nlohmann::json config = nlohmann::json::parse(YAML::Dump(config_yaml));
+    nlohmann::json config = yaml_to_json(config_yaml);
 
-    std::string name = config["name"];
     std::string api_ref = config["api_ref"];
 
     YAML::Node api_yaml = YAML::LoadFile(api_ref);
-    nlohmann::json api_def = nlohmann::json::parse(YAML::Dump(api_yaml));
+    nlohmann::json api_def = yaml_to_json(api_yaml);
 
+    std::string name = config["name"];
     return create_instrument_from_json(name, config, api_def);
   } catch (const std::exception &ex) {
     LOG_ERROR("REGISTRY", "CREATE", "Failed to load config: {}", ex.what());
@@ -120,6 +153,7 @@ void InstrumentRegistry::stop_all() {
                 e.what());
     }
   }
+  instruments_.clear();
 }
 
 void InstrumentRegistry::start_all() {

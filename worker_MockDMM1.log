@@ -1,0 +1,90 @@
+[2025-12-18 01:31:32.419] [instrument] [info] [MockDMM1] [WORKER_MAIN] Starting worker for instrument: MockDMM1
+[2025-12-18 01:31:32.419] [instrument] [info] [MockDMM1] [WORKER_MAIN] Plugin path: /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:32.419] [instrument] [info] [PLUGIN] [LOAD] Loading plugin: /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:32.419] [instrument] [info] [PLUGIN] [LOAD] Plugin loaded successfully:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:32.419] [instrument] [info] [MockDMM1] [WORKER_MAIN] Loaded plugin: Mock VISA v1.0.0
+[2025-12-18 01:31:32.419] [instrument] [info] [IPC] [QUEUE_OPEN] Opened queues for instrument: MockDMM1
+[2025-12-18 01:31:32.419] [instrument] [info] [MockDMM1] [WORKER_MAIN] IPC queues opened
+[2025-12-18 01:31:32.419] [instrument] [info] [PLUGIN] [INIT] Initializing plugin for instrument: MockDMM1
+[2025-12-18 01:31:32.419] [instrument] [info] [MockDMM1] [WORKER_MAIN] Plugin initialized, entering main loop
+[2025-12-18 01:31:33.418] [instrument] [info] [MockDMM1] [WORKER_MAIN] Received shutdown message
+[2025-12-18 01:31:33.418] [instrument] [info] [MockDMM1] [WORKER_MAIN] Shutting down worker
+[2025-12-18 01:31:33.418] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:33.418] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:34.530] [instrument] [info] [MockDMM1] [WORKER_MAIN] Starting worker for instrument: MockDMM1
+[2025-12-18 01:31:34.530] [instrument] [info] [MockDMM1] [WORKER_MAIN] Plugin path: /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:34.530] [instrument] [info] [PLUGIN] [LOAD] Loading plugin: /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:34.530] [instrument] [info] [PLUGIN] [LOAD] Plugin loaded successfully:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:34.530] [instrument] [info] [MockDMM1] [WORKER_MAIN] Loaded plugin: Mock VISA v1.0.0
+[2025-12-18 01:31:34.530] [instrument] [info] [IPC] [QUEUE_OPEN] Opened queues for instrument: MockDMM1
+[2025-12-18 01:31:34.530] [instrument] [info] [MockDMM1] [WORKER_MAIN] IPC queues opened
+[2025-12-18 01:31:34.530] [instrument] [info] [PLUGIN] [INIT] Initializing plugin for instrument: MockDMM1
+[2025-12-18 01:31:34.530] [instrument] [info] [MockDMM1] [WORKER_MAIN] Plugin initialized, entering main loop
+[2025-12-18 01:31:35.528] [instrument] [debug] [MockDMM1] [MockDMM1-1] Received command: SET_VOLTAGE
+[2025-12-18 01:31:35.528] [instrument] [debug] [MockDMM1] [MockDMM1-1] Command executed: success=true
+[2025-12-18 01:31:35.528] [instrument] [debug] [MockDMM1] [MockDMM1-2] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:35.528] [instrument] [debug] [MockDMM1] [MockDMM1-2] Command executed: success=true
+[2025-12-18 01:31:35.528] [instrument] [info] [MockDMM1] [WORKER_MAIN] Received shutdown message
+[2025-12-18 01:31:35.528] [instrument] [info] [MockDMM1] [WORKER_MAIN] Shutting down worker
+[2025-12-18 01:31:35.528] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:35.529] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:36.638] [instrument] [info] [MockDMM1] [WORKER_MAIN] Starting worker for instrument: MockDMM1
+[2025-12-18 01:31:36.638] [instrument] [info] [MockDMM1] [WORKER_MAIN] Plugin path: /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:36.638] [instrument] [info] [PLUGIN] [LOAD] Loading plugin: /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:36.638] [instrument] [info] [PLUGIN] [LOAD] Plugin loaded successfully:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:36.638] [instrument] [info] [MockDMM1] [WORKER_MAIN] Loaded plugin: Mock VISA v1.0.0
+[2025-12-18 01:31:36.639] [instrument] [info] [IPC] [QUEUE_OPEN] Opened queues for instrument: MockDMM1
+[2025-12-18 01:31:36.639] [instrument] [info] [MockDMM1] [WORKER_MAIN] IPC queues opened
+[2025-12-18 01:31:36.639] [instrument] [info] [PLUGIN] [INIT] Initializing plugin for instrument: MockDMM1
+[2025-12-18 01:31:36.639] [instrument] [info] [MockDMM1] [WORKER_MAIN] Plugin initialized, entering main loop
+[2025-12-18 01:31:37.637] [instrument] [debug] [MockDMM1] [MockDMM1-1] Received command: SET_VOLTAGE
+[2025-12-18 01:31:37.637] [instrument] [debug] [MockDMM1] [MockDMM1-1] Command executed: success=true
+[2025-12-18 01:31:37.638] [instrument] [debug] [MockDMM1] [MockDMM1-2] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:37.638] [instrument] [debug] [MockDMM1] [MockDMM1-2] Command executed: success=true
+[2025-12-18 01:31:37.638] [instrument] [debug] [MockDMM1] [MockDMM1-3] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:37.638] [instrument] [debug] [MockDMM1] [MockDMM1-3] Command executed: success=true
+[2025-12-18 01:31:37.639] [instrument] [debug] [MockDMM1] [MockDMM1-4] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:37.639] [instrument] [debug] [MockDMM1] [MockDMM1-4] Command executed: success=true
+[2025-12-18 01:31:37.639] [instrument] [debug] [MockDMM1] [MockDMM1-5] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:37.639] [instrument] [debug] [MockDMM1] [MockDMM1-5] Command executed: success=true
+[2025-12-18 01:31:37.640] [instrument] [debug] [MockDMM1] [MockDMM1-6] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:37.640] [instrument] [debug] [MockDMM1] [MockDMM1-6] Command executed: success=true
+[2025-12-18 01:31:37.640] [instrument] [debug] [MockDMM1] [MockDMM1-7] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:37.640] [instrument] [debug] [MockDMM1] [MockDMM1-7] Command executed: success=true
+[2025-12-18 01:31:37.640] [instrument] [debug] [MockDMM1] [MockDMM1-8] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:37.640] [instrument] [debug] [MockDMM1] [MockDMM1-8] Command executed: success=true
+[2025-12-18 01:31:37.640] [instrument] [debug] [MockDMM1] [MockDMM1-9] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:37.640] [instrument] [debug] [MockDMM1] [MockDMM1-9] Command executed: success=true
+[2025-12-18 01:31:37.640] [instrument] [debug] [MockDMM1] [MockDMM1-10] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:37.640] [instrument] [debug] [MockDMM1] [MockDMM1-10] Command executed: success=true
+[2025-12-18 01:31:37.640] [instrument] [debug] [MockDMM1] [MockDMM1-11] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:37.640] [instrument] [debug] [MockDMM1] [MockDMM1-11] Command executed: success=true
+[2025-12-18 01:31:37.641] [instrument] [debug] [MockDMM1] [MockDMM1-12] Received command: GET_MEASUREMENT_COUNT
+[2025-12-18 01:31:37.641] [instrument] [debug] [MockDMM1] [MockDMM1-12] Command executed: success=true
+[2025-12-18 01:31:37.641] [instrument] [info] [MockDMM1] [WORKER_MAIN] Received shutdown message
+[2025-12-18 01:31:37.641] [instrument] [info] [MockDMM1] [WORKER_MAIN] Shutting down worker
+[2025-12-18 01:31:37.641] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:37.641] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:38.752] [instrument] [info] [MockDMM1] [WORKER_MAIN] Starting worker for instrument: MockDMM1
+[2025-12-18 01:31:38.752] [instrument] [info] [MockDMM1] [WORKER_MAIN] Plugin path: /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:38.752] [instrument] [info] [PLUGIN] [LOAD] Loading plugin: /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:38.752] [instrument] [info] [PLUGIN] [LOAD] Plugin loaded successfully:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:38.752] [instrument] [info] [MockDMM1] [WORKER_MAIN] Loaded plugin: Mock VISA v1.0.0
+[2025-12-18 01:31:38.752] [instrument] [info] [IPC] [QUEUE_OPEN] Opened queues for instrument: MockDMM1
+[2025-12-18 01:31:38.752] [instrument] [info] [MockDMM1] [WORKER_MAIN] IPC queues opened
+[2025-12-18 01:31:38.752] [instrument] [info] [PLUGIN] [INIT] Initializing plugin for instrument: MockDMM1
+[2025-12-18 01:31:38.752] [instrument] [info] [MockDMM1] [WORKER_MAIN] Plugin initialized, entering main loop
+[2025-12-18 01:31:39.750] [instrument] [debug] [MockDMM1] [MockDMM1-1] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:39.750] [instrument] [debug] [MockDMM1] [MockDMM1-1] Command executed: success=true
+[2025-12-18 01:31:39.750] [instrument] [debug] [MockDMM1] [MockDMM1-2] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:39.750] [instrument] [debug] [MockDMM1] [MockDMM1-2] Command executed: success=true
+[2025-12-18 01:31:39.750] [instrument] [debug] [MockDMM1] [MockDMM1-3] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:39.750] [instrument] [debug] [MockDMM1] [MockDMM1-3] Command executed: success=true
+[2025-12-18 01:31:39.750] [instrument] [debug] [MockDMM1] [MockDMM1-4] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:39.750] [instrument] [debug] [MockDMM1] [MockDMM1-4] Command executed: success=true
+[2025-12-18 01:31:39.750] [instrument] [debug] [MockDMM1] [MockDMM1-5] Received command: MEASURE_VOLTAGE
+[2025-12-18 01:31:39.750] [instrument] [debug] [MockDMM1] [MockDMM1-5] Command executed: success=true
+[2025-12-18 01:31:39.750] [instrument] [info] [MockDMM1] [WORKER_MAIN] Received shutdown message
+[2025-12-18 01:31:39.750] [instrument] [info] [MockDMM1] [WORKER_MAIN] Shutting down worker
+[2025-12-18 01:31:39.750] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:31:39.751] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  /tmp/mock_visa_plugin.so

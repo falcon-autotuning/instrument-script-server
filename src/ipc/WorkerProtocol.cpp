@@ -1,40 +1,45 @@
+// src/ipc/WorkerProtocol. cpp
+#include "instrument-server/ipc/WorkerProtocol.hpp"
 
-
-#include "instrument-server/SerializedCommand.hpp"
-#include <string>
 namespace instserver {
 namespace ipc {
-
-// Helper: get type name for ParamValue
-static std::string param_type_name(const ParamValue &val) {
+std::string param_type_name(const ParamValue &val) {
   return std::visit(
       [](auto &&arg) -> std::string {
         using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, std::monostate>)
-          return "null";
-        if constexpr (std::is_same_v<T, bool>)
-          return "bool";
         if constexpr (std::is_same_v<T, int64_t>)
-          return "int64";
-        if constexpr (std::is_same_v<T, uint64_t>)
-          return "uint64";
-        if constexpr (std::is_same_v<T, double>)
+          return "int64_t";
+        else if constexpr (std::is_same_v<T, int32_t>)
+          return "int32_t";
+        else if constexpr (std::is_same_v<T, uint64_t>)
+          return "uint64_t";
+        else if constexpr (std::is_same_v<T, uint32_t>)
+          return "uint32_t";
+        else if constexpr (std::is_same_v<T, double>)
           return "double";
-        if constexpr (std::is_same_v<T, std::string>)
+        else if constexpr (std::is_same_v<T, float>)
+          return "float";
+        else if constexpr (std::is_same_v<T, bool>)
+          return "bool";
+        else if constexpr (std::is_same_v<T, std::string>)
           return "string";
-        if constexpr (std::is_same_v<T, std::vector<double>>)
-          return "double_array";
-        if constexpr (std::is_same_v<T, std::vector<int32_t>>)
-          return "int32_array";
-        return "unknown";
+        else if constexpr (std::is_same_v<T, std::vector<double>>)
+          return "vector<double>";
+        else if constexpr (std::is_same_v<T, std::vector<int32_t>>)
+          return "vector<int32_t>";
+        else if constexpr (std::is_same_v<T, std::vector<uint8_t>>)
+          return "vector<uint8_t>";
+        else if constexpr (std::is_same_v<T, std::monostate>)
+          return "monostate";
+        else
+          return "unknown";
       },
       val);
 }
 
-// Serialize ParamValue with type info
 nlohmann::json param_value_to_json(const ParamValue &val) {
   nlohmann::json j;
-  j["type"] = param_type_name(val);
+  j["type"] = param_type_name(val); // You must implement param_type_name
   j["value"] = std::visit(
       [](auto &&arg) -> nlohmann::json {
         using T = std::decay_t<decltype(arg)>;
@@ -48,28 +53,39 @@ nlohmann::json param_value_to_json(const ParamValue &val) {
   return j;
 }
 
-// Deserialize ParamValue using type info
 ParamValue json_to_param_value(const nlohmann::json &j) {
   if (!j.is_object() || !j.contains("type") || !j.contains("value"))
     return std::monostate{};
+
   const std::string &type = j["type"];
-  const nlohmann::json &value = j["value"];
-  if (type == "null")
-    return std::monostate{};
-  if (type == "bool")
-    return value.get<bool>();
-  if (type == "int64")
+  const auto &value = j["value"];
+
+  if (type == "int64_t") {
     return value.get<int64_t>();
-  if (type == "uint64")
+  } else if (type == "int32_t") {
+    return value.get<int32_t>();
+  } else if (type == "uint32_t") {
+    return value.get<uint32_t>();
+  } else if (type == "uint64_t") {
     return value.get<uint64_t>();
-  if (type == "double")
+  } else if (type == "double") {
     return value.get<double>();
-  if (type == "string")
+  } else if (type == "float") {
+    return value.get<float>();
+  } else if (type == "bool") {
+    return value.get<bool>();
+  } else if (type == "string") {
     return value.get<std::string>();
-  if (type == "double_array")
+  } else if (type == "vector<double>") {
     return value.get<std::vector<double>>();
-  if (type == "int32_array")
+  } else if (type == "vector<int32_t>") {
     return value.get<std::vector<int32_t>>();
+  } else if (type == "vector<uint8_t>") {
+    return value.get<std::vector<uint8_t>>();
+  } else if (type == "monostate") {
+    return std::monostate{};
+  }
+  // Add more types as needed
   return std::monostate{};
 }
 
@@ -149,8 +165,6 @@ std::string serialize_response(const CommandResponse &resp) {
   if (resp.return_value) {
     j["return_value"] = param_value_to_json(*resp.return_value);
   }
-
-  // Don't serialize binary_response for now (can add base64 encoding if needed)
 
   return j.dump();
 }

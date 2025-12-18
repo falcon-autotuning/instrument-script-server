@@ -1,0 +1,13 @@
+[2025-12-18 01:31:32.237] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments
+[2025-12-18 01:31:32.237] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments
+[2025-12-18 01:31:32.237] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments
+[2025-12-18 01:31:32.237] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments
+[2025-12-18 01:31:32.237] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /nonexistent/config.yaml
+[2025-12-18 01:31:32.237] [instrument] [error] [REGISTRY] [CREATE] Failed to load config: bad file: /nonexistent/config.yaml
+[2025-12-18 01:31:32.237] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments
+[2025-12-18 01:31:32.237] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /tmp/invalid.yaml
+[2025-12-18 01:31:32.237] [instrument] [error] [REGISTRY] [CREATE] Failed to load config: yaml-cpp: error at line 1, column 14: illegal map value
+[2025-12-18 01:31:32.237] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments
+[2025-12-18 01:31:32.237] [instrument] [info] [REGISTRY] [START_ALL] Starting 0 instruments
+[2025-12-18 01:31:32.237] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments
+[2025-12-18 01:31:32.237] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments

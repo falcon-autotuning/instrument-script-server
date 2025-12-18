@@ -6,16 +6,30 @@
 
 using namespace instserver;
 
+// tests/test_instrument_registry.cpp - Fix teardown
 class InstrumentRegistryTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    InstrumentLogger::instance().init("test. log", spdlog::level::debug);
+    // Initialize logger only once globally
+    static bool logger_initialized = false;
+    if (!logger_initialized) {
+      InstrumentLogger::instance().init("test.log", spdlog::level::debug);
+      logger_initialized = true;
+    }
     registry_ = &InstrumentRegistry::instance();
   }
 
-  void TearDown() override { registry_->stop_all(); }
+  void TearDown() override {
+    if (registry_) {
+      try {
+        registry_->stop_all();
+      } catch (...) {
+        // Ignore errors during teardown
+      }
+    }
+  }
 
-  InstrumentRegistry *registry_;
+  InstrumentRegistry *registry_{nullptr};
 };
 
 TEST_F(InstrumentRegistryTest, ListInstrumentsEmpty) {

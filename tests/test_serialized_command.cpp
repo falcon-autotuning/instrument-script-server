@@ -46,13 +46,14 @@ TEST_F(SerializedCommandTest, ParamsAllTypes) {
 
   auto json = cmd_.to_json();
 
-  EXPECT_EQ(json["params"]["int_val"], 42);
-  EXPECT_EQ(json["params"]["uint_val"], 100);
-  EXPECT_NEAR(json["params"]["double_val"].get<double>(), 3.14159, 1e-5);
-  EXPECT_TRUE(json["params"]["bool_val"]);
-  EXPECT_EQ(json["params"]["string_val"], "hello");
-  EXPECT_EQ(json["params"]["array_double"].size(), 3);
-  EXPECT_EQ(json["params"]["array_int"][0], 1);
+  EXPECT_EQ(json["params"]["int_val"]["value"], 42);
+  EXPECT_EQ(json["params"]["uint_val"]["value"], 100);
+  EXPECT_NEAR(json["params"]["double_val"]["value"].get<double>(), 3.14159,
+              1e-5);
+  EXPECT_TRUE(json["params"]["bool_val"]["value"]);
+  EXPECT_EQ(json["params"]["string_val"]["value"], "hello");
+  EXPECT_EQ(json["params"]["array_double"]["value"].size(), 3);
+  EXPECT_EQ(json["params"]["array_int"]["value"][0], 1);
 }
 
 TEST_F(SerializedCommandTest, SerializationRoundTrip) {
@@ -121,7 +122,7 @@ TEST_F(CommandResponseTest, ToJsonSuccess) {
   EXPECT_TRUE(json["success"]);
   EXPECT_EQ(json["error_code"], 0);
   EXPECT_EQ(json["text_response"], "3.142");
-  EXPECT_NEAR(json["return_value"].get<double>(), 3.142, 1e-3);
+  EXPECT_NEAR(json["return_value"]["value"].get<double>(), 3.142, 1e-3);
 }
 
 TEST_F(CommandResponseTest, ToJsonFailure) {

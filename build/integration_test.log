@@ -1,0 +1,241 @@
+[2025-12-18 01:40:04.769] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /tmp/mock_config.yaml
+[2025-12-18 01:40:04.770] [instrument] [info] [REGISTRY] [CREATE] Creating instrument 'MockDMM1' with protocol 'MockVISA' using plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:40:04.770] [instrument] [info] [MockDMM1] [PROXY] Starting worker proxy
+[2025-12-18 01:40:04.770] [instrument] [info] [IPC] [QUEUE_CREATE] Created queues for instrument: MockDMM1
+[2025-12-18 01:40:04.770] [instrument] [info] [PROCESS] [SPAWN] Spawning worker for instrument:  MockDMM1 with plugin: /tmp/mock_visa_plugin.so
+[2025-12-18 01:40:04.770] [instrument] [error] [PROCESS] [SPAWN] posix_spawn failed: No such file or directory with arg instrument-worker
+[2025-12-18 01:40:04.770] [instrument] [error] [PROCESS] [SPAWN] Failed to spawn worker for:  MockDMM1
+[2025-12-18 01:40:04.770] [instrument] [error] [MockDMM1] [PROXY] Failed to spawn worker process
+[2025-12-18 01:40:04.770] [instrument] [error] [REGISTRY] [CREATE] Failed to start worker for:  MockDMM1
+[2025-12-18 01:40:04.770] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments
+[2025-12-18 01:40:04.770] [instrument] [info] [PROCESS] [CLEANUP] Cleaning up all worker processes
+[2025-12-18 01:42:17.508] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /tmp/mock_config.yaml
+[2025-12-18 01:42:17.509] [instrument] [info] [REGISTRY] [CREATE] Creating instrument 'MockDMM1' with protocol 'MockVISA' using plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:42:17.509] [instrument] [info] [MockDMM1] [PROXY] Starting worker proxy
+[2025-12-18 01:42:17.509] [instrument] [info] [IPC] [QUEUE_CREATE] Created queues for instrument: MockDMM1
+[2025-12-18 01:42:17.509] [instrument] [info] [PROCESS] [SPAWN] Spawning worker for instrument:  MockDMM1 with plugin: /tmp/mock_visa_plugin.so
+[2025-12-18 01:42:17.510] [instrument] [info] [PROCESS] [SPAWN] Worker spawned successfully:  PID=115698
+[2025-12-18 01:42:17.510] [instrument] [info] [MockDMM1] [PROXY] Worker process spawned:  PID=115698
+[2025-12-18 01:42:17.510] [instrument] [info] [MockDMM1] [PROXY] Response listener started
+[2025-12-18 01:42:17.610] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:17.710] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:17.810] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:17.910] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:18.010] [instrument] [info] [MockDMM1] [PROXY] Worker proxy started successfully
+[2025-12-18 01:42:18.010] [instrument] [info] [REGISTRY] [CREATE] Instrument 'MockDMM1' created successfully
+[2025-12-18 01:42:18.010] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:18.110] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:18.210] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:18.311] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:18.411] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:18.510] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 1 instruments
+[2025-12-18 01:42:18.510] [instrument] [info] [MockDMM1] [PROXY] Stopping worker proxy
+[2025-12-18 01:42:18.511] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:18.511] [instrument] [info] [MockDMM1] [PROXY] Response listener stopped
+[2025-12-18 01:42:19.616] [instrument] [error] [MockDMM1] [PROXY] Response thread did not exit in time, detaching
+[2025-12-18 01:42:19.616] [instrument] [info] [IPC] [QUEUE_CLEANUP] Cleaned up queues for:  MockDMM1
+[2025-12-18 01:42:19.616] [instrument] [info] [MockDMM1] [PROXY] Worker proxy stopped
+[2025-12-18 01:42:19.616] [instrument] [info] [PROCESS] [CLEANUP] Cleaning up all worker processes
+[2025-12-18 01:42:19.616] [instrument] [info] [PROCESS] [KILL] Killing process: PID=115698 (force=true)
+[2025-12-18 01:42:41.289] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /tmp/mock_config.yaml
+[2025-12-18 01:42:41.289] [instrument] [info] [REGISTRY] [CREATE] Creating instrument 'MockDMM1' with protocol 'MockVISA' using plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:42:41.289] [instrument] [info] [MockDMM1] [PROXY] Starting worker proxy
+[2025-12-18 01:42:41.290] [instrument] [info] [IPC] [QUEUE_CREATE] Created queues for instrument: MockDMM1
+[2025-12-18 01:42:41.290] [instrument] [info] [PROCESS] [SPAWN] Spawning worker for instrument:  MockDMM1 with plugin: /tmp/mock_visa_plugin.so
+[2025-12-18 01:42:41.290] [instrument] [info] [PROCESS] [SPAWN] Worker spawned successfully:  PID=115817
+[2025-12-18 01:42:41.290] [instrument] [info] [MockDMM1] [PROXY] Worker process spawned:  PID=115817
+[2025-12-18 01:42:41.290] [instrument] [info] [MockDMM1] [PROXY] Response listener started
+[2025-12-18 01:42:41.390] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:41.490] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:41.591] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:41.691] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:41.790] [instrument] [info] [MockDMM1] [PROXY] Worker proxy started successfully
+[2025-12-18 01:42:41.790] [instrument] [info] [REGISTRY] [CREATE] Instrument 'MockDMM1' created successfully
+[2025-12-18 01:42:41.791] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:41.891] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:41.991] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:42.091] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:42.191] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:42.290] [instrument] [debug] [MockDMM1] [MockDMM1-1] Enqueueing command: SET_VOLTAGE
+[2025-12-18 01:42:42.291] [instrument] [debug] [MockDMM1] [MockDMM1-1] Received response: success=true
+[2025-12-18 01:42:42.291] [instrument] [debug] [MockDMM1] [MockDMM1-2] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:42:42.292] [instrument] [debug] [MockDMM1] [MockDMM1-2] Received response: success=true
+[2025-12-18 01:42:42.292] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 1 instruments
+[2025-12-18 01:42:42.292] [instrument] [info] [MockDMM1] [PROXY] Stopping worker proxy
+[2025-12-18 01:42:42.392] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:42:42.392] [instrument] [info] [MockDMM1] [PROXY] Response listener stopped
+[2025-12-18 01:42:43.400] [instrument] [error] [MockDMM1] [PROXY] Response thread did not exit in time, detaching
+[2025-12-18 01:42:43.400] [instrument] [info] [IPC] [QUEUE_CLEANUP] Cleaned up queues for:  MockDMM1
+[2025-12-18 01:42:43.400] [instrument] [info] [MockDMM1] [PROXY] Worker proxy stopped
+[2025-12-18 01:42:43.401] [instrument] [info] [PROCESS] [CLEANUP] Cleaning up all worker processes
+[2025-12-18 01:42:43.401] [instrument] [info] [PROCESS] [KILL] Killing process: PID=115817 (force=true)
+[2025-12-18 01:43:00.012] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /tmp/mock_config.yaml
+[2025-12-18 01:43:00.013] [instrument] [info] [REGISTRY] [CREATE] Creating instrument 'MockDMM1' with protocol 'MockVISA' using plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:43:00.013] [instrument] [info] [MockDMM1] [PROXY] Starting worker proxy
+[2025-12-18 01:43:00.013] [instrument] [info] [IPC] [QUEUE_CREATE] Created queues for instrument: MockDMM1
+[2025-12-18 01:43:00.013] [instrument] [info] [PROCESS] [SPAWN] Spawning worker for instrument:  MockDMM1 with plugin: /tmp/mock_visa_plugin.so
+[2025-12-18 01:43:00.013] [instrument] [info] [PROCESS] [SPAWN] Worker spawned successfully:  PID=115975
+[2025-12-18 01:43:00.013] [instrument] [info] [MockDMM1] [PROXY] Worker process spawned:  PID=115975
+[2025-12-18 01:43:00.014] [instrument] [info] [MockDMM1] [PROXY] Response listener started
+[2025-12-18 01:43:00.114] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:00.214] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:00.314] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:00.414] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:00.514] [instrument] [info] [MockDMM1] [PROXY] Worker proxy started successfully
+[2025-12-18 01:43:00.514] [instrument] [info] [REGISTRY] [CREATE] Instrument 'MockDMM1' created successfully
+[2025-12-18 01:43:00.514] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:00.614] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:00.714] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:00.814] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:00.915] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:01.014] [instrument] [debug] [MockDMM1] [MockDMM1-1] Enqueueing command: SET_VOLTAGE
+[2025-12-18 01:43:01.014] [instrument] [debug] [MockDMM1] [MockDMM1-1] Received response: success=true
+[2025-12-18 01:43:01.015] [instrument] [debug] [MockDMM1] [MockDMM1-2] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:01.015] [instrument] [debug] [MockDMM1] [MockDMM1-2] Received response: success=true
+[2025-12-18 01:43:01.015] [instrument] [debug] [MockDMM1] [MockDMM1-3] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:01.015] [instrument] [debug] [MockDMM1] [MockDMM1-3] Received response: success=true
+[2025-12-18 01:43:01.015] [instrument] [debug] [MockDMM1] [MockDMM1-4] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:01.015] [instrument] [debug] [MockDMM1] [MockDMM1-4] Received response: success=true
+[2025-12-18 01:43:01.015] [instrument] [debug] [MockDMM1] [MockDMM1-5] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:01.015] [instrument] [debug] [MockDMM1] [MockDMM1-5] Received response: success=true
+[2025-12-18 01:43:01.016] [instrument] [debug] [MockDMM1] [MockDMM1-6] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:01.016] [instrument] [debug] [MockDMM1] [MockDMM1-6] Received response: success=true
+[2025-12-18 01:43:01.016] [instrument] [debug] [MockDMM1] [MockDMM1-7] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:01.016] [instrument] [debug] [MockDMM1] [MockDMM1-7] Received response: success=true
+[2025-12-18 01:43:01.016] [instrument] [debug] [MockDMM1] [MockDMM1-8] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:01.016] [instrument] [debug] [MockDMM1] [MockDMM1-8] Received response: success=true
+[2025-12-18 01:43:01.016] [instrument] [debug] [MockDMM1] [MockDMM1-9] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:01.017] [instrument] [debug] [MockDMM1] [MockDMM1-9] Received response: success=true
+[2025-12-18 01:43:01.017] [instrument] [debug] [MockDMM1] [MockDMM1-10] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:01.017] [instrument] [debug] [MockDMM1] [MockDMM1-10] Received response: success=true
+[2025-12-18 01:43:01.017] [instrument] [debug] [MockDMM1] [MockDMM1-11] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:01.017] [instrument] [debug] [MockDMM1] [MockDMM1-11] Received response: success=true
+[2025-12-18 01:43:01.017] [instrument] [debug] [MockDMM1] [MockDMM1-12] Enqueueing command: GET_MEASUREMENT_COUNT
+[2025-12-18 01:43:01.017] [instrument] [debug] [MockDMM1] [MockDMM1-12] Received response: success=true
+[2025-12-18 01:43:01.018] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 1 instruments
+[2025-12-18 01:43:01.018] [instrument] [info] [MockDMM1] [PROXY] Stopping worker proxy
+[2025-12-18 01:43:01.118] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:01.118] [instrument] [info] [MockDMM1] [PROXY] Response listener stopped
+[2025-12-18 01:43:02.125] [instrument] [error] [MockDMM1] [PROXY] Response thread did not exit in time, detaching
+[2025-12-18 01:43:02.125] [instrument] [info] [IPC] [QUEUE_CLEANUP] Cleaned up queues for:  MockDMM1
+[2025-12-18 01:43:02.125] [instrument] [info] [MockDMM1] [PROXY] Worker proxy stopped
+[2025-12-18 01:43:02.125] [instrument] [info] [PROCESS] [CLEANUP] Cleaning up all worker processes
+[2025-12-18 01:43:02.125] [instrument] [info] [PROCESS] [KILL] Killing process: PID=115975 (force=true)
+[2025-12-18 01:43:15.266] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /tmp/mock_config.yaml
+[2025-12-18 01:43:15.267] [instrument] [info] [REGISTRY] [CREATE] Creating instrument 'MockDMM1' with protocol 'MockVISA' using plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:43:15.267] [instrument] [info] [MockDMM1] [PROXY] Starting worker proxy
+[2025-12-18 01:43:15.267] [instrument] [info] [IPC] [QUEUE_CREATE] Created queues for instrument: MockDMM1
+[2025-12-18 01:43:15.267] [instrument] [info] [PROCESS] [SPAWN] Spawning worker for instrument:  MockDMM1 with plugin: /tmp/mock_visa_plugin.so
+[2025-12-18 01:43:15.268] [instrument] [info] [PROCESS] [SPAWN] Worker spawned successfully:  PID=116100
+[2025-12-18 01:43:15.268] [instrument] [info] [MockDMM1] [PROXY] Worker process spawned:  PID=116100
+[2025-12-18 01:43:15.268] [instrument] [info] [MockDMM1] [PROXY] Response listener started
+[2025-12-18 01:43:15.368] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:15.468] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:15.568] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:15.668] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:15.768] [instrument] [info] [MockDMM1] [PROXY] Worker proxy started successfully
+[2025-12-18 01:43:15.768] [instrument] [info] [REGISTRY] [CREATE] Instrument 'MockDMM1' created successfully
+[2025-12-18 01:43:15.768] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:15.868] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:15.969] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:16.069] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:16.169] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:16.268] [instrument] [debug] [MockDMM1] [MockDMM1-1] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:16.268] [instrument] [debug] [MockDMM1] [MockDMM1-2] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:16.268] [instrument] [debug] [MockDMM1] [MockDMM1-3] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:16.268] [instrument] [debug] [MockDMM1] [MockDMM1-4] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:16.268] [instrument] [debug] [MockDMM1] [MockDMM1-5] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:43:16.269] [instrument] [debug] [MockDMM1] [MockDMM1-1] Received response: success=true
+[2025-12-18 01:43:16.269] [instrument] [debug] [MockDMM1] [MockDMM1-2] Received response: success=true
+[2025-12-18 01:43:16.269] [instrument] [debug] [MockDMM1] [MockDMM1-3] Received response: success=true
+[2025-12-18 01:43:16.269] [instrument] [debug] [MockDMM1] [MockDMM1-4] Received response: success=true
+[2025-12-18 01:43:16.269] [instrument] [debug] [MockDMM1] [MockDMM1-5] Received response: success=true
+[2025-12-18 01:43:16.269] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 1 instruments
+[2025-12-18 01:43:16.269] [instrument] [info] [MockDMM1] [PROXY] Stopping worker proxy
+[2025-12-18 01:43:16.369] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:16.369] [instrument] [info] [MockDMM1] [PROXY] Response listener stopped
+[2025-12-18 01:43:17.375] [instrument] [error] [MockDMM1] [PROXY] Response thread did not exit in time, detaching
+[2025-12-18 01:43:17.376] [instrument] [info] [IPC] [QUEUE_CLEANUP] Cleaned up queues for:  MockDMM1
+[2025-12-18 01:43:17.376] [instrument] [info] [MockDMM1] [PROXY] Worker proxy stopped
+[2025-12-18 01:43:17.376] [instrument] [info] [PROCESS] [CLEANUP] Cleaning up all worker processes
+[2025-12-18 01:43:17.376] [instrument] [info] [PROCESS] [KILL] Killing process: PID=116100 (force=true)
+[2025-12-18 01:43:50.274] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /tmp/mock_config.yaml
+[2025-12-18 01:43:50.275] [instrument] [info] [REGISTRY] [CREATE] Creating instrument 'MockDMM1' with protocol 'MockVISA' using plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:43:50.275] [instrument] [info] [MockDMM1] [PROXY] Starting worker proxy
+[2025-12-18 01:43:50.275] [instrument] [info] [IPC] [QUEUE_CREATE] Created queues for instrument: MockDMM1
+[2025-12-18 01:43:50.275] [instrument] [info] [PROCESS] [SPAWN] Spawning worker for instrument:  MockDMM1 with plugin: /tmp/mock_visa_plugin.so
+[2025-12-18 01:43:50.276] [instrument] [info] [PROCESS] [SPAWN] Worker spawned successfully:  PID=116391
+[2025-12-18 01:43:50.276] [instrument] [info] [MockDMM1] [PROXY] Worker process spawned:  PID=116391
+[2025-12-18 01:43:50.276] [instrument] [info] [MockDMM1] [PROXY] Response listener started
+[2025-12-18 01:43:50.376] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:50.476] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:50.576] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:50.676] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:50.776] [instrument] [info] [MockDMM1] [PROXY] Worker proxy started successfully
+[2025-12-18 01:43:50.776] [instrument] [info] [REGISTRY] [CREATE] Instrument 'MockDMM1' created successfully
+[2025-12-18 01:43:50.776] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:50.876] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:50.976] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:51.076] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:51.177] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:51.276] [instrument] [debug] [MockDMM1] [MockDMM1-1] Enqueueing command: UNKNOWN_COMMAND
+[2025-12-18 01:43:51.276] [instrument] [debug] [MockDMM1] [MockDMM1-1] Received response: success=false
+[2025-12-18 01:43:51.276] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 1 instruments
+[2025-12-18 01:43:51.276] [instrument] [info] [MockDMM1] [PROXY] Stopping worker proxy
+[2025-12-18 01:43:51.377] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:43:51.377] [instrument] [info] [MockDMM1] [PROXY] Response listener stopped
+[2025-12-18 01:43:52.383] [instrument] [error] [MockDMM1] [PROXY] Response thread did not exit in time, detaching
+[2025-12-18 01:43:52.383] [instrument] [info] [IPC] [QUEUE_CLEANUP] Cleaned up queues for:  MockDMM1
+[2025-12-18 01:43:52.383] [instrument] [info] [MockDMM1] [PROXY] Worker proxy stopped
+[2025-12-18 01:43:52.383] [instrument] [info] [PROCESS] [CLEANUP] Cleaning up all worker processes
+[2025-12-18 01:43:52.383] [instrument] [info] [PROCESS] [KILL] Killing process: PID=116391 (force=true)
+[2025-12-18 01:44:03.556] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /tmp/mock_config.yaml
+[2025-12-18 01:44:03.556] [instrument] [info] [REGISTRY] [CREATE] Creating instrument 'MockDMM1' with protocol 'MockVISA' using plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:44:03.556] [instrument] [info] [MockDMM1] [PROXY] Starting worker proxy
+[2025-12-18 01:44:03.557] [instrument] [info] [IPC] [QUEUE_CREATE] Created queues for instrument: MockDMM1
+[2025-12-18 01:44:03.557] [instrument] [info] [PROCESS] [SPAWN] Spawning worker for instrument:  MockDMM1 with plugin: /tmp/mock_visa_plugin.so
+[2025-12-18 01:44:03.557] [instrument] [info] [PROCESS] [SPAWN] Worker spawned successfully:  PID=116495
+[2025-12-18 01:44:03.557] [instrument] [info] [MockDMM1] [PROXY] Worker process spawned:  PID=116495
+[2025-12-18 01:44:03.557] [instrument] [info] [MockDMM1] [PROXY] Response listener started
+[2025-12-18 01:44:03.657] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:44:03.757] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:44:03.857] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:44:03.958] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:44:04.057] [instrument] [info] [MockDMM1] [PROXY] Worker proxy started successfully
+[2025-12-18 01:44:04.057] [instrument] [info] [REGISTRY] [CREATE] Instrument 'MockDMM1' created successfully
+[2025-12-18 01:44:04.058] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:44:04.158] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:44:04.258] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:44:04.358] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:44:04.458] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:44:04.557] [instrument] [debug] [MockDMM1] [MockDMM1-1] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:44:04.558] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:44:04.558] [instrument] [debug] [MockDMM1] [MockDMM1-1] Received response: success=true
+[2025-12-18 01:44:04.558] [instrument] [debug] [MockDMM1] [MockDMM1-2] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:44:04.559] [instrument] [debug] [MockDMM1] [MockDMM1-2] Received response: success=true
+[2025-12-18 01:44:04.559] [instrument] [debug] [MockDMM1] [MockDMM1-3] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:44:04.559] [instrument] [debug] [MockDMM1] [MockDMM1-3] Received response: success=true
+[2025-12-18 01:44:04.559] [instrument] [debug] [MockDMM1] [MockDMM1-4] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:44:04.559] [instrument] [debug] [MockDMM1] [MockDMM1-4] Received response: success=true
+[2025-12-18 01:44:04.559] [instrument] [debug] [MockDMM1] [MockDMM1-5] Enqueueing command: MEASURE_VOLTAGE
+[2025-12-18 01:44:04.559] [instrument] [debug] [MockDMM1] [MockDMM1-5] Received response: success=true
+[2025-12-18 01:44:04.560] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 1 instruments
+[2025-12-18 01:44:04.560] [instrument] [info] [MockDMM1] [PROXY] Stopping worker proxy
+[2025-12-18 01:44:04.659] [instrument] [trace] [IPC] [RECV_TIMEOUT] Receive timeout on queue: instrument_MockDMM1_resp
+[2025-12-18 01:44:04.659] [instrument] [info] [MockDMM1] [PROXY] Response listener stopped
+[2025-12-18 01:44:05.665] [instrument] [error] [MockDMM1] [PROXY] Response thread did not exit in time, detaching
+[2025-12-18 01:44:05.666] [instrument] [info] [IPC] [QUEUE_CLEANUP] Cleaned up queues for:  MockDMM1
+[2025-12-18 01:44:05.666] [instrument] [info] [MockDMM1] [PROXY] Worker proxy stopped
+[2025-12-18 01:44:05.666] [instrument] [info] [PROCESS] [CLEANUP] Cleaning up all worker processes
+[2025-12-18 01:44:05.666] [instrument] [info] [PROCESS] [KILL] Killing process: PID=116495 (force=true)
+[2025-12-18 01:46:44.392] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /tmp/mock_config.yaml
+[2025-12-18 01:46:44.393] [instrument] [info] [REGISTRY] [CREATE] Creating instrument 'MockDMM1' with protocol 'MockVISA' using plugin:  /tmp/mock_visa_plugin.so
+[2025-12-18 01:46:44.393] [instrument] [info] [MockDMM1] [PROXY] Starting worker proxy
+[2025-12-18 01:46:44.393] [instrument] [info] [IPC] [QUEUE_CREATE] Created queues for instrument: MockDMM1
+[2025-12-18 01:46:44.393] [instrument] [info] [PROCESS] [SPAWN] Spawning worker for instrument:  MockDMM1 with plugin: /tmp/mock_visa_plugin.so
+[2025-12-18 01:46:44.394] [instrument] [error] [PROCESS] [SPAWN] posix_spawn failed: No such file or directory with arg instrument-worker
+[2025-12-18 01:46:44.394] [instrument] [error] [PROCESS] [SPAWN] Failed to spawn worker for:  MockDMM1
+[2025-12-18 01:46:44.394] [instrument] [error] [MockDMM1] [PROXY] Failed to spawn worker process
+[2025-12-18 01:46:44.394] [instrument] [error] [REGISTRY] [CREATE] Failed to start worker for:  MockDMM1
+[2025-12-18 01:46:44.394] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments
+[2025-12-18 01:46:44.394] [instrument] [info] [PROCESS] [CLEANUP] Cleaning up all worker processes

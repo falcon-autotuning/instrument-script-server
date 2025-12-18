@@ -12,7 +12,7 @@ using namespace instserver;
 class MockVISAIntegrationTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    InstrumentLogger::instance().init("integration_test. log",
+    InstrumentLogger::instance().init("integration_test.log",
                                       spdlog::level::trace);
 
     // Plugin is built by CMake, just verify it exists
@@ -31,7 +31,6 @@ protected:
   void TearDown() override {
     std::remove("/tmp/mock_api.yaml");
     std::remove("/tmp/mock_config.yaml");
-
     auto &registry = InstrumentRegistry::instance();
     registry.stop_all();
   }
@@ -91,7 +90,7 @@ api_ref: /tmp/mock_api.yaml
 connection:
   type: MockVISA
   address: "mock://localhost"
-  plugin: "/tmp/mock_visa_plugin. so"
+  plugin: "/tmp/mock_visa_plugin.so"
 io_config:
   voltage: 
     type: float
@@ -257,7 +256,7 @@ TEST_F(MockVISAIntegrationTest, LuaScriptIntegration) {
 
   // Run Lua script
   std::string script = R"(
-        context. log("Starting test measurement")
+        context.log("Starting test measurement")
         
         -- Set voltage
         context.call("MockDMM1.SET_VOLTAGE", {voltage = 2.5})

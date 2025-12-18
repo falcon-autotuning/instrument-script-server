@@ -6,14 +6,17 @@
 namespace instserver {
 
 // Global process manager instance
-static ipc::ProcessManager g_process_manager;
+static ipc::ProcessManager &get_process_manager() {
+  static ipc::ProcessManager manager;
+  return manager;
+}
 
 InstrumentWorkerProxy::InstrumentWorkerProxy(const std::string &instrument_name,
                                              const std::string &plugin_path,
                                              const nlohmann::json &config,
                                              const nlohmann::json &api_def)
     : instrument_name_(instrument_name), plugin_path_(plugin_path),
-      config_(config), api_def_(api_def), process_manager_(g_process_manager) {}
+      config_(config), api_def_(api_def) {}
 
 InstrumentWorkerProxy::~InstrumentWorkerProxy() { stop(); }
 
@@ -30,7 +33,8 @@ bool InstrumentWorkerProxy::start() {
   }
 
   // Spawn worker process
-  worker_pid_ = process_manager_.spawn_worker(instrument_name_, plugin_path_);
+  worker_pid_ =
+      get_process_manager().spawn_worker(instrument_name_, plugin_path_);
 
   if (worker_pid_ == 0) {
     LOG_ERROR(instrument_name_, "PROXY", "Failed to spawn worker process");
@@ -58,38 +62,75 @@ bool InstrumentWorkerProxy::start() {
 }
 
 void InstrumentWorkerProxy::stop() {
-  if (!running_)
+  if (!running_.exchange(false))
     return;
-
   LOG_INFO(instrument_name_, "PROXY", "Stopping worker proxy");
 
-  running_ = false;
+  send_shutdown_message();
+  stop_worker_process();
+  join_response_thread_with_timeout();
+  cleanup_pending_promises();
+  cleanup_ipc();
 
-  // Send shutdown message
+  LOG_INFO(instrument_name_, "PROXY", "Worker proxy stopped");
+}
+
+void InstrumentWorkerProxy::send_shutdown_message() {
   if (ipc_queue_ && ipc_queue_->is_valid()) {
     ipc::IPCMessage shutdown_msg;
     shutdown_msg.type = ipc::IPCMessage::Type::SHUTDOWN;
     shutdown_msg.id = 0;
     shutdown_msg.payload_size = 0;
-    ipc_queue_->send(shutdown_msg, std::chrono::milliseconds(1000));
+    ipc_queue_->send(shutdown_msg, std::chrono::milliseconds(100));
   }
+}
 
-  // Wait for worker to exit
+void InstrumentWorkerProxy::stop_worker_process() {
   if (worker_pid_ != 0) {
-    process_manager_.wait_for_exit(worker_pid_,
-                                   std::chrono::milliseconds(5000));
-    process_manager_.kill_process(worker_pid_, true);
+    if (!get_process_manager().wait_for_exit(worker_pid_,
+                                             std::chrono::milliseconds(1000))) {
+      LOG_WARN(instrument_name_, "PROXY", "Force killing worker");
+      get_process_manager().kill_process(worker_pid_, true);
+    }
   }
+}
 
-  // Join response thread
+void InstrumentWorkerProxy::join_response_thread_with_timeout() {
   if (response_thread_.joinable()) {
-    response_thread_.join();
+    auto start = std::chrono::steady_clock::now();
+    while (response_thread_.joinable()) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      if (std::chrono::steady_clock::now() - start > std::chrono::seconds(1)) {
+        LOG_ERROR(instrument_name_, "PROXY",
+                  "Response thread did not exit in time, detaching");
+        response_thread_.detach();
+        return;
+      }
+    }
+    if (response_thread_.joinable()) {
+      response_thread_.join();
+    }
   }
+}
 
-  // Cleanup IPC queues
+void InstrumentWorkerProxy::cleanup_pending_promises() {
+  std::lock_guard<std::mutex> lock(pending_mutex_);
+  for (auto &[msg_id, promise] : pending_responses_) {
+    CommandResponse error_resp;
+    error_resp.instrument_name = instrument_name_;
+    error_resp.success = false;
+    error_resp.error_message = "Worker stopped";
+    try {
+      promise.set_value(std::move(error_resp));
+    } catch (...) {
+    }
+  }
+  pending_responses_.clear();
+}
+
+void InstrumentWorkerProxy::cleanup_ipc() {
+  ipc_queue_.reset();
   ipc::SharedQueue::cleanup(instrument_name_);
-
-  LOG_INFO(instrument_name_, "PROXY", "Worker proxy stopped");
 }
 
 std::future<CommandResponse>
@@ -165,7 +206,7 @@ InstrumentWorkerProxy::execute_sync(SerializedCommand cmd,
 bool InstrumentWorkerProxy::is_alive() const {
   if (worker_pid_ == 0)
     return false;
-  return process_manager_.is_alive(worker_pid_);
+  return get_process_manager().is_alive(worker_pid_);
 }
 
 InstrumentWorkerProxy::Stats InstrumentWorkerProxy::get_stats() const {
@@ -175,54 +216,57 @@ InstrumentWorkerProxy::Stats InstrumentWorkerProxy::get_stats() const {
 
 void InstrumentWorkerProxy::response_listener_loop() {
   LOG_INFO(instrument_name_, "PROXY", "Response listener started");
-
-  while (running_) {
-    auto msg_opt = ipc_queue_->receive(std::chrono::milliseconds(1000));
-
-    if (!msg_opt) {
-      continue; // Timeout
+  while (running_.load(std::memory_order_relaxed)) {
+    if (!ipc_queue_ || !ipc_queue_->is_valid()) {
+      LOG_WARN(instrument_name_, "PROXY",
+               "IPC queue invalid, exiting listener");
+      break;
     }
-
-    auto &msg = *msg_opt;
-
-    if (msg.type == ipc::IPCMessage::Type::HEARTBEAT) {
-      process_manager_.update_heartbeat(worker_pid_);
+    auto msg_opt = ipc_queue_->receive(std::chrono::milliseconds(100));
+    if (!msg_opt)
       continue;
+    handle_ipc_message(*msg_opt);
+  }
+  LOG_INFO(instrument_name_, "PROXY", "Response listener stopped");
+}
+
+void InstrumentWorkerProxy::handle_ipc_message(const ipc::IPCMessage &msg) {
+  switch (msg.type) {
+  case ipc::IPCMessage::Type::HEARTBEAT:
+    get_process_manager().update_heartbeat(worker_pid_);
+    break;
+  case ipc::IPCMessage::Type::RESPONSE:
+    handle_response_message(msg);
+    break;
+  default:
+    LOG_WARN(instrument_name_, "PROXY", "Unexpected message type: {}",
+             static_cast<uint32_t>(msg.type));
+  }
+}
+
+void InstrumentWorkerProxy::handle_response_message(
+    const ipc::IPCMessage &msg) {
+  std::string payload(msg.payload, msg.payload_size);
+  CommandResponse resp = ipc::deserialize_response(payload);
+  LOG_DEBUG(instrument_name_, resp.command_id, "Received response: success={}",
+            resp.success);
+
+  std::lock_guard<std::mutex> lock(pending_mutex_);
+  auto it = pending_responses_.find(msg.id);
+  if (it != pending_responses_.end()) {
+    try {
+      it->second.set_value(std::move(resp));
+    } catch (const std::future_error &) {
     }
+    pending_responses_.erase(it);
 
-    if (msg.type != ipc::IPCMessage::Type::RESPONSE) {
-      LOG_WARN(instrument_name_, "PROXY", "Unexpected message type: {}",
-               static_cast<uint32_t>(msg.type));
-      continue;
-    }
-
-    // Deserialize response
-    std::string payload(msg.payload, msg.payload_size);
-    CommandResponse resp = ipc::deserialize_response(payload);
-
-    LOG_DEBUG(instrument_name_, resp.command_id,
-              "Received response: success={}", resp.success);
-
-    // Find pending promise
-    std::lock_guard lock(pending_mutex_);
-    auto it = pending_responses_.find(msg.id);
-    if (it != pending_responses_.end()) {
-      it->second.set_value(resp);
-      pending_responses_.erase(it);
-
-      std::lock_guard stats_lock(stats_mutex_);
-      if (resp.success) {
-        stats_.commands_completed++;
-      } else {
-        stats_.commands_failed++;
-      }
+    std::lock_guard<std::mutex> stats_lock(stats_mutex_);
+    if (resp.success) {
+      stats_.commands_completed++;
     } else {
-      LOG_WARN(instrument_name_, resp.command_id,
-               "Received response for unknown message ID:  {}", msg.id);
+      stats_.commands_failed++;
     }
   }
-
-  LOG_INFO(instrument_name_, "PROXY", "Response listener stopped");
 }
 
 void InstrumentWorkerProxy::handle_worker_death() {

@@ -246,7 +246,6 @@ const char *INSTRUMENT_API_SCHEMA = R"delim({
     "command": {
       "type": "object",
       "required": [
-        "template",
         "parameters",
         "outputs"
       ],
@@ -412,6 +411,32 @@ const char *INSTRUMENT_API_SCHEMA = R"delim({
         }
       },
       "allOf": [
+        {
+          "if": {
+            "properties": {
+              "protocol": {
+                "properties": {
+                  "type": {
+                    "const": "VISA"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "commands": {
+                "patternProperties": {
+                  "^[A-Z][A-Z0-9_]*$": {
+                    "required": [
+                      "template"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
         {
           "if": {
             "properties": {
