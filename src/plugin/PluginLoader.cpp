@@ -1,5 +1,6 @@
 #include "instrument-server/plugin/PluginLoader.hpp"
 #include "instrument-server/Logger.hpp"
+#include <csignal>
 #include <stdexcept>
 
 namespace instserver {
@@ -27,7 +28,7 @@ PluginLoader::PluginLoader(const std::string &plugin_path)
   if (!handle_) {
     error_message_ = std::string("Failed to load library: ") + LIBRARY_ERROR();
     LOG_ERROR("PLUGIN", "LOAD", "{}", error_message_);
-    return;
+    throw std::runtime_error(error_message_);
   }
 
   load_symbols();
@@ -37,7 +38,7 @@ PluginLoader::PluginLoader(const std::string &plugin_path)
     error_message_ = "Failed to load required plugin symbols";
     LOG_ERROR("PLUGIN", "LOAD", "{}", error_message_);
     unload();
-    return;
+    throw std::runtime_error(error_message_);
   }
 
   LOG_INFO("PLUGIN", "LOAD", "Plugin loaded successfully:  {}", plugin_path);

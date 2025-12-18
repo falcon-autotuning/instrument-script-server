@@ -1,0 +1,110 @@
+Start testing: Dec 17 20:03 CST
+----------------------------------------------------------
+1/3 Testing: IPCtests
+1/3 Test: IPCtests
+Command: "/home/tylerk/falcon-dev/instrument-script-server/build/tests/test_ipc"
+Directory: /home/tylerk/falcon-dev/instrument-script-server
+"IPCtests" start time: Dec 17 20:03 CST
+Output:
+----------------------------------------------------------
+Running main() from /usr/src/debug/gtest/googletest-1.17.0/googletest/src/gtest_main.cc
+[==========] Running 4 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 4 tests from IPCTest
+[ RUN      ] IPCTest.QueueCreation
+[       OK ] IPCTest.QueueCreation (0 ms)
+[ RUN      ] IPCTest.MessageSendReceive
+/home/tylerk/falcon-dev/instrument-script-server/tests/test_ipc.cpp:36: Failure
+Value of: received.has_value()
+  Actual: false
+Expected: true
+
+[  FAILED  ] IPCTest.MessageSendReceive (1000 ms)
+[ RUN      ] IPCTest.CommandSerialization
+[       OK ] IPCTest.CommandSerialization (0 ms)
+[ RUN      ] IPCTest.ResponseSerialization
+[       OK ] IPCTest.ResponseSerialization (0 ms)
+[----------] 4 tests from IPCTest (1001 ms total)
+
+[----------] Global test environment tear-down
+[==========] 4 tests from 1 test suite ran. (1001 ms total)
+[  PASSED  ] 3 tests.
+[  FAILED  ] 1 test, listed below:
+[  FAILED  ] IPCTest.MessageSendReceive
+
+ 1 FAILED TEST
+<end of output>
+Test time =   1.01 sec
+----------------------------------------------------------
+Test Failed.
+"IPCtests" end time: Dec 17 20:03 CST
+"IPCtests" time elapsed: 00:00:01
+----------------------------------------------------------
+
+2/3 Testing: WorkerIntegrationTests
+2/3 Test: WorkerIntegrationTests
+Command: "/home/tylerk/falcon-dev/instrument-script-server/build/tests/test_plugin"
+Directory: /home/tylerk/falcon-dev/instrument-script-server
+"WorkerIntegrationTests" start time: Dec 17 20:03 CST
+Output:
+----------------------------------------------------------
+Running main() from /usr/src/debug/gtest/googletest-1.17.0/googletest/src/gtest_main.cc
+[==========] Running 2 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 2 tests from PluginTest
+[ RUN      ] PluginTest.LoadInvalidPath
+[       OK ] PluginTest.LoadInvalidPath (0 ms)
+[ RUN      ] PluginTest.RegistryOperations
+[       OK ] PluginTest.RegistryOperations (0 ms)
+[----------] 2 tests from PluginTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 2 tests from 1 test suite ran. (0 ms total)
+[  PASSED  ] 2 tests.
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"WorkerIntegrationTests" end time: Dec 17 20:03 CST
+"WorkerIntegrationTests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/3 Testing: ValidatorTests
+3/3 Test: ValidatorTests
+Command: "/home/tylerk/falcon-dev/instrument-script-server/build/tests/test_validator"
+Directory: /home/tylerk/falcon-dev/instrument-script-server
+"ValidatorTests" start time: Dec 17 20:03 CST
+Output:
+----------------------------------------------------------
+Running main() from /usr/src/debug/gtest/googletest-1.17.0/googletest/src/gtest_main.cc
+[==========] Running 6 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 6 tests from SchemaValidatorTest
+[ RUN      ] SchemaValidatorTest.ValidateAgilentInstrumentDirect
+[       OK ] SchemaValidatorTest.ValidateAgilentInstrumentDirect (3 ms)
+[ RUN      ] SchemaValidatorTest.ValidateAgilentInstrumentWithExpander
+[       OK ] SchemaValidatorTest.ValidateAgilentInstrumentWithExpander (5 ms)
+[ RUN      ] SchemaValidatorTest.ValidateKeysightInstrument
+[       OK ] SchemaValidatorTest.ValidateKeysightInstrument (6 ms)
+[ RUN      ] SchemaValidatorTest.ValidateQuantumDotDeviceConfig
+[       OK ] SchemaValidatorTest.ValidateQuantumDotDeviceConfig (2 ms)
+[ RUN      ] SchemaValidatorTest.GenerateAndValidateAgilentInstrumentConfiguration
+Generated instrument configuration: /tmp/dso9254a_config.yaml
+[       OK ] SchemaValidatorTest.GenerateAndValidateAgilentInstrumentConfiguration (7 ms)
+[ RUN      ] SchemaValidatorTest.GenerateAndValidateKeysightInstrumentConfiguration
+Generated instrument configuration: /tmp/dso9254a_config.yaml
+[       OK ] SchemaValidatorTest.GenerateAndValidateKeysightInstrumentConfiguration (9 ms)
+[----------] 6 tests from SchemaValidatorTest (36 ms total)
+
+[----------] Global test environment tear-down
+[==========] 6 tests from 1 test suite ran. (36 ms total)
+[  PASSED  ] 6 tests.
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"ValidatorTests" end time: Dec 17 20:03 CST
+"ValidatorTests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Dec 17 20:03 CST
