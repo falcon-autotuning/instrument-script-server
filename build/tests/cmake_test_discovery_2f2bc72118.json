@@ -1,0 +1,141 @@
+{
+  "tests": 21,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "DaemonLifecycleTest",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "StartDaemon",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_daemon_lifecycle.cpp",
+          "line": 38
+        },
+        {
+          "name": "DaemonPersistsAcrossCommands",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_daemon_lifecycle.cpp",
+          "line": 48
+        },
+        {
+          "name": "RegistryAccessWithoutDaemon",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_daemon_lifecycle.cpp",
+          "line": 68
+        }
+      ]
+    },
+    {
+      "name": "ParallelExecutionTest",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "BasicSynchronization",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_parallel_execution.cpp",
+          "line": 21
+        },
+        {
+          "name": "OrderIndependence",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_parallel_execution.cpp",
+          "line": 48
+        },
+        {
+          "name": "MultipleBarriersSimultaneous",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_parallel_execution.cpp",
+          "line": 61
+        },
+        {
+          "name": "WaitingInstruments",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_parallel_execution.cpp",
+          "line": 76
+        },
+        {
+          "name": "HighLoadConcurrency",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_parallel_execution.cpp",
+          "line": 89
+        }
+      ]
+    },
+    {
+      "name": "EndToEndTest",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "FullWorkflow",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_end_to_end.cpp",
+          "line": 9
+        },
+        {
+          "name": "LuaScriptExecution",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_end_to_end.cpp",
+          "line": 20
+        }
+      ]
+    },
+    {
+      "name": "CLITest",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "HelpCommand",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_cli_commands.cpp",
+          "line": 12
+        },
+        {
+          "name": "DaemonStatusWhenNotRunning",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_cli_commands.cpp",
+          "line": 20
+        },
+        {
+          "name": "ListPlugins",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_cli_commands.cpp",
+          "line": 29
+        },
+        {
+          "name": "ListInstrumentsWhenNoneRunning",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_cli_commands.cpp",
+          "line": 37
+        }
+      ]
+    },
+    {
+      "name": "InstrumentRegistryTest",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "Singleton",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
+          "line": 32
+        },
+        {
+          "name": "CreateInstrumentFromConfig",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
+          "line": 39
+        },
+        {
+          "name": "ListInstruments",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
+          "line": 57
+        },
+        {
+          "name": "HasInstrument",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
+          "line": 67
+        },
+        {
+          "name": "GetInstrument",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
+          "line": 73
+        },
+        {
+          "name": "RemoveInstrument",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
+          "line": 80
+        },
+        {
+          "name": "StopAll",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
+          "line": 101
+        }
+      ]
+    }
+  ]
+}

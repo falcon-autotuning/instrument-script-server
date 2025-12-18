@@ -1087,8 +1087,8 @@ events:
     checks:
       - "Detecting C compiler ABI info"
     directories:
-      source: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-GTZofR"
-      binary: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-GTZofR"
+      source: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-a92U9c"
+      binary: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-a92U9c"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
       CMAKE_C_FLAGS: ""
@@ -1098,10 +1098,10 @@ events:
       variable: "CMAKE_C_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-GTZofR'
+        Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-a92U9c'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_f9e89
-        [1/2] /usr/bin/ccache  clang   -v -MD -MT CMakeFiles/cmTC_f9e89.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_f9e89.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_f9e89.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c
+        Run Build Command(s): /usr/bin/ninja -v cmTC_b8e8a
+        [1/2] /usr/bin/ccache  clang   -v -MD -MT CMakeFiles/cmTC_b8e8a.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_b8e8a.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_b8e8a.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c
         clang version 21.1.6
         Target: x86_64-pc-linux-gnu
         Thread model: posix
@@ -1123,7 +1123,7 @@ events:
          /usr/local/include
          /usr/include
         End of search list.
-        [2/2] : && /usr/bin/ccache  clang  -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_f9e89.dir/CMakeCCompilerABI.c.o -o cmTC_f9e89   && :
+        [2/2] : && /usr/bin/ccache  clang  -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_b8e8a.dir/CMakeCCompilerABI.c.o -o cmTC_b8e8a   && :
         clang version 21.1.6
         Target: x86_64-pc-linux-gnu
         Thread model: posix
@@ -1134,7 +1134,7 @@ events:
         Candidate multilib: .;@m64
         Candidate multilib: 32;@m32
         Selected multilib: .;@m64
-         "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_f9e89 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_f9e89.dir/CMakeCCompilerABI.c.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o
+         "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_b8e8a /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_b8e8a.dir/CMakeCCompilerABI.c.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o
         LLD 21.1.6 (compatible with GNU linkers)
         
       exitCode: 0
@@ -1168,10 +1168,10 @@ events:
       Parsed C implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|"|[0-9]+>[ 	-]*Build:[ 	0-9]+ ms[ 	]*)?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)))("|,| |$)]
-        ignore line: [Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-GTZofR']
+        ignore line: [Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-a92U9c']
         ignore line: []
-        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_f9e89]
-        ignore line: [[1/2] /usr/bin/ccache  clang   -v -MD -MT CMakeFiles/cmTC_f9e89.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_f9e89.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_f9e89.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c]
+        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_b8e8a]
+        ignore line: [[1/2] /usr/bin/ccache  clang   -v -MD -MT CMakeFiles/cmTC_b8e8a.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_b8e8a.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_b8e8a.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-pc-linux-gnu]
         ignore line: [Thread model: posix]
@@ -1196,7 +1196,7 @@ events:
         ignore line: [ /usr/local/include]
         ignore line: [ /usr/include]
         ignore line: [End of search list.]
-        ignore line: [[2/2] : && /usr/bin/ccache  clang  -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_f9e89.dir/CMakeCCompilerABI.c.o -o cmTC_f9e89   && :]
+        ignore line: [[2/2] : && /usr/bin/ccache  clang  -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_b8e8a.dir/CMakeCCompilerABI.c.o -o cmTC_b8e8a   && :]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-pc-linux-gnu]
         ignore line: [Thread model: posix]
@@ -1210,7 +1210,7 @@ events:
         ignore line: [@m32]
         ignore line: [Selected multilib: .]
         ignore line: [@m64]
-        link line: [ "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_f9e89 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_f9e89.dir/CMakeCCompilerABI.c.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o]
+        link line: [ "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_b8e8a /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_b8e8a.dir/CMakeCCompilerABI.c.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o]
           arg [/usr/bin/ld.lld] ==> ignore
           arg [--hash-style=gnu] ==> ignore
           arg [--build-id] ==> ignore
@@ -1221,7 +1221,7 @@ events:
           arg [-dynamic-linker] ==> ignore
           arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
           arg [-o] ==> ignore
-          arg [cmTC_f9e89] ==> ignore
+          arg [cmTC_b8e8a] ==> ignore
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o]
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o]
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o]
@@ -1232,7 +1232,7 @@ events:
           arg [-L/lib] ==> dir [/lib]
           arg [-L/usr/lib] ==> dir [/usr/lib]
           arg [-v] ==> ignore
-          arg [CMakeFiles/cmTC_f9e89.dir/CMakeCCompilerABI.c.o] ==> ignore
+          arg [CMakeFiles/cmTC_b8e8a.dir/CMakeCCompilerABI.c.o] ==> ignore
           arg [-lgcc] ==> lib [gcc]
           arg [--as-needed] ==> ignore
           arg [-lgcc_s] ==> lib [gcc_s]
@@ -1281,8 +1281,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-j1kZ3H"
-      binary: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-j1kZ3H"
+      source: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-p8Ex0U"
+      binary: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-p8Ex0U"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
       CMAKE_CXX_FLAGS: "-Oz"
@@ -1293,10 +1293,10 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-j1kZ3H'
+        Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-p8Ex0U'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_16bf8
-        [1/2] /usr/bin/ccache  clang++   -Oz    -v -MD -MT CMakeFiles/cmTC_16bf8.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_16bf8.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_16bf8.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+        Run Build Command(s): /usr/bin/ninja -v cmTC_e57df
+        [1/2] /usr/bin/ccache  clang++   -Oz    -v -MD -MT CMakeFiles/cmTC_e57df.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_e57df.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_e57df.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
         clang version 21.1.6
         Target: x86_64-pc-linux-gnu
         Thread model: posix
@@ -1321,7 +1321,7 @@ events:
          /usr/local/include
          /usr/include
         End of search list.
-        [2/2] : && /usr/bin/ccache  clang++ -Oz -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_16bf8.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_16bf8   && :
+        [2/2] : && /usr/bin/ccache  clang++ -Oz -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_e57df.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_e57df   && :
         clang version 21.1.6
         Target: x86_64-pc-linux-gnu
         Thread model: posix
@@ -1332,7 +1332,7 @@ events:
         Candidate multilib: .;@m64
         Candidate multilib: 32;@m32
         Selected multilib: .;@m64
-         "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_16bf8 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_16bf8.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o
+         "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_e57df /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_e57df.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o
         LLD 21.1.6 (compatible with GNU linkers)
         
       exitCode: 0
@@ -1372,10 +1372,10 @@ events:
       Parsed CXX implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|"|[0-9]+>[ 	-]*Build:[ 	0-9]+ ms[ 	]*)?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)))("|,| |$)]
-        ignore line: [Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-j1kZ3H']
+        ignore line: [Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-p8Ex0U']
         ignore line: []
-        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_16bf8]
-        ignore line: [[1/2] /usr/bin/ccache  clang++   -Oz    -v -MD -MT CMakeFiles/cmTC_16bf8.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_16bf8.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_16bf8.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_e57df]
+        ignore line: [[1/2] /usr/bin/ccache  clang++   -Oz    -v -MD -MT CMakeFiles/cmTC_e57df.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_e57df.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_e57df.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-pc-linux-gnu]
         ignore line: [Thread model: posix]
@@ -1403,7 +1403,7 @@ events:
         ignore line: [ /usr/local/include]
         ignore line: [ /usr/include]
         ignore line: [End of search list.]
-        ignore line: [[2/2] : && /usr/bin/ccache  clang++ -Oz -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_16bf8.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_16bf8   && :]
+        ignore line: [[2/2] : && /usr/bin/ccache  clang++ -Oz -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_e57df.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_e57df   && :]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-pc-linux-gnu]
         ignore line: [Thread model: posix]
@@ -1417,7 +1417,7 @@ events:
         ignore line: [@m32]
         ignore line: [Selected multilib: .]
         ignore line: [@m64]
-        link line: [ "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_16bf8 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_16bf8.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o]
+        link line: [ "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_e57df /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_e57df.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o]
           arg [/usr/bin/ld.lld] ==> ignore
           arg [--hash-style=gnu] ==> ignore
           arg [--build-id] ==> ignore
@@ -1428,7 +1428,7 @@ events:
           arg [-dynamic-linker] ==> ignore
           arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
           arg [-o] ==> ignore
-          arg [cmTC_16bf8] ==> ignore
+          arg [cmTC_e57df] ==> ignore
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o]
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o]
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o]
@@ -1439,7 +1439,7 @@ events:
           arg [-L/lib] ==> dir [/lib]
           arg [-L/usr/lib] ==> dir [/usr/lib]
           arg [-v] ==> ignore
-          arg [CMakeFiles/cmTC_16bf8.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+          arg [CMakeFiles/cmTC_e57df.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
           arg [-lstdc++] ==> lib [stdc++]
           arg [-lm] ==> lib [m]
           arg [-lgcc_s] ==> lib [gcc_s]
@@ -1478,207 +1478,59 @@ events:
       Running the CXX compiler's linker: "/usr/bin/ld.lld" "-v"
       LLD 21.1.6 (compatible with GNU linkers)
   -
-    kind: "find_package-v1"
+    kind: "try_compile-v1"
     backtrace:
-      - "/usr/lib/cmake/Boost-1.89.0/BoostConfig.cmake:141 (find_package)"
-      - "/usr/lib/cmake/Boost-1.89.0/BoostConfig.cmake:215 (boost_find_component)"
-      - "/usr/share/cmake/Modules/FindBoost.cmake:610 (find_package)"
+      - "/usr/share/cmake/Modules/Internal/CheckSourceCompiles.cmake:104 (try_compile)"
+      - "/usr/share/cmake/Modules/CheckCSourceCompiles.cmake:103 (cmake_check_source_compiles)"
+      - "/usr/share/cmake/Modules/FindThreads.cmake:160 (check_c_source_compiles)"
+      - "/usr/share/cmake/Modules/FindThreads.cmake:226 (_threads_check_libc)"
       - "CMakeLists.txt:17 (find_package)"
-    name: "boost_headers"
-    configs:
-      -
-        filename: "boost_headersConfig.cmake"
-        kind: "cmake"
-      -
-        filename: "boost_headers-config.cmake"
-        kind: "cmake"
-    version_request:
-      version: "1.89.0"
-      version_complete: "1.89.0"
-      exact: true
-    settings:
-      required: "required_explicit"
-      quiet: true
-      global: false
-      policy_scope: true
-      bypass_provider: false
-      hints:
-        - "/usr/lib/cmake"
-      names:
-        - "boost_headers"
-      path_suffixes:
-        - ""
-      paths:
-        CMAKE_FIND_USE_CMAKE_PATH: true
-        CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
-        CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
-        CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
-        CMAKE_FIND_USE_INSTALL_PREFIX: true
-        CMAKE_FIND_USE_PACKAGE_ROOT_PATH: true
-        CMAKE_FIND_USE_CMAKE_PACKAGE_REGISTRY: true
-        CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY: true
-        CMAKE_FIND_ROOT_PATH_MODE: "BOTH"
-    candidates:
-      -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/boost_headersConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/boost_headers-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_headersConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_headers-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_headers-1.89.0/boost_headersConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-    found:
-      path: "/usr/lib/cmake/boost_headers-1.89.0/boost_headers-config.cmake"
-      mode: "config"
-      version: "1.89.0"
-    search_context:
-      ENV{PATH}:
-        - "/home/tylerk/.local/share/nvim/mason/bin"
-        - "/usr/local/bin"
-        - "/usr/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-      CMAKE_INSTALL_PREFIX: "/usr/local"
-      CMAKE_SYSTEM_PREFIX_PATH:
-        - "/usr/local"
-        - "/usr"
-        - "/"
-        - "/usr"
-        - "/usr/local"
-        - "/usr/X11R6"
-        - "/usr/pkg"
-        - "/opt"
+    checks:
+      - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
+    directories:
+      source: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-GpWZjr"
+      binary: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-GpWZjr"
+    cmakeVariables:
+      CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: "-fuse-ld=lld"
+    buildResult:
+      variable: "CMAKE_HAVE_LIBC_PTHREAD"
+      cached: true
+      stdout: |
+        Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-GpWZjr'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_10da9
+        [1/2] /usr/bin/ccache  clang -DCMAKE_HAVE_LIBC_PTHREAD   -MD -MT CMakeFiles/cmTC_10da9.dir/src.c.o -MF CMakeFiles/cmTC_10da9.dir/src.c.o.d -o CMakeFiles/cmTC_10da9.dir/src.c.o -c /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-GpWZjr/src.c
+        [2/2] : && /usr/bin/ccache  clang  -fuse-ld=lld CMakeFiles/cmTC_10da9.dir/src.c.o -o cmTC_10da9   && :
+        
+      exitCode: 0
   -
     kind: "find_package-v1"
     backtrace:
-      - "/usr/lib/cmake/Boost-1.89.0/BoostConfig.cmake:141 (find_package)"
-      - "/usr/lib/cmake/Boost-1.89.0/BoostConfig.cmake:262 (boost_find_component)"
-      - "/usr/share/cmake/Modules/FindBoost.cmake:610 (find_package)"
-      - "CMakeLists.txt:17 (find_package)"
-    name: "boost_filesystem"
+      - "/usr/share/cmake/Modules/CMakeFindDependencyMacro.cmake:93 (find_package)"
+      - "/usr/share/cmake/Modules/CMakeFindDependencyMacro.cmake:125 (__find_dependency_common)"
+      - "/usr/lib/cmake/spdlog/spdlogConfig.cmake:48 (find_dependency)"
+      - "CMakeLists.txt:18 (find_package)"
+    name: "fmt"
     configs:
       -
-        filename: "boost_filesystemConfig.cmake"
+        filename: "fmtConfig.cmake"
         kind: "cmake"
       -
-        filename: "boost_filesystem-config.cmake"
-        kind: "cmake"
-    version_request:
-      version: "1.89.0"
-      version_complete: "1.89.0"
-      exact: true
-    settings:
-      required: "required_explicit"
-      quiet: true
-      global: false
-      policy_scope: true
-      bypass_provider: false
-      hints:
-        - "/usr/lib/cmake"
-      names:
-        - "boost_filesystem"
-      path_suffixes:
-        - ""
-      paths:
-        CMAKE_FIND_USE_CMAKE_PATH: true
-        CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
-        CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
-        CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
-        CMAKE_FIND_USE_INSTALL_PREFIX: true
-        CMAKE_FIND_USE_PACKAGE_ROOT_PATH: true
-        CMAKE_FIND_USE_CMAKE_PACKAGE_REGISTRY: true
-        CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY: true
-        CMAKE_FIND_ROOT_PATH_MODE: "BOTH"
-    candidates:
-      -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/boost_filesystemConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/boost_filesystem-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_filesystemConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_filesystem-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_filesystem-1.89.0/boost_filesystemConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-    found:
-      path: "/usr/lib/cmake/boost_filesystem-1.89.0/boost_filesystem-config.cmake"
-      mode: "config"
-      version: "1.89.0"
-    search_context:
-      ENV{PATH}:
-        - "/home/tylerk/.local/share/nvim/mason/bin"
-        - "/usr/local/bin"
-        - "/usr/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-      CMAKE_INSTALL_PREFIX: "/usr/local"
-      CMAKE_SYSTEM_PREFIX_PATH:
-        - "/usr/local"
-        - "/usr"
-        - "/"
-        - "/usr"
-        - "/usr/local"
-        - "/usr/X11R6"
-        - "/usr/pkg"
-        - "/opt"
-  -
-    kind: "find_package-v1"
-    backtrace:
-      - "/usr/share/cmake/Modules/FindBoost.cmake:610 (find_package)"
-      - "CMakeLists.txt:17 (find_package)"
-    name: "Boost"
-    components:
-      -
-        name: "filesystem"
-        required: true
-        found: true
-    configs:
-      -
-        filename: "BoostConfig.cmake"
-        kind: "cmake"
-      -
-        filename: "boost-config.cmake"
+        filename: "fmt-config.cmake"
         kind: "cmake"
     version_request:
       exact: false
     settings:
-      required: "optional"
-      quiet: true
+      required: "required_explicit"
+      quiet: false
       global: false
       policy_scope: true
       bypass_provider: false
       names:
-        - "Boost"
+        - "fmt"
       path_suffixes:
         - ""
       paths:
@@ -1693,449 +1545,45 @@ events:
         CMAKE_FIND_ROOT_PATH_MODE: "BOTH"
     candidates:
       -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/BoostConfig.cmake"
+        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/fmtConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/boost-config.cmake"
+        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/fmt-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/home/tylerk/.local/share/nvim/mason/BoostConfig.cmake"
+        path: "/home/tylerk/.local/share/nvim/mason/fmtConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/home/tylerk/.local/share/nvim/mason/boost-config.cmake"
+        path: "/home/tylerk/.local/share/nvim/mason/fmt-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/local/BoostConfig.cmake"
+        path: "/usr/local/fmtConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/local/boost-config.cmake"
+        path: "/usr/local/fmt-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/BoostConfig.cmake"
+        path: "/usr/fmtConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/boost-config.cmake"
+        path: "/usr/fmt-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/lib/cmake/boost_wserialization-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_wserialization-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_wave-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_wave-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_url-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_url-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_unit_test_framework-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_unit_test_framework-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_type_erasure-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_type_erasure-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_timer-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_timer-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_thread-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_thread-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_test_exec_monitor-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_test_exec_monitor-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_stacktrace_noop-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_stacktrace_noop-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_stacktrace_from_exception-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_stacktrace_from_exception-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_stacktrace_basic-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_stacktrace_basic-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_stacktrace_addr2line-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_stacktrace_addr2line-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_serialization-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_serialization-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_regex-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_regex-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_random-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_random-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_python-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_python-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_program_options-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_program_options-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_process-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_process-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_prg_exec_monitor-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_prg_exec_monitor-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_numpy-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_numpy-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_nowide-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_nowide-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_mpi_python-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_mpi_python-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_mpi-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_mpi-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math_tr1l-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math_tr1l-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math_tr1f-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math_tr1f-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math_tr1-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math_tr1-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math_c99l-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math_c99l-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math_c99f-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math_c99f-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math_c99-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math_c99-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_math-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_log_setup-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_log_setup-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_log-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_log-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_locale-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_locale-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_json-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_json-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_iostreams-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_iostreams-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_headers-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_headers-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_graph_parallel-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_graph_parallel-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_graph-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_graph-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_filesystem-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_filesystem-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_fiber-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_fiber-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_exception-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_exception-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_date_time-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_date_time-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_coroutine-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_coroutine-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_contract-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_contract-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_context-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_context-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_container-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_container-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_cobalt_io-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_cobalt_io-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_cobalt-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_cobalt-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_chrono-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_chrono-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_charconv-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_charconv-1.89.0/boost-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_atomic-1.89.0/BoostConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/lib/cmake/boost_atomic-1.89.0/boost-config.cmake"
+        path: "/usr/lib/cmake/fmt/fmtConfig.cmake"
         mode: "config"
         reason: "no_exist"
     found:
-      path: "/usr/lib/cmake/Boost-1.89.0/BoostConfig.cmake"
+      path: "/usr/lib/cmake/fmt/fmt-config.cmake"
       mode: "config"
-      version: "1.89.0"
+      version: "12.1.0"
     search_context:
       ENV{PATH}:
         - "/home/tylerk/.local/share/nvim/mason/bin"
@@ -2157,56 +1605,102 @@ events:
         - "/usr/X11R6"
         - "/usr/pkg"
         - "/opt"
-  -
-    kind: "find-v1"
-    backtrace:
-      - "/usr/share/cmake/Modules/FindBoost.cmake:538 (find_path)"
-      - "/usr/share/cmake/Modules/FindBoost.cmake:643 (_boost_set_legacy_variables_from_config)"
-      - "CMakeLists.txt:17 (find_package)"
-    mode: "path"
-    variable: "Boost_INCLUDE_DIR"
-    description: "Path to a file."
-    settings:
-      SearchFramework: "NEVER"
-      SearchAppBundle: "NEVER"
-      CMAKE_FIND_USE_CMAKE_PATH: true
-      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
-      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
-      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
-      CMAKE_FIND_USE_INSTALL_PREFIX: true
-    names:
-      - "boost/version.hpp"
-      - "boost/config.hpp"
-    candidate_directories:
-      - "/usr/include/"
-    found: "/usr/include/"
-    search_context:
-      ENV{PATH}:
-        - "/home/tylerk/.local/share/nvim/mason/bin"
-        - "/usr/local/bin"
-        - "/usr/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-      CMAKE_INSTALL_PREFIX: "/usr/local"
-      CMAKE_SYSTEM_PREFIX_PATH:
-        - "/usr/local"
-        - "/usr"
-        - "/"
-        - "/usr"
-        - "/usr/local"
-        - "/usr/X11R6"
-        - "/usr/pkg"
-        - "/opt"
-      CMAKE_SYSTEM_INCLUDE_PATH:
-        - "/usr/include/X11"
   -
     kind: "find_package-v1"
     backtrace:
       - "CMakeLists.txt:18 (find_package)"
+    name: "spdlog"
+    configs:
+      -
+        filename: "spdlogConfig.cmake"
+        kind: "cmake"
+      -
+        filename: "spdlog-config.cmake"
+        kind: "cmake"
+    version_request:
+      exact: false
+    settings:
+      required: "required_explicit"
+      quiet: false
+      global: false
+      policy_scope: true
+      bypass_provider: false
+      names:
+        - "spdlog"
+      path_suffixes:
+        - ""
+      paths:
+        CMAKE_FIND_USE_CMAKE_PATH: true
+        CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+        CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+        CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+        CMAKE_FIND_USE_INSTALL_PREFIX: true
+        CMAKE_FIND_USE_PACKAGE_ROOT_PATH: true
+        CMAKE_FIND_USE_CMAKE_PACKAGE_REGISTRY: true
+        CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY: true
+        CMAKE_FIND_ROOT_PATH_MODE: "BOTH"
+    candidates:
+      -
+        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/spdlogConfig.cmake"
+        mode: "config"
+        reason: "no_exist"
+      -
+        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/spdlog-config.cmake"
+        mode: "config"
+        reason: "no_exist"
+      -
+        path: "/home/tylerk/.local/share/nvim/mason/spdlogConfig.cmake"
+        mode: "config"
+        reason: "no_exist"
+      -
+        path: "/home/tylerk/.local/share/nvim/mason/spdlog-config.cmake"
+        mode: "config"
+        reason: "no_exist"
+      -
+        path: "/usr/local/spdlogConfig.cmake"
+        mode: "config"
+        reason: "no_exist"
+      -
+        path: "/usr/local/spdlog-config.cmake"
+        mode: "config"
+        reason: "no_exist"
+      -
+        path: "/usr/spdlogConfig.cmake"
+        mode: "config"
+        reason: "no_exist"
+      -
+        path: "/usr/spdlog-config.cmake"
+        mode: "config"
+        reason: "no_exist"
+    found:
+      path: "/usr/lib/cmake/spdlog/spdlogConfig.cmake"
+      mode: "config"
+      version: "1.16.0"
+    search_context:
+      ENV{PATH}:
+        - "/home/tylerk/.local/share/nvim/mason/bin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/home/tylerk/.cargo/bin/"
+        - "/home/tylerk/.local/bin/"
+        - "/home/tylerk/go/bin"
+        - "/home/tylerk/.cargo/bin/"
+        - "/home/tylerk/.local/bin/"
+        - "/home/tylerk/go/bin"
+      CMAKE_INSTALL_PREFIX: "/usr/local"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "/usr/local"
+        - "/usr"
+        - "/"
+        - "/usr"
+        - "/usr/local"
+        - "/usr/X11R6"
+        - "/usr/pkg"
+        - "/opt"
+  -
+    kind: "find_package-v1"
+    backtrace:
+      - "CMakeLists.txt:19 (find_package)"
     name: "nlohmann_json"
     configs:
       -
@@ -2298,7 +1792,7 @@ events:
   -
     kind: "find_package-v1"
     backtrace:
-      - "CMakeLists.txt:19 (find_package)"
+      - "CMakeLists.txt:20 (find_package)"
     name: "yaml-cpp"
     configs:
       -
@@ -2394,25 +1888,25 @@ events:
   -
     kind: "find_package-v1"
     backtrace:
-      - "CMakeLists.txt:20 (find_package)"
-    name: "fmt"
+      - "CMakeLists.txt:23 (find_package)"
+    name: "LuaJIT"
     configs:
       -
-        filename: "fmtConfig.cmake"
+        filename: "LuaJITConfig.cmake"
         kind: "cmake"
       -
-        filename: "fmt-config.cmake"
+        filename: "luajit-config.cmake"
         kind: "cmake"
     version_request:
       exact: false
     settings:
-      required: "required_explicit"
-      quiet: false
+      required: "optional"
+      quiet: true
       global: false
       policy_scope: true
       bypass_provider: false
       names:
-        - "fmt"
+        - "LuaJIT"
       path_suffixes:
         - ""
       paths:
@@ -2427,263 +1921,86 @@ events:
         CMAKE_FIND_ROOT_PATH_MODE: "BOTH"
     candidates:
       -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/fmtConfig.cmake"
+        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/LuaJITConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/fmt-config.cmake"
+        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/luajit-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/home/tylerk/.local/share/nvim/mason/fmtConfig.cmake"
+        path: "/home/tylerk/.local/share/nvim/mason/LuaJITConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/home/tylerk/.local/share/nvim/mason/fmt-config.cmake"
+        path: "/home/tylerk/.local/share/nvim/mason/luajit-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/local/fmtConfig.cmake"
+        path: "/usr/local/LuaJITConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/local/fmt-config.cmake"
+        path: "/usr/local/luajit-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/fmtConfig.cmake"
+        path: "/usr/LuaJITConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/fmt-config.cmake"
+        path: "/usr/luajit-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/lib/cmake/fmt/fmtConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-    found:
-      path: "/usr/lib/cmake/fmt/fmt-config.cmake"
-      mode: "config"
-      version: "12.1.0"
-    search_context:
-      ENV{PATH}:
-        - "/home/tylerk/.local/share/nvim/mason/bin"
-        - "/usr/local/bin"
-        - "/usr/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-      CMAKE_INSTALL_PREFIX: "/usr/local"
-      CMAKE_SYSTEM_PREFIX_PATH:
-        - "/usr/local"
-        - "/usr"
-        - "/"
-        - "/usr"
-        - "/usr/local"
-        - "/usr/X11R6"
-        - "/usr/pkg"
-        - "/opt"
-  -
-    kind: "try_compile-v1"
-    backtrace:
-      - "/usr/share/cmake/Modules/Internal/CheckSourceCompiles.cmake:104 (try_compile)"
-      - "/usr/share/cmake/Modules/CheckCSourceCompiles.cmake:103 (cmake_check_source_compiles)"
-      - "/usr/share/cmake/Modules/FindThreads.cmake:160 (check_c_source_compiles)"
-      - "/usr/share/cmake/Modules/FindThreads.cmake:226 (_threads_check_libc)"
-      - "/usr/lib/cmake/spdlog/spdlogConfig.cmake:40 (find_package)"
-      - "CMakeLists.txt:21 (find_package)"
-    checks:
-      - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
-    directories:
-      source: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-hdrFNe"
-      binary: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-hdrFNe"
-    cmakeVariables:
-      CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
-      CMAKE_C_FLAGS: ""
-      CMAKE_C_FLAGS_DEBUG: "-g"
-      CMAKE_EXE_LINKER_FLAGS: "-fuse-ld=lld"
-    buildResult:
-      variable: "CMAKE_HAVE_LIBC_PTHREAD"
-      cached: true
-      stdout: |
-        Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-hdrFNe'
-        
-        Run Build Command(s): /usr/bin/ninja -v cmTC_6e618
-        [1/2] /usr/bin/ccache  clang -DCMAKE_HAVE_LIBC_PTHREAD  -std=gnu11 -MD -MT CMakeFiles/cmTC_6e618.dir/src.c.o -MF CMakeFiles/cmTC_6e618.dir/src.c.o.d -o CMakeFiles/cmTC_6e618.dir/src.c.o -c /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-hdrFNe/src.c
-        [2/2] : && /usr/bin/ccache  clang  -fuse-ld=lld CMakeFiles/cmTC_6e618.dir/src.c.o -o cmTC_6e618   && :
-        
-      exitCode: 0
-  -
-    kind: "find_package-v1"
-    backtrace:
-      - "CMakeLists.txt:21 (find_package)"
-    name: "spdlog"
-    configs:
-      -
-        filename: "spdlogConfig.cmake"
-        kind: "cmake"
-      -
-        filename: "spdlog-config.cmake"
-        kind: "cmake"
-    version_request:
-      exact: false
-    settings:
-      required: "required_explicit"
-      quiet: false
-      global: false
-      policy_scope: true
-      bypass_provider: false
-      names:
-        - "spdlog"
-      path_suffixes:
-        - ""
-      paths:
-        CMAKE_FIND_USE_CMAKE_PATH: true
-        CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
-        CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
-        CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
-        CMAKE_FIND_USE_INSTALL_PREFIX: true
-        CMAKE_FIND_USE_PACKAGE_ROOT_PATH: true
-        CMAKE_FIND_USE_CMAKE_PACKAGE_REGISTRY: true
-        CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY: true
-        CMAKE_FIND_ROOT_PATH_MODE: "BOTH"
-    candidates:
-      -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/spdlogConfig.cmake"
+        path: "/usr/share/luajit-2.1/LuaJITConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/spdlog-config.cmake"
+        path: "/usr/share/luajit-2.1/luajit-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/home/tylerk/.local/share/nvim/mason/spdlogConfig.cmake"
+        path: "/home/tylerk/.cargo/LuaJITConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/home/tylerk/.local/share/nvim/mason/spdlog-config.cmake"
+        path: "/home/tylerk/.cargo/luajit-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/local/spdlogConfig.cmake"
+        path: "/home/tylerk/.local/LuaJITConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/local/spdlog-config.cmake"
+        path: "/home/tylerk/.local/luajit-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/spdlogConfig.cmake"
+        path: "/home/tylerk/go/LuaJITConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/spdlog-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-    found:
-      path: "/usr/lib/cmake/spdlog/spdlogConfig.cmake"
-      mode: "config"
-      version: "1.16.0"
-    search_context:
-      ENV{PATH}:
-        - "/home/tylerk/.local/share/nvim/mason/bin"
-        - "/usr/local/bin"
-        - "/usr/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-      CMAKE_INSTALL_PREFIX: "/usr/local"
-      CMAKE_SYSTEM_PREFIX_PATH:
-        - "/usr/local"
-        - "/usr"
-        - "/"
-        - "/usr"
-        - "/usr/local"
-        - "/usr/X11R6"
-        - "/usr/pkg"
-        - "/opt"
-  -
-    kind: "find_package-v1"
-    backtrace:
-      - "CMakeLists.txt:22 (find_package)"
-    name: "sol2"
-    configs:
-      -
-        filename: "sol2Config.cmake"
-        kind: "cmake"
-      -
-        filename: "sol2-config.cmake"
-        kind: "cmake"
-    version_request:
-      exact: false
-    settings:
-      required: "required_explicit"
-      quiet: false
-      global: false
-      policy_scope: true
-      bypass_provider: false
-      names:
-        - "sol2"
-      path_suffixes:
-        - ""
-      paths:
-        CMAKE_FIND_USE_CMAKE_PATH: true
-        CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
-        CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
-        CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
-        CMAKE_FIND_USE_INSTALL_PREFIX: true
-        CMAKE_FIND_USE_PACKAGE_ROOT_PATH: true
-        CMAKE_FIND_USE_CMAKE_PACKAGE_REGISTRY: true
-        CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY: true
-        CMAKE_FIND_ROOT_PATH_MODE: "BOTH"
-    candidates:
-      -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/sol2Config.cmake"
+        path: "/home/tylerk/go/luajit-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/sol2-config.cmake"
+        path: "/LuaJITConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/home/tylerk/.local/share/nvim/mason/sol2Config.cmake"
+        path: "/luajit-config.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/home/tylerk/.local/share/nvim/mason/sol2-config.cmake"
+        path: "/opt/LuaJITConfig.cmake"
         mode: "config"
         reason: "no_exist"
       -
-        path: "/usr/local/sol2Config.cmake"
+        path: "/opt/luajit-config.cmake"
         mode: "config"
         reason: "no_exist"
-      -
-        path: "/usr/local/sol2-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/sol2Config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/sol2-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/usr/share/cmake/sol2/sol2Config.cmake"
-        mode: "config"
-        reason: "no_exist"
-    found:
-      path: "/usr/share/cmake/sol2/sol2-config.cmake"
-      mode: "config"
-      version: "4.0.0"
+    found: null
     search_context:
       ENV{PATH}:
         - "/home/tylerk/.local/share/nvim/mason/bin"
@@ -2710,7 +2027,7 @@ events:
     backtrace:
       - "/usr/share/cmake/Modules/FindLua.cmake:264 (find_path)"
       - "/usr/share/cmake/Modules/FindLua.cmake:296 (_lua_find_header)"
-      - "CMakeLists.txt:23 (find_package)"
+      - "CMakeLists.txt:28 (find_package)"
     mode: "path"
     variable: "LUA_INCLUDE_DIR"
     description: "Path to a file."
@@ -2807,7 +2124,7 @@ events:
     kind: "find-v1"
     backtrace:
       - "/usr/share/cmake/Modules/FindLua.cmake:309 (find_library)"
-      - "CMakeLists.txt:23 (find_package)"
+      - "CMakeLists.txt:28 (find_package)"
     mode: "library"
     variable: "LUA_LIBRARY"
     description: "Path to a library."
@@ -2977,7 +2294,7 @@ events:
     kind: "find-v1"
     backtrace:
       - "/usr/share/cmake/Modules/FindLua.cmake:321 (find_library)"
-      - "CMakeLists.txt:23 (find_package)"
+      - "CMakeLists.txt:28 (find_package)"
     mode: "library"
     variable: "LUA_MATH_LIBRARY"
     description: "Path to a library."
@@ -3046,7 +2363,76 @@ events:
   -
     kind: "find-v1"
     backtrace:
-      - "CMakeLists.txt:26 (find_library)"
+      - "CMakeLists.txt:32 (find_path)"
+    mode: "path"
+    variable: "SOL2_INCLUDE_DIR"
+    description: "Path to a file."
+    settings:
+      SearchFramework: "NEVER"
+      SearchAppBundle: "NEVER"
+      CMAKE_FIND_USE_CMAKE_PATH: true
+      CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
+      CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
+      CMAKE_FIND_USE_INSTALL_PREFIX: true
+    names:
+      - "sol/sol.hpp"
+    candidate_directories:
+      - "/home/tylerk/.local/share/nvim/mason/bin/"
+      - "/usr/local/bin/"
+      - "/usr/bin/"
+      - "/home/tylerk/.cargo/bin/"
+      - "/home/tylerk/.local/bin/"
+      - "/home/tylerk/go/bin/"
+      - "/usr/local/include/"
+      - "/usr/local/"
+      - "/usr/include/"
+      - "/usr/"
+      - "/include/"
+      - "/usr/X11R6/include/"
+      - "/usr/X11R6/"
+      - "/usr/pkg/include/"
+      - "/usr/pkg/"
+      - "/opt/include/"
+      - "/opt/"
+      - "/usr/include/X11/"
+    searched_directories:
+      - "/home/tylerk/.local/share/nvim/mason/bin/sol/sol.hpp"
+      - "/usr/local/bin/sol/sol.hpp"
+      - "/usr/bin/sol/sol.hpp"
+      - "/home/tylerk/.cargo/bin/sol/sol.hpp"
+      - "/home/tylerk/.local/bin/sol/sol.hpp"
+      - "/home/tylerk/go/bin/sol/sol.hpp"
+      - "/usr/local/include/sol/sol.hpp"
+      - "/usr/local/sol/sol.hpp"
+    found: "/usr/include/"
+    search_context:
+      ENV{PATH}:
+        - "/home/tylerk/.local/share/nvim/mason/bin"
+        - "/usr/local/bin"
+        - "/usr/bin"
+        - "/home/tylerk/.cargo/bin/"
+        - "/home/tylerk/.local/bin/"
+        - "/home/tylerk/go/bin"
+        - "/home/tylerk/.cargo/bin/"
+        - "/home/tylerk/.local/bin/"
+        - "/home/tylerk/go/bin"
+      CMAKE_INSTALL_PREFIX: "/usr/local"
+      CMAKE_SYSTEM_PREFIX_PATH:
+        - "/usr/local"
+        - "/usr"
+        - "/"
+        - "/usr"
+        - "/usr/local"
+        - "/usr/X11R6"
+        - "/usr/pkg"
+        - "/opt"
+      CMAKE_SYSTEM_INCLUDE_PATH:
+        - "/usr/include/X11"
+  -
+    kind: "find-v1"
+    backtrace:
+      - "CMakeLists.txt:35 (find_library)"
     mode: "library"
     variable: "VISA_LIBRARY"
     description: "Path to a library."
@@ -3060,7 +2446,7 @@ events:
       CMAKE_FIND_USE_INSTALL_PREFIX: true
     names:
       - "visa"
-      - "visa32"
+      - "visa64"
     candidate_directories:
       - "/home/tylerk/.local/share/nvim/mason/bin/"
       - "/usr/local/bin/"
@@ -3080,9 +2466,7 @@ events:
       - "/opt/lib/"
       - "/opt/"
       - "/usr/lib/X11/"
-      - "/usr/lib/"
-      - "/usr/local/lib/"
-      - "C:/Program Files/IVI Foundation/VISA/Win64/Lib_x64/msc/"
+      - "/usr/local/vxipnp/linux64/lib/"
     searched_directories:
       - "/home/tylerk/.local/share/nvim/mason/bin/"
       - "/usr/local/bin/"
@@ -3102,9 +2486,7 @@ events:
       - "/opt/lib/"
       - "/opt/"
       - "/usr/lib/X11/"
-      - "/usr/lib/"
-      - "/usr/local/lib/"
-      - "C:/Program Files/IVI Foundation/VISA/Win64/Lib_x64/msc/"
+      - "/usr/local/vxipnp/linux64/lib/"
       - "/home/tylerk/.local/share/nvim/mason/bin/"
       - "/usr/local/bin/"
       - "/usr/bin/"
@@ -3123,9 +2505,7 @@ events:
       - "/opt/lib/"
       - "/opt/"
       - "/usr/lib/X11/"
-      - "/usr/lib/"
-      - "/usr/local/lib/"
-      - "C:/Program Files/IVI Foundation/VISA/Win64/Lib_x64/msc/"
+      - "/usr/local/vxipnp/linux64/lib/"
     found: false
     search_context:
       ENV{PATH}:
@@ -3154,7 +2534,7 @@ events:
     kind: "find_package-v1"
     backtrace:
       - "/usr/share/cmake/Modules/FindGTest.cmake:345 (find_package)"
-      - "tests/CMakeLists.txt:1 (find_package)"
+      - "tests/CMakeLists.txt:2 (find_package)"
     name: "GTest"
     configs:
       -
@@ -3223,76 +2603,6 @@ events:
       mode: "config"
       version: "1.17.0"
     search_context:
-      ENV{PATH}:
-        - "/home/tylerk/.local/share/nvim/mason/bin"
-        - "/usr/local/bin"
-        - "/usr/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-        - "/home/tylerk/.cargo/bin/"
-        - "/home/tylerk/.local/bin/"
-        - "/home/tylerk/go/bin"
-      CMAKE_INSTALL_PREFIX: "/usr/local"
-      CMAKE_SYSTEM_PREFIX_PATH:
-        - "/usr/local"
-        - "/usr"
-        - "/"
-        - "/usr"
-        - "/usr/local"
-        - "/usr/X11R6"
-        - "/usr/pkg"
-        - "/opt"
-  -
-    kind: "find_package-v1"
-    backtrace:
-      - "examples/plugins/simple_serial/CMakeLists.txt:5 (find_package)"
-    name: "InstrumentServer"
-    configs:
-      -
-        filename: "InstrumentServerConfig.cmake"
-        kind: "cmake"
-      -
-        filename: "instrumentserver-config.cmake"
-        kind: "cmake"
-    version_request:
-      exact: false
-    settings:
-      required: "required_explicit"
-      quiet: false
-      global: false
-      policy_scope: true
-      bypass_provider: false
-      names:
-        - "InstrumentServer"
-      path_suffixes:
-        - ""
-      paths:
-        CMAKE_FIND_USE_CMAKE_PATH: true
-        CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH: true
-        CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH: true
-        CMAKE_FIND_USE_CMAKE_SYSTEM_PATH: true
-        CMAKE_FIND_USE_INSTALL_PREFIX: true
-        CMAKE_FIND_USE_PACKAGE_ROOT_PATH: true
-        CMAKE_FIND_USE_CMAKE_PACKAGE_REGISTRY: true
-        CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY: true
-        CMAKE_FIND_ROOT_PATH_MODE: "BOTH"
-    candidates:
-      -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/InstrumentServerConfig.cmake"
-        mode: "config"
-        reason: "no_exist"
-      -
-        path: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/pkgRedirects/instrumentserver-config.cmake"
-        mode: "config"
-        reason: "no_exist"
-    found:
-      path: "/home/tylerk/falcon-dev/instrument-script-server/build/InstrumentServerConfig.cmake"
-      mode: "config"
-      version: "1.0.0"
-    search_context:
-      CMAKE_PREFIX_PATH:
-        - "/home/tylerk/falcon-dev/instrument-script-server/build"
       ENV{PATH}:
         - "/home/tylerk/.local/share/nvim/mason/bin"
         - "/usr/local/bin"

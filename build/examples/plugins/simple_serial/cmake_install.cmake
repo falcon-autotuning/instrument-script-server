@@ -49,20 +49,13 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/instrument-plugins/simple_serial_plugin.so"
          RPATH "")
   endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/instrument-plugins" TYPE SHARED_LIBRARY FILES "/home/tylerk/falcon-dev/instrument-script-server/build/examples/plugins/simple_serial/simple_serial_plugin.so")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/instrument-plugins" TYPE MODULE FILES "/home/tylerk/falcon-dev/instrument-script-server/build/examples/plugins/simple_serial/simple_serial_plugin.so")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/instrument-plugins/simple_serial_plugin.so" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/instrument-plugins/simple_serial_plugin.so")
-    file(RPATH_CHANGE
-         FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/instrument-plugins/simple_serial_plugin.so"
-         OLD_RPATH "/home/tylerk/falcon-dev/instrument-script-server/build:"
-         NEW_RPATH "")
     if(CMAKE_INSTALL_DO_STRIP)
       execute_process(COMMAND "/usr/bin/llvm-strip" "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/instrument-plugins/simple_serial_plugin.so")
     endif()
   endif()
-endif()
-
-if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
 endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT

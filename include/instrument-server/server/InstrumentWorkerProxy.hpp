@@ -2,10 +2,12 @@
 #include "instrument-server/SerializedCommand.hpp"
 #include "instrument-server/ipc/ProcessManager.hpp"
 #include "instrument-server/ipc/SharedQueue.hpp"
+#include "instrument-server/server/SyncCoordinator.hpp"
 #include <atomic>
 #include <future>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <thread>
 
 namespace instserver {
@@ -16,8 +18,9 @@ class InstrumentWorkerProxy {
 public:
   InstrumentWorkerProxy(const std::string &instrument_name,
                         const std::string &plugin_path,
-                        const nlohmann::json &config,
-                        const nlohmann::json &api_def);
+                        const std::string &config_json,
+                        const std::string &api_def_json,
+                        SyncCoordinator &sync_coordinator);
 
   ~InstrumentWorkerProxy();
 
@@ -49,16 +52,20 @@ public:
   };
   Stats get_stats() const;
 
+  /// Send SYNC_CONTINUE message to worker
+  void send_sync_continue(uint64_t sync_token);
+
 private:
   std::string instrument_name_;
   std::string plugin_path_;
-  nlohmann::json config_;
-  nlohmann::json api_def_;
+  std::string config_json_;  // JSON as string
+  std::string api_def_json_; // JSON as string
+  SyncCoordinator &sync_coordinator_;
 
   std::unique_ptr<ipc::SharedQueue> ipc_queue_;
   ipc::ProcessId worker_pid_{0};
 
-  // Pending responses (command_id -> promise)
+  // Pending responses (message_id -> promise)
   std::unordered_map<uint64_t, std::promise<CommandResponse>>
       pending_responses_;
   std::mutex pending_mutex_;
@@ -83,6 +90,7 @@ private:
   void cleanup_ipc();
   void handle_ipc_message(const ipc::IPCMessage &msg);
   void handle_response_message(const ipc::IPCMessage &msg);
+  void handle_sync_ack_message(const ipc::IPCMessage &msg);
 };
 
 } // namespace instserver

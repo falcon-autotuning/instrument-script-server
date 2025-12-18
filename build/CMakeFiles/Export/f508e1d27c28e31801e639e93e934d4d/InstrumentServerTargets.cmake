@@ -19,7 +19,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_cmake_targets_defined "")
 set(_cmake_targets_not_defined "")
 set(_cmake_expected_targets "")
-foreach(_cmake_expected_target IN ITEMS instserver::instrument_server_lib instserver::instrument-worker instserver::instrument-server)
+foreach(_cmake_expected_target IN ITEMS InstrumentServer::instrument-server-core)
   list(APPEND _cmake_expected_targets "${_cmake_expected_target}")
   if(TARGET "${_cmake_expected_target}")
     list(APPEND _cmake_targets_defined "${_cmake_expected_target}")
@@ -55,19 +55,13 @@ if(_IMPORT_PREFIX STREQUAL "/")
   set(_IMPORT_PREFIX "")
 endif()
 
-# Create imported target instserver::instrument_server_lib
-add_library(instserver::instrument_server_lib SHARED IMPORTED)
+# Create imported target InstrumentServer::instrument-server-core
+add_library(InstrumentServer::instrument-server-core STATIC IMPORTED)
 
-set_target_properties(instserver::instrument_server_lib PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;/usr/include"
-  INTERFACE_LINK_LIBRARIES "Boost::filesystem;nlohmann_json::nlohmann_json;yaml-cpp::yaml-cpp;fmt::fmt;spdlog::spdlog;sol2::sol2;/usr/lib/liblua5.4.so;/usr/lib/libm.so;pthread;dl;rt"
+set_target_properties(InstrumentServer::instrument-server-core PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;${_IMPORT_PREFIX}/include"
+  INTERFACE_LINK_LIBRARIES "spdlog::spdlog;nlohmann_json::nlohmann_json;yaml-cpp;/usr/lib/liblua5.4.so;/usr/lib/libm.so;rt;pthread;dl"
 )
-
-# Create imported target instserver::instrument-worker
-add_executable(instserver::instrument-worker IMPORTED)
-
-# Create imported target instserver::instrument-server
-add_executable(instserver::instrument-server IMPORTED)
 
 # Load information for each installed configuration.
 file(GLOB _cmake_config_files "${CMAKE_CURRENT_LIST_DIR}/InstrumentServerTargets-*.cmake")

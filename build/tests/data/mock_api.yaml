@@ -1,0 +1,21 @@
+protocol:
+  type: MockTest
+
+commands:
+  IDN:
+    description: "Identification query"
+    template: "IDN"
+    response_type: string
+
+  MEASURE:
+    description: "Perform measurement"
+    template: "MEASURE"
+    response_type: double
+
+  SET_VOLTAGE:
+    description: "Set output voltage"
+    template: "SET_VOLTAGE"
+    params:
+      voltage:
+        type: double
+        required: true

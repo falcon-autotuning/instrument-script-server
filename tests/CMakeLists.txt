@@ -1,112 +1,95 @@
+# Find Google Test
 find_package(GTest REQUIRED)
+include(GoogleTest)
 
-include_directories(${CMAKE_SOURCE_DIR}/include)
+# Test utilities library
+add_library(test-utils STATIC test_utils/MockInstrument.cpp
+                              test_utils/TestFixtures.cpp)
 
-add_executable(test_ipc test_ipc.cpp)
-target_link_libraries(test_ipc PRIVATE instrument_server_lib GTest::gtest
-                                       GTest::gtest_main)
-add_test(
-  NAME IPCtests
-  COMMAND test_ipc
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+target_link_libraries(test-utils PUBLIC instrument-server-core GTest::gtest)
 
-add_executable(test_plugin test_plugin.cpp)
-target_link_libraries(test_plugin PRIVATE instrument_server_lib GTest::gtest
-                                          GTest::gtest_main)
-add_test(
-  NAME Plugin
-  COMMAND test_plugin
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-add_executable(test_plugin_loader test_plugin_loader.cpp)
-target_link_libraries(test_plugin_loader PRIVATE instrument_server_lib
-                                                 GTest::gtest GTest::gtest_main)
-add_test(
-  NAME PluginLoader
-  COMMAND test_plugin_loader
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-add_executable(test_plugin_interface test_plugin_interface.cpp)
+target_include_directories(test-utils
+                           PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/test_utils)
+
+# Unit tests
+add_executable(
+  unit_tests
+  unit/test_serialization.cpp
+  unit/test_sync_coordinator.cpp
+  unit/test_runtime_context.cpp
+  unit/test_ipc_queue.cpp
+  unit/test_server_daemon.cpp
+  unit/test_schema_validator.cpp
+  unit/test_plugin_loader.cpp
+  unit/test_plugin_registry.cpp)
+
+target_link_libraries(unit_tests PRIVATE instrument-server-core test-utils
+                                         GTest::gtest GTest::gtest_main)
+
+gtest_discover_tests(unit_tests)
+
+# Integration tests
+add_executable(
+  integration_tests
+  integration/test_daemon_lifecycle.cpp integration/test_parallel_execution.cpp
+  integration/test_end_to_end.cpp integration/test_cli_commands.cpp
+  integration/test_instrument_registry.cpp)
+
 target_link_libraries(
-  test_plugin_interface PRIVATE instrument_server_lib GTest::gtest
-                                GTest::gtest_main)
-add_test(
-  NAME PluginInterface
-  COMMAND test_plugin_interface
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+  integration_tests PRIVATE instrument-server-core test-utils GTest::gtest
+                            GTest::gtest_main)
 
-add_executable(test_instrument_registry test_instrument_registry.cpp)
-target_link_libraries(
-  test_instrument_registry PRIVATE instrument_server_lib GTest::gtest
-                                   GTest::gtest_main)
-add_test(
-  NAME InstrumentRegistry
-  COMMAND test_instrument_registry
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+gtest_discover_tests(integration_tests)
 
-add_executable(test_ipc_full test_ipc_full.cpp)
-target_link_libraries(test_ipc_full PRIVATE instrument_server_lib GTest::gtest
-                                            GTest::gtest_main)
-add_test(
-  NAME IPCFull
-  COMMAND test_ipc_full
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-# Replace test_ipc_stress with test_ipc_benchmark
-add_executable(test_ipc_benchmark test_ipc_benchmark.cpp)
-target_link_libraries(test_ipc_benchmark PRIVATE instrument_server_lib
-                                                 GTest::GTest GTest::Main)
-add_test(NAME IPCBenchmark COMMAND test_ipc_benchmark)
+# Performance tests
+add_executable(perf_tests performance/test_ipc_throughput.cpp
+                          performance/test_sync_overhead.cpp)
 
-# Set longer timeout for benchmark
-set_tests_properties(IPCBenchmark PROPERTIES TIMEOUT 30)
+target_link_libraries(perf_tests PRIVATE instrument-server-core test-utils
+                                         GTest::gtest GTest::gtest_main)
 
-add_executable(test_serialized_command test_serialized_command.cpp)
-target_link_libraries(
-  test_serialized_command PRIVATE instrument_server_lib GTest::gtest
-                                  GTest::gtest_main)
-add_test(
-  NAME SerializedCommand
-  COMMAND test_serialized_command
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-add_executable(test_worker_protocol test_worker_protocol.cpp)
-target_link_libraries(
-  test_worker_protocol PRIVATE instrument_server_lib GTest::gtest
-                               GTest::gtest_main)
-add_test(
-  NAME WorkerProtocol
-  COMMAND test_worker_protocol
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Don't auto-run performance tests Run manually with: ./perf_tests
 
-add_executable(test_validator test_validator.cpp)
-target_link_libraries(test_validator PRIVATE instrument_server_lib GTest::gtest
-                                             GTest::gtest_main)
-add_test(
-  NAME ValidatorTests
-  COMMAND test_validator
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-set_tests_properties(
-  ValidatorTests PROPERTIES ENVIRONMENT "PATH=${CMAKE_BINARY_DIR}:$ENV{PATH}")
+# Mock plugin for testing
+add_library(mock_plugin MODULE mocks/mock_plugin.cpp)
 
-add_executable(test_mock_integration test_mock_integration.cpp)
-target_link_libraries(
-  test_mock_integration PRIVATE instrument_server_lib GTest::gtest
-                                GTest::gtest_main)
-add_test(
-  NAME MockIntegration
-  COMMAND test_mock_integration
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
-set_tests_properties(
-  MockIntegration PROPERTIES ENVIRONMENT "PATH=${CMAKE_BINARY_DIR}:$ENV{PATH}")
-# Build mock plugin as part of tests
-add_library(mock_visa_plugin SHARED test_mock_plugin.c)
-target_include_directories(mock_visa_plugin PRIVATE ${CMAKE_SOURCE_DIR}/include)
-set_target_properties(mock_visa_plugin PROPERTIES PREFIX "" OUTPUT_NAME
-                                                            "mock_visa_plugin")
+target_link_libraries(mock_plugin PRIVATE instrument-server-core)
 
-# Make mock integration test depend on mock plugin
-add_dependencies(test_mock_integration mock_visa_plugin)
+set_target_properties(mock_plugin PROPERTIES PREFIX "" OUTPUT_NAME
+                                                       "mock_plugin")
 
-# Copy mock plugin to test directory
-add_custom_command(
-  TARGET mock_visa_plugin
-  POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:mock_visa_plugin>
-          /tmp/mock_visa_plugin.so)
+# Copy test data
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/tests/data)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/mock_instrument.yaml
+               ${CMAKE_BINARY_DIR}/tests/data/mock_instrument.yaml COPYONLY)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/mock_api.yaml
+               ${CMAKE_BINARY_DIR}/tests/data/mock_api.yaml COPYONLY)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/test_script.lua
+               ${CMAKE_BINARY_DIR}/tests/data/test_script.lua COPYONLY)
+
+# Install test plugin
+install(TARGETS mock_plugin LIBRARY DESTINATION lib/instrument-plugins)
+
+# Add custom target to run only unit tests
+add_custom_target(
+  test_unit
+  COMMAND ${CMAKE_BINARY_DIR}/tests/unit_tests
+  DEPENDS unit_tests
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+# Add custom target to run only integration tests
+add_custom_target(
+  test_integration
+  COMMAND ${CMAKE_BINARY_DIR}/tests/integration_tests
+  DEPENDS integration_tests
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+
+# Add custom target to run performance tests
+add_custom_target(
+  test_perf
+  COMMAND ${CMAKE_BINARY_DIR}/tests/perf_tests
+  DEPENDS perf_tests
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})

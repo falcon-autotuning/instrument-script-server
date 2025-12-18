@@ -1,6 +1,8 @@
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include "instrument-server/Logger.hpp"
 #include "instrument-server/plugin/PluginRegistry.hpp"
+#include "instrument-server/server/InstrumentWorkerProxy.hpp"
+#include <nlohmann/json.hpp>
 #include <yaml-cpp/yaml.h>
 
 namespace instserver {
@@ -39,7 +41,7 @@ static nlohmann::json yaml_to_json(const YAML::Node &node) {
 }
 
 bool InstrumentRegistry::create_instrument(const std::string &config_path) {
-  LOG_INFO("REGISTRY", "CREATE", "Loading instrument from: {}", config_path);
+  LOG_INFO("REGISTRY", "CREATE", "Loading instrument from:  {}", config_path);
 
   try {
     YAML::Node config_yaml = YAML::LoadFile(config_path);
@@ -51,7 +53,12 @@ bool InstrumentRegistry::create_instrument(const std::string &config_path) {
     nlohmann::json api_def = yaml_to_json(api_yaml);
 
     std::string name = config["name"];
-    return create_instrument_from_json(name, config, api_def);
+
+    // Convert JSON objects to strings
+    std::string config_json = config.dump();
+    std::string api_def_json = api_def.dump();
+
+    return create_instrument_from_json(name, config_json, api_def_json);
   } catch (const std::exception &ex) {
     LOG_ERROR("REGISTRY", "CREATE", "Failed to load config: {}", ex.what());
     return false;
@@ -59,14 +66,18 @@ bool InstrumentRegistry::create_instrument(const std::string &config_path) {
 }
 
 bool InstrumentRegistry::create_instrument_from_json(
-    const std::string &name, const nlohmann::json &config,
-    const nlohmann::json &api_def) {
+    const std::string &name, const std::string &config_json,
+    const std::string &api_def_json) {
   std::lock_guard lock(mutex_);
 
   if (instruments_.count(name)) {
     LOG_WARN("REGISTRY", "CREATE", "Instrument already exists: {}", name);
     return false;
   }
+
+  // Parse JSON strings
+  nlohmann::json config = nlohmann::json::parse(config_json);
+  nlohmann::json api_def = nlohmann::json::parse(api_def_json);
 
   // Get protocol type
   std::string protocol_type = api_def["protocol"]["type"];
@@ -91,9 +102,9 @@ bool InstrumentRegistry::create_instrument_from_json(
            "Creating instrument '{}' with protocol '{}' using plugin:  {}",
            name, protocol_type, plugin_path);
 
-  // Create worker proxy
-  auto proxy = std::make_shared<InstrumentWorkerProxy>(name, plugin_path,
-                                                       config, api_def);
+  // Create worker proxy with JSON strings
+  auto proxy = std::make_shared<InstrumentWorkerProxy>(
+      name, plugin_path, config_json, api_def_json, sync_coordinator_);
 
   if (!proxy->start()) {
     LOG_ERROR("REGISTRY", "CREATE", "Failed to start worker for:  {}", name);
@@ -139,7 +150,7 @@ void InstrumentRegistry::stop_all() {
   // Create a copy of the map to avoid iterator invalidation
   std::vector<std::shared_ptr<InstrumentWorkerProxy>> proxies;
   for (auto &[name, proxy] : instruments_) {
-    if (proxy) { // Null check
+    if (proxy) {
       proxies.push_back(proxy);
     }
   }
@@ -162,7 +173,7 @@ void InstrumentRegistry::start_all() {
            instruments_.size());
 
   for (auto &[name, proxy] : instruments_) {
-    if (proxy && !proxy->is_alive()) { // Null check
+    if (proxy && !proxy->is_alive()) {
       try {
         proxy->start();
       } catch (const std::exception &e) {

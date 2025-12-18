@@ -1,7 +1,7 @@
 #include "instrument-server/server/InstrumentWorkerProxy.hpp"
 #include "instrument-server/Logger.hpp"
 #include "instrument-server/ipc/ProcessManager.hpp"
-#include "instrument-server/ipc/WorkerProtocol.hpp"
+#include "instrument-server/ipc/SharedQueue.hpp"
 
 namespace instserver {
 
@@ -13,10 +13,12 @@ static ipc::ProcessManager &get_process_manager() {
 
 InstrumentWorkerProxy::InstrumentWorkerProxy(const std::string &instrument_name,
                                              const std::string &plugin_path,
-                                             const nlohmann::json &config,
-                                             const nlohmann::json &api_def)
+                                             const std::string &config_json,
+                                             const std::string &api_def_json,
+                                             SyncCoordinator &sync_coordinator)
     : instrument_name_(instrument_name), plugin_path_(plugin_path),
-      config_(config), api_def_(api_def) {}
+      config_json_(config_json), api_def_json_(api_def_json),
+      sync_coordinator_(sync_coordinator) {}
 
 InstrumentWorkerProxy::~InstrumentWorkerProxy() { stop(); }
 
@@ -80,6 +82,7 @@ void InstrumentWorkerProxy::send_shutdown_message() {
     ipc::IPCMessage shutdown_msg;
     shutdown_msg.type = ipc::IPCMessage::Type::SHUTDOWN;
     shutdown_msg.id = 0;
+    shutdown_msg.sync_token = 0;
     shutdown_msg.payload_size = 0;
     ipc_queue_->send(shutdown_msg, std::chrono::milliseconds(100));
   }
@@ -141,7 +144,8 @@ InstrumentWorkerProxy::execute(SerializedCommand cmd) {
   uint64_t msg_id = next_message_id_++;
   cmd.id = fmt::format("{}-{}", instrument_name_, msg_id);
 
-  LOG_DEBUG(instrument_name_, cmd.id, "Enqueueing command: {}", cmd.verb);
+  LOG_DEBUG(instrument_name_, cmd.id, "Enqueueing command:  {} (sync={})",
+            cmd.verb, cmd.sync_token.value_or(0));
 
   // Store promise for response
   {
@@ -155,6 +159,7 @@ InstrumentWorkerProxy::execute(SerializedCommand cmd) {
   ipc::IPCMessage msg;
   msg.type = ipc::IPCMessage::Type::COMMAND;
   msg.id = msg_id;
+  msg.sync_token = cmd.sync_token.value_or(0);
   msg.payload_size = std::min(payload.size(), sizeof(msg.payload));
   std::memcpy(msg.payload, payload.data(), msg.payload_size);
 
@@ -238,6 +243,9 @@ void InstrumentWorkerProxy::handle_ipc_message(const ipc::IPCMessage &msg) {
   case ipc::IPCMessage::Type::RESPONSE:
     handle_response_message(msg);
     break;
+  case ipc::IPCMessage::Type::SYNC_ACK:
+    handle_sync_ack_message(msg);
+    break;
   default:
     LOG_WARN(instrument_name_, "PROXY", "Unexpected message type: {}",
              static_cast<uint32_t>(msg.type));
@@ -266,6 +274,51 @@ void InstrumentWorkerProxy::handle_response_message(
     } else {
       stats_.commands_failed++;
     }
+  }
+}
+
+void InstrumentWorkerProxy::handle_sync_ack_message(
+    const ipc::IPCMessage &msg) {
+  uint64_t sync_token = msg.sync_token;
+
+  LOG_DEBUG(instrument_name_, "PROXY", "Received SYNC_ACK for token={}",
+            sync_token);
+
+  // Notify sync coordinator
+  bool barrier_complete =
+      sync_coordinator_.handle_ack(sync_token, instrument_name_);
+
+  if (barrier_complete) {
+    LOG_INFO(instrument_name_, "PROXY",
+             "Sync barrier {} complete, broadcasting SYNC_CONTINUE",
+             sync_token);
+
+    // Send SYNC_CONTINUE to self
+    send_sync_continue(sync_token);
+  }
+}
+
+void InstrumentWorkerProxy::send_sync_continue(uint64_t sync_token) {
+  if (!ipc_queue_ || !ipc_queue_->is_valid()) {
+    LOG_WARN(instrument_name_, "PROXY",
+             "Cannot send SYNC_CONTINUE, queue invalid");
+    return;
+  }
+
+  ipc::IPCMessage msg;
+  msg.type = ipc::IPCMessage::Type::SYNC_CONTINUE;
+  msg.id = 0;
+  msg.sync_token = sync_token;
+  msg.payload_size = 0;
+
+  bool sent = ipc_queue_->send(msg, std::chrono::milliseconds(1000));
+
+  if (sent) {
+    LOG_DEBUG(instrument_name_, "PROXY", "Sent SYNC_CONTINUE token={}",
+              sync_token);
+  } else {
+    LOG_ERROR(instrument_name_, "PROXY",
+              "Failed to send SYNC_CONTINUE token={}", sync_token);
   }
 }
 

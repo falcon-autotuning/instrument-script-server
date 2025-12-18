@@ -1,4 +1,5 @@
 #pragma once
+#include "instrument-server/ipc/IPCMessage.hpp"
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <chrono>
@@ -7,24 +8,6 @@
 
 namespace instserver {
 namespace ipc {
-
-/// Message structure for IPC communication
-struct IPCMessage {
-  enum class Type : uint32_t {
-    COMMAND = 1,
-    RESPONSE = 2,
-    SHUTDOWN = 3,
-    HEARTBEAT = 4,
-    ERROR = 5
-  };
-
-  Type type;
-  uint64_t id;           // Message ID for request/response matching
-  uint32_t payload_size; // Size of serialized data
-  char payload[8192];    // Serialized command/response (JSON or msgpack)
-
-  static constexpr size_t MAX_PAYLOAD_SIZE = sizeof(payload);
-};
 
 /// Bidirectional IPC queue pair (request + response queues)
 class SharedQueue {

@@ -1,0 +1,294 @@
+{
+  "tests": 48,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "Serialization",
+      "tests": 8,
+      "testsuite": [
+        {
+          "name": "CommandBasic",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_serialization.cpp",
+          "line": 7
+        },
+        {
+          "name": "CommandWithParams",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_serialization.cpp",
+          "line": 25
+        },
+        {
+          "name": "CommandWithSyncToken",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_serialization.cpp",
+          "line": 45
+        },
+        {
+          "name": "CommandWithArrayParam",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_serialization.cpp",
+          "line": 59
+        },
+        {
+          "name": "ResponseSuccess",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_serialization.cpp",
+          "line": 75
+        },
+        {
+          "name": "ResponseError",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_serialization.cpp",
+          "line": 94
+        },
+        {
+          "name": "ResponseWithStringReturn",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_serialization.cpp",
+          "line": 110
+        },
+        {
+          "name": "ResponseWithArrayReturn",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_serialization.cpp",
+          "line": 124
+        }
+      ]
+    },
+    {
+      "name": "SyncCoordinator",
+      "tests": 9,
+      "testsuite": [
+        {
+          "name": "RegisterBarrier",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_sync_coordinator.cpp",
+          "line": 7
+        },
+        {
+          "name": "HandleAck_PartialCompletion",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_sync_coordinator.cpp",
+          "line": 17
+        },
+        {
+          "name": "HandleAck_AllComplete",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_sync_coordinator.cpp",
+          "line": 28
+        },
+        {
+          "name": "GetWaitingInstruments",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_sync_coordinator.cpp",
+          "line": 41
+        },
+        {
+          "name": "ClearBarrier",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_sync_coordinator.cpp",
+          "line": 57
+        },
+        {
+          "name": "MultipleBarriers",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_sync_coordinator.cpp",
+          "line": 68
+        },
+        {
+          "name": "DuplicateAck",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_sync_coordinator.cpp",
+          "line": 84
+        },
+        {
+          "name": "UnknownToken",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_sync_coordinator.cpp",
+          "line": 94
+        },
+        {
+          "name": "UnexpectedInstrument",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_sync_coordinator.cpp",
+          "line": 101
+        }
+      ]
+    },
+    {
+      "name": "RuntimeContextTest",
+      "tests": 7,
+      "testsuite": [
+        {
+          "name": "CreateDCContext",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
+          "line": 24
+        },
+        {
+          "name": "SetContextFields",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
+          "line": 35
+        },
+        {
+          "name": "ParallelBlockBuffering",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
+          "line": 47
+        },
+        {
+          "name": "LogFunction",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
+          "line": 65
+        },
+        {
+          "name": "InstrumentTarget",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
+          "line": 75
+        },
+        {
+          "name": "Domain",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
+          "line": 88
+        },
+        {
+          "name": "SetVoltageDomains",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
+          "line": 100
+        }
+      ]
+    },
+    {
+      "name": "IPCQueue",
+      "tests": 3,
+      "testsuite": [
+        {
+          "name": "CreateAndDestroy",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_ipc_queue.cpp",
+          "line": 7
+        },
+        {
+          "name": "SendReceive",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_ipc_queue.cpp",
+          "line": 18
+        },
+        {
+          "name": "Timeout",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_ipc_queue.cpp",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "name": "ServerDaemon",
+      "tests": 4,
+      "testsuite": [
+        {
+          "name": "GetPaths",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_server_daemon.cpp",
+          "line": 7
+        },
+        {
+          "name": "IsRunningWhenNotStarted",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_server_daemon.cpp",
+          "line": 16
+        },
+        {
+          "name": "StartStop",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_server_daemon.cpp",
+          "line": 35
+        },
+        {
+          "name": "PreventMultipleInstances",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_server_daemon.cpp",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "name": "SchemaValidatorTest",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "ValidateAgilentInstrumentDirect",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_schema_validator.cpp",
+          "line": 49
+        },
+        {
+          "name": "ValidateAgilentInstrumentWithExpander",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_schema_validator.cpp",
+          "line": 55
+        },
+        {
+          "name": "ValidateKeysightInstrument",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_schema_validator.cpp",
+          "line": 63
+        },
+        {
+          "name": "ValidateQuantumDotDeviceConfig",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_schema_validator.cpp",
+          "line": 70
+        },
+        {
+          "name": "GenerateAndValidateAgilentInstrumentConfiguration",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_schema_validator.cpp",
+          "line": 76
+        },
+        {
+          "name": "GenerateAndValidateKeysightInstrumentConfiguration",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_schema_validator.cpp",
+          "line": 85
+        }
+      ]
+    },
+    {
+      "name": "PluginLoaderTest",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "LoadValidPlugin",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_loader.cpp",
+          "line": 26
+        },
+        {
+          "name": "LoadInvalidPath",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_loader.cpp",
+          "line": 35
+        },
+        {
+          "name": "GetMetadata",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_loader.cpp",
+          "line": 40
+        },
+        {
+          "name": "Initialize",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_loader.cpp",
+          "line": 54
+        },
+        {
+          "name": "ExecuteCommand",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_loader.cpp",
+          "line": 72
+        }
+      ]
+    },
+    {
+      "name": "PluginRegistryTest",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "Singleton",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_registry.cpp",
+          "line": 17
+        },
+        {
+          "name": "DiscoverPlugins",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_registry.cpp",
+          "line": 24
+        },
+        {
+          "name": "RegisterPlugin",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_registry.cpp",
+          "line": 34
+        },
+        {
+          "name": "GetPluginPath",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_registry.cpp",
+          "line": 42
+        },
+        {
+          "name": "GetNonexistentPlugin",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_registry.cpp",
+          "line": 49
+        },
+        {
+          "name": "ListProtocols",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_registry.cpp",
+          "line": 54
+        }
+      ]
+    }
+  ]
+}

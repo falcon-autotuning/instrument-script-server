@@ -1,91 +1,138 @@
 #include "instrument-server/SerializedCommand.hpp"
-#include "instrument-server/ipc/WorkerProtocol.hpp"
+#include <nlohmann/json.hpp>
 
 namespace instserver {
+namespace ipc {
 
-nlohmann::json SerializedCommand::to_json() const {
+std::string serialize_command(const SerializedCommand &cmd) {
   nlohmann::json j;
+  j["id"] = cmd.id;
+  j["instrument_name"] = cmd.instrument_name;
+  j["verb"] = cmd.verb;
+  j["expects_response"] = cmd.expects_response;
+  j["timeout_ms"] = cmd.timeout.count();
 
-  j["id"] = id;
-  j["instrument_name"] = instrument_name;
-  j["verb"] = verb;
-  j["timeout_ms"] = timeout.count();
-  j["priority"] = priority;
-  j["expects_response"] = expects_response;
-
-  if (return_type) {
-    j["return_type"] = *return_type;
-  }
-
-  if (channel_group) {
-    j["channel_group"] = *channel_group;
-  }
-
-  if (channel_number) {
-    j["channel_number"] = *channel_number;
+  if (cmd.sync_token) {
+    j["sync_token"] = *cmd.sync_token;
   }
 
   // Serialize params
   nlohmann::json params_json = nlohmann::json::object();
-  for (const auto &[key, val] : params) {
-    params_json[key] = ipc::param_value_to_json(val);
+  for (const auto &[key, value] : cmd.params) {
+    if (auto d = std::get_if<double>(&value)) {
+      params_json[key] = *d;
+    } else if (auto i = std::get_if<int64_t>(&value)) {
+      params_json[key] = *i;
+    } else if (auto s = std::get_if<std::string>(&value)) {
+      params_json[key] = *s;
+    } else if (auto b = std::get_if<bool>(&value)) {
+      params_json[key] = *b;
+    } else if (auto arr = std::get_if<std::vector<double>>(&value)) {
+      params_json[key] = *arr;
+    }
   }
   j["params"] = params_json;
 
-  return j;
+  return j.dump();
 }
 
-SerializedCommand SerializedCommand::from_json(const nlohmann::json &j) {
-  SerializedCommand cmd;
+SerializedCommand deserialize_command(const std::string &json) {
+  auto j = nlohmann::json::parse(json);
 
+  SerializedCommand cmd;
   cmd.id = j["id"];
   cmd.instrument_name = j["instrument_name"];
   cmd.verb = j["verb"];
+  cmd.expects_response = j["expects_response"];
   cmd.timeout = std::chrono::milliseconds(j["timeout_ms"]);
-  cmd.priority = j.value("priority", 0);
-  cmd.expects_response = j.value("expects_response", false);
+  cmd.created_at = std::chrono::steady_clock::now();
 
-  if (j.contains("return_type")) {
-    cmd.return_type = j["return_type"];
+  if (j.contains("sync_token")) {
+    cmd.sync_token = j["sync_token"];
   }
 
-  if (j.contains("channel_group")) {
-    cmd.channel_group = j["channel_group"];
-  }
-
-  if (j.contains("channel_number")) {
-    cmd.channel_number = j["channel_number"];
-  }
-
-  if (j.contains("params")) {
-    for (auto &[key, val] : j["params"].items()) {
-      cmd.params[key] = ipc::json_to_param_value(val);
+  // Deserialize params
+  if (j.contains("params") && j["params"].is_object()) {
+    for (auto &[key, value] : j["params"].items()) {
+      if (value.is_number_float()) {
+        cmd.params[key] = value.get<double>();
+      } else if (value.is_number_integer()) {
+        cmd.params[key] = value.get<int64_t>();
+      } else if (value.is_string()) {
+        cmd.params[key] = value.get<std::string>();
+      } else if (value.is_boolean()) {
+        cmd.params[key] = value.get<bool>();
+      } else if (value.is_array()) {
+        cmd.params[key] = value.get<std::vector<double>>();
+      }
     }
   }
-
-  cmd.created_at = std::chrono::steady_clock::now();
 
   return cmd;
 }
 
-nlohmann::json CommandResponse::to_json() const {
+std::string serialize_response(const CommandResponse &resp) {
   nlohmann::json j;
+  j["command_id"] = resp.command_id;
+  j["instrument_name"] = resp.instrument_name;
+  j["success"] = resp.success;
+  j["error_code"] = resp.error_code;
+  j["error_message"] = resp.error_message;
+  j["text_response"] = resp.text_response;
 
-  j["command_id"] = command_id;
-  j["instrument_name"] = instrument_name;
-  j["success"] = success;
-  j["error_code"] = error_code;
-  j["error_message"] = error_message;
-  j["text_response"] = text_response;
-
-  if (return_value) {
-    j["return_value"] = ipc::param_value_to_json(*return_value);
+  // Serialize return value
+  if (resp.return_value) {
+    if (auto d = std::get_if<double>(&*resp.return_value)) {
+      j["return_value"] = *d;
+      j["return_type"] = "double";
+    } else if (auto i = std::get_if<int64_t>(&*resp.return_value)) {
+      j["return_value"] = *i;
+      j["return_type"] = "int64";
+    } else if (auto s = std::get_if<std::string>(&*resp.return_value)) {
+      j["return_value"] = *s;
+      j["return_type"] = "string";
+    } else if (auto b = std::get_if<bool>(&*resp.return_value)) {
+      j["return_value"] = *b;
+      j["return_type"] = "bool";
+    } else if (auto arr =
+                   std::get_if<std::vector<double>>(&*resp.return_value)) {
+      j["return_value"] = *arr;
+      j["return_type"] = "array";
+    }
   }
 
-  // Optionally serialize timing info
-  j["duration_us"] = duration().count();
-
-  return j;
+  return j.dump();
 }
 
+CommandResponse deserialize_response(const std::string &json) {
+  auto j = nlohmann::json::parse(json);
+
+  CommandResponse resp;
+  resp.command_id = j["command_id"];
+  resp.instrument_name = j["instrument_name"];
+  resp.success = j["success"];
+  resp.error_code = j["error_code"];
+  resp.error_message = j["error_message"];
+  resp.text_response = j["text_response"];
+
+  // Deserialize return value
+  if (j.contains("return_value") && j.contains("return_type")) {
+    std::string type = j["return_type"];
+    if (type == "double") {
+      resp.return_value = j["return_value"].get<double>();
+    } else if (type == "int64") {
+      resp.return_value = j["return_value"].get<int64_t>();
+    } else if (type == "string") {
+      resp.return_value = j["return_value"].get<std::string>();
+    } else if (type == "bool") {
+      resp.return_value = j["return_value"].get<bool>();
+    } else if (type == "array") {
+      resp.return_value = j["return_value"].get<std::vector<double>>();
+    }
+  }
+
+  return resp;
+}
+
+} // namespace ipc
 } // namespace instserver

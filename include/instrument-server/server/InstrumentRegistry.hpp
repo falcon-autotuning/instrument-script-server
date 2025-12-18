@@ -1,14 +1,14 @@
 #pragma once
-#include "InstrumentWorkerProxy.hpp"
+#include "instrument-server/server/InstrumentWorkerProxy.hpp"
+#include "instrument-server/server/SyncCoordinator.hpp"
+#include <map>
 #include <memory>
 #include <mutex>
-#include <nlohmann/json.hpp>
 #include <string>
-#include <unordered_map>
+#include <vector>
 
 namespace instserver {
 
-/// Global registry of instrument worker proxies
 class InstrumentRegistry {
 public:
   static InstrumentRegistry &instance() {
@@ -19,10 +19,10 @@ public:
   /// Create instrument from config file
   bool create_instrument(const std::string &config_path);
 
-  /// Create instrument from JSON
+  /// Create instrument from JSON strings
   bool create_instrument_from_json(const std::string &name,
-                                   const nlohmann::json &config,
-                                   const nlohmann::json &api_def);
+                                   const std::string &config_json,
+                                   const std::string &api_def_json);
 
   /// Get instrument proxy
   std::shared_ptr<InstrumentWorkerProxy>
@@ -45,10 +45,14 @@ public:
 
 private:
   InstrumentRegistry() = default;
+  ~InstrumentRegistry() { stop_all(); }
 
-  std::unordered_map<std::string, std::shared_ptr<InstrumentWorkerProxy>>
-      instruments_;
+  InstrumentRegistry(const InstrumentRegistry &) = delete;
+  InstrumentRegistry &operator=(const InstrumentRegistry &) = delete;
+
   mutable std::mutex mutex_;
+  std::map<std::string, std::shared_ptr<InstrumentWorkerProxy>> instruments_;
+  SyncCoordinator sync_coordinator_;
 };
 
 } // namespace instserver

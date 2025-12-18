@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
 project(
-  InstrumentScriptSchema
-  VERSION 1.0.0
+  instrument-server
+  VERSION 0.1.0
   LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Options
 option(BUILD_TESTS "Build tests" ON)
@@ -14,166 +14,184 @@ option(BUILD_EXAMPLES "Build example plugins" ON)
 option(BUILD_TOOLS "Build command-line tools" ON)
 
 # Find dependencies
-find_package(Boost REQUIRED COMPONENTS filesystem)
-find_package(nlohmann_json REQUIRED)
-find_package(yaml-cpp REQUIRED CONFIG)
-find_package(fmt REQUIRED)
+find_package(Threads REQUIRED)
 find_package(spdlog REQUIRED)
-find_package(sol2 REQUIRED)
-find_package(Lua REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
-# Optional:  VISA (for built-in VISA plugin)
+# Lua (prefer LuaJIT if available)
+find_package(LuaJIT QUIET)
+if(LuaJIT_FOUND)
+  set(LUA_LIBRARIES ${LUAJIT_LIBRARIES})
+  set(LUA_INCLUDE_DIR ${LUAJIT_INCLUDE_DIR})
+else()
+  find_package(Lua REQUIRED)
+endif()
+
+# sol2 (header-only)
+find_path(SOL2_INCLUDE_DIR sol/sol.hpp REQUIRED)
+
+# VISA (optional)
 find_library(
   VISA_LIBRARY
-  NAMES visa visa32
-  PATHS /usr/lib /usr/local/lib
-        "C:/Program Files/IVI Foundation/VISA/Win64/Lib_x64/msc")
+  NAMES visa visa64
+  PATHS /usr/local/vxipnp/linux64/lib)
 if(VISA_LIBRARY)
-  set(HAVE_VISA TRUE)
   message(STATUS "Found VISA library: ${VISA_LIBRARY}")
+  set(HAVE_VISA ON)
 else()
-  set(HAVE_VISA FALSE)
-  message(
-    STATUS "VISA library not found - built-in VISA plugin will not be built")
+  message(STATUS "VISA not found, VISA built-in plugin will be disabled")
+  set(HAVE_VISA OFF)
 endif()
 
-# Embed JSON schemas into C++ source
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/schemas/instrument_api.schema.json"
-     INSTRUMENT_API_SCHEMA)
-file(READ
-     "${CMAKE_CURRENT_SOURCE_DIR}/schemas/instrument_configuration.schema.json"
-     INSTRUMENT_CONFIGURATION_SCHEMA)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/embedded_schemas.cpp.in"
-               "${CMAKE_CURRENT_BINARY_DIR}/embedded_schemas.cpp" @ONLY)
+# Platform-specific settings
+if(UNIX AND NOT APPLE)
+  set(PLATFORM_LIBS rt pthread dl)
+elseif(APPLE)
+  set(PLATFORM_LIBS pthread dl)
+elseif(WIN32)
+  set(PLATFORM_LIBS "")
+endif()
 
+# Include directories
+include_directories(${CMAKE_SOURCE_DIR}/include ${LUA_INCLUDE_DIR}
+                    ${SOL2_INCLUDE_DIR})
+
+configure_file(${CMAKE_SOURCE_DIR}/src/embedded_schemas.cpp.in
+               ${CMAKE_BINARY_DIR}/embedded_schemas.cpp @ONLY)
+
+# Core library
 add_library(
-  instrument_server_lib SHARED
-  src/ipc/SharedQueue.cpp
-  src/ipc/ProcessManager.cpp
-  src/ipc/WorkerProtocol.cpp
-  src/plugin/PluginLoader.cpp
-  src/plugin/PluginRegistry.cpp
-  src/server/InstrumentWorkerProxy.cpp
-  src/server/InstrumentRegistry.cpp
-  src/server/RuntimeContext.cpp
+  instrument-server-core STATIC
   src/SchemaValidator.cpp
   src/SerializedCommand.cpp
-  ${CMAKE_CURRENT_BINARY_DIR}/embedded_schemas.cpp)
-target_include_directories(
-  instrument_server_lib
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-         $<INSTALL_INTERFACE:include> ${LUA_INCLUDE_DIR})
+  src/ipc/SharedQueue.cpp
+  src/ipc/ProcessManager.cpp
+  src/plugin/PluginLoader.cpp
+  src/plugin/PluginRegistry.cpp
+  src/server/InstrumentRegistry.cpp
+  src/server/InstrumentWorkerProxy.cpp
+  src/server/RuntimeContext.cpp
+  src/server/SyncCoordinator.cpp
+  src/server/ServerDaemon.cpp
+  ${CMAKE_BINARY_DIR}/embedded_schemas.cpp)
+
 target_link_libraries(
-  instrument_server_lib
-  PUBLIC Boost::filesystem
-         nlohmann_json::nlohmann_json
-         yaml-cpp::yaml-cpp
-         fmt::fmt
-         spdlog::spdlog
-         sol2::sol2
-         ${LUA_LIBRARIES})
-if(UNIX)
-  target_link_libraries(instrument_server_lib PUBLIC pthread dl rt)
-endif()
-add_executable(instrument-worker src/workers/generic_worker_main.cpp)
-target_link_libraries(instrument-worker PRIVATE instrument_server_lib)
+  instrument-server-core PUBLIC spdlog::spdlog nlohmann_json::nlohmann_json
+                                yaml-cpp ${LUA_LIBRARIES} ${PLATFORM_LIBS})
+
+target_include_directories(
+  instrument-server-core PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+                                $<INSTALL_INTERFACE:include>)
+
 add_executable(instrument-server src/server/instrument_server_main.cpp)
-target_link_libraries(instrument-server PRIVATE instrument_server_lib)
+target_link_libraries(instrument-server PRIVATE instrument-server-core)
+
+# Worker executable
+add_executable(instrument-worker src/workers/generic_worker_main.cpp)
+target_link_libraries(instrument-worker PRIVATE instrument-server-core)
+
+# VISA built-in plugin (optional)
 if(HAVE_VISA)
-  add_library(visa_builtin_plugin SHARED src/workers/visa_builtin.cpp)
-  target_link_libraries(visa_builtin_plugin PRIVATE instrument_server_lib
-                                                    ${VISA_LIBRARY})
-  set_target_properties(visa_builtin_plugin PROPERTIES PREFIX "" OUTPUT_NAME
-                                                                 "visa_builtin")
+  add_library(visa_builtin MODULE src/workers/visa_builtin.cpp)
+  target_link_libraries(visa_builtin PRIVATE instrument-server-core
+                                             ${VISA_LIBRARY})
+  set_target_properties(visa_builtin PROPERTIES PREFIX "" OUTPUT_NAME
+                                                          "visa_builtin")
 endif()
+
+# Tools
 if(BUILD_TOOLS)
-  add_executable(instrument-setup src/tools/instrument_setup.cpp)
-  target_link_libraries(instrument-setup PUBLIC yaml-cpp::yaml-cpp
-                                                instrument_server_lib)
+  # Validators
+  add_executable(instrument-api-validator src/instrument_api_validator_main.cpp)
+  target_link_libraries(instrument-api-validator PRIVATE instrument-server-core)
 
-  add_executable(template_expander src/template_expander.cpp)
-  target_link_libraries(template_expander PRIVATE yaml-cpp::yaml-cpp)
-
-  add_executable(generate_instrument_configuration
-                 src/instrument_configuration_generator.cpp)
-  target_link_libraries(generate_instrument_configuration
-                        PRIVATE yaml-cpp::yaml-cpp)
-
-  add_executable(validate_instrument_api src/instrument_api_validator_main.cpp)
-  target_link_libraries(validate_instrument_api PRIVATE instrument_server_lib)
-
-  add_executable(validate_quantum_dot_config
-                 src/quantum_dot_config_validator_main.cpp)
-  target_link_libraries(validate_quantum_dot_config
-                        PRIVATE instrument_server_lib)
-
-  add_executable(validate_instrument_config
+  add_executable(instrument-config-validator
                  src/instrument_config_validator_main.cpp)
-  target_link_libraries(validate_instrument_config
-                        PRIVATE instrument_server_lib)
+  target_link_libraries(instrument-config-validator
+                        PRIVATE instrument-server-core)
+
+  add_executable(quantum-dot-config-validator
+                 src/quantum_dot_config_validator_main.cpp)
+  target_link_libraries(quantum-dot-config-validator
+                        PRIVATE instrument-server-core)
+  add_executable(template-expander src/template_expander.cpp)
+  target_link_libraries(template-expander PRIVATE instrument-server-core)
 endif()
 
-# Install
-install(
-  TARGETS instrument_server_lib instrument-worker instrument-server
-  EXPORT InstrumentServerTargets
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  RUNTIME DESTINATION bin)
-if(HAVE_VISA)
-  install(TARGETS visa_builtin_plugin
-          LIBRARY DESTINATION lib/instrument-plugins)
-endif()
-if(BUILD_TOOLS)
-  install(TARGETS instrument-setup RUNTIME DESTINATION bin)
+# Example plugins (FIXED: only build if InstrumentServer is already installed OR
+# during same build)
+if(BUILD_EXAMPLES)
+  # Build example plugins using local headers (not via find_package)
+  add_subdirectory(examples/plugins/simple_serial)
 endif()
 
-install(DIRECTORY include/instrument-server DESTINATION include)
-
-install(FILES cmake/Plugin.cmake DESTINATION lib/cmake/InstrumentServer)
-
-# Export configuration
-include(CMakePackageConfigHelpers)
-
-configure_package_config_file(
-  cmake/InstrumentServerConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfig.cmake
-  INSTALL_DESTINATION lib/cmake/InstrumentServer)
-
-write_basic_package_version_file(
-  ${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfigVersion.cmake
-  VERSION ${PROJECT_VERSION}
-  COMPATIBILITY SameMajorVersion)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfig.cmake
-              ${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfigVersion.cmake
-        DESTINATION lib/cmake/InstrumentServer)
-
-install(
-  EXPORT InstrumentServerTargets
-  FILE InstrumentServerTargets.cmake
-  NAMESPACE instserver::
-  DESTINATION lib/cmake/InstrumentServer)
-
-# Create plugin directory
-install(DIRECTORY DESTINATION lib/instrument-plugins)
 # Tests
 if(BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
-# Examples
-if(BUILD_EXAMPLES)
-  set(CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}" ${CMAKE_PREFIX_PATH})
-  add_subdirectory(examples/plugins/simple_serial)
+
+# Installation
+install(TARGETS instrument-server instrument-worker RUNTIME DESTINATION bin)
+
+if(BUILD_TOOLS)
+  install(TARGETS instrument-api-validator instrument-config-validator
+                  quantum-dot-config-validator RUNTIME DESTINATION bin)
 endif()
 
-# Package
-set(CPACK_PACKAGE_NAME "InstrumentServer")
-set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-set(CPACK_PACKAGE_VENDOR "Falcon Autotuning")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Modular instrument control server")
-set(CPACK_GENERATOR "TGZ;DEB;RPM")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS
-    "libboost-all-dev, libyaml-cpp-dev, libfmt-dev, libspdlog-dev, lua5.4")
-include(CPack)
+install(
+  DIRECTORY include/
+  DESTINATION include
+  FILES_MATCHING
+  PATTERN "*.h"
+  PATTERN "*.hpp")
+
+if(HAVE_VISA)
+  install(TARGETS visa_builtin LIBRARY DESTINATION lib/instrument-plugins)
+endif()
+
+install(
+  DIRECTORY schemas/
+  DESTINATION share/instrument-server/schemas
+  FILES_MATCHING
+  PATTERN "*.json")
+
+install(
+  DIRECTORY docs/
+  DESTINATION share/doc/instrument-server
+  FILES_MATCHING
+  PATTERN "*.md")
+
+# Export targets for use by external plugins
+install(
+  TARGETS instrument-server-core
+  EXPORT InstrumentServerTargets
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  INCLUDES
+  DESTINATION include)
+
+install(
+  EXPORT InstrumentServerTargets
+  FILE InstrumentServerTargets.cmake
+  NAMESPACE InstrumentServer::
+  DESTINATION lib/cmake/InstrumentServer)
+
+# Generate CMake config files
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion)
+
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/InstrumentServerConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfig.cmake"
+  INSTALL_DESTINATION lib/cmake/InstrumentServer
+  PATH_VARS CMAKE_INSTALL_PREFIX)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfig.cmake"
+              "${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfigVersion.cmake"
+        DESTINATION lib/cmake/InstrumentServer)

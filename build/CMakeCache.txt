@@ -23,14 +23,6 @@ BUILD_TESTS:BOOL=ON
 //Build command-line tools
 BUILD_TOOLS:BOOL=ON
 
-//The directory containing a CMake configuration file for Boost.
-Boost_DIR:PATH=/usr/lib/cmake/Boost-1.89.0
-
-Boost_FILESYSTEM_LIBRARY_RELEASE:STRING=/usr/lib/libboost_filesystem.so.1.89.0
-
-//Path to a file.
-Boost_INCLUDE_DIR:PATH=/usr/include
-
 //Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=/usr/bin/llvm-addr2line
 
@@ -176,19 +168,19 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=InstrumentScriptSchema
+CMAKE_PROJECT_NAME:STATIC=instrument-server
 
 //Value Computed by CMake
 CMAKE_PROJECT_SPDX_LICENSE:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_VERSION:STATIC=1.0.0
+CMAKE_PROJECT_VERSION:STATIC=0.1.0
 
 //Value Computed by CMake
-CMAKE_PROJECT_VERSION_MAJOR:STATIC=1
+CMAKE_PROJECT_VERSION_MAJOR:STATIC=0
 
 //Value Computed by CMake
-CMAKE_PROJECT_VERSION_MINOR:STATIC=0
+CMAKE_PROJECT_VERSION_MINOR:STATIC=1
 
 //Value Computed by CMake
 CMAKE_PROJECT_VERSION_PATCH:STATIC=0
@@ -261,38 +253,8 @@ CMAKE_TAPI:FILEPATH=CMAKE_TAPI-NOTFOUND
 // Studio IDE projects all commands are done without /nologo.
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
-//Enable to build RPM source packages
-CPACK_SOURCE_RPM:BOOL=OFF
-
-//Enable to build TBZ2 source packages
-CPACK_SOURCE_TBZ2:BOOL=ON
-
-//Enable to build TGZ source packages
-CPACK_SOURCE_TGZ:BOOL=ON
-
-//Enable to build TXZ source packages
-CPACK_SOURCE_TXZ:BOOL=ON
-
-//Enable to build TZ source packages
-CPACK_SOURCE_TZ:BOOL=ON
-
-//Enable to build ZIP source packages
-CPACK_SOURCE_ZIP:BOOL=OFF
-
 //The directory containing a CMake configuration file for GTest.
 GTest_DIR:PATH=/usr/lib/cmake/GTest
-
-//Value Computed by CMake
-InstrumentScriptSchema_BINARY_DIR:STATIC=/home/tylerk/falcon-dev/instrument-script-server/build
-
-//Value Computed by CMake
-InstrumentScriptSchema_IS_TOP_LEVEL:STATIC=ON
-
-//Value Computed by CMake
-InstrumentScriptSchema_SOURCE_DIR:STATIC=/home/tylerk/falcon-dev/instrument-script-server
-
-//The directory containing a CMake configuration file for InstrumentServer.
-InstrumentServer_DIR:PATH=/home/tylerk/falcon-dev/instrument-script-server/build
 
 //Path to a file.
 LUA_INCLUDE_DIR:PATH=/usr/include
@@ -302,6 +264,12 @@ LUA_LIBRARY:FILEPATH=/usr/lib/liblua5.4.so
 
 //Path to a library.
 LUA_MATH_LIBRARY:FILEPATH=/usr/lib/libm.so
+
+//The directory containing a CMake configuration file for LuaJIT.
+LuaJIT_DIR:PATH=LuaJIT_DIR-NOTFOUND
+
+//Path to a file.
+SOL2_INCLUDE_DIR:PATH=/usr/include
 
 //Value Computed by CMake
 SimpleSerialPlugin_BINARY_DIR:STATIC=/home/tylerk/falcon-dev/instrument-script-server/build/examples/plugins/simple_serial
@@ -315,20 +283,20 @@ SimpleSerialPlugin_SOURCE_DIR:STATIC=/home/tylerk/falcon-dev/instrument-script-s
 //Path to a library.
 VISA_LIBRARY:FILEPATH=VISA_LIBRARY-NOTFOUND
 
-//The directory containing a CMake configuration file for boost_filesystem.
-boost_filesystem_DIR:PATH=/usr/lib/cmake/boost_filesystem-1.89.0
-
-//The directory containing a CMake configuration file for boost_headers.
-boost_headers_DIR:PATH=/usr/lib/cmake/boost_headers-1.89.0
-
 //The directory containing a CMake configuration file for fmt.
 fmt_DIR:PATH=/usr/lib/cmake/fmt
 
+//Value Computed by CMake
+instrument-server_BINARY_DIR:STATIC=/home/tylerk/falcon-dev/instrument-script-server/build
+
+//Value Computed by CMake
+instrument-server_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+instrument-server_SOURCE_DIR:STATIC=/home/tylerk/falcon-dev/instrument-script-server
+
 //The directory containing a CMake configuration file for nlohmann_json.
 nlohmann_json_DIR:PATH=/usr/share/cmake/nlohmann_json
-
-//The directory containing a CMake configuration file for sol2.
-sol2_DIR:PATH=/usr/share/cmake/sol2
 
 //The directory containing a CMake configuration file for spdlog.
 spdlog_DIR:PATH=/usr/lib/cmake/spdlog
@@ -341,8 +309,6 @@ yaml-cpp_DIR:PATH=/usr/lib/cmake/yaml-cpp
 # INTERNAL cache entries
 ########################
 
-//ADVANCED property for variable: Boost_DIR
-Boost_DIR-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_ADDR2LINE
 CMAKE_ADDR2LINE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_AR
@@ -496,20 +462,6 @@ CMAKE_TAPI-ADVANCED:INTERNAL=1
 CMAKE_UNAME:INTERNAL=/usr/bin/uname
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CPACK_SOURCE_RPM
-CPACK_SOURCE_RPM-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CPACK_SOURCE_TBZ2
-CPACK_SOURCE_TBZ2-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CPACK_SOURCE_TGZ
-CPACK_SOURCE_TGZ-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CPACK_SOURCE_TXZ
-CPACK_SOURCE_TXZ-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CPACK_SOURCE_TZ
-CPACK_SOURCE_TZ-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: CPACK_SOURCE_ZIP
-CPACK_SOURCE_ZIP-ADVANCED:INTERNAL=1
-//Details about finding Boost
-FIND_PACKAGE_MESSAGE_DETAILS_Boost:INTERNAL=[/usr/lib/cmake/Boost-1.89.0/BoostConfig.cmake][found components: filesystem ][v1.89.0()]
 //Details about finding GTest
 FIND_PACKAGE_MESSAGE_DETAILS_GTest:INTERNAL=[/usr/lib/cmake/GTest/GTestConfig.cmake][ ][v1.17.0()]
 //Details about finding Lua
@@ -524,8 +476,4 @@ LUA_INCLUDE_DIR-ADVANCED:INTERNAL=1
 LUA_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: LUA_MATH_LIBRARY
 LUA_MATH_LIBRARY-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: boost_filesystem_DIR
-boost_filesystem_DIR-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: boost_headers_DIR
-boost_headers_DIR-ADVANCED:INTERNAL=1
 

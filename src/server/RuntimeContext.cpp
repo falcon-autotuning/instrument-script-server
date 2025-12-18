@@ -1,10 +1,12 @@
 #include "instrument-server/server/RuntimeContext.hpp"
 #include "instrument-server/Logger.hpp"
+#include <future>
 
 namespace instserver {
 
-RuntimeContextBase::RuntimeContextBase(InstrumentRegistry &registry)
-    : registry_(registry) {}
+RuntimeContextBase::RuntimeContextBase(InstrumentRegistry &registry,
+                                       SyncCoordinator &sync_coordinator)
+    : registry_(registry), sync_coordinator_(sync_coordinator) {}
 
 sol::object RuntimeContextBase::call(const std::string &func_name,
                                      sol::variadic_args args,
@@ -13,8 +15,8 @@ sol::object RuntimeContextBase::call(const std::string &func_name,
 
   LOG_DEBUG("LUA_CONTEXT", "CALL", "Calling function: {}", func_name);
 
-  // Parse func_name:  format is "InstrumentID. CommandVerb" or "InstrumentID:
-  // Channel.CommandVerb"
+  // Parse func_name:  format is "InstrumentID. CommandVerb" or
+  // "InstrumentID: Channel.CommandVerb"
   size_t dot_pos = func_name.find('.');
   if (dot_pos == std::string::npos) {
     LOG_ERROR("LUA_CONTEXT", "CALL", "Invalid function name format: {}",
@@ -68,7 +70,26 @@ sol::object RuntimeContextBase::call(const std::string &func_name,
     params["channel"] = static_cast<int64_t>(*channel);
   }
 
-  // Send command
+  // If in parallel block, buffer the command instead of executing
+  if (in_parallel_block_) {
+    SerializedCommand cmd;
+    cmd.id =
+        fmt::format("{}-buffered-{}", instrument_id, parallel_buffer_.size());
+    cmd.instrument_name = instrument_id;
+    cmd.verb = verb;
+    cmd.params = params;
+    cmd.created_at = std::chrono::steady_clock::now();
+    cmd.expects_response = (verb.find("Read") != std::string::npos ||
+                            verb.find("Get") != std::string::npos ||
+                            verb.find("Measure") != std::string::npos);
+
+    parallel_buffer_.push_back(std::move(cmd));
+    LOG_DEBUG("LUA_CONTEXT", "CALL", "Buffered parallel command: {}. {}",
+              instrument_id, verb);
+    return sol::nil; // Don't execute yet
+  }
+
+  // Execute immediately for non-parallel calls
   CommandResponse resp = send_command(instrument_id, verb, params);
 
   if (!resp.success) {
@@ -98,11 +119,96 @@ sol::object RuntimeContextBase::call(const std::string &func_name,
 }
 
 void RuntimeContextBase::parallel(sol::function block) {
-  LOG_DEBUG("LUA_CONTEXT", "PARALLEL", "Executing parallel block");
+  LOG_DEBUG("LUA_CONTEXT", "PARALLEL", "Starting parallel block");
 
-  // For now, execute serially (future: spawn threads or use async)
-  // In production, collect commands and dispatch them concurrently
-  block();
+  in_parallel_block_ = true;
+  parallel_buffer_.clear();
+
+  // Execute the Lua block, which will buffer commands via call()
+  try {
+    block();
+  } catch (const std::exception &e) {
+    LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Error in parallel block: {}",
+              e.what());
+    in_parallel_block_ = false;
+    parallel_buffer_.clear();
+    throw;
+  }
+
+  in_parallel_block_ = false;
+
+  LOG_INFO("LUA_CONTEXT", "PARALLEL", "Executing {} buffered commands",
+           parallel_buffer_.size());
+
+  // Execute all buffered commands with synchronization
+  execute_parallel_buffer();
+
+  parallel_buffer_.clear();
+}
+
+void RuntimeContextBase::execute_parallel_buffer() {
+  if (parallel_buffer_.empty()) {
+    return;
+  }
+
+  // Assign sync token to all commands
+  uint64_t sync_token = next_sync_token_++;
+
+  // Collect unique instruments
+  std::vector<std::string> instruments;
+  std::set<std::string> unique_instruments;
+  for (const auto &cmd : parallel_buffer_) {
+    if (unique_instruments.insert(cmd.instrument_name).second) {
+      instruments.push_back(cmd.instrument_name);
+    }
+  }
+
+  // Register barrier with sync coordinator
+  sync_coordinator_.register_barrier(sync_token, instruments);
+
+  // Tag all commands with sync token and dispatch
+  std::vector<std::future<CommandResponse>> futures;
+  for (auto &cmd : parallel_buffer_) {
+    cmd.sync_token = sync_token;
+
+    auto worker = registry_.get_instrument(cmd.instrument_name);
+    if (!worker) {
+      LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Instrument not found: {}",
+                cmd.instrument_name);
+      continue;
+    }
+
+    // Generate unique ID now
+    cmd.id = fmt::format(
+        "{}-{}", cmd.instrument_name,
+        std::chrono::steady_clock::now().time_since_epoch().count());
+
+    LOG_DEBUG("LUA_CONTEXT", "PARALLEL",
+              "Dispatching sync command: {} to {} (token={})", cmd.verb,
+              cmd.instrument_name, sync_token);
+
+    futures.push_back(worker->execute(std::move(cmd)));
+  }
+
+  // Wait for all commands to complete
+  // The sync protocol ensures they finish in lockstep
+  LOG_DEBUG("LUA_CONTEXT", "PARALLEL", "Waiting for {} futures",
+            futures.size());
+
+  for (auto &future : futures) {
+    try {
+      auto resp = future.get();
+      if (!resp.success) {
+        LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Parallel command failed: {}",
+                  resp.error_message);
+      }
+    } catch (const std::exception &e) {
+      LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Future exception: {}", e.what());
+    }
+  }
+
+  LOG_INFO("LUA_CONTEXT", "PARALLEL", "Parallel block complete (token={})",
+           sync_token);
 }
 
 void RuntimeContextBase::log(const std::string &msg) {
@@ -137,18 +243,20 @@ CommandResponse RuntimeContextBase::send_command(
   return worker->execute_sync(std::move(cmd), std::chrono::milliseconds(5000));
 }
 
-RuntimeContext_DCGetSet::RuntimeContext_DCGetSet(InstrumentRegistry &registry)
-    : RuntimeContextBase(registry) {}
+RuntimeContext_DCGetSet::RuntimeContext_DCGetSet(
+    InstrumentRegistry &registry, SyncCoordinator &sync_coordinator)
+    : RuntimeContextBase(registry, sync_coordinator) {}
 
 RuntimeContext_1DWaveform::RuntimeContext_1DWaveform(
-    InstrumentRegistry &registry)
-    : RuntimeContextBase(registry) {}
+    InstrumentRegistry &registry, SyncCoordinator &sync_coordinator)
+    : RuntimeContextBase(registry, sync_coordinator) {}
 
 RuntimeContext_2DWaveform::RuntimeContext_2DWaveform(
-    InstrumentRegistry &registry)
-    : RuntimeContextBase(registry) {}
+    InstrumentRegistry &registry, SyncCoordinator &sync_coordinator)
+    : RuntimeContextBase(registry, sync_coordinator) {}
 
-void bind_runtime_contexts(sol::state &lua) {
+void bind_runtime_contexts(sol::state &lua, InstrumentRegistry &registry,
+                           SyncCoordinator &sync_coordinator) {
   // InstrumentTarget
   lua.new_usertype<InstrumentTarget>(
       "InstrumentTarget", sol::constructors<InstrumentTarget()>(), "id",
@@ -162,7 +270,10 @@ void bind_runtime_contexts(sol::state &lua) {
   // RuntimeContext_DCGetSet
   lua.new_usertype<RuntimeContext_DCGetSet>(
       "RuntimeContext_DCGetSet",
-      sol::constructors<RuntimeContext_DCGetSet(InstrumentRegistry &)>(),
+      sol::factories([&registry, &sync_coordinator]() {
+        return std::make_shared<RuntimeContext_DCGetSet>(registry,
+                                                         sync_coordinator);
+      }),
       "getters", &RuntimeContext_DCGetSet::getters, "setters",
       &RuntimeContext_DCGetSet::setters, "sampleRate",
       &RuntimeContext_DCGetSet::sampleRate, "numPoints",
@@ -189,7 +300,10 @@ void bind_runtime_contexts(sol::state &lua) {
   // RuntimeContext_1DWaveform
   lua.new_usertype<RuntimeContext_1DWaveform>(
       "RuntimeContext_1DWaveform",
-      sol::constructors<RuntimeContext_1DWaveform(InstrumentRegistry &)>(),
+      sol::factories([&registry, &sync_coordinator]() {
+        return std::make_shared<RuntimeContext_1DWaveform>(registry,
+                                                           sync_coordinator);
+      }),
       "setters", &RuntimeContext_1DWaveform::setters, "bufferedGetters",
       &RuntimeContext_1DWaveform::bufferedGetters, "bufferedSetters",
       &RuntimeContext_1DWaveform::bufferedSetters, "sampleRate",
@@ -225,7 +339,10 @@ void bind_runtime_contexts(sol::state &lua) {
   // RuntimeContext_2DWaveform
   lua.new_usertype<RuntimeContext_2DWaveform>(
       "RuntimeContext_2DWaveform",
-      sol::constructors<RuntimeContext_2DWaveform(InstrumentRegistry &)>(),
+      sol::factories([&registry, &sync_coordinator]() {
+        return std::make_shared<RuntimeContext_2DWaveform>(registry,
+                                                           sync_coordinator);
+      }),
       "setters", &RuntimeContext_2DWaveform::setters, "bufferedGetters",
       &RuntimeContext_2DWaveform::bufferedGetters, "bufferedXSetters",
       &RuntimeContext_2DWaveform::bufferedXSetters, "bufferedYSetters",
@@ -283,4 +400,5 @@ void bind_runtime_contexts(sol::state &lua) {
             }
           }));
 }
+
 } // namespace instserver
