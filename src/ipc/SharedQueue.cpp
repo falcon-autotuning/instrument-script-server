@@ -2,6 +2,7 @@
 #include "instrument-server/Logger.hpp"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/interprocess/creation_tags.hpp>
+#include <memory>
 #include <string>
 
 namespace instserver {
@@ -27,26 +28,25 @@ SharedQueue::create_server_queue(const std::string &instrument_name) {
     auto req_queue =
         std::make_unique<message_queue>(create_only, req_name.c_str(),
                                         100, // max messages
-                                        sizeof(instserver::ipc::IPCMessage));
+                                        sizeof(IPCMessage));
 
-    auto resp_queue =
-        std::make_unique<message_queue>(create_only, resp_name.c_str(), 100,
-                                        sizeof(instserver::ipc::IPCMessage));
+    auto resp_queue = std::make_unique<message_queue>(
+        create_only, resp_name.c_str(), 100, sizeof(IPCMessage));
 
     LOG_INFO("IPC", "QUEUE_CREATE", "Created queues for instrument: {}",
              instrument_name);
 
+    // SERVER:  sends on request, receives on response
     return std::make_unique<SharedQueue>(
-        std::move(req_queue), std::move(resp_queue), req_name, resp_name);
-
+        std::move(req_queue), std::move(resp_queue), req_name, resp_name, true);
   } catch (const interprocess_exception &ex) {
-    LOG_ERROR("IPC", "QUEUE_CREATE", "Failed to create queues:  {}", ex.what());
+    LOG_ERROR("IPC", "QUEUE_CREATE", "Failed to create queues: {}", ex.what());
     throw;
   }
 }
 
-std::unique_ptr<SharedQueue> instserver::ipc::SharedQueue::create_worker_queue(
-    const std::string &instrument_name) {
+std::unique_ptr<SharedQueue>
+SharedQueue::create_worker_queue(const std::string &instrument_name) {
   using namespace boost::interprocess;
 
   std::string req_name = make_queue_name(instrument_name, "req");
@@ -62,8 +62,10 @@ std::unique_ptr<SharedQueue> instserver::ipc::SharedQueue::create_worker_queue(
     LOG_INFO("IPC", "QUEUE_OPEN", "Opened queues for instrument: {}",
              instrument_name);
 
-    return std::make_unique<SharedQueue>(
-        std::move(req_queue), std::move(resp_queue), req_name, resp_name);
+    // WORKER: receives on request, sends on response
+    return std::make_unique<SharedQueue>(std::move(req_queue),
+                                         std::move(resp_queue), req_name,
+                                         resp_name, false);
   } catch (const interprocess_exception &ex) {
     LOG_ERROR("IPC", "QUEUE_OPEN", "Failed to open queues: {}", ex.what());
     throw;
@@ -73,10 +75,10 @@ std::unique_ptr<SharedQueue> instserver::ipc::SharedQueue::create_worker_queue(
 instserver::ipc::SharedQueue::SharedQueue(
     std::unique_ptr<boost::interprocess::message_queue> req_queue,
     std::unique_ptr<boost::interprocess::message_queue> resp_queue,
-    const std::string &req_name, const std::string &resp_name)
+    const std::string &req_name, const std::string &resp_name, bool is_server)
     : request_queue_(std::move(req_queue)),
       response_queue_(std::move(resp_queue)), request_queue_name_(req_name),
-      response_queue_name_(resp_name) {}
+      response_queue_name_(resp_name), is_server_(is_server) {}
 
 instserver::ipc::SharedQueue::~SharedQueue() {
   // Queues are automatically closed when unique_ptr is destroyed
@@ -92,8 +94,9 @@ bool instserver::ipc::SharedQueue::send(const IPCMessage &msg,
     auto abs_time = boost::posix_time::microsec_clock::universal_time() +
                     boost::posix_time::milliseconds(timeout.count());
 
-    // Send to request queue
-    bool sent = request_queue_->timed_send(&msg, sizeof(msg), 0, abs_time);
+    // Server sends on request queue, worker sends on response queue
+    auto *queue = is_server_ ? request_queue_.get() : response_queue_.get();
+    bool sent = queue->timed_send(&msg, sizeof(msg), 0, abs_time);
 
     if (!sent) {
       LOG_WARN("IPC", "SEND_TIMEOUT", "Send timeout on queue: {}",
@@ -120,8 +123,10 @@ SharedQueue::receive(std::chrono::milliseconds timeout) {
     auto abs_time = boost::posix_time::microsec_clock::universal_time() +
                     boost::posix_time::milliseconds(timeout.count());
 
-    bool received = response_queue_->timed_receive(
-        &msg, sizeof(msg), received_size, priority, abs_time);
+    // Server receives on response queue, worker receives on request queue
+    auto *queue = is_server_ ? response_queue_.get() : request_queue_.get();
+    bool received = queue->timed_receive(&msg, sizeof(msg), received_size,
+                                         priority, abs_time);
 
     if (!received) {
       LOG_TRACE("IPC", "RECV_TIMEOUT", "Receive timeout on queue: {}",

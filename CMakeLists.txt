@@ -57,6 +57,7 @@ add_library(
   src/server/InstrumentRegistry.cpp
   src/server/RuntimeContext.cpp
   src/SchemaValidator.cpp
+  src/SerializedCommand.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/embedded_schemas.cpp)
 target_include_directories(
   instrument_server_lib

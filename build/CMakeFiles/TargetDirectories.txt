@@ -18,7 +18,16 @@
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/install/strip.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_ipc.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_plugin.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_plugin_loader.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_plugin_interface.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_instrument_registry.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_ipc_full.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_ipc_benchmark.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_serialized_command.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_worker_protocol.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_validator.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test_mock_integration.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/mock_visa_plugin.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/package.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/package_source.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/test.dir

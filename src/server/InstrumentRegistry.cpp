@@ -98,23 +98,44 @@ void InstrumentRegistry::remove_instrument(const std::string &name) {
   }
 }
 
-void InstrumentRegistry::start_all() {
-  std::lock_guard lock(mutex_);
-  LOG_INFO("REGISTRY", "START_ALL", "Starting {} instruments",
-           instruments_.size());
-  for (auto &[name, proxy] : instruments_) {
-    if (!proxy->is_alive()) {
-      proxy->start();
-    }
-  }
-}
-
 void InstrumentRegistry::stop_all() {
   std::lock_guard lock(mutex_);
   LOG_INFO("REGISTRY", "STOP_ALL", "Stopping {} instruments",
            instruments_.size());
+
+  // Create a copy of the map to avoid iterator invalidation
+  std::vector<std::shared_ptr<InstrumentWorkerProxy>> proxies;
   for (auto &[name, proxy] : instruments_) {
-    proxy->stop();
+    if (proxy) { // Null check
+      proxies.push_back(proxy);
+    }
+  }
+
+  // Stop all proxies
+  for (auto &proxy : proxies) {
+    try {
+      proxy->stop();
+    } catch (const std::exception &e) {
+      LOG_ERROR("REGISTRY", "STOP_ALL", "Error stopping instrument: {}",
+                e.what());
+    }
+  }
+}
+
+void InstrumentRegistry::start_all() {
+  std::lock_guard lock(mutex_);
+  LOG_INFO("REGISTRY", "START_ALL", "Starting {} instruments",
+           instruments_.size());
+
+  for (auto &[name, proxy] : instruments_) {
+    if (proxy && !proxy->is_alive()) { // Null check
+      try {
+        proxy->start();
+      } catch (const std::exception &e) {
+        LOG_ERROR("REGISTRY", "START_ALL", "Error starting instrument {}: {}",
+                  name, e.what());
+      }
+    }
   }
 }
 

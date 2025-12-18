@@ -19,6 +19,14 @@ public:
   // Initialize with file and console sinks
   void init(const std::string &log_file = "instrument_server.log",
             spdlog::level::level_enum level = spdlog::level::debug) {
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    // If already initialized, just update level
+    if (logger_) {
+      logger_->set_level(level);
+      return;
+    }
+
     try {
       auto console_sink =
           std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
@@ -34,9 +42,15 @@ public:
       logger_->set_level(level);
       logger_->flush_on(spdlog::level::warn);
 
-      spdlog::register_logger(logger_);
+      // Don't register if already exists
+      if (!spdlog::get("instrument")) {
+        spdlog::register_logger(logger_);
+      }
     } catch (const spdlog::spdlog_ex &ex) {
-      fmt::print(stderr, "Log initialization failed: {}\n", ex.what());
+      // Silently ignore if already initialized
+      if (std::string(ex.what()).find("already exists") == std::string::npos) {
+        fmt::print(stderr, "Log initialization failed: {}\n", ex.what());
+      }
     }
   }
 
@@ -82,6 +96,7 @@ private:
   void log(spdlog::level::level_enum level, const std::string &instr_name,
            const std::string &instr_id, const std::string &fmt_str,
            Args &&...args) {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (!logger_)
       return;
 
@@ -93,6 +108,7 @@ private:
   }
 
   std::shared_ptr<spdlog::logger> logger_;
+  std::mutex mutex_;
 };
 
 // Convenience macros

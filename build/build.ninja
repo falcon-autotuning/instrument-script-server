@@ -143,6 +143,17 @@ build CMakeFiles/instrument_server_lib.dir/src/SchemaValidator.cpp.o: CXX_COMPIL
   TARGET_PDB = libinstrument_server_lib.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument_server_lib.dir
 
+build CMakeFiles/instrument_server_lib.dir/src/SerializedCommand.cpp.o: CXX_COMPILER__instrument_server_lib_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/SerializedCommand.cpp || cmake_object_order_depends_target_instrument_server_lib
+  DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS
+  DEP_FILE = CMakeFiles/instrument_server_lib.dir/src/SerializedCommand.cpp.o.d
+  FLAGS = -Oz -std=gnu++17 -fPIC
+  INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
+  OBJECT_DIR = CMakeFiles/instrument_server_lib.dir
+  OBJECT_FILE_DIR = CMakeFiles/instrument_server_lib.dir/src
+  TARGET_COMPILE_PDB = CMakeFiles/instrument_server_lib.dir/
+  TARGET_PDB = libinstrument_server_lib.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/instrument_server_lib.dir
+
 build CMakeFiles/instrument_server_lib.dir/embedded_schemas.cpp.o: CXX_COMPILER__instrument_server_lib_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/build/embedded_schemas.cpp || cmake_object_order_depends_target_instrument_server_lib
   DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_lib_EXPORTS
   DEP_FILE = CMakeFiles/instrument_server_lib.dir/embedded_schemas.cpp.o.d
@@ -162,7 +173,7 @@ build CMakeFiles/instrument_server_lib.dir/embedded_schemas.cpp.o: CXX_COMPILER_
 #############################################
 # Link the shared library libinstrument_server_lib.so
 
-build libinstrument_server_lib.so: CXX_SHARED_LIBRARY_LINKER__instrument_server_lib_ CMakeFiles/instrument_server_lib.dir/src/ipc/SharedQueue.cpp.o CMakeFiles/instrument_server_lib.dir/src/ipc/ProcessManager.cpp.o CMakeFiles/instrument_server_lib.dir/src/ipc/WorkerProtocol.cpp.o CMakeFiles/instrument_server_lib.dir/src/plugin/PluginLoader.cpp.o CMakeFiles/instrument_server_lib.dir/src/plugin/PluginRegistry.cpp.o CMakeFiles/instrument_server_lib.dir/src/server/InstrumentWorkerProxy.cpp.o CMakeFiles/instrument_server_lib.dir/src/server/InstrumentRegistry.cpp.o CMakeFiles/instrument_server_lib.dir/src/server/RuntimeContext.cpp.o CMakeFiles/instrument_server_lib.dir/src/SchemaValidator.cpp.o CMakeFiles/instrument_server_lib.dir/embedded_schemas.cpp.o | /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libfmt.so.12.1.0
+build libinstrument_server_lib.so: CXX_SHARED_LIBRARY_LINKER__instrument_server_lib_ CMakeFiles/instrument_server_lib.dir/src/ipc/SharedQueue.cpp.o CMakeFiles/instrument_server_lib.dir/src/ipc/ProcessManager.cpp.o CMakeFiles/instrument_server_lib.dir/src/ipc/WorkerProtocol.cpp.o CMakeFiles/instrument_server_lib.dir/src/plugin/PluginLoader.cpp.o CMakeFiles/instrument_server_lib.dir/src/plugin/PluginRegistry.cpp.o CMakeFiles/instrument_server_lib.dir/src/server/InstrumentWorkerProxy.cpp.o CMakeFiles/instrument_server_lib.dir/src/server/InstrumentRegistry.cpp.o CMakeFiles/instrument_server_lib.dir/src/server/RuntimeContext.cpp.o CMakeFiles/instrument_server_lib.dir/src/SchemaValidator.cpp.o CMakeFiles/instrument_server_lib.dir/src/SerializedCommand.cpp.o CMakeFiles/instrument_server_lib.dir/embedded_schemas.cpp.o | /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libfmt.so.12.1.0
   DEP_FILE = CMakeFiles/instrument_server_lib.dir/link.d
   LANGUAGE_COMPILE_FLAGS = -Oz
   LINK_FLAGS = -shared -Xlinker --dependency-file=CMakeFiles/instrument_server_lib.dir/link.d
@@ -691,6 +702,293 @@ build tests/test_plugin: CXX_EXECUTABLE_LINKER__test_plugin_ tests/CMakeFiles/te
   TARGET_SUPPORT_DIR = tests/CMakeFiles/test_plugin.dir
 
 # =============================================================================
+# Object build statements for EXECUTABLE target test_plugin_loader
+
+
+#############################################
+# Order-only phony target for test_plugin_loader
+
+build cmake_object_order_depends_target_test_plugin_loader: phony || cmake_object_order_depends_target_instrument_server_lib
+
+build tests/CMakeFiles/test_plugin_loader.dir/test_plugin_loader.cpp.o: CXX_COMPILER__test_plugin_loader_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/tests/test_plugin_loader.cpp || cmake_object_order_depends_target_test_plugin_loader
+  DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEP_FILE = tests/CMakeFiles/test_plugin_loader.dir/test_plugin_loader.cpp.o.d
+  FLAGS = -Oz -std=gnu++17
+  INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
+  OBJECT_DIR = tests/CMakeFiles/test_plugin_loader.dir
+  OBJECT_FILE_DIR = tests/CMakeFiles/test_plugin_loader.dir
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_plugin_loader.dir/
+  TARGET_PDB = tests/test_plugin_loader.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_plugin_loader.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_plugin_loader
+
+
+#############################################
+# Link the executable tests/test_plugin_loader
+
+build tests/test_plugin_loader: CXX_EXECUTABLE_LINKER__test_plugin_loader_ tests/CMakeFiles/test_plugin_loader.dir/test_plugin_loader.cpp.o | libinstrument_server_lib.so /usr/lib/libgtest_main.so.1.17.0 /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument_server_lib.so
+  DEP_FILE = tests/CMakeFiles/test_plugin_loader.dir/link.d
+  FLAGS = -Oz
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=tests/CMakeFiles/test_plugin_loader.dir/link.d
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument_server_lib.so  /usr/lib/libgtest_main.so.1.17.0  /usr/lib/libboost_filesystem.so.1.89.0  /usr/lib/libyaml-cpp.so.0.8.0  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  /usr/lib/liblua5.4.so  -lm  -lpthread  -ldl  -lrt  /usr/lib/libgtest.so.1.17.0
+  OBJECT_DIR = tests/CMakeFiles/test_plugin_loader.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_plugin_loader.dir/
+  TARGET_FILE = tests/test_plugin_loader
+  TARGET_PDB = tests/test_plugin_loader.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_plugin_loader.dir
+
+# =============================================================================
+# Object build statements for EXECUTABLE target test_plugin_interface
+
+
+#############################################
+# Order-only phony target for test_plugin_interface
+
+build cmake_object_order_depends_target_test_plugin_interface: phony || cmake_object_order_depends_target_instrument_server_lib
+
+build tests/CMakeFiles/test_plugin_interface.dir/test_plugin_interface.cpp.o: CXX_COMPILER__test_plugin_interface_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/tests/test_plugin_interface.cpp || cmake_object_order_depends_target_test_plugin_interface
+  DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEP_FILE = tests/CMakeFiles/test_plugin_interface.dir/test_plugin_interface.cpp.o.d
+  FLAGS = -Oz -std=gnu++17
+  INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
+  OBJECT_DIR = tests/CMakeFiles/test_plugin_interface.dir
+  OBJECT_FILE_DIR = tests/CMakeFiles/test_plugin_interface.dir
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_plugin_interface.dir/
+  TARGET_PDB = tests/test_plugin_interface.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_plugin_interface.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_plugin_interface
+
+
+#############################################
+# Link the executable tests/test_plugin_interface
+
+build tests/test_plugin_interface: CXX_EXECUTABLE_LINKER__test_plugin_interface_ tests/CMakeFiles/test_plugin_interface.dir/test_plugin_interface.cpp.o | libinstrument_server_lib.so /usr/lib/libgtest_main.so.1.17.0 /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument_server_lib.so
+  DEP_FILE = tests/CMakeFiles/test_plugin_interface.dir/link.d
+  FLAGS = -Oz
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=tests/CMakeFiles/test_plugin_interface.dir/link.d
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument_server_lib.so  /usr/lib/libgtest_main.so.1.17.0  /usr/lib/libboost_filesystem.so.1.89.0  /usr/lib/libyaml-cpp.so.0.8.0  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  /usr/lib/liblua5.4.so  -lm  -lpthread  -ldl  -lrt  /usr/lib/libgtest.so.1.17.0
+  OBJECT_DIR = tests/CMakeFiles/test_plugin_interface.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_plugin_interface.dir/
+  TARGET_FILE = tests/test_plugin_interface
+  TARGET_PDB = tests/test_plugin_interface.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_plugin_interface.dir
+
+# =============================================================================
+# Object build statements for EXECUTABLE target test_instrument_registry
+
+
+#############################################
+# Order-only phony target for test_instrument_registry
+
+build cmake_object_order_depends_target_test_instrument_registry: phony || cmake_object_order_depends_target_instrument_server_lib
+
+build tests/CMakeFiles/test_instrument_registry.dir/test_instrument_registry.cpp.o: CXX_COMPILER__test_instrument_registry_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/tests/test_instrument_registry.cpp || cmake_object_order_depends_target_test_instrument_registry
+  DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEP_FILE = tests/CMakeFiles/test_instrument_registry.dir/test_instrument_registry.cpp.o.d
+  FLAGS = -Oz -std=gnu++17
+  INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
+  OBJECT_DIR = tests/CMakeFiles/test_instrument_registry.dir
+  OBJECT_FILE_DIR = tests/CMakeFiles/test_instrument_registry.dir
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_instrument_registry.dir/
+  TARGET_PDB = tests/test_instrument_registry.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_instrument_registry.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_instrument_registry
+
+
+#############################################
+# Link the executable tests/test_instrument_registry
+
+build tests/test_instrument_registry: CXX_EXECUTABLE_LINKER__test_instrument_registry_ tests/CMakeFiles/test_instrument_registry.dir/test_instrument_registry.cpp.o | libinstrument_server_lib.so /usr/lib/libgtest_main.so.1.17.0 /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument_server_lib.so
+  DEP_FILE = tests/CMakeFiles/test_instrument_registry.dir/link.d
+  FLAGS = -Oz
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=tests/CMakeFiles/test_instrument_registry.dir/link.d
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument_server_lib.so  /usr/lib/libgtest_main.so.1.17.0  /usr/lib/libboost_filesystem.so.1.89.0  /usr/lib/libyaml-cpp.so.0.8.0  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  /usr/lib/liblua5.4.so  -lm  -lpthread  -ldl  -lrt  /usr/lib/libgtest.so.1.17.0
+  OBJECT_DIR = tests/CMakeFiles/test_instrument_registry.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_instrument_registry.dir/
+  TARGET_FILE = tests/test_instrument_registry
+  TARGET_PDB = tests/test_instrument_registry.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_instrument_registry.dir
+
+# =============================================================================
+# Object build statements for EXECUTABLE target test_ipc_full
+
+
+#############################################
+# Order-only phony target for test_ipc_full
+
+build cmake_object_order_depends_target_test_ipc_full: phony || cmake_object_order_depends_target_instrument_server_lib
+
+build tests/CMakeFiles/test_ipc_full.dir/test_ipc_full.cpp.o: CXX_COMPILER__test_ipc_full_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/tests/test_ipc_full.cpp || cmake_object_order_depends_target_test_ipc_full
+  DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEP_FILE = tests/CMakeFiles/test_ipc_full.dir/test_ipc_full.cpp.o.d
+  FLAGS = -Oz -std=gnu++17
+  INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
+  OBJECT_DIR = tests/CMakeFiles/test_ipc_full.dir
+  OBJECT_FILE_DIR = tests/CMakeFiles/test_ipc_full.dir
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_ipc_full.dir/
+  TARGET_PDB = tests/test_ipc_full.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_ipc_full.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_ipc_full
+
+
+#############################################
+# Link the executable tests/test_ipc_full
+
+build tests/test_ipc_full: CXX_EXECUTABLE_LINKER__test_ipc_full_ tests/CMakeFiles/test_ipc_full.dir/test_ipc_full.cpp.o | libinstrument_server_lib.so /usr/lib/libgtest_main.so.1.17.0 /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument_server_lib.so
+  DEP_FILE = tests/CMakeFiles/test_ipc_full.dir/link.d
+  FLAGS = -Oz
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=tests/CMakeFiles/test_ipc_full.dir/link.d
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument_server_lib.so  /usr/lib/libgtest_main.so.1.17.0  /usr/lib/libboost_filesystem.so.1.89.0  /usr/lib/libyaml-cpp.so.0.8.0  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  /usr/lib/liblua5.4.so  -lm  -lpthread  -ldl  -lrt  /usr/lib/libgtest.so.1.17.0
+  OBJECT_DIR = tests/CMakeFiles/test_ipc_full.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_ipc_full.dir/
+  TARGET_FILE = tests/test_ipc_full
+  TARGET_PDB = tests/test_ipc_full.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_ipc_full.dir
+
+# =============================================================================
+# Object build statements for EXECUTABLE target test_ipc_benchmark
+
+
+#############################################
+# Order-only phony target for test_ipc_benchmark
+
+build cmake_object_order_depends_target_test_ipc_benchmark: phony || cmake_object_order_depends_target_instrument_server_lib
+
+build tests/CMakeFiles/test_ipc_benchmark.dir/test_ipc_benchmark.cpp.o: CXX_COMPILER__test_ipc_benchmark_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/tests/test_ipc_benchmark.cpp || cmake_object_order_depends_target_test_ipc_benchmark
+  DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEP_FILE = tests/CMakeFiles/test_ipc_benchmark.dir/test_ipc_benchmark.cpp.o.d
+  FLAGS = -Oz -std=gnu++17
+  INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
+  OBJECT_DIR = tests/CMakeFiles/test_ipc_benchmark.dir
+  OBJECT_FILE_DIR = tests/CMakeFiles/test_ipc_benchmark.dir
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_ipc_benchmark.dir/
+  TARGET_PDB = tests/test_ipc_benchmark.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_ipc_benchmark.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_ipc_benchmark
+
+
+#############################################
+# Link the executable tests/test_ipc_benchmark
+
+build tests/test_ipc_benchmark: CXX_EXECUTABLE_LINKER__test_ipc_benchmark_ tests/CMakeFiles/test_ipc_benchmark.dir/test_ipc_benchmark.cpp.o | libinstrument_server_lib.so /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest_main.so.1.17.0 /usr/lib/libgtest.so.1.17.0 || libinstrument_server_lib.so
+  DEP_FILE = tests/CMakeFiles/test_ipc_benchmark.dir/link.d
+  FLAGS = -Oz
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=tests/CMakeFiles/test_ipc_benchmark.dir/link.d
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument_server_lib.so  /usr/lib/libboost_filesystem.so.1.89.0  /usr/lib/libyaml-cpp.so.0.8.0  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  /usr/lib/liblua5.4.so  -lm  -lpthread  -ldl  -lrt  /usr/lib/libgtest_main.so.1.17.0  /usr/lib/libgtest.so.1.17.0
+  OBJECT_DIR = tests/CMakeFiles/test_ipc_benchmark.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_ipc_benchmark.dir/
+  TARGET_FILE = tests/test_ipc_benchmark
+  TARGET_PDB = tests/test_ipc_benchmark.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_ipc_benchmark.dir
+
+# =============================================================================
+# Object build statements for EXECUTABLE target test_serialized_command
+
+
+#############################################
+# Order-only phony target for test_serialized_command
+
+build cmake_object_order_depends_target_test_serialized_command: phony || cmake_object_order_depends_target_instrument_server_lib
+
+build tests/CMakeFiles/test_serialized_command.dir/test_serialized_command.cpp.o: CXX_COMPILER__test_serialized_command_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/tests/test_serialized_command.cpp || cmake_object_order_depends_target_test_serialized_command
+  DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEP_FILE = tests/CMakeFiles/test_serialized_command.dir/test_serialized_command.cpp.o.d
+  FLAGS = -Oz -std=gnu++17
+  INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
+  OBJECT_DIR = tests/CMakeFiles/test_serialized_command.dir
+  OBJECT_FILE_DIR = tests/CMakeFiles/test_serialized_command.dir
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_serialized_command.dir/
+  TARGET_PDB = tests/test_serialized_command.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_serialized_command.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_serialized_command
+
+
+#############################################
+# Link the executable tests/test_serialized_command
+
+build tests/test_serialized_command: CXX_EXECUTABLE_LINKER__test_serialized_command_ tests/CMakeFiles/test_serialized_command.dir/test_serialized_command.cpp.o | libinstrument_server_lib.so /usr/lib/libgtest_main.so.1.17.0 /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument_server_lib.so
+  DEP_FILE = tests/CMakeFiles/test_serialized_command.dir/link.d
+  FLAGS = -Oz
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=tests/CMakeFiles/test_serialized_command.dir/link.d
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument_server_lib.so  /usr/lib/libgtest_main.so.1.17.0  /usr/lib/libboost_filesystem.so.1.89.0  /usr/lib/libyaml-cpp.so.0.8.0  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  /usr/lib/liblua5.4.so  -lm  -lpthread  -ldl  -lrt  /usr/lib/libgtest.so.1.17.0
+  OBJECT_DIR = tests/CMakeFiles/test_serialized_command.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_serialized_command.dir/
+  TARGET_FILE = tests/test_serialized_command
+  TARGET_PDB = tests/test_serialized_command.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_serialized_command.dir
+
+# =============================================================================
+# Object build statements for EXECUTABLE target test_worker_protocol
+
+
+#############################################
+# Order-only phony target for test_worker_protocol
+
+build cmake_object_order_depends_target_test_worker_protocol: phony || cmake_object_order_depends_target_instrument_server_lib
+
+build tests/CMakeFiles/test_worker_protocol.dir/test_worker_protocol.cpp.o: CXX_COMPILER__test_worker_protocol_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/tests/test_worker_protocol.cpp || cmake_object_order_depends_target_test_worker_protocol
+  DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEP_FILE = tests/CMakeFiles/test_worker_protocol.dir/test_worker_protocol.cpp.o.d
+  FLAGS = -Oz -std=gnu++17
+  INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
+  OBJECT_DIR = tests/CMakeFiles/test_worker_protocol.dir
+  OBJECT_FILE_DIR = tests/CMakeFiles/test_worker_protocol.dir
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_worker_protocol.dir/
+  TARGET_PDB = tests/test_worker_protocol.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_worker_protocol.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_worker_protocol
+
+
+#############################################
+# Link the executable tests/test_worker_protocol
+
+build tests/test_worker_protocol: CXX_EXECUTABLE_LINKER__test_worker_protocol_ tests/CMakeFiles/test_worker_protocol.dir/test_worker_protocol.cpp.o | libinstrument_server_lib.so /usr/lib/libgtest_main.so.1.17.0 /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument_server_lib.so
+  DEP_FILE = tests/CMakeFiles/test_worker_protocol.dir/link.d
+  FLAGS = -Oz
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=tests/CMakeFiles/test_worker_protocol.dir/link.d
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument_server_lib.so  /usr/lib/libgtest_main.so.1.17.0  /usr/lib/libboost_filesystem.so.1.89.0  /usr/lib/libyaml-cpp.so.0.8.0  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  /usr/lib/liblua5.4.so  -lm  -lpthread  -ldl  -lrt  /usr/lib/libgtest.so.1.17.0
+  OBJECT_DIR = tests/CMakeFiles/test_worker_protocol.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_worker_protocol.dir/
+  TARGET_FILE = tests/test_worker_protocol
+  TARGET_PDB = tests/test_worker_protocol.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_worker_protocol.dir
+
+# =============================================================================
 # Object build statements for EXECUTABLE target test_validator
 
 
@@ -730,6 +1028,88 @@ build tests/test_validator: CXX_EXECUTABLE_LINKER__test_validator_ tests/CMakeFi
   TARGET_FILE = tests/test_validator
   TARGET_PDB = tests/test_validator.pdb
   TARGET_SUPPORT_DIR = tests/CMakeFiles/test_validator.dir
+
+# =============================================================================
+# Object build statements for EXECUTABLE target test_mock_integration
+
+
+#############################################
+# Order-only phony target for test_mock_integration
+
+build cmake_object_order_depends_target_test_mock_integration: phony || cmake_object_order_depends_target_instrument_server_lib cmake_object_order_depends_target_mock_visa_plugin
+
+build tests/CMakeFiles/test_mock_integration.dir/test_mock_integration.cpp.o: CXX_COMPILER__test_mock_integration_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/tests/test_mock_integration.cpp || cmake_object_order_depends_target_test_mock_integration
+  DEFINES = -DBOOST_FILESYSTEM_DYN_LINK -DBOOST_FILESYSTEM_NO_LIB -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEP_FILE = tests/CMakeFiles/test_mock_integration.dir/test_mock_integration.cpp.o.d
+  FLAGS = -Oz -std=gnu++17
+  INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
+  OBJECT_DIR = tests/CMakeFiles/test_mock_integration.dir
+  OBJECT_FILE_DIR = tests/CMakeFiles/test_mock_integration.dir
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_mock_integration.dir/
+  TARGET_PDB = tests/test_mock_integration.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_mock_integration.dir
+
+
+# =============================================================================
+# Link build statements for EXECUTABLE target test_mock_integration
+
+
+#############################################
+# Link the executable tests/test_mock_integration
+
+build tests/test_mock_integration: CXX_EXECUTABLE_LINKER__test_mock_integration_ tests/CMakeFiles/test_mock_integration.dir/test_mock_integration.cpp.o | libinstrument_server_lib.so /usr/lib/libgtest_main.so.1.17.0 /usr/lib/libboost_filesystem.so.1.89.0 /usr/lib/libyaml-cpp.so.0.8.0 /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument_server_lib.so tests/mock_visa_plugin.so
+  DEP_FILE = tests/CMakeFiles/test_mock_integration.dir/link.d
+  FLAGS = -Oz
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=tests/CMakeFiles/test_mock_integration.dir/link.d
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument_server_lib.so  /usr/lib/libgtest_main.so.1.17.0  /usr/lib/libboost_filesystem.so.1.89.0  /usr/lib/libyaml-cpp.so.0.8.0  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  /usr/lib/liblua5.4.so  -lm  -lpthread  -ldl  -lrt  /usr/lib/libgtest.so.1.17.0
+  OBJECT_DIR = tests/CMakeFiles/test_mock_integration.dir
+  POST_BUILD = :
+  PRE_LINK = :
+  TARGET_COMPILE_PDB = tests/CMakeFiles/test_mock_integration.dir/
+  TARGET_FILE = tests/test_mock_integration
+  TARGET_PDB = tests/test_mock_integration.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/test_mock_integration.dir
+
+# =============================================================================
+# Object build statements for SHARED_LIBRARY target mock_visa_plugin
+
+
+#############################################
+# Order-only phony target for mock_visa_plugin
+
+build cmake_object_order_depends_target_mock_visa_plugin: phony || .
+
+build tests/CMakeFiles/mock_visa_plugin.dir/test_mock_plugin.c.o: C_COMPILER__mock_visa_plugin_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/tests/test_mock_plugin.c || cmake_object_order_depends_target_mock_visa_plugin
+  DEFINES = -Dmock_visa_plugin_EXPORTS
+  DEP_FILE = tests/CMakeFiles/mock_visa_plugin.dir/test_mock_plugin.c.o.d
+  FLAGS = -std=gnu11 -fPIC
+  INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
+  OBJECT_DIR = tests/CMakeFiles/mock_visa_plugin.dir
+  OBJECT_FILE_DIR = tests/CMakeFiles/mock_visa_plugin.dir
+  TARGET_COMPILE_PDB = tests/CMakeFiles/mock_visa_plugin.dir/
+  TARGET_PDB = tests/mock_visa_plugin.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/mock_visa_plugin.dir
+
+
+# =============================================================================
+# Link build statements for SHARED_LIBRARY target mock_visa_plugin
+
+
+#############################################
+# Link the shared library tests/mock_visa_plugin.so
+
+build tests/mock_visa_plugin.so: C_SHARED_LIBRARY_LINKER__mock_visa_plugin_ tests/CMakeFiles/mock_visa_plugin.dir/test_mock_plugin.c.o
+  DEP_FILE = tests/CMakeFiles/mock_visa_plugin.dir/link.d
+  LINK_FLAGS = -shared -Xlinker --dependency-file=tests/CMakeFiles/mock_visa_plugin.dir/link.d
+  OBJECT_DIR = tests/CMakeFiles/mock_visa_plugin.dir
+  POST_BUILD = cd /home/tylerk/falcon-dev/instrument-script-server/build/tests && /usr/bin/cmake -E copy /home/tylerk/falcon-dev/instrument-script-server/build/tests/mock_visa_plugin.so /tmp/mock_visa_plugin.so
+  PRE_LINK = :
+  SONAME = mock_visa_plugin.so
+  SONAME_FLAG = -Wl,-soname,
+  TARGET_COMPILE_PDB = tests/CMakeFiles/mock_visa_plugin.dir/
+  TARGET_FILE = tests/mock_visa_plugin.so
+  TARGET_PDB = tests/mock_visa_plugin.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/mock_visa_plugin.dir
 
 
 #############################################
@@ -987,15 +1367,35 @@ build examples/plugins/simple_serial/install/strip: phony examples/plugins/simpl
 
 build instrument_server_lib: phony libinstrument_server_lib.so
 
+build mock_visa_plugin: phony tests/mock_visa_plugin.so
+
+build mock_visa_plugin.so: phony tests/mock_visa_plugin.so
+
 build simple_serial_plugin: phony examples/plugins/simple_serial/simple_serial_plugin.so
 
 build simple_serial_plugin.so: phony examples/plugins/simple_serial/simple_serial_plugin.so
 
+build test_instrument_registry: phony tests/test_instrument_registry
+
 build test_ipc: phony tests/test_ipc
+
+build test_ipc_benchmark: phony tests/test_ipc_benchmark
+
+build test_ipc_full: phony tests/test_ipc_full
+
+build test_mock_integration: phony tests/test_mock_integration
 
 build test_plugin: phony tests/test_plugin
 
+build test_plugin_interface: phony tests/test_plugin_interface
+
+build test_plugin_loader: phony tests/test_plugin_loader
+
+build test_serialized_command: phony tests/test_serialized_command
+
 build test_validator: phony tests/test_validator
+
+build test_worker_protocol: phony tests/test_worker_protocol
 
 # =============================================================================
 # Folder targets.
@@ -1019,7 +1419,7 @@ build examples/plugins/simple_serial/all: phony examples/plugins/simple_serial/s
 #############################################
 # Folder: /home/tylerk/falcon-dev/instrument-script-server/build/tests
 
-build tests/all: phony tests/test_ipc tests/test_plugin tests/test_validator
+build tests/all: phony tests/test_ipc tests/test_plugin tests/test_plugin_loader tests/test_plugin_interface tests/test_instrument_registry tests/test_ipc_full tests/test_ipc_benchmark tests/test_serialized_command tests/test_worker_protocol tests/test_validator tests/test_mock_integration tests/mock_visa_plugin.so
 
 # =============================================================================
 # Built-in targets

@@ -13,9 +13,9 @@ extern "C" {
 #define INSTRUMENT_PLUGIN_API_VERSION 1
 
 // Maximum sizes
-#define PLUGIN_MAX_STRING_LEN 256
-#define PLUGIN_MAX_PARAMS 32
-#define PLUGIN_MAX_PAYLOAD 8192
+#define PLUGIN_MAX_STRING_LEN 128
+#define PLUGIN_MAX_PARAMS 16
+#define PLUGIN_MAX_PAYLOAD 4096
 
 // Parameter value types
 typedef enum {

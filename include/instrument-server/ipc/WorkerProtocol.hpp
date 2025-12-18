@@ -5,6 +5,10 @@
 
 namespace instserver {
 namespace ipc {
+struct TypedParamValue {
+  std::string type;
+  ParamValue value;
+};
 
 /// Serialize SerializedCommand to JSON string
 std::string serialize_command(const SerializedCommand &cmd);

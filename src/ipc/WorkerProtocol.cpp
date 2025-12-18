@@ -1,44 +1,75 @@
-#include "instrument-server/ipc/WorkerProtocol.hpp"
 
+
+#include "instrument-server/SerializedCommand.hpp"
+#include <string>
 namespace instserver {
 namespace ipc {
 
-nlohmann::json param_value_to_json(const ParamValue &val) {
+// Helper: get type name for ParamValue
+static std::string param_type_name(const ParamValue &val) {
   return std::visit(
+      [](auto &&arg) -> std::string {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, std::monostate>)
+          return "null";
+        if constexpr (std::is_same_v<T, bool>)
+          return "bool";
+        if constexpr (std::is_same_v<T, int64_t>)
+          return "int64";
+        if constexpr (std::is_same_v<T, uint64_t>)
+          return "uint64";
+        if constexpr (std::is_same_v<T, double>)
+          return "double";
+        if constexpr (std::is_same_v<T, std::string>)
+          return "string";
+        if constexpr (std::is_same_v<T, std::vector<double>>)
+          return "double_array";
+        if constexpr (std::is_same_v<T, std::vector<int32_t>>)
+          return "int32_array";
+        return "unknown";
+      },
+      val);
+}
+
+// Serialize ParamValue with type info
+nlohmann::json param_value_to_json(const ParamValue &val) {
+  nlohmann::json j;
+  j["type"] = param_type_name(val);
+  j["value"] = std::visit(
       [](auto &&arg) -> nlohmann::json {
         using T = std::decay_t<decltype(arg)>;
         if constexpr (std::is_same_v<T, std::monostate>) {
           return nullptr;
-        } else if constexpr (std::is_same_v<T, std::vector<double>> ||
-                             std::is_same_v<T, std::vector<int32_t>>) {
-          return nlohmann::json(arg);
         } else {
           return arg;
         }
       },
       val);
+  return j;
 }
 
+// Deserialize ParamValue using type info
 ParamValue json_to_param_value(const nlohmann::json &j) {
-  if (j.is_null()) {
+  if (!j.is_object() || !j.contains("type") || !j.contains("value"))
     return std::monostate{};
-  } else if (j.is_boolean()) {
-    return j.get<bool>();
-  } else if (j.is_number_integer()) {
-    return j.get<int64_t>();
-  } else if (j.is_number_unsigned()) {
-    return j.get<uint64_t>();
-  } else if (j.is_number_float()) {
-    return j.get<double>();
-  } else if (j.is_string()) {
-    return j.get<std::string>();
-  } else if (j.is_array() && !j.empty()) {
-    if (j[0].is_number_float()) {
-      return j.get<std::vector<double>>();
-    } else if (j[0].is_number_integer()) {
-      return j.get<std::vector<int32_t>>();
-    }
-  }
+  const std::string &type = j["type"];
+  const nlohmann::json &value = j["value"];
+  if (type == "null")
+    return std::monostate{};
+  if (type == "bool")
+    return value.get<bool>();
+  if (type == "int64")
+    return value.get<int64_t>();
+  if (type == "uint64")
+    return value.get<uint64_t>();
+  if (type == "double")
+    return value.get<double>();
+  if (type == "string")
+    return value.get<std::string>();
+  if (type == "double_array")
+    return value.get<std::vector<double>>();
+  if (type == "int32_array")
+    return value.get<std::vector<int32_t>>();
   return std::monostate{};
 }
 

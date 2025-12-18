@@ -1,5 +1,16 @@
-IPCtests 0 0
-WorkerIntegrationTests 1 0.00246727
-ValidatorTests 1 0.0391156
+IPCtests 1 0.00542092
+Plugin 1 0.00247663
+PluginLoader 1 0.00325778
+PluginInterface 1 0.00244197
+InstrumentRegistry 0 0
+IPCFull 1 0.118529
+IPCBenchmark 1 0.00784821
+SerializedCommand 0 0
+WorkerProtocol 0 0
+ValidatorTests 1 0.0414081
+MockIntegration 0 0
 ---
-IPCtests
+InstrumentRegistry
+SerializedCommand
+WorkerProtocol
+MockIntegration

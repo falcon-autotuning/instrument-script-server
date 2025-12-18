@@ -31,7 +31,8 @@ class SharedQueue {
 public:
   SharedQueue(std::unique_ptr<boost::interprocess::message_queue> req_queue,
               std::unique_ptr<boost::interprocess::message_queue> resp_queue,
-              const std::string &req_name, const std::string &resp_name);
+              const std::string &req_name, const std::string &resp_name,
+              bool is_server);
 
   /// Create/open queue for server (creates both queues)
   static std::unique_ptr<SharedQueue>
@@ -70,6 +71,7 @@ private:
   std::unique_ptr<boost::interprocess::message_queue> response_queue_;
   std::string request_queue_name_;
   std::string response_queue_name_;
+  bool is_server_;
 };
 
 } // namespace ipc

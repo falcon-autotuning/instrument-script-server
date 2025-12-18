@@ -23,22 +23,25 @@ TEST(IPCTest, MessageSendReceive) {
   auto worker_queue = SharedQueue::create_worker_queue("test_msg");
 
   // Send message from server
-  IPCMessage msg;
-  msg.type = IPCMessage::Type::COMMAND;
+  ipc::IPCMessage msg;
+  msg.type = ipc::IPCMessage::Type::COMMAND;
   msg.id = 42;
-  msg.payload_size = 10;
-  std::memcpy(msg.payload, "test_data", 10);
+  std::string payload = "test_data";
+  msg.payload_size = payload.size();
+  std::memcpy(msg.payload, payload.c_str(), payload.size());
 
   EXPECT_TRUE(server_queue->send(msg, std::chrono::milliseconds(1000)));
 
   // Receive on worker side
   auto received = worker_queue->receive(std::chrono::milliseconds(1000));
   ASSERT_TRUE(received.has_value());
-  EXPECT_EQ(received->type, IPCMessage::Type::COMMAND);
+  EXPECT_EQ(received->type, ipc::IPCMessage::Type::COMMAND);
   EXPECT_EQ(received->id, 42);
-  EXPECT_EQ(received->payload_size, 10);
-  EXPECT_EQ(std::string(received->payload, 10), "test_data");
+  EXPECT_EQ(received->payload_size, payload.size());
 
+  // Compare without null terminator
+  std::string received_str(received->payload, received->payload_size);
+  EXPECT_EQ(received_str, payload);
   SharedQueue::cleanup("test_msg");
 }
 
