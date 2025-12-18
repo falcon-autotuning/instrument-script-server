@@ -93,9 +93,9 @@ if(BUILD_TOOLS)
   add_executable(template_expander src/template_expander.cpp)
   target_link_libraries(template_expander PRIVATE yaml-cpp::yaml-cpp)
 
-  add_executable(instrument_configuration_generator
+  add_executable(generate_instrument_configuration
                  src/instrument_configuration_generator.cpp)
-  target_link_libraries(instrument_configuration_generator
+  target_link_libraries(generate_instrument_configuration
                         PRIVATE yaml-cpp::yaml-cpp)
 
   add_executable(validate_instrument_api src/instrument_api_validator_main.cpp)

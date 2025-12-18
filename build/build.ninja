@@ -340,43 +340,43 @@ build template_expander: CXX_EXECUTABLE_LINKER__template_expander_ CMakeFiles/te
   TARGET_SUPPORT_DIR = CMakeFiles/template_expander.dir
 
 # =============================================================================
-# Object build statements for EXECUTABLE target instrument_configuration_generator
+# Object build statements for EXECUTABLE target generate_instrument_configuration
 
 
 #############################################
-# Order-only phony target for instrument_configuration_generator
+# Order-only phony target for generate_instrument_configuration
 
-build cmake_object_order_depends_target_instrument_configuration_generator: phony || .
+build cmake_object_order_depends_target_generate_instrument_configuration: phony || .
 
-build CMakeFiles/instrument_configuration_generator.dir/src/instrument_configuration_generator.cpp.o: CXX_COMPILER__instrument_configuration_generator_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/instrument_configuration_generator.cpp || cmake_object_order_depends_target_instrument_configuration_generator
-  DEP_FILE = CMakeFiles/instrument_configuration_generator.dir/src/instrument_configuration_generator.cpp.o.d
+build CMakeFiles/generate_instrument_configuration.dir/src/instrument_configuration_generator.cpp.o: CXX_COMPILER__generate_instrument_configuration_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/instrument_configuration_generator.cpp || cmake_object_order_depends_target_generate_instrument_configuration
+  DEP_FILE = CMakeFiles/generate_instrument_configuration.dir/src/instrument_configuration_generator.cpp.o.d
   FLAGS = -Oz -std=gnu++17
-  OBJECT_DIR = CMakeFiles/instrument_configuration_generator.dir
-  OBJECT_FILE_DIR = CMakeFiles/instrument_configuration_generator.dir/src
-  TARGET_COMPILE_PDB = CMakeFiles/instrument_configuration_generator.dir/
-  TARGET_PDB = instrument_configuration_generator.pdb
-  TARGET_SUPPORT_DIR = CMakeFiles/instrument_configuration_generator.dir
+  OBJECT_DIR = CMakeFiles/generate_instrument_configuration.dir
+  OBJECT_FILE_DIR = CMakeFiles/generate_instrument_configuration.dir/src
+  TARGET_COMPILE_PDB = CMakeFiles/generate_instrument_configuration.dir/
+  TARGET_PDB = generate_instrument_configuration.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/generate_instrument_configuration.dir
 
 
 # =============================================================================
-# Link build statements for EXECUTABLE target instrument_configuration_generator
+# Link build statements for EXECUTABLE target generate_instrument_configuration
 
 
 #############################################
-# Link the executable instrument_configuration_generator
+# Link the executable generate_instrument_configuration
 
-build instrument_configuration_generator: CXX_EXECUTABLE_LINKER__instrument_configuration_generator_ CMakeFiles/instrument_configuration_generator.dir/src/instrument_configuration_generator.cpp.o | /usr/lib/libyaml-cpp.so.0.8.0
-  DEP_FILE = CMakeFiles/instrument_configuration_generator.dir/link.d
+build generate_instrument_configuration: CXX_EXECUTABLE_LINKER__generate_instrument_configuration_ CMakeFiles/generate_instrument_configuration.dir/src/instrument_configuration_generator.cpp.o | /usr/lib/libyaml-cpp.so.0.8.0
+  DEP_FILE = CMakeFiles/generate_instrument_configuration.dir/link.d
   FLAGS = -Oz
-  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/instrument_configuration_generator.dir/link.d
+  LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/generate_instrument_configuration.dir/link.d
   LINK_LIBRARIES = /usr/lib/libyaml-cpp.so.0.8.0
-  OBJECT_DIR = CMakeFiles/instrument_configuration_generator.dir
+  OBJECT_DIR = CMakeFiles/generate_instrument_configuration.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = CMakeFiles/instrument_configuration_generator.dir/
-  TARGET_FILE = instrument_configuration_generator
-  TARGET_PDB = instrument_configuration_generator.pdb
-  TARGET_SUPPORT_DIR = CMakeFiles/instrument_configuration_generator.dir
+  TARGET_COMPILE_PDB = CMakeFiles/generate_instrument_configuration.dir/
+  TARGET_FILE = generate_instrument_configuration
+  TARGET_PDB = generate_instrument_configuration.pdb
+  TARGET_SUPPORT_DIR = CMakeFiles/generate_instrument_configuration.dir
 
 # =============================================================================
 # Object build statements for EXECUTABLE target validate_instrument_api
@@ -1005,7 +1005,7 @@ build test_validator: phony tests/test_validator
 #############################################
 # Folder: /home/tylerk/falcon-dev/instrument-script-server/build
 
-build all: phony libinstrument_server_lib.so instrument-worker instrument-server instrument-setup template_expander instrument_configuration_generator validate_instrument_api validate_quantum_dot_config validate_instrument_config tests/all examples/plugins/simple_serial/all
+build all: phony libinstrument_server_lib.so instrument-worker instrument-server instrument-setup template_expander generate_instrument_configuration validate_instrument_api validate_quantum_dot_config validate_instrument_config tests/all examples/plugins/simple_serial/all
 
 # =============================================================================
 
