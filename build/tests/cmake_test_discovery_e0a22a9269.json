@@ -1,5 +1,5 @@
 {
-  "tests": 65,
+  "tests": 66,
   "name": "AllTests",
   "testsuites": [
     {
@@ -256,32 +256,32 @@
         {
           "name": "GetInstrumentMetadata",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
-          "line": 38
+          "line": 34
         },
         {
           "name": "CommandExpectsResponse",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
-          "line": 55
+          "line": 51
         },
         {
           "name": "GetResponseType",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
-          "line": 90
+          "line": 86
         },
         {
           "name": "UnknownCommand",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
-          "line": 131
+          "line": 127
         },
         {
           "name": "UnknownInstrument",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
-          "line": 148
+          "line": 144
         },
         {
           "name": "IOOutputsStructure",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
-          "line": 155
+          "line": 151
         }
       ]
     },
@@ -348,6 +348,17 @@
           "name": "ClearAll",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
           "line": 264
+        }
+      ]
+    },
+    {
+      "name": "PluginLoadingTest",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "MockVISAPluginExists",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_loading.cpp",
+          "line": 9
         }
       ]
     },

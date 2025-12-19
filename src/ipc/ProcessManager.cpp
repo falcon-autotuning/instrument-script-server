@@ -22,8 +22,8 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
            "Spawning worker for instrument:  {} with plugin: {}",
            instrument_name, plugin_path);
 
-  std::vector<std::string> args = {worker_executable, "--instrument",
-                                   instrument_name, "--plugin", plugin_path};
+  std::vector<std::string> args = {worker_executable, instrument_name,
+                                   plugin_path};
 
   ProcessId pid = spawn_process_impl(args);
 

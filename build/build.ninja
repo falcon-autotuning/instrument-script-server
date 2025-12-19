@@ -948,6 +948,17 @@ build tests/CMakeFiles/unit_tests.dir/unit/test_data_buffer_manager.cpp.o: CXX_C
   TARGET_PDB = tests/unit_tests.pdb
   TARGET_SUPPORT_DIR = tests/CMakeFiles/unit_tests.dir
 
+build tests/CMakeFiles/unit_tests.dir/unit/test_plugin_loading.cpp.o: CXX_COMPILER__unit_tests_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/tests/unit/test_plugin_loading.cpp || cmake_object_order_depends_target_unit_tests
+  DEFINES = -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEP_FILE = tests/CMakeFiles/unit_tests.dir/unit/test_plugin_loading.cpp.o.d
+  FLAGS = -Oz -std=gnu++17
+  INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include -I/home/tylerk/falcon-dev/instrument-script-server/tests/test_utils
+  OBJECT_DIR = tests/CMakeFiles/unit_tests.dir
+  OBJECT_FILE_DIR = tests/CMakeFiles/unit_tests.dir/unit
+  TARGET_COMPILE_PDB = tests/CMakeFiles/unit_tests.dir/
+  TARGET_PDB = tests/unit_tests.pdb
+  TARGET_SUPPORT_DIR = tests/CMakeFiles/unit_tests.dir
+
 build tests/CMakeFiles/unit_tests.dir/unit/test_plugin_registry.cpp.o: CXX_COMPILER__unit_tests_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/tests/unit/test_plugin_registry.cpp || cmake_object_order_depends_target_unit_tests
   DEFINES = -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
   DEP_FILE = tests/CMakeFiles/unit_tests.dir/unit/test_plugin_registry.cpp.o.d
@@ -967,7 +978,7 @@ build tests/CMakeFiles/unit_tests.dir/unit/test_plugin_registry.cpp.o: CXX_COMPI
 #############################################
 # Link the executable tests/unit_tests
 
-build tests/unit_tests tests/unit_tests[1]_tests.cmake | ${cmake_ninja_workdir}tests/unit_tests[1]_tests.cmake: CXX_EXECUTABLE_LINKER__unit_tests_ tests/CMakeFiles/unit_tests.dir/unit/test_serialization.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_sync_coordinator.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_runtime_context_generic.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_ipc_queue.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_server_daemon.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_schema_validator.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_loader.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_api_lookup.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_data_buffer_manager.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_registry.cpp.o | libinstrument-server-core.a tests/libtest-utils.a /usr/lib/libgtest_main.so.1.17.0 libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument-server-core.a tests/libtest-utils.a
+build tests/unit_tests tests/unit_tests[1]_tests.cmake | ${cmake_ninja_workdir}tests/unit_tests[1]_tests.cmake: CXX_EXECUTABLE_LINKER__unit_tests_ tests/CMakeFiles/unit_tests.dir/unit/test_serialization.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_sync_coordinator.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_runtime_context_generic.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_ipc_queue.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_server_daemon.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_schema_validator.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_loader.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_api_lookup.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_data_buffer_manager.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_loading.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_registry.cpp.o | libinstrument-server-core.a tests/libtest-utils.a /usr/lib/libgtest_main.so.1.17.0 libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument-server-core.a tests/libtest-utils.a
   DEP_FILE = tests/CMakeFiles/unit_tests.dir/link.d
   FLAGS = -Oz
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=tests/CMakeFiles/unit_tests.dir/link.d

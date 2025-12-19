@@ -89,21 +89,15 @@ bool InstrumentRegistry::create_instrument_from_json(
   // Get protocol type
   std::string protocol_type = api_def["protocol"]["type"];
 
-  // Get plugin path (inline in config or from registry)
-  std::string plugin_path;
-  if (config["connection"].contains("plugin")) {
-    plugin_path = config["connection"]["plugin"];
-  } else {
-    // Look up in plugin registry
-    auto &plugin_registry = plugin::PluginRegistry::instance();
-    plugin_path = plugin_registry.get_plugin_path(protocol_type);
+  // Look up in plugin registry
+  auto &plugin_registry = plugin::PluginRegistry::instance();
+  std::string plugin_path = plugin_registry.get_plugin_path(protocol_type);
 
-    if (plugin_path.empty()) {
-      LOG_ERROR("REGISTRY", "CREATE", "No plugin found for protocol: {}",
-                protocol_type);
-      metadata_.erase(name);
-      return false;
-    }
+  if (plugin_path.empty()) {
+    LOG_ERROR("REGISTRY", "CREATE", "No plugin found for protocol: {}",
+              protocol_type);
+    metadata_.erase(name);
+    return false;
   }
 
   LOG_INFO("REGISTRY", "CREATE",

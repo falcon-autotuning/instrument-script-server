@@ -1,24 +1,20 @@
+#include "../test_utils/PluginTestFixture.hpp"
 #include "instrument-server/Logger.hpp"
-#include "instrument-server/plugin/PluginRegistry.hpp"
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <spdlog/common.h>
+
 using namespace instserver;
 
-class APILookupTest : public ::testing::Test {
+class APILookupTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
-    registry_ = &InstrumentRegistry::instance();
-    test_data_dir_ = std::filesystem::current_path() / "tests" / "data";
+    // Load plugins first
+    PluginTestFixture::SetUp();
+    registry_ = &InstrumentRegistry::instance(); // <-- add this line
 
-    // Load mock VISA plugin for testing
-    auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
-    auto mock_plugin_path =
-        std::filesystem::current_path() / "tests" / "mock_visa_plugin. so";
-    if (std::filesystem::exists(mock_plugin_path)) {
-      plugin_registry.load_plugin("VISA", mock_plugin_path.string());
-    }
+    test_data_dir_ = std::filesystem::current_path() / "tests" / "data";
 
     InstrumentLogger::instance().shutdown();
     auto tmp = std::filesystem::temp_directory_path();
@@ -53,7 +49,7 @@ TEST_F(APILookupTest, GetInstrumentMetadata) {
 }
 
 TEST_F(APILookupTest, CommandExpectsResponse) {
-  auto config_path = test_data_dir_ / "mock_instrument. yaml";
+  auto config_path = test_data_dir_ / "mock_instrument1.yaml";
 
   if (!std::filesystem::exists(config_path)) {
     GTEST_SKIP() << "Config not found";
@@ -88,7 +84,7 @@ TEST_F(APILookupTest, CommandExpectsResponse) {
 }
 
 TEST_F(APILookupTest, GetResponseType) {
-  auto config_path = test_data_dir_ / "mock_instrument.yaml";
+  auto config_path = test_data_dir_ / "mock_instrument1.yaml";
 
   if (!std::filesystem::exists(config_path)) {
     GTEST_SKIP() << "Config not found";
@@ -129,7 +125,7 @@ TEST_F(APILookupTest, GetResponseType) {
 }
 
 TEST_F(APILookupTest, UnknownCommand) {
-  auto config_path = test_data_dir_ / "mock_instrument. yaml";
+  auto config_path = test_data_dir_ / "mock_instrument1.yaml";
 
   if (!std::filesystem::exists(config_path)) {
     GTEST_SKIP() << "Config not found";
@@ -153,7 +149,7 @@ TEST_F(APILookupTest, UnknownInstrument) {
 }
 
 TEST_F(APILookupTest, IOOutputsStructure) {
-  auto config_path = test_data_dir_ / "mock_instrument.yaml";
+  auto config_path = test_data_dir_ / "mock_instrument1.yaml";
 
   if (!std::filesystem::exists(config_path)) {
     GTEST_SKIP() << "Config not found";

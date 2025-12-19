@@ -31,11 +31,9 @@
           "type": "string",
           "enum": [
             "VISA",
-            "Serial",
-            "USB",
             "Custom"
           ],
-          "description": "**Connection Type** (required, string)\n\nHow to connect: 'VISA', 'Serial', 'USB', or 'Custom'."
+          "description": "**Connection Type** (required, string)\n\nHow to connect: 'VISA', or 'Custom'."
         },
         "address": {
           "type": "string",

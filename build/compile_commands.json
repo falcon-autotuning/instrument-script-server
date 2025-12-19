@@ -199,6 +199,12 @@
 },
 {
   "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/ccache  clang++ -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -I/home/tylerk/falcon-dev/instrument-script-server/tests/test_utils -Oz -std=gnu++17 -o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_loading.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/tests/unit/test_plugin_loading.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/tests/unit/test_plugin_loading.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/unit_tests.dir/unit/test_plugin_loading.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
   "command": "/usr/bin/ccache  clang++ -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -I/home/tylerk/falcon-dev/instrument-script-server/tests/test_utils -Oz -std=gnu++17 -o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_registry.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/tests/unit/test_plugin_registry.cpp",
   "file": "/home/tylerk/falcon-dev/instrument-script-server/tests/unit/test_plugin_registry.cpp",
   "output": "/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/unit_tests.dir/unit/test_plugin_registry.cpp.o"
