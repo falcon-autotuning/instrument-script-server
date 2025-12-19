@@ -75,6 +75,11 @@ spdlog::level::level_enum parse_log_level(const std::string &level) {
 
 void init_plugins(const std::string &custom_plugin = "") {
   auto &plugin_registry = plugin::PluginRegistry::instance();
+
+  // Load built-in plugins first (VISA, etc.)
+  plugin_registry.load_builtin_plugins();
+
+  // Then discover additional plugins in standard directories
   std::vector<std::string> plugin_paths = {"/usr/local/lib/instrument-plugins",
                                            "/usr/lib/instrument-plugins",
                                            "./plugins", "."};
@@ -90,7 +95,7 @@ void init_plugins(const std::string &custom_plugin = "") {
       auto metadata = loader.get_metadata();
       plugin_registry.load_plugin(metadata.protocol_type, custom_plugin);
     } else {
-      throw std::runtime_error("Failed to load plugin:  " + custom_plugin);
+      throw std::runtime_error("Failed to load plugin: " + custom_plugin);
     }
   }
 }

@@ -4,14 +4,46 @@ Complete guide to using the `instrument-server` command-line interface.
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Daemon Management](#daemon-management)
-- [Instrument Management](#instrument-management)
-- [Measurements](#measurements)
-- [Testing](#testing)
-- [Plugin Management](#plugin-management)
-- [Logging](#logging)
-- [Complete Workflow Examples](#complete-workflow-examples)
+<!--toc:start-->
+- [Instrument Server CLI Usage Guide](#instrument-server-cli-usage-guide)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+    - [Command Categories](#command-categories)
+    - [Global Options](#global-options)
+  - [Daemon Management](#daemon-management)
+    - [Start Daemon](#start-daemon)
+    - [Stop Daemon](#stop-daemon)
+    - [Check Daemon Status](#check-daemon-status)
+  - [Instrument Management](#instrument-management)
+    - [Start Instrument](#start-instrument)
+    - [Stop Instrument](#stop-instrument)
+    - [Check Instrument Status](#check-instrument-status)
+    - [List All Instruments](#list-all-instruments)
+  - [Measurements](#measurements)
+    - [Measure Command](#measure-command)
+    - [Script Structure](#script-structure)
+    - [Command Format](#command-format)
+    - [Example Scripts](#example-scripts)
+    - [Building Measurement Libraries](#building-measurement-libraries)
+    - [Integration with Higher-Level Software](#integration-with-higher-level-software)
+  - [Testing](#testing)
+    - [Test Command](#test-command)
+  - [Plugin Management](#plugin-management)
+    - [List Available Plugins](#list-available-plugins)
+    - [Discover Plugins](#discover-plugins)
+  - [Logging](#logging)
+    - [Log Levels](#log-levels)
+    - [Log Files](#log-files)
+    - [Viewing Logs](#viewing-logs)
+  - [Complete Workflow Examples](#complete-workflow-examples)
+    - [Example 1: Basic Measurement](#example-1-basic-measurement)
+    - [Example 2: Development Workflow](#example-2-development-workflow)
+    - [Example 3: Multi-Instrument Setup](#example-3-multi-instrument-setup)
+    - [Example 4:  Troubleshooting](#example-4-troubleshooting)
+  - [Exit Codes](#exit-codes)
+  - [Environment Variables](#environment-variables)
+  - [See Also](#see-also)
+<!--toc:end-->
 
 ## Overview
 
@@ -259,50 +291,18 @@ Running instruments:
 
 ## Measurements
 
-Run measurement scripts with specified measurement types.
+Run Lua measurement scripts that control running instruments.
 
 ### Measure Command
 
 ```bash
-instrument-server measure <type> <script> [--log-level <level>]
+instrument-server measure <script> [--log-level <level>]
 ```
 
 **Arguments:**
 
-- `<type>`: Measurement type (`dc`, `waveform1d`, `waveform2d`)
 - `<script>`: Path to Lua measurement script
 - `--log-level <level>`: Logging level (default: info)
-
-**Measurement Types:**
-
-| Type | Description | Use Case |
-|------|-------------|----------|
-| `dc` | DC get/set operations | Simple voltage sweeps, I-V curves |
-| `waveform1d` | 1D buffered sweeps | Fast gate sweeps, conductance traces |
-| `waveform2d` | 2D buffered sweeps | Stability diagrams, charge maps |
-
-**Examples:**
-
-```bash
-# DC measurement
-instrument-server measure dc scripts/iv_curve.lua
-
-# 1D waveform
-instrument-server measure waveform1d scripts/gate_sweep.lua
-
-# 2D waveform
-instrument-server measure waveform2d scripts/stability_diagram.lua
-
-# With debug logging
-instrument-server measure dc scripts/test. lua --log-level debug
-```
-
-**Output:**
-
-```
-Running measurement... 
-Measurement complete
-```
 
 **Requirements:**
 
@@ -310,10 +310,176 @@ Measurement complete
 - Required instruments must be started
 - Script file must exist and be valid Lua
 
-**See Also:**
+**Examples:**
 
-- [Writing Measurement Scripts](#writing-measurement-scripts) in main README
-- [Lua Scripting Examples](../examples/)
+```bash
+# Run measurement script
+instrument-server measure scripts/iv_curve.lua
+
+# With debug logging
+instrument-server measure scripts/test.lua --log-level debug
+
+# Save output to file
+instrument-server measure scripts/sweep.lua > data.csv
+```
+
+### Script Structure
+
+All scripts have access to a global `context` object:
+
+```lua
+-- context: call(command, args...)     - Execute instrument command
+-- context:parallel(function)         - Synchronized parallel execution
+-- context:log(message)               - Log message
+
+context:log("Script starting")
+
+-- Your measurement logic here
+local value = context:call("DMM1. Measure")
+print(value)
+
+context:log("Script complete")
+```
+
+### Command Format
+
+```lua
+-- Basic:  InstrumentName.CommandVerb
+context:call("DAC1.SetVoltage", 5.0)
+
+-- With channel: InstrumentName: Channel.CommandVerb
+context:call("DAC1:1.SetVoltage", 3.3)
+
+-- Return value
+local voltage = context:call("DMM1.MeasureVoltage")
+```
+
+### Example Scripts
+
+**Simple sweep:**
+
+```lua
+for v = 0, 5, 0.1 do
+    context:call("DAC1.Set", v)
+    local i = context:call("DMM1. Measure")
+    print(string.format("%.3f,%.6e", v, i))
+end
+```
+
+**Parallel execution:**
+
+```lua
+context:parallel(function()
+    context:call("DAC1.Set", 1.0)
+    context:call("DAC2.Set", 2.0)
+end)
+-- Both DACs set simultaneously
+```
+
+**2D measurement:**
+
+```lua
+for x = 0, 10 do
+    context:call("DAC_X.Set", x * 0.1)
+    
+    for y = 0, 10 do
+        context:parallel(function()
+            context:call("DAC_Y.Set", y * 0.05)
+        end)
+        
+        local z = context:call("DMM1.Measure")
+        print(string.format("%d,%d,%.6e", x, y, z))
+    end
+end
+```
+
+### Building Measurement Libraries
+
+Create reusable Lua modules for common measurement patterns:
+
+```bash
+# Directory structure
+measurements/
+├── dc_sweep. lua
+├── waveform_1d.lua
+└── stability_diagram.lua
+```
+
+```lua
+-- measurements/dc_sweep.lua
+local M = {}
+
+function M.sweep(setter, getter, v_start, v_stop, v_step)
+    local data = {}
+    local v = v_start
+    
+    while v <= v_stop do
+        context:call(setter, v)
+        os.execute("sleep 0.01")
+        local measured = context:call(getter)
+        table.insert(data, {v, measured})
+        v = v + v_step
+    end
+    
+    return data
+end
+
+return M
+```
+
+Use it:
+
+```lua
+package.path = package.path .. ";./measurements/?. lua"
+local dc_sweep = require("dc_sweep")
+
+local results = dc_sweep.sweep("DAC1.SetVoltage", "DMM1. Measure", 0, 5, 0.1)
+
+for _, point in ipairs(results) do
+    print(string.format("%. 3f,%.6e", point[1], point[2]))
+end
+```
+
+### Integration with Higher-Level Software
+
+The generic `measure` command allows integration with any high-level software:
+
+**Python example:**
+
+```python
+import subprocess
+import tempfile
+
+# Generate Lua script
+lua_script = """
+context:log("Starting measurement")
+for v = 0, 5, 0.1 do
+    context:call("DAC1.Set", v)
+    local i = context:call("DMM1.Measure")
+    print(string.format("%.3f,%.6e", v, i))
+end
+"""
+
+# Write to temp file
+with tempfile.NamedTemporaryFile(mode='w', suffix='.lua', delete=False) as f:
+    f.write(lua_script)
+    script_path = f.name
+
+# Run measurement
+result = subprocess.run(
+    ['instrument-server', 'measure', script_path],
+    capture_output=True,
+    text=True
+)
+
+# Parse results
+for line in result.stdout.split('\n'):
+    if line.strip():
+        voltage, current = map(float, line.split(','))
+        print(f"V={voltage}V, I={current}A")
+```
+
+This architecture keeps the instrument server simple and generic, while allowing arbitrarily complex measurement logic in higher-level frameworks!
 
 ## Testing
 

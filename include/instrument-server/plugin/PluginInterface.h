@@ -88,6 +88,11 @@ typedef struct {
   uint32_t binary_response_size;
   int32_t error_code;
   char error_message[PLUGIN_MAX_STRING_LEN];
+
+  bool has_large_data;                        // True if data is in buffer
+  char data_buffer_id[PLUGIN_MAX_STRING_LEN]; // Buffer ID for large data
+  uint64_t data_element_count;                // Number of elements
+  uint8_t data_type; // DataType enum value (0=float32, 1=float64, etc.)
 } PluginResponse;
 
 // Configuration structure (passed during initialization)

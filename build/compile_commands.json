@@ -25,6 +25,18 @@
 },
 {
   "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/ccache  clang++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o CMakeFiles/instrument-server-core.dir/src/ipc/DataBufferManager.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/ipc/DataBufferManager.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/ipc/DataBufferManager.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument-server-core.dir/src/ipc/DataBufferManager.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/ccache  clang++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o CMakeFiles/instrument-server-core.dir/src/ipc/DataBufferManager_c_api.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/ipc/DataBufferManager_c_api.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/src/ipc/DataBufferManager_c_api.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument-server-core.dir/src/ipc/DataBufferManager_c_api.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
   "command": "/usr/bin/ccache  clang++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -o CMakeFiles/instrument-server-core.dir/src/plugin/PluginLoader.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/src/plugin/PluginLoader.cpp",
   "file": "/home/tylerk/falcon-dev/instrument-script-server/src/plugin/PluginLoader.cpp",
   "output": "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument-server-core.dir/src/plugin/PluginLoader.cpp.o"
@@ -181,6 +193,12 @@
 },
 {
   "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/ccache  clang++ -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -I/home/tylerk/falcon-dev/instrument-script-server/tests/test_utils -Oz -std=gnu++17 -o tests/CMakeFiles/unit_tests.dir/unit/test_data_buffer_manager.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/tests/unit/test_data_buffer_manager.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/tests/unit/test_data_buffer_manager.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/unit_tests.dir/unit/test_data_buffer_manager.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
   "command": "/usr/bin/ccache  clang++ -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -I/home/tylerk/falcon-dev/instrument-script-server/tests/test_utils -Oz -std=gnu++17 -o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_registry.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/tests/unit/test_plugin_registry.cpp",
   "file": "/home/tylerk/falcon-dev/instrument-script-server/tests/unit/test_plugin_registry.cpp",
   "output": "/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/unit_tests.dir/unit/test_plugin_registry.cpp.o"
@@ -223,6 +241,12 @@
 },
 {
   "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/ccache  clang++ -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -I/home/tylerk/falcon-dev/instrument-script-server/tests/test_utils -Oz -std=gnu++17 -o tests/CMakeFiles/integration_tests.dir/integration/test_visa_large_data.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/tests/integration/test_visa_large_data.cpp",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/tests/integration/test_visa_large_data.cpp",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/integration_tests.dir/integration/test_visa_large_data.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
   "command": "/usr/bin/ccache  clang++ -DFMT_SHARED -DGTEST_LINKED_AS_SHARED_LIBRARY=1 -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -I/home/tylerk/falcon-dev/instrument-script-server/include -I/home/tylerk/falcon-dev/instrument-script-server/tests/test_utils -Oz -std=gnu++17 -o tests/CMakeFiles/integration_tests.dir/integration/test_measure_command.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/tests/integration/test_measure_command.cpp",
   "file": "/home/tylerk/falcon-dev/instrument-script-server/tests/integration/test_measure_command.cpp",
   "output": "/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/integration_tests.dir/integration/test_measure_command.cpp.o"
@@ -244,5 +268,17 @@
   "command": "/usr/bin/ccache  clang++ -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dmock_plugin_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -Oz -std=gnu++17 -fPIC -o tests/CMakeFiles/mock_plugin.dir/mocks/mock_plugin.cpp.o -c /home/tylerk/falcon-dev/instrument-script-server/tests/mocks/mock_plugin.cpp",
   "file": "/home/tylerk/falcon-dev/instrument-script-server/tests/mocks/mock_plugin.cpp",
   "output": "/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/mock_plugin.dir/mocks/mock_plugin.cpp.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/ccache  clang -Dmock_visa_plugin_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -fPIC -o tests/CMakeFiles/mock_visa_plugin.dir/mocks/mock_visa_plugin.c.o -c /home/tylerk/falcon-dev/instrument-script-server/tests/mocks/mock_visa_plugin.c",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/tests/mocks/mock_visa_plugin.c",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/mock_visa_plugin.dir/mocks/mock_visa_plugin.c.o"
+},
+{
+  "directory": "/home/tylerk/falcon-dev/instrument-script-server/build",
+  "command": "/usr/bin/ccache  clang -Dmock_visa_large_data_plugin_EXPORTS -I/home/tylerk/falcon-dev/instrument-script-server/include -fPIC -o tests/CMakeFiles/mock_visa_large_data_plugin.dir/mocks/mock_visa_large_data_plugin.c.o -c /home/tylerk/falcon-dev/instrument-script-server/tests/mocks/mock_visa_large_data_plugin.c",
+  "file": "/home/tylerk/falcon-dev/instrument-script-server/tests/mocks/mock_visa_large_data_plugin.c",
+  "output": "/home/tylerk/falcon-dev/instrument-script-server/build/tests/CMakeFiles/mock_visa_large_data_plugin.dir/mocks/mock_visa_large_data_plugin.c.o"
 }
 ]

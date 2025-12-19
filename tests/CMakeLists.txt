@@ -22,6 +22,7 @@ add_executable(
   unit/test_schema_validator.cpp
   unit/test_plugin_loader.cpp
   unit/test_api_lookup.cpp
+  unit/test_data_buffer_manager.cpp
   unit/test_plugin_registry.cpp)
 
 target_link_libraries(unit_tests PRIVATE instrument-server-core test-utils
@@ -66,11 +67,13 @@ add_executable(
   integration/test_cli_commands.cpp
   integration/test_instrument_registry.cpp
   integration/test_measurement_scripts.cpp
+  integration/test_visa_large_data.cpp
   integration/test_measure_command.cpp)
 
 target_link_libraries(
   integration_tests PRIVATE instrument-server-core test-utils GTest::gtest
-                            GTest::gtest_main)
+                            GTest::gtest_main m # Math library for sin()
+)
 
 gtest_discover_tests(integration_tests)
 
@@ -90,6 +93,16 @@ target_link_libraries(mock_plugin PRIVATE instrument-server-core)
 
 set_target_properties(mock_plugin PROPERTIES PREFIX "" OUTPUT_NAME
                                                        "mock_plugin")
+
+# Build mock VISA plugin for testing
+add_library(mock_visa_plugin MODULE mocks/mock_visa_plugin.c)
+set_target_properties(mock_visa_plugin PROPERTIES PREFIX ""
+                                                  POSITION_INDEPENDENT_CODE ON)
+target_include_directories(mock_visa_plugin PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
+# Build mock VISA large data plugin for testing
+add_library(mock_visa_large_data_plugin MODULE
+            mocks/mock_visa_large_data_plugin.c)
 
 # Copy test data
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/tests/data)

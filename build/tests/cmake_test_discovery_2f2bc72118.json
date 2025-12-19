@@ -1,5 +1,5 @@
 {
-  "tests": 32,
+  "tests": 37,
   "name": "AllTests",
   "testsuites": [
     {
@@ -185,6 +185,37 @@
           "name": "ScriptWithOutput",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measurement_scripts.cpp",
           "line": 125
+        }
+      ]
+    },
+    {
+      "name": "VISALargeDataTest",
+      "tests": 5,
+      "testsuite": [
+        {
+          "name": "SmallDataInResponse",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_visa_large_data.cpp",
+          "line": 33
+        },
+        {
+          "name": "LargeDataInBuffer",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_visa_large_data.cpp",
+          "line": 60
+        },
+        {
+          "name": "BufferMetadata",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_visa_large_data.cpp",
+          "line": 107
+        },
+        {
+          "name": "ExportLargeData",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_visa_large_data.cpp",
+          "line": 139
+        },
+        {
+          "name": "MultipleBuffers",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_visa_large_data.cpp",
+          "line": 179
         }
       ]
     },

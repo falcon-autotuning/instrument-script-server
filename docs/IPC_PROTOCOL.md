@@ -6,8 +6,8 @@
   - [Queue Architecture](#queue-architecture)
   - [Message Structure](#message-structure)
   - [Message Types](#message-types)
-- [COMMAND (Server → Worker)](#command-server-worker)
-- [RESPONSE (Worker → Server)](#response-worker-server)
+    - [COMMAND (Server → Worker)](#command-server-worker)
+    - [RESPONSE (Worker → Server)](#response-worker-server)
   - [Protocol Flow](#protocol-flow)
     - [Normal Command Execution](#normal-command-execution)
     - [With Heartbeat](#with-heartbeat)
@@ -35,6 +35,7 @@
     - [Simulate Messages](#simulate-messages)
   - [Future Enhancements](#future-enhancements)
 <!--toc:end-->
+
 ## Overview
 
 Instrument workers communicate with the main server via Boost. Interprocess message queues using a bidirectional protocol.

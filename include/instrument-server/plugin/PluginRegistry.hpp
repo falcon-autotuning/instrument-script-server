@@ -36,6 +36,9 @@ public:
   /// Discover plugins in standard directories
   void discover_plugins(const std::vector<std::string> &search_paths);
 
+  /// Load built-in plugins (VISA, etc.)
+  void load_builtin_plugins();
+
   /// Get plugin path for protocol (if registered)
   std::string get_plugin_path(const std::string &protocol_type) const;
 

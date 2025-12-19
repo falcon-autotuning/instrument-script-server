@@ -1,4 +1,5 @@
 #include "instrument-server/Logger.hpp"
+#include "instrument-server/plugin/PluginRegistry.hpp"
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include <filesystem>
 #include <gtest/gtest.h>
@@ -10,6 +11,15 @@ protected:
   void SetUp() override {
     registry_ = &InstrumentRegistry::instance();
     test_data_dir_ = std::filesystem::current_path() / "tests" / "data";
+
+    // Load mock VISA plugin for testing
+    auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
+    auto mock_plugin_path =
+        std::filesystem::current_path() / "tests" / "mock_visa_plugin. so";
+    if (std::filesystem::exists(mock_plugin_path)) {
+      plugin_registry.load_plugin("VISA", mock_plugin_path.string());
+    }
+
     InstrumentLogger::instance().shutdown();
     auto tmp = std::filesystem::temp_directory_path();
     auto log_path_ = tmp / ("instrument_test.log");

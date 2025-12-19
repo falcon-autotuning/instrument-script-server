@@ -1,5 +1,5 @@
 {
-  "tests": 53,
+  "tests": 65,
   "name": "AllTests",
   "testsuites": [
     {
@@ -256,32 +256,98 @@
         {
           "name": "GetInstrumentMetadata",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
-          "line": 28
+          "line": 38
         },
         {
           "name": "CommandExpectsResponse",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
-          "line": 45
+          "line": 55
         },
         {
           "name": "GetResponseType",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
-          "line": 80
+          "line": 90
         },
         {
           "name": "UnknownCommand",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
-          "line": 121
+          "line": 131
         },
         {
           "name": "UnknownInstrument",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
-          "line": 138
+          "line": 148
         },
         {
           "name": "IOOutputsStructure",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
-          "line": 145
+          "line": 155
+        }
+      ]
+    },
+    {
+      "name": "DataBufferManagerTest",
+      "tests": 12,
+      "testsuite": [
+        {
+          "name": "CreateFloat32Buffer",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
+          "line": 21
+        },
+        {
+          "name": "CreateFloat64Buffer",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
+          "line": 44
+        },
+        {
+          "name": "CreateLargeBuffer",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
+          "line": 67
+        },
+        {
+          "name": "GetMetadata",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
+          "line": 97
+        },
+        {
+          "name": "Referencecounting",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
+          "line": 115
+        },
+        {
+          "name": "ListBuffers",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
+          "line": 146
+        },
+        {
+          "name": "TotalMemoryUsage",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
+          "line": 168
+        },
+        {
+          "name": "ExportToCSV",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
+          "line": 183
+        },
+        {
+          "name": "ExportToBinary",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
+          "line": 211
+        },
+        {
+          "name": "TypeSafety",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
+          "line": 238
+        },
+        {
+          "name": "InvalidBufferId",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
+          "line": 256
+        },
+        {
+          "name": "ClearAll",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_data_buffer_manager.cpp",
+          "line": 264
         }
       ]
     },

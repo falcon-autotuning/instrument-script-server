@@ -14,19 +14,70 @@ The Instrument Script Server provides:
 
 ## Table of Contents
 
-- [Quick Start](#quick-start)
-- [Architecture](#architecture)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Starting the Daemon](#starting-the-daemon)
-  - [Managing Instruments](#managing-instruments)
+<!--toc:start-->
+- [Falcon Instrument Script Server](#falcon-instrument-script-server)
+  - [Overview](#overview)
+  - [Table of Contents](#table-of-contents)
+  - [Quick Start](#quick-start)
+  - [Architecture](#architecture)
+    - [Key Components](#key-components)
+  - [Quick Start:  Acquiring Waveform Data](#quick-start-acquiring-waveform-data)
+  - [Installation](#installation)
+    - [Dependencies](#dependencies)
+    - [Ubuntu/Debian](#ubuntudebian)
+    - [Build](#build)
+    - [Verify Installation](#verify-installation)
+  - [Usage](#usage)
+    - [Starting the Daemon](#starting-the-daemon)
+    - [Managing Instruments](#managing-instruments)
+      - [Start Instruments](#start-instruments)
+      - [List Running Instruments](#list-running-instruments)
+      - [Check Instrument Status](#check-instrument-status)
+      - [Stop Instrument](#stop-instrument)
+    - [Running Measurements](#running-measurements)
+    - [Testing Single Commands](#testing-single-commands)
+    - [Plugin Discovery](#plugin-discovery)
+  - [Built-in Plugins](#built-in-plugins)
+    - [VISA Plugin (Built-in)](#visa-plugin-built-in)
+      - [Prerequisites](#prerequisites)
+      - [Configuration](#configuration)
+      - [Initialization Commands](#initialization-commands)
+      - [Command Templates](#command-templates)
+      - [Usage Example](#usage-example)
+      - [Verifying VISA Plugin](#verifying-visa-plugin)
+    - [Creating Custom Plugins](#creating-custom-plugins)
   - [Running Measurements](#running-measurements)
-- [Writing Measurement Scripts](#writing-measurement-scripts)
-- [Plugin Development](#plugin-development)
-- [Configuration](#configuration)
-- [Testing](#testing)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
+    - [Example:  Simple IV Curve](#example-simple-iv-curve)
+    - [Example: Parallel Execution](#example-parallel-execution)
+    - [Example: Complex Measurement Loop](#example-complex-measurement-loop)
+    - [RuntimeContext API](#runtimecontext-api)
+      - [context:call()](#contextcall)
+      - [context:parallel()](#contextparallel)
+      - [context:log()](#contextlog)
+  - [Higher-Level Measurement Frameworks](#higher-level-measurement-frameworks)
+  - [Plugin Development](#plugin-development)
+    - [Plugin Interface](#plugin-interface)
+    - [Quick Plugin Creation](#quick-plugin-creation)
+  - [Configuration](#configuration)
+    - [Instrument Configuration](#instrument-configuration)
+    - [API Definition](#api-definition)
+  - [Testing](#testing)
+    - [Running Tests](#running-tests)
+    - [Test Organization](#test-organization)
+    - [Writing Tests](#writing-tests)
+  - [Troubleshooting](#troubleshooting)
+    - [Daemon Issues](#daemon-issues)
+    - [Instrument Issues](#instrument-issues)
+    - [Plugin Issues](#plugin-issues)
+    - [IPC Issues](#ipc-issues)
+    - [Measurement Script Issues](#measurement-script-issues)
+    - [Performance Issues](#performance-issues)
+    - [Getting Help](#getting-help)
+  - [Documentation](#documentation)
+  - [License](#license)
+  - [Contributing](#contributing)
+  - [Authors](#authors)
+<!--toc:end-->
 
 ## Quick Start
 
@@ -101,6 +152,58 @@ instrument-server daemon stop
 - **Worker Process**:  Isolated process running instrument plugin
 - **SyncCoordinator**:  Coordinates parallel execution across instruments
 - **PluginLoader**: Dynamically loads instrument drivers (.  so/. dll)
+
+## Quick Start:  Acquiring Waveform Data
+
+Here's a complete example showing how to acquire and export waveform data:
+
+```lua
+-- waveform_capture.lua
+
+-- Configure oscilloscope
+context:call("Scope1.SET_TIMEBASE", {scale = 1e-6})  -- 1 µs/div
+context:call("Scope1.SET_VOLTAGE", {channel = 1, scale = 1.0})  -- 1 V/div
+
+-- Trigger single acquisition
+context:call("Scope1.SINGLE")
+
+-- Wait for completion
+repeat
+  local status = context:call("Scope1.GET_STATUS")
+  context:sleep(50)
+until status == "COMPLETE"
+
+-- Acquire waveform (returns buffer for large data)
+local result = context:call("Scope1.GET_WAVEFORM", {channel = 1})
+
+if result.has_large_data then
+  local buffer = get_buffer(result.buffer_id)
+  
+  print(string.format("Captured %d points", buffer.element_count))
+  
+  -- Export to CSV for analysis
+  buffer:export_csv("waveform_ch1.csv")
+  print("Exported to waveform_ch1.csv")
+  
+  -- Also save binary version (faster, more compact)
+  buffer:export_binary("waveform_ch1.bin")
+  
+  buffer:release()
+else
+  print("Single value:  " .. result.value)
+end
+```
+
+Run it:
+
+```bash
+instrument-server measure dc waveform_capture.lua
+```
+
+This will create:
+
+- `waveform_ch1.csv` - Text format for spreadsheets/analysis
+- `waveform_ch1.bin` - Binary format for fast loading in Python/MATLAB
 
 ## Installation
 
@@ -266,6 +369,120 @@ instrument-server plugins
 # Discover plugins in custom directories
 instrument-server discover /opt/custom-plugins ./local-plugins
 ```
+
+## Built-in Plugins
+
+The Instrument Script Server comes with pre-installed plugins for common instrument protocols.
+
+### VISA Plugin (Built-in)
+
+The **NI-VISA plugin** is automatically loaded and available for all instruments that use the VISA protocol.  This includes instruments connected via:
+
+- **GPIB** (IEEE-488)
+- **USB** (USB-TMC)
+- **Ethernet/LAN** (VXI-11, LXI)
+- **Serial** (RS-232/RS-485 over VISA)
+
+#### Prerequisites
+
+The VISA plugin requires **NI-VISA** to be installed on your system:
+
+- **Linux**: Install `ni-visa` from National Instruments
+- **Windows**: Download from [NI-VISA Downloads](https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html)
+- **macOS**: Download from [NI-VISA Downloads](https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html)
+
+#### Configuration
+
+VISA instruments are configured using standard VISA resource strings:
+
+```yaml
+name: MyInstrument
+api_ref: apis/my_instrument.yaml
+connection: 
+  type: VISA
+  address: "TCPIP:: 192.168.1.100:: INSTR"  # Ethernet
+  # address: "GPIB0::15::INSTR"           # GPIB
+  # address: "USB0::0x1234::0x5678::SN123:: INSTR"  # USB
+  # address:  "ASRL1::INSTR"               # Serial
+  timeout: 5000                            # Timeout in milliseconds
+  termination: "\\n"                       # Line termination (default:  \n)
+```
+
+#### Initialization Commands
+
+You can specify initialization commands in your instrument API definition that will be sent when the instrument is first connected:
+
+```yaml
+initialization:
+  - "*CLS"          # Clear status
+  - "*RST"          # Reset instrument
+  - "*OPC?"         # Wait for operations to complete
+
+commands:
+  # ...  your commands
+```
+
+#### Command Templates
+
+The VISA plugin uses the `template` field in your API definition to construct commands.  Parameters in curly braces `{param}` are automatically substituted:
+
+```yaml
+commands:
+  SET_VOLTAGE:
+    description: "Set output voltage"
+    template: ": SOUR: VOLT {voltage}"
+    inputs:
+      - voltage
+    outputs:  []
+    
+  MEASURE_CURRENT:
+    description: "Measure DC current"
+    template: ": MEAS:CURR: DC?"
+    inputs:  []
+    outputs: 
+      - current
+
+io: 
+  - name: voltage
+    type: float
+    unit: V
+    
+  - name: current
+    type: float
+    unit: A
+```
+
+#### Usage Example
+
+```lua
+-- Connect to VISA instrument
+context: call("MyInstrument.SET_VOLTAGE", {voltage = 5.0})
+
+-- Query with response
+local current = context:call("MyInstrument.MEASURE_CURRENT")
+print("Measured current:  " .. current ..  " A")
+```
+
+#### Verifying VISA Plugin
+
+Check that the VISA plugin is loaded:
+
+```bash
+instrument-server plugins
+```
+
+Output should include:
+
+```
+Available plugins: 
+
+  VISA -> /usr/local/lib/instrument-plugins/visa_plugin.so
+  ... 
+```
+
+### Creating Custom Plugins
+
+If you need to support protocols beyond VISA, see [Plugin Development Guide](docs/PLUGIN_DEVELOPMENT.md) for creating custom plugins.
 
 ## Running Measurements
 

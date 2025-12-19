@@ -67,6 +67,8 @@ add_library(
   src/SerializedCommand.cpp
   src/ipc/SharedQueue.cpp
   src/ipc/ProcessManager.cpp
+  src/ipc/DataBufferManager.cpp
+  src/ipc/DataBufferManager_c_api.cpp
   src/plugin/PluginLoader.cpp
   src/plugin/PluginRegistry.cpp
   src/server/InstrumentRegistry.cpp
@@ -129,6 +131,9 @@ if(BUILD_EXAMPLES)
   # Build example plugins using local headers (not via find_package)
   add_subdirectory(examples/plugins/simple_serial)
 endif()
+
+# Build built-in plugins
+add_subdirectory(plugins/visa)
 
 # Tests
 if(BUILD_TESTS)

@@ -19,7 +19,7 @@ bool PluginRegistry::load_plugin(const std::string &protocol_type,
     auto loader = std::make_unique<PluginLoader>(plugin_path);
 
     if (!loader->is_loaded()) {
-      LOG_ERROR("PLUGIN_REGISTRY", "LOAD", "Failed to load plugin:  {}",
+      LOG_ERROR("PLUGIN_REGISTRY", "LOAD", "Failed to load plugin: {}",
                 loader->get_error());
       return false;
     }
@@ -45,6 +45,54 @@ bool PluginRegistry::load_plugin(const std::string &protocol_type,
     LOG_ERROR("PLUGIN_REGISTRY", "LOAD", "Exception loading plugin: {}",
               ex.what());
     return false;
+  }
+}
+
+void PluginRegistry::load_builtin_plugins() {
+  LOG_INFO("PLUGIN_REGISTRY", "BUILTIN", "Loading built-in plugins");
+
+  // Define built-in plugin locations
+  std::vector<std::pair<std::string, std::vector<std::string>>> builtins = {
+      {"VISA",
+       {"/usr/local/lib/instrument-plugins/visa_plugin.so",
+        "/usr/lib/instrument-plugins/visa_plugin.so",
+        "./plugins/visa/visa_plugin. so",
+        "./build/plugins/visa/visa_plugin.so"}},
+      // Future built-in plugins can be added here
+      // {"Serial", {"/usr/local/lib/instrument-plugins/serial_plugin.so", ...}}
+  };
+
+  for (const auto &[protocol, paths] : builtins) {
+    // Skip if already loaded
+    if (has_plugin(protocol)) {
+      LOG_DEBUG("PLUGIN_REGISTRY", "BUILTIN",
+                "Protocol '{}' already has a plugin loaded", protocol);
+      continue;
+    }
+
+    // Try each path until one succeeds
+    bool loaded = false;
+    for (const auto &path : paths) {
+      if (std::filesystem::exists(path)) {
+        LOG_INFO("PLUGIN_REGISTRY", "BUILTIN",
+                 "Attempting to load built-in {} plugin from: {}", protocol,
+                 path);
+        if (load_plugin(protocol, path)) {
+          loaded = true;
+          LOG_INFO("PLUGIN_REGISTRY", "BUILTIN",
+                   "Successfully loaded built-in {} plugin", protocol);
+          break;
+        }
+      }
+    }
+
+    if (!loaded) {
+      LOG_WARN("PLUGIN_REGISTRY", "BUILTIN",
+               "Built-in {} plugin not found or failed to load.  "
+               "Instruments using this protocol will need to specify a custom "
+               "plugin path.",
+               protocol);
+    }
   }
 }
 
@@ -142,7 +190,7 @@ void PluginRegistry::discover_plugins(
   }
 
   LOG_INFO("PLUGIN_REGISTRY", "DISCOVER",
-           "Discovery complete.  {} plugins loaded", plugins_.size());
+           "Discovery complete. {} plugins loaded", plugins_.size());
 }
 
 } // namespace plugin

@@ -4,15 +4,48 @@ Complete guide to developing instrument driver plugins for the Falcon Instrument
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Plugin Interface](#plugin-interface)
-- [Quick Start](#quick-start)
-- [Development Workflow](#development-workflow)
-- [Building Plugins](#building-plugins)
-- [Testing Plugins](#testing-plugins)
-- [Example Plugins](#example-plugins)
-- [Best Practices](#best-practices)
-- [Troubleshooting](#troubleshooting)
+<!--toc:start-->
+- [Plugin Development Guide](#plugin-development-guide)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+    - [Why Plugins?](#why-plugins)
+    - [Plugin Types](#plugin-types)
+  - [Built-in Plugins](#built-in-plugins)
+  - [Plugin Interface](#plugin-interface)
+    - [Required Functions](#required-functions)
+    - [Header File](#header-file)
+  - [Quick Start](#quick-start)
+    - [Step 1: Install InstrumentServer](#step-1-install-instrumentserver)
+    - [Step 2: Create Your Plugin Project](#step-2-create-your-plugin-project)
+    - [Step 3: Build and Install](#step-3-build-and-install)
+    - [Step 4: Test Your Plugin](#step-4-test-your-plugin)
+  - [Development Workflow](#development-workflow)
+    - [Using add_instrument_plugin() Helper](#using-addinstrumentplugin-helper)
+    - [Without add_instrument_plugin() Helper](#without-addinstrumentplugin-helper)
+  - [Building Plugins](#building-plugins)
+    - [Linux](#linux)
+    - [macOS](#macos)
+    - [Windows](#windows)
+    - [Cross-Platform CMake](#cross-platform-cmake)
+  - [Testing Plugins](#testing-plugins)
+    - [1. Verify Plugin Loads](#1-verify-plugin-loads)
+    - [2. Test Metadata](#2-test-metadata)
+    - [3. Test Commands](#3-test-commands)
+    - [4. Integration Testing](#4-integration-testing)
+    - [5. Unit Testing Plugin Directly](#5-unit-testing-plugin-directly)
+  - [Example Plugins](#example-plugins)
+    - [Example 1: Simple Echo Plugin (No Dependencies)](#example-1-simple-echo-plugin-no-dependencies)
+    - [Example 2: Serial Port Plugin](#example-2-serial-port-plugin)
+    - [Example 3: VISA Plugin](#example-3-visa-plugin)
+  - [Handling Large Data in Plugins](#handling-large-data-in-plugins)
+    - [When to Use Data Buffers](#when-to-use-data-buffers)
+    - [Creating Data Buffers in C Plugins](#creating-data-buffers-in-c-plugins)
+    - [Data Type Codes](#data-type-codes)
+    - [Buffer Lifecycle](#buffer-lifecycle)
+    - [Linking to DataBufferManager](#linking-to-databuffermanager)
+    - [Example: Oscilloscope Plugin](#example-oscilloscope-plugin)
+  - [See Also](#see-also)
+<!--toc:end-->
 
 ## Overview
 
@@ -33,6 +66,20 @@ Plugins are **shared libraries** (. so on Linux, .dll on Windows, .dylib on macO
 | **Protocol adapter** | Generic protocol handler | VISA, Serial, TCP |
 | **Vendor SDK** | Wraps vendor library | NI-DAQmx, Keithley SDK |
 | **Custom protocol** | Proprietary communication | Custom serial, USB HID |
+
+## Built-in Plugins
+
+The server includes the following built-in plugins that are **automatically loaded**:
+
+| Protocol | Description | Status |
+|----------|-------------|--------|
+| **VISA** | NI-VISA protocol for GPIB, USB, Ethernet, Serial | ✅ Built-in |
+
+These plugins are available without any configuration.  You only need to create custom plugins for:
+
+- Proprietary vendor SDKs (NI-DAQmx, Keithley, etc.)
+- Custom protocols not covered by VISA
+- Special communication requirements
 
 ## Plugin Interface
 
@@ -859,9 +906,125 @@ add_instrument_plugin(visa_plugin
 install(TARGETS visa_plugin LIBRARY DESTINATION lib/instrument-plugins)
 ```
 
-## Best Practices
+## Handling Large Data in Plugins
 
-[Rest of the document remains the same as before...]
+### When to Use Data Buffers
+
+Use data buffers when your plugin returns:
+
+- Oscilloscope waveforms (>1000 points)
+- Spectrum analyzer traces
+- Camera images
+- Large measurement arrays
+- Any data >1KB
+
+### Creating Data Buffers in C Plugins
+
+```c
+#include <instrument-server/ipc/DataBufferManager_C.h>
+
+int32_t plugin_execute_command(const PluginCommand *cmd, PluginResponse *resp) {
+  // ... execute command and get data ...
+  
+  // Example: Large waveform data
+  size_t num_points = 10000;
+  float *waveform = get_waveform_from_instrument();
+  
+  // Create buffer
+  char buffer_id[PLUGIN_MAX_STRING_LEN];
+  int result = data_buffer_create(
+      cmd->instrument_name,
+      cmd->id,
+      0,  // 0 = FLOAT32, 1 = FLOAT64, 2 = INT32, etc.
+      num_points,
+      waveform,
+      buffer_id
+  );
+  
+  if (result == 0) {
+    // Success - set response
+    resp->success = true;
+    resp->has_large_data = true;
+    strncpy(resp->data_buffer_id, buffer_id, PLUGIN_MAX_STRING_LEN - 1);
+    resp->data_element_count = num_points;
+    resp->data_type = 0;  // FLOAT32
+    
+    snprintf(resp->text_response, PLUGIN_MAX_PAYLOAD,
+             "Waveform data in buffer %s", buffer_id);
+  } else {
+    resp->success = false;
+    strncpy(resp->error_message, "Failed to create buffer",
+            PLUGIN_MAX_STRING_LEN - 1);
+  }
+  
+  free(waveform);
+  return result;
+}
+```
+
+### Data Type Codes
+
+```c
+// Data type enum values for data_buffer_create()
+#define DATA_TYPE_FLOAT32  0
+#define DATA_TYPE_FLOAT64  1
+#define DATA_TYPE_INT32    2
+#define DATA_TYPE_INT64    3
+#define DATA_TYPE_UINT32   4
+#define DATA_TYPE_UINT64   5
+#define DATA_TYPE_UINT8    6
+```
+
+### Buffer Lifecycle
+
+1. **Plugin creates buffer** - Calls `data_buffer_create()`
+2. **Server receives buffer ID** - In `PluginResponse`
+3. **Lua accesses buffer** - Via `get_buffer()`
+4. **User exports data** - Calls `buffer:export_csv()` or `buffer:export_binary()`
+5. **User releases buffer** - Calls `buffer:release()`
+6. **Auto cleanup** - Buffer freed when ref count reaches 0
+
+### Linking to DataBufferManager
+
+In your plugin's `CMakeLists.txt`:
+
+```cmake
+target_link_libraries(your_plugin
+  PRIVATE
+    InstrumentServerCore  # Provides DataBufferManager C API
+)
+```
+
+### Example: Oscilloscope Plugin
+
+```c
+int32_t get_waveform(const PluginCommand *cmd, PluginResponse *resp) {
+  // Query number of points
+  uint32_t num_points;
+  visa_query(g_session, "WAV: POIN?", &num_points);
+  
+  // Allocate temporary buffer
+  float *waveform = malloc(num_points * sizeof(float));
+  
+  // Read waveform data from instrument
+  visa_read_binary(g_session, waveform, num_points);
+  
+  // Create shared buffer
+  char buffer_id[PLUGIN_MAX_STRING_LEN];
+  if (data_buffer_create(cmd->instrument_name, cmd->id,
+                        DATA_TYPE_FLOAT32, num_points,
+                        waveform, buffer_id) == 0) {
+    resp->success = true;
+    resp->has_large_data = true;
+    strncpy(resp->data_buffer_id, buffer_id, PLUGIN_MAX_STRING_LEN - 1);
+    resp->data_element_count = num_points;
+    resp->data_type = DATA_TYPE_FLOAT32;
+  }
+  
+  free(waveform);
+  return 0;
+}
+```
 
 ## See Also
 
