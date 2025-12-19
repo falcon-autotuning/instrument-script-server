@@ -267,182 +267,226 @@ instrument-server plugins
 instrument-server discover /opt/custom-plugins ./local-plugins
 ```
 
-## Writing Measurement Scripts
+## Running Measurements
 
-Measurement scripts are written in Lua and interact with instruments via the `context` object.
+Measurements are executed via Lua scripts. The script has access to a `context` object with three key functions:
 
-### Example:  DC Measurement
+- `context: call(command)` - Execute instrument command
+- `context:parallel(function)` - Execute commands in synchronized parallel
+- `context:log(message)` - Log messages
 
-```lua name=examples/dc_measurement.lua
--- DC measurement script
--- Run with: instrument-server measure dc dc_measurement.lua
+```bash
+# Run any Lua measurement script
+instrument-server measure my_measurement.lua
+```
 
--- Configure measurement
-context.sampleRate = 1000  -- Hz
-context.numPoints = 100
+### Example:  Simple IV Curve
 
--- Set output voltages
-context.setVoltages = {
-    ["DAC1"] = 2.5,
-    ["DAC2"] = 1.0
-}
+```lua
+-- iv_curve.lua
+context:log("Starting IV curve measurement")
 
--- Configure getters and setters
-local dac1 = InstrumentTarget()
-dac1.id = "DAC1"
-dac1.channel = 1
-
-local dmm1 = InstrumentTarget()
-dmm1.id = "DMM1"
-
-context.setters = {dac1}
-context.getters = {dmm1}
-
--- Perform sweep
+-- Sweep voltage and measure current
 for voltage = 0, 5, 0.1 do
-    -- Set voltage on DAC1
-    context: call("DAC1:1. SetVoltage", voltage)
+    -- Set DAC voltage
+    context:call("DAC1.SetVoltage", voltage)
     
     -- Wait for settling
     os.execute("sleep 0.01")
     
-    -- Measure
-    local result = context:call("DMM1.Measure")
+    -- Measure current
+    local current = context: call("DMM1.MeasureCurrent")
     
-    -- Log result
-    context:log(string.format("V_set=%.2f, V_meas=%.6f", voltage, result))
+    -- Output data
+    print(string.format("%. 3f,%.6e", voltage, current))
+    
+    context:log(string.format("V=%.3f, I=%.6e", voltage, current))
 end
 
-context: log("Measurement complete")
+context:log("IV curve complete")
+```
+
+Run it:
+
+```bash
+instrument-server measure iv_curve.lua > iv_data.csv
 ```
 
 ### Example: Parallel Execution
 
-```lua name=examples/parallel_measurement.lua
--- Parallel execution with synchronization
--- Run with: instrument-server measure dc parallel_measurement.lua
+```lua
+-- parallel_measurement.lua
+context:log("Setting up measurement")
 
--- Set multiple voltages simultaneously
-context: parallel(function()
-    context: call("DAC1:1.SetVoltage", 1.5)
-    context:call("DAC2:1.SetVoltage", 2.0)
-    context:call("DAC3:1.SetVoltage", 0.5)
+-- Set multiple instruments simultaneously
+context:parallel(function()
+    context:call("DAC1.SetVoltage", 1.5)
+    context:call("DAC2.SetVoltage", 2.0)
+    context:call("DAC3.SetVoltage", 0.5)
 end)
 
--- All DACs are now at their target voltages
-context:log("All voltages set")
+context:log("All voltages set simultaneously")
 
--- Measure from multiple instruments simultaneously
+-- Perform synchronized measurement
 local results = {}
 context:parallel(function()
     results. dmm1 = context:call("DMM1.Measure")
     results.dmm2 = context:call("DMM2.Measure")
 end)
 
-context:log(string.format("DMM1: %.6f, DMM2: %.6f", results.dmm1, results.dmm2))
+context:log(string.format("Results: DMM1=%.6f, DMM2=%.6f", 
+                          results.dmm1, results. dmm2))
 ```
 
-### Example: 1D Waveform
+### Example: Complex Measurement Loop
 
-```lua name=examples/waveform1d_measurement.lua
--- 1D waveform measurement
--- Run with: instrument-server measure waveform1d waveform1d_measurement.lua
+```lua
+-- stability_diagram.lua
+context:log("Starting 2D stability diagram")
 
-context.sampleRate = 1e6  -- 1 MHz
-context.numPoints = 1000
-context.numSteps = 50
+-- Sweep parameters
+local v_gate_min, v_gate_max, v_gate_steps = -1.0, 1.0, 50
+local v_bias_min, v_bias_max, v_bias_steps = -0.5, 0.5, 50
 
--- Configure voltage domains
-context.setVoltageDomains = {
-    ["DAC1:1"] = {min = -0.5, max = 0.5}
-}
+local v_gate_step = (v_gate_max - v_gate_min) / v_gate_steps
+local v_bias_step = (v_bias_max - v_bias_min) / v_bias_steps
 
--- Setup targets
-local dac1 = InstrumentTarget()
-dac1.id = "DAC1"
-dac1.channel = 1
+-- Sweep
+for i_gate = 0, v_gate_steps do
+    local v_gate = v_gate_min + i_gate * v_gate_step
+    
+    -- Set gate voltage
+    context:call("DAC_Gate.SetVoltage", v_gate)
+    os.execute("sleep 0.01")
+    
+    for i_bias = 0, v_bias_steps do
+        local v_bias = v_bias_min + i_bias * v_bias_step
+        
+        -- Set bias and measure simultaneously
+        context:parallel(function()
+            context:call("DAC_Bias.SetVoltage", v_bias)
+        end)
+        
+        -- Measure
+        local current = context:call("DMM1.MeasureCurrent")
+        
+        -- Output:  gate_voltage, bias_voltage, current
+        print(string.format("%. 6f,%.6f,%.6e", v_gate, v_bias, current))
+    end
+    
+    if i_gate % 10 == 0 then
+        context:log(string. format("Progress: %d/%d", i_gate, v_gate_steps))
+    end
+end
 
-local dmm1 = InstrumentTarget()
-dmm1.id = "DMM1"
+context:log("Stability diagram complete")
+```
 
-context.bufferedSetters = {dac1}
-context.bufferedGetters = {dmm1}
+Run and save data:
 
--- The runtime will automatically generate sweep and collect data
-context:log("Starting 1D sweep")
-
--- Sweep is executed by the runtime based on configured domains
--- Results are collected automatically
-
-context:log("Sweep complete")
+```bash
+instrument-server measure stability_diagram.lua > stability_data.csv
 ```
 
 ### RuntimeContext API
 
-All scripts have access to a `context` object with the following methods:
+#### context:call()
 
-#### Common Methods (All Contexts)
+Execute an instrument command:
 
 ```lua
--- Call instrument command
-result = context:call("InstrumentID. CommandVerb", arg1, arg2, ...)
+-- Basic call
+context:call("InstrumentName.CommandVerb")
 
--- Call with channel
-result = context:call("InstrumentID: 3.CommandVerb", value)
+-- With arguments (positional)
+context:call("DAC1.SetVoltage", 5.0)
 
--- Execute commands in parallel (synchronized)
+-- With channel
+context:call("DAC1: 1.SetVoltage", 3.3)
+
+-- With named parameters (table)
+context:call("Scope1.Configure", {
+    timebase = 1e-6,
+    trigger_level = 0.5,
+    channels = 2
+})
+
+-- Capture return value
+local voltage = context:call("DMM1.MeasureVoltage")
+local temperature = context:call("TempSensor.ReadTemperature")
+```
+
+#### context:parallel()
+
+Execute commands in synchronized parallel:
+
+```lua
 context:parallel(function()
-    context:call("DAC1.Set", 5.0)
-    context:call("DAC2.Set", 3.0)
+    -- All these execute simultaneously
+    context:call("DAC1.Set", 1.0)
+    context:call("DAC2.Set", 2.0)
+    context:call("DAC3.Set", 3.0)
 end)
-
--- Log message
-context:log("Message text")
+-- Execution continues only after ALL complete
 ```
 
-#### RuntimeContext_DCGetSet
+**Key behavior:**
+
+- Commands inside `parallel()` buffer and execute simultaneously
+- Block returns only when all instruments finish
+- Instruments stay synchronized via barrier protocol
+- Only works across different instruments (same instrument is sequential)
+
+#### context:log()
+
+Log messages during measurement:
 
 ```lua
-context. sampleRate = 1000       -- Sampling rate (Hz)
-context.numPoints = 100          -- Number of points
-context.setVoltages = {          -- Voltage settings
-    ["DAC1"] = 5.0,
-    ["DAC2"] = 3.0
-}
-context.getters = {target1}      -- Instruments to read from
-context.setters = {target2}      -- Instruments to write to
+context:log("Starting measurement")
+context:log(string.format("Voltage: %.3f V", voltage))
 ```
 
-#### RuntimeContext_1DWaveform
+Logs appear in `instrument_server.log` and stderr.
+
+## Higher-Level Measurement Frameworks
+
+The instrument server provides **generic primitives** (`call`, `parallel`, `log`). For specialized measurements like DC sweeps, waveform acquisition, or stability diagrams, you can:
+
+1. **Write reusable Lua libraries**:
 
 ```lua
-context.sampleRate = 1e6         -- Sampling rate (Hz)
-context.numPoints = 1000         -- Points per step
-context.numSteps = 50            -- Number of steps
-context.setVoltageDomains = {    -- Sweep ranges
-    ["DAC1:1"] = {min = -1.0, max = 1.0}
-}
-context.bufferedGetters = {... }  -- Buffered acquisition
-context.bufferedSetters = {...}  -- Buffered output
+-- measurements/dc_sweep.lua
+local dc_sweep = {}
+
+function dc_sweep.run(setter, getter, v_min, v_max, v_steps)
+    local step = (v_max - v_min) / v_steps
+    local results = {}
+    
+    for i = 0, v_steps do
+        local v = v_min + i * step
+        context:call(setter ..  ".SetVoltage", v)
+        os.execute("sleep 0.01")
+        results[i+1] = context:call(getter .. ".Measure")
+    end
+    
+    return results
+end
+
+return dc_sweep
 ```
 
-#### RuntimeContext_2DWaveform
+Use it:
 
 ```lua
-context.sampleRate = 1e6
-context.numPoints = 1000
-context.numXSteps = 20
-context.numYSteps = 20
-context.setXVoltageDomains = {
-    ["DAC1:1"] = {min = -1.0, max = 1.0}
-}
-context.setYVoltageDomains = {
-    ["DAC2:1"] = {min = -0.5, max = 0.5}
-}
-context.bufferedXSetters = {...}
-context.bufferedYSetters = {...}
-context.bufferedGetters = {...}
+local dc_sweep = require("measurements.dc_sweep")
+local data = dc_sweep.run("DAC1", "DMM1", 0, 5, 100)
 ```
+
+2. **Build higher-level applications** that call `instrument-server measure` with generated scripts
+
+3. **Create Python/Julia/etc. wrappers** that generate Lua scripts
+
+This design keeps the core server simple and flexible!
 
 ## Plugin Development
 

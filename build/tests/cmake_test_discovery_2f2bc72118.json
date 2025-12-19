@@ -1,5 +1,5 @@
 {
-  "tests": 21,
+  "tests": 32,
   "name": "AllTests",
   "testsuites": [
     {
@@ -134,6 +134,73 @@
           "name": "StopAll",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
           "line": 101
+        }
+      ]
+    },
+    {
+      "name": "MeasurementScriptTest",
+      "tests": 9,
+      "testsuite": [
+        {
+          "name": "SimpleCall",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measurement_scripts.cpp",
+          "line": 91
+        },
+        {
+          "name": "ParallelExecution",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measurement_scripts.cpp",
+          "line": 95
+        },
+        {
+          "name": "LoopMeasurement",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measurement_scripts.cpp",
+          "line": 99
+        },
+        {
+          "name": "NestedParallel",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measurement_scripts.cpp",
+          "line": 103
+        },
+        {
+          "name": "ErrorHandling",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measurement_scripts.cpp",
+          "line": 107
+        },
+        {
+          "name": "ChannelAddressing",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measurement_scripts.cpp",
+          "line": 113
+        },
+        {
+          "name": "ReturnTypes",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measurement_scripts.cpp",
+          "line": 117
+        },
+        {
+          "name": "TableParameters",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measurement_scripts.cpp",
+          "line": 121
+        },
+        {
+          "name": "ScriptWithOutput",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measurement_scripts.cpp",
+          "line": 125
+        }
+      ]
+    },
+    {
+      "name": "MeasureCommandTest",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "MeasureWithoutDaemon",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measure_command.cpp",
+          "line": 47
+        },
+        {
+          "name": "MeasureWithDaemon",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measure_command.cpp",
+          "line": 59
         }
       ]
     }

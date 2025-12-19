@@ -1,0 +1,5 @@
+name: MockInstrument3
+api_ref: tests/data/mock_api.yaml
+connection:
+  type: MockTest
+  address: "mock://test3"

@@ -2,6 +2,7 @@
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include "instrument-server/server/SyncCoordinator.hpp"
 #include <atomic>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -44,8 +45,13 @@ private:
   bool create_pid_file();
   void remove_pid_file();
 
+  // running_ is atomic for the hot path polling (daemon_loop) and fast
+  // is_running(). Use mutex_ to protect resource initialization/cleanup in
+  // start()/stop().
   std::atomic<bool> running_{false};
   std::thread daemon_thread_;
+  std::mutex mutex_;
+
   InstrumentRegistry *registry_{nullptr};
   SyncCoordinator *sync_coordinator_{nullptr};
 };

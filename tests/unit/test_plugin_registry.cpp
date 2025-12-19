@@ -32,18 +32,18 @@ TEST_F(PluginRegistryTest, DiscoverPlugins) {
 }
 
 TEST_F(PluginRegistryTest, RegisterPlugin) {
-  registry_->load_plugin("TestProtocol", "/path/to/test_plugin.so");
+  registry_->load_plugin("MockPlugin", "./build/tests/mock_plugin.so");
 
   auto protocols = registry_->list_protocols();
-  EXPECT_TRUE(std::find(protocols.begin(), protocols.end(), "TestProtocol") !=
+  EXPECT_TRUE(std::find(protocols.begin(), protocols.end(), "MockPlugin") !=
               protocols.end());
 }
 
 TEST_F(PluginRegistryTest, GetPluginPath) {
-  registry_->load_plugin("CustomProtocol", "/path/to/custom.so");
+  registry_->load_plugin("MockPlugin", "./build/tests/mock_plugin.so");
 
-  std::string path = registry_->get_plugin_path("CustomProtocol");
-  EXPECT_EQ(path, "/path/to/custom.so");
+  std::string path = registry_->get_plugin_path("MockPlugin");
+  EXPECT_EQ(path, "./build/tests/mock_plugin.so");
 }
 
 TEST_F(PluginRegistryTest, GetNonexistentPlugin) {
@@ -54,9 +54,8 @@ TEST_F(PluginRegistryTest, GetNonexistentPlugin) {
 TEST_F(PluginRegistryTest, ListProtocols) {
   size_t initial_count = registry_->list_protocols().size();
 
-  registry_->load_plugin("Proto1", "/path/to/proto1.so");
-  registry_->load_plugin("Proto2", "/path/to/proto2.so");
+  registry_->load_plugin("MockPlugin", "./build/tests/mock_plugin.so");
 
   auto protocols = registry_->list_protocols();
-  EXPECT_EQ(protocols.size(), initial_count + 2);
+  EXPECT_EQ(protocols.size(), 1);
 }

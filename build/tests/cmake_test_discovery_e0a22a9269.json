@@ -1,5 +1,5 @@
 {
-  "tests": 48,
+  "tests": 53,
   "name": "AllTests",
   "testsuites": [
     {
@@ -100,43 +100,38 @@
       ]
     },
     {
-      "name": "RuntimeContextTest",
-      "tests": 7,
+      "name": "RuntimeContextGenericTest",
+      "tests": 6,
       "testsuite": [
         {
-          "name": "CreateDCContext",
-          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
-          "line": 24
+          "name": "CallFunctionLogsMissingInstrument",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context_generic.cpp",
+          "line": 102
         },
         {
-          "name": "SetContextFields",
-          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
-          "line": 35
+          "name": "ParallelBlockLogsStartAndEmptyExecution",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context_generic.cpp",
+          "line": 114
         },
         {
-          "name": "ParallelBlockBuffering",
-          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
-          "line": 47
+          "name": "LogFunctionEmitsUserMessage",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context_generic.cpp",
+          "line": 126
         },
         {
-          "name": "LogFunction",
-          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
-          "line": 65
+          "name": "ParseInstrumentCommandFormatsAreLogged",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context_generic.cpp",
+          "line": 135
         },
         {
-          "name": "InstrumentTarget",
-          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
-          "line": 75
+          "name": "ParallelWithBufferingBuffersCommands",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context_generic.cpp",
+          "line": 151
         },
         {
-          "name": "Domain",
-          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
-          "line": 88
-        },
-        {
-          "name": "SetVoltageDomains",
-          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context.cpp",
-          "line": 100
+          "name": "NestedCallsProduceUserLogsInOrder",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_runtime_context_generic.cpp",
+          "line": 172
         }
       ]
     },
@@ -251,6 +246,42 @@
           "name": "ExecuteCommand",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_plugin_loader.cpp",
           "line": 72
+        }
+      ]
+    },
+    {
+      "name": "APILookupTest",
+      "tests": 6,
+      "testsuite": [
+        {
+          "name": "GetInstrumentMetadata",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
+          "line": 28
+        },
+        {
+          "name": "CommandExpectsResponse",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
+          "line": 45
+        },
+        {
+          "name": "GetResponseType",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
+          "line": 80
+        },
+        {
+          "name": "UnknownCommand",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
+          "line": 121
+        },
+        {
+          "name": "UnknownInstrument",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
+          "line": 138
+        },
+        {
+          "name": "IOOutputsStructure",
+          "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/unit\/test_api_lookup.cpp",
+          "line": 145
         }
       ]
     },

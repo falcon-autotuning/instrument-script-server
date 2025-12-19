@@ -103,20 +103,24 @@ endif()
 # Tools
 if(BUILD_TOOLS)
   # Validators
-  add_executable(instrument-api-validator src/instrument_api_validator_main.cpp)
-  target_link_libraries(instrument-api-validator PRIVATE instrument-server-core)
+  add_executable(validate-instrument-api src/instrument_api_validator_main.cpp)
+  target_link_libraries(validate-instrument-api PRIVATE instrument-server-core)
 
-  add_executable(instrument-config-validator
+  add_executable(validate-instrument-config
                  src/instrument_config_validator_main.cpp)
-  target_link_libraries(instrument-config-validator
+  target_link_libraries(validate-instrument-config
                         PRIVATE instrument-server-core)
 
-  add_executable(quantum-dot-config-validator
+  add_executable(validate-quantum-dot-config
                  src/quantum_dot_config_validator_main.cpp)
-  target_link_libraries(quantum-dot-config-validator
+  target_link_libraries(validate-quantum-dot-config
                         PRIVATE instrument-server-core)
   add_executable(template-expander src/template_expander.cpp)
   target_link_libraries(template-expander PRIVATE instrument-server-core)
+  add_executable(generate-instrument-config
+                 src/instrument_configuration_generator.cpp)
+  target_link_libraries(generate-instrument-config
+                        PRIVATE instrument-server-core)
 endif()
 
 # Example plugins (FIXED: only build if InstrumentServer is already installed OR
@@ -136,8 +140,9 @@ endif()
 install(TARGETS instrument-server instrument-worker RUNTIME DESTINATION bin)
 
 if(BUILD_TOOLS)
-  install(TARGETS instrument-api-validator instrument-config-validator
-                  quantum-dot-config-validator RUNTIME DESTINATION bin)
+  install(TARGETS validate-instrument-api validate-instrument-config
+                  validate-quantum-dot-config template-expander
+                  generate-instrument-config RUNTIME DESTINATION bin)
 endif()
 
 install(

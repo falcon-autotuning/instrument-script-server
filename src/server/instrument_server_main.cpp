@@ -34,8 +34,8 @@ void print_usage() {
   std::cout
       << "  list                               List running instruments\n";
   std::cout << "\nMeasurement:\n";
-  std::cout << "  measure <type> <script>            Run measurement script\n";
-  std::cout << "    Types: dc, waveform1d, waveform2d\n";
+  std::cout
+      << "  measure <script>                   Run Lua measurement script\n";
   std::cout << "\nUtilities:\n";
   std::cout << "  test <config> <verb> [params]      Test command\n";
   std::cout << "  discover [paths...]                Discover plugins\n";
@@ -51,8 +51,8 @@ void print_usage() {
   std::cout << "     instrument-server start dmm1.yaml\n";
   std::cout
       << "     instrument-server start scope1.yaml --plugin ./custom.so\n";
-  std::cout << "\n  3. Run measurements:\n";
-  std::cout << "     instrument-server measure dc my_measurement.lua\n";
+  std::cout << "\n  3. Run measurement:\n";
+  std::cout << "     instrument-server measure my_measurement.lua\n";
   std::cout << "\n  4. Manage:\n";
   std::cout << "     instrument-server list\n";
   std::cout << "     instrument-server status DAC1\n";
@@ -90,7 +90,7 @@ void init_plugins(const std::string &custom_plugin = "") {
       auto metadata = loader.get_metadata();
       plugin_registry.load_plugin(metadata.protocol_type, custom_plugin);
     } else {
-      throw std::runtime_error("Failed to load plugin: " + custom_plugin);
+      throw std::runtime_error("Failed to load plugin:  " + custom_plugin);
     }
   }
 }
@@ -393,11 +393,10 @@ int cmd_list(int argc, char **argv) {
 }
 
 int cmd_measure(int argc, char **argv) {
-  if (argc < 2) {
-    std::cerr << "Error: measure requires type and script\n";
-    std::cerr << "Usage: instrument-server measure <type> <script> "
-                 "[--log-level <level>]\n";
-    std::cerr << "Types: dc, waveform1d, waveform2d\n";
+  if (argc < 1) {
+    std::cerr << "Error: measure requires script path\n";
+    std::cerr
+        << "Usage: instrument-server measure <script> [--log-level <level>]\n";
     return 1;
   }
 
@@ -405,25 +404,17 @@ int cmd_measure(int argc, char **argv) {
     return 1;
   }
 
-  std::string measure_type = argv[0];
-  std::string script_path = argv[1];
+  std::string script_path = argv[0];
   std::string log_level = "info";
 
-  for (int i = 2; i < argc; i++) {
+  for (int i = 1; i < argc; i++) {
     std::string arg = argv[i];
     if (arg == "--log-level" && i + 1 < argc) {
       log_level = argv[++i];
     }
   }
 
-  if (measure_type != "dc" && measure_type != "waveform1d" &&
-      measure_type != "waveform2d") {
-    std::cerr << "Error: Invalid measurement type '" << measure_type << "'\n";
-    std::cerr << "Valid types: dc, waveform1d, waveform2d\n";
-    return 1;
-  }
-
-  InstrumentLogger::instance().init("instrument_server.log",
+  InstrumentLogger::instance().init("instrument_server. log",
                                     parse_log_level(log_level));
 
   try {
@@ -431,33 +422,27 @@ int cmd_measure(int argc, char **argv) {
 
     auto instruments = registry.list_instruments();
     if (instruments.empty()) {
-      std::cerr << "Error: No instruments running\n";
+      std::cerr << "Error:  No instruments running\n";
       std::cerr
           << "Start instruments first:  instrument-server start <config>\n";
       return 1;
     }
 
+    LOG_INFO("SERVER", "MEASURE", "Script: {}", script_path);
+
     // Setup Lua
     sol::state lua;
     lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::table,
-                       sol::lib::string, sol::lib::io);
+                       sol::lib::string, sol::lib::io, sol::lib::os);
 
     SyncCoordinator sync_coordinator;
-    bind_runtime_contexts(lua, registry, sync_coordinator);
+    bind_runtime_context(lua, registry, sync_coordinator);
 
-    // Create context based on type
-    if (measure_type == "dc") {
-      RuntimeContext_DCGetSet ctx(registry, sync_coordinator);
-      lua["context"] = &ctx;
-    } else if (measure_type == "waveform1d") {
-      RuntimeContext_1DWaveform ctx(registry, sync_coordinator);
-      lua["context"] = &ctx;
-    } else if (measure_type == "waveform2d") {
-      RuntimeContext_2DWaveform ctx(registry, sync_coordinator);
-      lua["context"] = &ctx;
-    }
+    // Create default context
+    RuntimeContext ctx(registry, sync_coordinator);
+    lua["context"] = &ctx;
 
-    std::cout << "Running measurement...\n";
+    std::cout << "Running measurement.. .\n";
 
     auto result = lua.safe_script_file(script_path);
 

@@ -143,7 +143,9 @@ void ServerDaemon::remove_pid_file() {
 }
 
 bool ServerDaemon::start() {
-  if (running_) {
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  if (running_.load()) {
     LOG_WARN("DAEMON", "START", "Daemon already running");
     return true;
   }
@@ -167,8 +169,8 @@ bool ServerDaemon::start() {
   registry_ = &InstrumentRegistry::instance();
   sync_coordinator_ = new SyncCoordinator();
 
-  // Start daemon thread
-  running_ = true;
+  // Mark running and start daemon thread
+  running_.store(true);
   daemon_thread_ = std::thread([this]() { daemon_loop(); });
 
   LOG_INFO("DAEMON", "START", "Server daemon started (PID: {})", getpid());
@@ -177,39 +179,45 @@ bool ServerDaemon::start() {
 }
 
 void ServerDaemon::stop() {
-  if (!running_) {
-    return;
+  // First, atomically check and clear running flag under lock to prevent races.
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!running_.load()) {
+      return;
+    }
+    LOG_INFO("DAEMON", "STOP", "Stopping server daemon");
+    running_.store(false);
   }
 
-  LOG_INFO("DAEMON", "STOP", "Stopping server daemon");
-
-  running_ = false;
-
-  // Stop all instruments
+  // Stop instruments and allow daemon_loop to exit.
   if (registry_) {
     registry_->stop_all();
   }
 
-  // Wait for daemon thread
+  // Join the daemon thread outside the mutex to avoid blocking other callers.
   if (daemon_thread_.joinable()) {
     daemon_thread_.join();
   }
 
-  // Cleanup
-  delete sync_coordinator_;
-  sync_coordinator_ = nullptr;
-
-  remove_pid_file();
+  // Cleanup resources under lock
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (sync_coordinator_) {
+      delete sync_coordinator_;
+      sync_coordinator_ = nullptr;
+    }
+    remove_pid_file();
+  }
 
   LOG_INFO("DAEMON", "STOP", "Server daemon stopped");
 }
 
-bool ServerDaemon::is_running() const { return running_; }
+bool ServerDaemon::is_running() const { return running_.load(); }
 
 void ServerDaemon::daemon_loop() {
   LOG_INFO("DAEMON", "LOOP", "Daemon loop started");
 
-  while (running_) {
+  while (running_.load()) {
     // Heartbeat - keep process alive
     // In future, this could handle IPC commands from clients
     std::this_thread::sleep_for(std::chrono::milliseconds(100));

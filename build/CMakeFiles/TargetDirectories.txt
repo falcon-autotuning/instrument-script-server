@@ -1,10 +1,11 @@
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument-server-core.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument-server.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument-worker.dir
-/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument-api-validator.dir
-/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/instrument-config-validator.dir
-/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/quantum-dot-config-validator.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/validate-instrument-api.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/validate-instrument-config.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/validate-quantum-dot-config.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/template-expander.dir
+/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/generate-instrument-config.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/test.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/edit_cache.dir
 /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/rebuild_cache.dir

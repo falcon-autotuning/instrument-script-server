@@ -41,7 +41,7 @@ static nlohmann::json yaml_to_json(const YAML::Node &node) {
 }
 
 bool InstrumentRegistry::create_instrument(const std::string &config_path) {
-  LOG_INFO("REGISTRY", "CREATE", "Loading instrument from:  {}", config_path);
+  LOG_INFO("REGISTRY", "CREATE", "Loading instrument from: {}", config_path);
 
   try {
     YAML::Node config_yaml = YAML::LoadFile(config_path);
@@ -54,7 +54,7 @@ bool InstrumentRegistry::create_instrument(const std::string &config_path) {
 
     std::string name = config["name"];
 
-    // Convert JSON objects to strings
+    // Convert JSON objects to strings for worker
     std::string config_json = config.dump();
     std::string api_def_json = api_def.dump();
 
@@ -79,6 +79,13 @@ bool InstrumentRegistry::create_instrument_from_json(
   nlohmann::json config = nlohmann::json::parse(config_json);
   nlohmann::json api_def = nlohmann::json::parse(api_def_json);
 
+  // Store metadata for later lookup
+  InstrumentMetadata metadata;
+  metadata.name = name;
+  metadata.config = config;
+  metadata.api_def = api_def;
+  metadata_[name] = metadata;
+
   // Get protocol type
   std::string protocol_type = api_def["protocol"]["type"];
 
@@ -94,6 +101,7 @@ bool InstrumentRegistry::create_instrument_from_json(
     if (plugin_path.empty()) {
       LOG_ERROR("REGISTRY", "CREATE", "No plugin found for protocol: {}",
                 protocol_type);
+      metadata_.erase(name);
       return false;
     }
   }
@@ -108,6 +116,7 @@ bool InstrumentRegistry::create_instrument_from_json(
 
   if (!proxy->start()) {
     LOG_ERROR("REGISTRY", "CREATE", "Failed to start worker for:  {}", name);
+    metadata_.erase(name);
     return false;
   }
 
@@ -127,6 +136,120 @@ InstrumentRegistry::get_instrument(const std::string &name) {
   return it->second;
 }
 
+std::optional<InstrumentMetadata>
+InstrumentRegistry::get_instrument_metadata(const std::string &name) const {
+  std::lock_guard lock(mutex_);
+  auto it = metadata_.find(name);
+  if (it == metadata_.end()) {
+    return std::nullopt;
+  }
+  return it->second;
+}
+
+bool InstrumentRegistry::command_expects_response(
+    const std::string &instrument_name, const std::string &verb) const {
+  std::lock_guard lock(mutex_);
+
+  auto meta_it = metadata_.find(instrument_name);
+  if (meta_it == metadata_.end()) {
+    LOG_WARN("REGISTRY", "API_LOOKUP", "No metadata found for instrument: {}",
+             instrument_name);
+    return false;
+  }
+
+  const auto &api_def = meta_it->second.api_def;
+
+  // Check if commands section exists
+  if (!api_def.contains("commands") || !api_def["commands"].is_object()) {
+    LOG_WARN("REGISTRY", "API_LOOKUP",
+             "No commands section in API definition for:  {}", instrument_name);
+    return false;
+  }
+
+  const auto &commands = api_def["commands"];
+
+  // Look up the command verb
+  if (!commands.contains(verb)) {
+    LOG_WARN("REGISTRY", "API_LOOKUP",
+             "Command '{}' not found in API definition for instrument '{}'",
+             verb, instrument_name);
+    return false;
+  }
+
+  const auto &cmd_def = commands[verb];
+
+  // According to schema:  command has "outputs" array
+  // If outputs exists and is non-empty array, response is expected
+  if (cmd_def.contains("outputs") && cmd_def["outputs"].is_array()) {
+    const auto &outputs = cmd_def["outputs"];
+    return !outputs.empty(); // Has outputs = expects response
+  }
+
+  // No outputs field or empty outputs = no response expected
+  return false;
+}
+
+std::optional<std::string>
+InstrumentRegistry::get_response_type(const std::string &instrument_name,
+                                      const std::string &verb) const {
+  std::lock_guard lock(mutex_);
+
+  auto meta_it = metadata_.find(instrument_name);
+  if (meta_it == metadata_.end()) {
+    return std::nullopt;
+  }
+
+  const auto &api_def = meta_it->second.api_def;
+
+  if (!api_def.contains("commands") || !api_def["commands"].is_object()) {
+    return std::nullopt;
+  }
+
+  const auto &commands = api_def["commands"];
+
+  if (!commands.contains(verb)) {
+    return std::nullopt;
+  }
+
+  const auto &cmd_def = commands[verb];
+
+  // Get outputs array
+  if (!cmd_def.contains("outputs") || !cmd_def["outputs"].is_array()) {
+    return std::nullopt;
+  }
+
+  const auto &outputs = cmd_def["outputs"];
+  if (outputs.empty()) {
+    return std::nullopt;
+  }
+
+  // Get first output name
+  std::string output_name = outputs[0].get<std::string>();
+
+  // Look up the output in io definitions
+  if (!api_def.contains("io") || !api_def["io"].is_array()) {
+    LOG_WARN("REGISTRY", "API_LOOKUP",
+             "No io section in API definition for:  {}", instrument_name);
+    return std::nullopt;
+  }
+
+  const auto &io_defs = api_def["io"];
+
+  // Find the io definition with matching name
+  for (const auto &io : io_defs) {
+    if (io.contains("name") && io["name"].get<std::string>() == output_name) {
+      if (io.contains("type")) {
+        return io["type"].get<std::string>();
+      }
+    }
+  }
+
+  LOG_WARN("REGISTRY", "API_LOOKUP",
+           "Output '{}' not found in io definitions for instrument '{}'",
+           output_name, instrument_name);
+  return std::nullopt;
+}
+
 bool InstrumentRegistry::has_instrument(const std::string &name) const {
   std::lock_guard lock(mutex_);
   return instruments_.count(name) > 0;
@@ -138,6 +261,7 @@ void InstrumentRegistry::remove_instrument(const std::string &name) {
   if (it != instruments_.end()) {
     it->second->stop();
     instruments_.erase(it);
+    metadata_.erase(name);
     LOG_INFO("REGISTRY", "REMOVE", "Removed instrument: {}", name);
   }
 }
@@ -147,7 +271,6 @@ void InstrumentRegistry::stop_all() {
   LOG_INFO("REGISTRY", "STOP_ALL", "Stopping {} instruments",
            instruments_.size());
 
-  // Create a copy of the map to avoid iterator invalidation
   std::vector<std::shared_ptr<InstrumentWorkerProxy>> proxies;
   for (auto &[name, proxy] : instruments_) {
     if (proxy) {
@@ -155,7 +278,6 @@ void InstrumentRegistry::stop_all() {
     }
   }
 
-  // Stop all proxies
   for (auto &proxy : proxies) {
     try {
       proxy->stop();
@@ -164,7 +286,9 @@ void InstrumentRegistry::stop_all() {
                 e.what());
     }
   }
+
   instruments_.clear();
+  metadata_.clear();
 }
 
 void InstrumentRegistry::start_all() {

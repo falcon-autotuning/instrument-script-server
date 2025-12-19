@@ -24,6 +24,8 @@ public:
     // If already initialized, just update level
     if (logger_) {
       logger_->set_level(level);
+      // ensure flush behavior follows requested level
+      logger_->flush_on(level);
       return;
     }
 
@@ -40,7 +42,8 @@ public:
       logger_ = std::make_shared<spdlog::logger>("instrument", sinks.begin(),
                                                  sinks.end());
       logger_->set_level(level);
-      logger_->flush_on(spdlog::level::warn);
+      // flush on the requested level so tests can rely on timely flushes
+      logger_->flush_on(level);
 
       // Don't register if already exists
       if (!spdlog::get("instrument")) {
@@ -52,6 +55,19 @@ public:
         fmt::print(stderr, "Log initialization failed: {}\n", ex.what());
       }
     }
+  }
+
+  // Shutdown the logger: drop from spdlog registry and clear internal pointer.
+  // This allows subsequent init() calls to recreate sinks (useful for tests).
+  void shutdown() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    try {
+      // drop the named logger from spdlog registry
+      spdlog::drop("instrument");
+    } catch (...) {
+      // ignore drop errors
+    }
+    logger_.reset();
   }
 
   template <typename... Args>

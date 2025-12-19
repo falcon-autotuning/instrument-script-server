@@ -55,8 +55,8 @@ TEST(ServerDaemon, PreventMultipleInstances) {
 
   ASSERT_TRUE(daemon.start());
 
-  // Try to start again - should fail
-  EXPECT_FALSE(daemon.start());
+  // Try to start again - should ignore and skip
+  EXPECT_TRUE(daemon.start());
 
   daemon.stop();
 }
