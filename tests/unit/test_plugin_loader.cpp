@@ -13,7 +13,7 @@ protected:
 
     if (!std::filesystem::exists(mock_plugin_path_)) {
       // Try alternate location
-      mock_plugin_path_ = "./mock_plugin.so";
+      mock_plugin_path_ = "./build/tests/mock_plugin.so";
     }
 
     plugin_exists_ = std::filesystem::exists(mock_plugin_path_);

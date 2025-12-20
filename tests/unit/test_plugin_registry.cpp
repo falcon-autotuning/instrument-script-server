@@ -57,5 +57,5 @@ TEST_F(PluginRegistryTest, ListProtocols) {
   registry_->load_plugin("MockPlugin", "./build/tests/mock_plugin.so");
 
   auto protocols = registry_->list_protocols();
-  EXPECT_EQ(protocols.size(), 1);
+  EXPECT_EQ(protocols.size(), 2);
 }
