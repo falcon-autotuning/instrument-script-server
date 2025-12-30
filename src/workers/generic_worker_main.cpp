@@ -5,7 +5,6 @@
 #include <chrono>
 #include <csignal>
 #include <iostream>
-#include <queue>
 #include <string>
 
 using namespace instserver;
@@ -82,6 +81,212 @@ static CommandResponse from_plugin_response(const PluginResponse &presp) {
 
   return resp;
 }
+namespace {
+constexpr auto HEARTBEAT_INTERVAL = std::chrono::milliseconds(500);
+constexpr auto IPC_SEND_TIMEOUT = std::chrono::milliseconds(1000);
+constexpr auto IPC_RECV_TIMEOUT = std::chrono::milliseconds(100);
+constexpr auto HEARTBEAT_SEND_TIMEOUT = std::chrono::milliseconds(100);
+
+class Instrument {
+public:
+  Instrument(const std::string &instrument_name, const std::string &plugin_path)
+      : instrument_name_(instrument_name), plugin_path_(plugin_path),
+        plugin_(plugin_path) {}
+
+  int run() {
+    if (!load_and_init_plugin())
+      return 1;
+    if (!connect_ipc_queue())
+      return 1;
+
+    LOG_INFO(instrument_name_, "WORKER_MAIN", "Entering main loop");
+    main_loop();
+
+    cleanup();
+    LOG_INFO(instrument_name_, "WORKER_MAIN", "Worker exited cleanly");
+    return 0;
+  }
+
+private:
+  std::string instrument_name_;
+  std::string plugin_path_;
+  plugin::PluginLoader plugin_;
+  std::unique_ptr<ipc::SharedQueue> ipc_queue_;
+  std::optional<uint64_t> waiting_sync_token_;
+  std::chrono::steady_clock::time_point last_heartbeat_ =
+      std::chrono::steady_clock::now();
+
+  bool load_and_init_plugin() {
+    if (!plugin_.is_loaded()) {
+      LOG_ERROR(instrument_name_, "WORKER_MAIN", "Failed to load plugin");
+      return false;
+    }
+    log_plugin_metadata();
+
+    PluginConfig config = {};
+    strncpy(config.instrument_name, instrument_name_.c_str(),
+            PLUGIN_MAX_STRING_LEN - 1);
+    strncpy(config.connection_json, "{}", PLUGIN_MAX_STRING_LEN - 1);
+
+    int32_t init_result = plugin_.initialize(config);
+    if (init_result != 0) {
+      LOG_ERROR(instrument_name_, "WORKER_MAIN",
+                "Plugin initialization failed: {}", init_result);
+      return false;
+    }
+
+    LOG_INFO(instrument_name_, "WORKER_MAIN",
+             "Plugin initialized successfully");
+    return true;
+  }
+
+  void log_plugin_metadata() {
+    auto metadata = plugin_.get_metadata();
+    LOG_INFO(instrument_name_, "WORKER_MAIN", "Loaded plugin:  {} v{} ({})",
+             metadata.name, metadata.version, metadata.protocol_type);
+  }
+
+  bool connect_ipc_queue() {
+    ipc_queue_ = ipc::SharedQueue::create_worker_queue(instrument_name_);
+    if (!ipc_queue_ || !ipc_queue_->is_valid()) {
+      LOG_ERROR(instrument_name_, "WORKER_MAIN", "Failed to create IPC queue");
+      plugin_.shutdown();
+      return false;
+    }
+    LOG_INFO(instrument_name_, "WORKER_MAIN", "IPC queue connected");
+    return true;
+  }
+
+  void main_loop() {
+    while (g_running) {
+      send_heartbeat_if_needed();
+      auto msg_opt = ipc_queue_->receive(IPC_RECV_TIMEOUT);
+      if (!msg_opt)
+        continue;
+      process_message(*msg_opt);
+    }
+    LOG_INFO(instrument_name_, "WORKER_MAIN", "Shutting down");
+  }
+
+  void send_heartbeat_if_needed() {
+    auto now = std::chrono::steady_clock::now();
+    if (now - last_heartbeat_ >= HEARTBEAT_INTERVAL) {
+      ipc::IPCMessage heartbeat;
+      heartbeat.type = ipc::IPCMessage::Type::HEARTBEAT;
+      heartbeat.id = 0;
+      heartbeat.payload_size = 0;
+      ipc_queue_->send(heartbeat, HEARTBEAT_SEND_TIMEOUT);
+      last_heartbeat_ = now;
+    }
+  }
+
+  void process_message(ipc::IPCMessage &msg) {
+    switch (msg.type) {
+    case ipc::IPCMessage::Type::SHUTDOWN:
+      handle_shutdown();
+      break;
+    case ipc::IPCMessage::Type::SYNC_CONTINUE:
+      handle_sync_continue(msg);
+      break;
+    case ipc::IPCMessage::Type::COMMAND:
+      if (!waiting_sync_token_) {
+        handle_command(msg);
+      } else {
+        LOG_DEBUG(instrument_name_, "WORKER_MAIN",
+                  "Blocked on sync token={}, ignoring message",
+                  *waiting_sync_token_);
+      }
+      break;
+    default:
+      LOG_WARN(instrument_name_, "WORKER_MAIN",
+               "Received unexpected message type:  {}",
+               static_cast<uint32_t>(msg.type));
+      break;
+    }
+  }
+
+  void handle_shutdown() {
+    LOG_INFO(instrument_name_, "WORKER_MAIN", "Received shutdown message");
+    g_running = false;
+  }
+
+  void handle_sync_continue(const ipc::IPCMessage &msg) {
+    if (waiting_sync_token_ && msg.sync_token == *waiting_sync_token_) {
+      LOG_DEBUG(instrument_name_, "WORKER_MAIN",
+                "Received SYNC_CONTINUE for token={}, proceeding",
+                msg.sync_token);
+      waiting_sync_token_.reset();
+    } else {
+      LOG_WARN(instrument_name_, "WORKER_MAIN",
+               "Unexpected SYNC_CONTINUE token={} (waiting={})", msg.sync_token,
+               waiting_sync_token_.value_or(0));
+    }
+  }
+
+  void handle_command(const ipc::IPCMessage &msg) {
+    SerializedCommand cmd = deserialize_command_from_msg(msg);
+    LOG_DEBUG(instrument_name_, cmd.id, "Received command: {} (sync={})",
+              cmd.verb, cmd.sync_token.value_or(0));
+
+    PluginResponse plugin_resp = {};
+    int32_t exec_result =
+        plugin_.execute_command(to_plugin_command(cmd), plugin_resp);
+
+    LOG_DEBUG(instrument_name_, cmd.id,
+              "Command executed:  result={} success={}", exec_result,
+              plugin_resp.success);
+
+    send_command_response(msg, cmd, plugin_resp);
+
+    if (cmd.sync_token) {
+      send_sync_ack(msg, *cmd.sync_token);
+      waiting_sync_token_ = cmd.sync_token;
+      LOG_DEBUG(instrument_name_, cmd.id,
+                "Now waiting for SYNC_CONTINUE token={}", *waiting_sync_token_);
+    }
+  }
+
+  SerializedCommand deserialize_command_from_msg(const ipc::IPCMessage &msg) {
+    std::string payload(msg.payload, msg.payload_size);
+    return ipc::deserialize_command(payload);
+  }
+
+  void send_command_response(const ipc::IPCMessage &msg,
+                             const SerializedCommand &cmd,
+                             const PluginResponse &plugin_resp) {
+    CommandResponse resp = from_plugin_response(plugin_resp);
+    std::string resp_payload = ipc::serialize_response(resp);
+
+    ipc::IPCMessage resp_msg;
+    resp_msg.type = ipc::IPCMessage::Type::RESPONSE;
+    resp_msg.id = msg.id;
+    resp_msg.sync_token = cmd.sync_token.value_or(0);
+    resp_msg.payload_size =
+        std::min(resp_payload.size(), sizeof(resp_msg.payload));
+    std::memcpy(resp_msg.payload, resp_payload.data(), resp_msg.payload_size);
+
+    ipc_queue_->send(resp_msg, IPC_SEND_TIMEOUT);
+  }
+
+  void send_sync_ack(const ipc::IPCMessage &msg, uint64_t sync_token) {
+    LOG_DEBUG(instrument_name_, std::to_string(msg.id),
+              "Sending SYNC_ACK for token={}", sync_token);
+
+    ipc::IPCMessage ack_msg;
+    ack_msg.type = ipc::IPCMessage::Type::SYNC_ACK;
+    ack_msg.id = msg.id;
+    ack_msg.sync_token = sync_token;
+    ack_msg.payload_size = 0;
+
+    ipc_queue_->send(ack_msg, IPC_SEND_TIMEOUT);
+  }
+
+  void cleanup() {
+    plugin_.shutdown();
+    ipc_queue_.reset();
+  }
+};
+} // namespace
 
 int main(int argc, char **argv) {
   if (argc < 3) {
@@ -95,7 +300,6 @@ int main(int argc, char **argv) {
   // Setup logging for this worker
   std::string log_file = "worker_" + instrument_name + ".log";
   InstrumentLogger::instance().init(log_file, spdlog::level::debug);
-
   LOG_INFO(instrument_name, "WORKER_MAIN", "Worker starting");
   LOG_INFO(instrument_name, "WORKER_MAIN", "Plugin:  {}", plugin_path);
 
@@ -103,177 +307,7 @@ int main(int argc, char **argv) {
   std::signal(SIGTERM, signal_handler);
 
   try {
-    // Load plugin
-    plugin::PluginLoader plugin(plugin_path);
-
-    if (!plugin.is_loaded()) {
-      LOG_ERROR(instrument_name, "WORKER_MAIN", "Failed to load plugin");
-      return 1;
-    }
-
-    auto metadata = plugin.get_metadata();
-    LOG_INFO(instrument_name, "WORKER_MAIN", "Loaded plugin:  {} v{} ({})",
-             metadata.name, metadata.version, metadata.protocol_type);
-
-    // TODO: Get config and initialize plugin properly
-    // For now, use empty config
-    PluginConfig config = {};
-    strncpy(config.instrument_name, instrument_name.c_str(),
-            PLUGIN_MAX_STRING_LEN - 1);
-    strncpy(config.connection_json, "{}", PLUGIN_MAX_STRING_LEN - 1);
-
-    int32_t init_result = plugin.initialize(config);
-    if (init_result != 0) {
-      LOG_ERROR(instrument_name, "WORKER_MAIN",
-                "Plugin initialization failed: {}", init_result);
-      return 1;
-    }
-
-    LOG_INFO(instrument_name, "WORKER_MAIN", "Plugin initialized successfully");
-
-    // Connect to IPC queue
-    auto ipc_queue = ipc::SharedQueue::create_worker_queue(instrument_name);
-
-    if (!ipc_queue || !ipc_queue->is_valid()) {
-      LOG_ERROR(instrument_name, "WORKER_MAIN", "Failed to create IPC queue");
-      plugin.shutdown();
-      return 1;
-    }
-
-    LOG_INFO(instrument_name, "WORKER_MAIN", "IPC queue connected");
-
-    // Command queue for this worker
-    std::queue<SerializedCommand> command_queue;
-    std::optional<uint64_t> waiting_sync_token;
-
-    // Main event loop
-    auto last_heartbeat = std::chrono::steady_clock::now();
-    const auto heartbeat_interval = std::chrono::milliseconds(500);
-
-    LOG_INFO(instrument_name, "WORKER_MAIN", "Entering main loop");
-
-    while (g_running) {
-      // Send periodic heartbeat
-      auto now = std::chrono::steady_clock::now();
-      if (now - last_heartbeat >= heartbeat_interval) {
-        ipc::IPCMessage heartbeat;
-        heartbeat.type = ipc::IPCMessage::Type::HEARTBEAT;
-        heartbeat.id = 0;
-        heartbeat.payload_size = 0;
-        ipc_queue->send(heartbeat, std::chrono::milliseconds(100));
-        last_heartbeat = now;
-      }
-
-      // Check for messages
-      auto msg_opt = ipc_queue->receive(std::chrono::milliseconds(100));
-
-      if (!msg_opt) {
-        continue;
-      }
-
-      ipc::IPCMessage &msg = *msg_opt;
-
-      // Handle shutdown
-      if (msg.type == ipc::IPCMessage::Type::SHUTDOWN) {
-        LOG_INFO(instrument_name, "WORKER_MAIN", "Received shutdown message");
-        break;
-      }
-
-      // Handle sync continue
-      if (msg.type == ipc::IPCMessage::Type::SYNC_CONTINUE) {
-        if (waiting_sync_token && msg.sync_token == *waiting_sync_token) {
-          LOG_DEBUG(instrument_name, "WORKER_MAIN",
-                    "Received SYNC_CONTINUE for token={}, proceeding",
-                    msg.sync_token);
-          waiting_sync_token.reset();
-        } else {
-          LOG_WARN(instrument_name, "WORKER_MAIN",
-                   "Unexpected SYNC_CONTINUE token={} (waiting={})",
-                   msg.sync_token, waiting_sync_token.value_or(0));
-        }
-        continue;
-      }
-
-      // Only process commands if not waiting on sync
-      if (waiting_sync_token) {
-        LOG_DEBUG(instrument_name, "WORKER_MAIN",
-                  "Blocked on sync token={}, ignoring message",
-                  *waiting_sync_token);
-        continue;
-      }
-
-      // Handle command
-      if (msg.type != ipc::IPCMessage::Type::COMMAND) {
-        LOG_WARN(instrument_name, "WORKER_MAIN",
-                 "Received unexpected message type:  {}",
-                 static_cast<uint32_t>(msg.type));
-        continue;
-      }
-
-      // Deserialize command
-      std::string payload(msg.payload, msg.payload_size);
-      SerializedCommand cmd = ipc::deserialize_command(payload);
-
-      LOG_DEBUG(instrument_name, cmd.id, "Received command: {} (sync={})",
-                cmd.verb, cmd.sync_token.value_or(0));
-
-      // Convert to plugin format
-      auto plugin_cmd = to_plugin_command(cmd);
-      PluginResponse plugin_resp = {};
-
-      // Execute command
-      int32_t exec_result = plugin.execute_command(plugin_cmd, plugin_resp);
-
-      LOG_DEBUG(instrument_name, cmd.id,
-                "Command executed:  result={} success={}", exec_result,
-                plugin_resp.success);
-
-      // Convert response
-      CommandResponse resp = from_plugin_response(plugin_resp);
-
-      // Send response back
-      std::string resp_payload = ipc::serialize_response(resp);
-
-      ipc::IPCMessage resp_msg;
-      resp_msg.type = ipc::IPCMessage::Type::RESPONSE;
-      resp_msg.id = msg.id;
-      resp_msg.sync_token = cmd.sync_token.value_or(0);
-      resp_msg.payload_size =
-          std::min(resp_payload.size(), sizeof(resp_msg.payload));
-      std::memcpy(resp_msg.payload, resp_payload.data(), resp_msg.payload_size);
-
-      ipc_queue->send(resp_msg, std::chrono::milliseconds(1000));
-
-      // If this was a sync command, send ACK and block
-      if (cmd.sync_token) {
-        LOG_DEBUG(instrument_name, cmd.id, "Sending SYNC_ACK for token={}",
-                  *cmd.sync_token);
-
-        ipc::IPCMessage ack_msg;
-        ack_msg.type = ipc::IPCMessage::Type::SYNC_ACK;
-        ack_msg.id = msg.id;
-        ack_msg.sync_token = *cmd.sync_token;
-        ack_msg.payload_size = 0;
-
-        ipc_queue->send(ack_msg, std::chrono::milliseconds(1000));
-
-        // Block until SYNC_CONTINUE
-        waiting_sync_token = cmd.sync_token;
-        LOG_DEBUG(instrument_name, cmd.id,
-                  "Now waiting for SYNC_CONTINUE token={}",
-                  *waiting_sync_token);
-      }
-    }
-
-    LOG_INFO(instrument_name, "WORKER_MAIN", "Shutting down");
-
-    // Cleanup
-    plugin.shutdown();
-    ipc_queue.reset();
-
-    LOG_INFO(instrument_name, "WORKER_MAIN", "Worker exited cleanly");
-    return 0;
-
+    return Instrument(instrument_name, plugin_path).run();
   } catch (const std::exception &e) {
     LOG_ERROR(instrument_name, "WORKER_MAIN", "Fatal error: {}", e.what());
     return 1;

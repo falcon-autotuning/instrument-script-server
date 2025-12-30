@@ -1,3 +1,4 @@
+#include "PluginTestFixture.hpp"
 #include "instrument-server/Logger.hpp"
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include "instrument-server/server/RuntimeContext.hpp"
@@ -9,10 +10,11 @@
 
 using namespace instserver;
 
-class MeasurementScriptTest : public ::testing::Test {
+class MeasurementScriptTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
-    InstrumentLogger::instance().init("script_test. log", spdlog::level::debug);
+    PluginTestFixture::SetUp();
+    InstrumentLogger::instance().init("script_test.log", spdlog::level::debug);
 
     test_scripts_dir_ =
         std::filesystem::current_path() / "tests" / "data" / "test_scripts";
@@ -107,7 +109,7 @@ TEST_F(MeasurementScriptTest, NestedParallel) {
 TEST_F(MeasurementScriptTest, ErrorHandling) {
   // This script intentionally calls non-existent instrument
   // Should complete without crashing
-  EXPECT_TRUE(run_script("error_handling. lua"));
+  EXPECT_TRUE(run_script("error_handling.lua"));
 }
 
 TEST_F(MeasurementScriptTest, ChannelAddressing) {
@@ -119,7 +121,7 @@ TEST_F(MeasurementScriptTest, ReturnTypes) {
 }
 
 TEST_F(MeasurementScriptTest, TableParameters) {
-  EXPECT_TRUE(run_script("table_params. lua"));
+  EXPECT_TRUE(run_script("table_params.lua"));
 }
 
 TEST_F(MeasurementScriptTest, ScriptWithOutput) {

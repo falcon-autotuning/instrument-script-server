@@ -92,19 +92,22 @@ add_library(mock_plugin MODULE mocks/mock_plugin.cpp)
 
 target_link_libraries(mock_plugin PRIVATE instrument-server-core)
 
-set_target_properties(mock_plugin PROPERTIES PREFIX "" OUTPUT_NAME
-                                                       "mock_plugin")
+set_target_properties(mock_plugin PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE
+                                                       ON)
 
 # Build mock VISA plugin for testing
 add_library(mock_visa_plugin MODULE mocks/mock_visa_plugin.c)
+target_link_libraries(mock_visa_plugin PRIVATE instrument-server-core)
 set_target_properties(mock_visa_plugin PROPERTIES PREFIX ""
                                                   POSITION_INDEPENDENT_CODE ON)
-target_include_directories(mock_visa_plugin PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 # Build mock VISA large data plugin for testing
 add_library(mock_visa_large_data_plugin MODULE
             mocks/mock_visa_large_data_plugin.c)
-
+target_link_libraries(mock_visa_large_data_plugin
+                      PRIVATE instrument-server-core)
+set_target_properties(mock_visa_large_data_plugin
+                      PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE ON)
 # Copy test data
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/tests/data)
 

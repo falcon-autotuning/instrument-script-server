@@ -320,13 +320,13 @@ rule C_COMPILER__mock_visa_plugin_unscanned_
 
 
 #############################################
-# Rule for linking C shared module.
+# Rule for linking CXX shared module.
 
-rule C_MODULE_LIBRARY_LINKER__mock_visa_plugin_
+rule CXX_MODULE_LIBRARY_LINKER__mock_visa_plugin_
   depfile = $DEP_FILE
   deps = gcc
-  command = $PRE_LINK && /usr/bin/ccache  clang -fPIC $LANGUAGE_COMPILE_FLAGS $ARCH_FLAGS $LINK_FLAGS $SONAME_FLAG$SONAME -o $TARGET_FILE $in $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
-  description = Linking C shared module $TARGET_FILE
+  command = $PRE_LINK && /usr/bin/ccache  clang++ -fPIC $LANGUAGE_COMPILE_FLAGS $ARCH_FLAGS $LINK_FLAGS $SONAME_FLAG$SONAME -o $TARGET_FILE $in $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
+  description = Linking CXX shared module $TARGET_FILE
   restat = $RESTAT
 
 
@@ -341,13 +341,13 @@ rule C_COMPILER__mock_visa_large_data_plugin_unscanned_
 
 
 #############################################
-# Rule for linking C shared module.
+# Rule for linking CXX shared module.
 
-rule C_MODULE_LIBRARY_LINKER__mock_visa_large_data_plugin_
+rule CXX_MODULE_LIBRARY_LINKER__mock_visa_large_data_plugin_
   depfile = $DEP_FILE
   deps = gcc
-  command = $PRE_LINK && /usr/bin/ccache  clang -fPIC $LANGUAGE_COMPILE_FLAGS $ARCH_FLAGS $LINK_FLAGS $SONAME_FLAG$SONAME -o $TARGET_FILE $in $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
-  description = Linking C shared module $TARGET_FILE
+  command = $PRE_LINK && /usr/bin/ccache  clang++ -fPIC $LANGUAGE_COMPILE_FLAGS $ARCH_FLAGS $LINK_FLAGS $SONAME_FLAG$SONAME -o $TARGET_FILE $in $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
+  description = Linking CXX shared module $TARGET_FILE
   restat = $RESTAT
 
 

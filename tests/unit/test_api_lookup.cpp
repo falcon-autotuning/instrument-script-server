@@ -1,4 +1,4 @@
-#include "../test_utils/PluginTestFixture.hpp"
+#include "PluginTestFixture.hpp"
 #include "instrument-server/Logger.hpp"
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include <filesystem>
@@ -12,7 +12,7 @@ protected:
   void SetUp() override {
     // Load plugins first
     PluginTestFixture::SetUp();
-    registry_ = &InstrumentRegistry::instance(); // <-- add this line
+    registry_ = &InstrumentRegistry::instance();
 
     test_data_dir_ = std::filesystem::current_path() / "tests" / "data";
 

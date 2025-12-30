@@ -1,5 +1,5 @@
-#include "instrument-server/Logger.hpp"
 #include "instrument-server/server/SyncCoordinator.hpp"
+#include "instrument-server/Logger.hpp"
 
 namespace instserver {
 
@@ -54,6 +54,9 @@ bool SyncCoordinator::handle_ack(uint64_t sync_token,
     LOG_INFO("SYNC", "COMPLETE",
              "Barrier {} complete, all {} instruments ACKed", sync_token,
              barrier.expected_instruments.size());
+    barriers_.erase(it);
+    LOG_DEBUG("SYNC", "AUTO_CLEAR", "Auto-cleared completed barrier token={}",
+              sync_token);
   }
 
   return complete;

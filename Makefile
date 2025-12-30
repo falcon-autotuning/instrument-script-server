@@ -5,3 +5,6 @@ clean:
 
 unit-test:
 	PATH=./build:$PATH ./build/tests/unit_tests
+
+integration-tests:
+	PATH=./build:$PATH ./build/tests/integration_tests

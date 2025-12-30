@@ -78,6 +78,9 @@ add_library(
   src/server/ServerDaemon.cpp
   ${CMAKE_BINARY_DIR}/embedded_schemas.cpp)
 
+set_target_properties(instrument-server-core
+                      PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 target_link_libraries(
   instrument-server-core PUBLIC spdlog::spdlog nlohmann_json::nlohmann_json
                                 yaml-cpp ${LUA_LIBRARIES} ${PLATFORM_LIBS})

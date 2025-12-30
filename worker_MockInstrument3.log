@@ -1,0 +1,64 @@
+[2025-12-30 12:41:25.672] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Worker starting
+[2025-12-30 12:41:25.672] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Plugin:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:25.672] [instrument] [info] [PLUGIN] [LOAD] Loading plugin: ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:25.672] [instrument] [info] [PLUGIN] [LOAD] Plugin loaded successfully:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:25.672] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Loaded plugin:  Mock VISA v1.0.0 (VISA)
+[2025-12-30 12:41:25.672] [instrument] [info] [PLUGIN] [INIT] Initializing plugin for instrument: MockInstrument3
+[2025-12-30 12:41:25.672] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Plugin initialized successfully
+[2025-12-30 12:41:25.672] [instrument] [info] [IPC] [QUEUE_OPEN] Opened queues for instrument: MockInstrument3
+[2025-12-30 12:41:25.672] [instrument] [info] [MockInstrument3] [WORKER_MAIN] IPC queue connected
+[2025-12-30 12:41:25.672] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Entering main loop
+[2025-12-30 12:41:28.376] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Received shutdown message
+[2025-12-30 12:41:28.376] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Shutting down
+[2025-12-30 12:41:28.376] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:28.376] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Worker exited cleanly
+[2025-12-30 12:41:28.376] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:30.489] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Worker starting
+[2025-12-30 12:41:30.489] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Plugin:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:30.489] [instrument] [info] [PLUGIN] [LOAD] Loading plugin: ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:30.489] [instrument] [info] [PLUGIN] [LOAD] Plugin loaded successfully:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:30.489] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Loaded plugin:  Mock VISA v1.0.0 (VISA)
+[2025-12-30 12:41:30.489] [instrument] [info] [PLUGIN] [INIT] Initializing plugin for instrument: MockInstrument3
+[2025-12-30 12:41:30.489] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Plugin initialized successfully
+[2025-12-30 12:41:30.489] [instrument] [info] [IPC] [QUEUE_OPEN] Opened queues for instrument: MockInstrument3
+[2025-12-30 12:41:30.489] [instrument] [info] [MockInstrument3] [WORKER_MAIN] IPC queue connected
+[2025-12-30 12:41:30.489] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Entering main loop
+[2025-12-30 12:41:33.192] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Received shutdown message
+[2025-12-30 12:41:33.192] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Shutting down
+[2025-12-30 12:41:33.192] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:33.192] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Worker exited cleanly
+[2025-12-30 12:41:33.192] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:35.305] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Worker starting
+[2025-12-30 12:41:35.305] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Plugin:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:35.305] [instrument] [info] [PLUGIN] [LOAD] Loading plugin: ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:35.305] [instrument] [info] [PLUGIN] [LOAD] Plugin loaded successfully:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:35.305] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Loaded plugin:  Mock VISA v1.0.0 (VISA)
+[2025-12-30 12:41:35.305] [instrument] [info] [PLUGIN] [INIT] Initializing plugin for instrument: MockInstrument3
+[2025-12-30 12:41:35.305] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Plugin initialized successfully
+[2025-12-30 12:41:35.305] [instrument] [info] [IPC] [QUEUE_OPEN] Opened queues for instrument: MockInstrument3
+[2025-12-30 12:41:35.305] [instrument] [info] [MockInstrument3] [WORKER_MAIN] IPC queue connected
+[2025-12-30 12:41:35.305] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Entering main loop
+[2025-12-30 12:41:38.026] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Received shutdown message
+[2025-12-30 12:41:38.027] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Shutting down
+[2025-12-30 12:41:38.027] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:38.027] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Worker exited cleanly
+[2025-12-30 12:41:38.027] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:40.144] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Worker starting
+[2025-12-30 12:41:40.144] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Plugin:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:40.144] [instrument] [info] [PLUGIN] [LOAD] Loading plugin: ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:40.144] [instrument] [info] [PLUGIN] [LOAD] Plugin loaded successfully:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:41:40.144] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Loaded plugin:  Mock VISA v1.0.0 (VISA)
+[2025-12-30 12:41:40.144] [instrument] [info] [PLUGIN] [INIT] Initializing plugin for instrument: MockInstrument3
+[2025-12-30 12:41:40.144] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Plugin initialized successfully
+[2025-12-30 12:41:40.144] [instrument] [info] [IPC] [QUEUE_OPEN] Opened queues for instrument: MockInstrument3
+[2025-12-30 12:41:40.144] [instrument] [info] [MockInstrument3] [WORKER_MAIN] IPC queue connected
+[2025-12-30 12:41:40.144] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Entering main loop
+[2025-12-30 12:41:40.644] [instrument] [debug] [MockInstrument3] [MockInstrument3-1] Received command: SET (sync=1)
+[2025-12-30 12:41:40.644] [instrument] [debug] [MockInstrument3] [MockInstrument3-1] Command executed:  result=0 success=true
+[2025-12-30 12:41:40.644] [instrument] [debug] [MockInstrument3] [1] Sending SYNC_ACK for token=1
+[2025-12-30 12:41:40.644] [instrument] [debug] [MockInstrument3] [MockInstrument3-1] Now waiting for SYNC_CONTINUE token=1
+[2025-12-30 12:41:40.644] [instrument] [debug] [MockInstrument3] [WORKER_MAIN] Blocked on sync token=1, ignoring message
+[2025-12-30 12:42:16.594] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Shutting down
+[2025-12-30 12:42:16.594] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  ./build/tests/mock_visa_plugin.so
+[2025-12-30 12:42:16.594] [instrument] [info] [MockInstrument3] [WORKER_MAIN] Worker exited cleanly
+[2025-12-30 12:42:16.594] [instrument] [info] [PLUGIN] [SHUTDOWN] Shutting down plugin:  ./build/tests/mock_visa_plugin.so
