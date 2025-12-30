@@ -1087,8 +1087,8 @@ events:
     checks:
       - "Detecting C compiler ABI info"
     directories:
-      source: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-ro0Bef"
-      binary: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-ro0Bef"
+      source: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-E2OnYE"
+      binary: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-E2OnYE"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
       CMAKE_C_FLAGS: ""
@@ -1098,10 +1098,10 @@ events:
       variable: "CMAKE_C_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-ro0Bef'
+        Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-E2OnYE'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_724e3
-        [1/2] /usr/bin/ccache  clang   -v -MD -MT CMakeFiles/cmTC_724e3.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_724e3.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_724e3.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c
+        Run Build Command(s): /usr/bin/ninja -v cmTC_54c7e
+        [1/2] /usr/bin/ccache  clang   -v -MD -MT CMakeFiles/cmTC_54c7e.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_54c7e.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_54c7e.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c
         clang version 21.1.6
         Target: x86_64-pc-linux-gnu
         Thread model: posix
@@ -1123,7 +1123,7 @@ events:
          /usr/local/include
          /usr/include
         End of search list.
-        [2/2] : && /usr/bin/ccache  clang  -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_724e3.dir/CMakeCCompilerABI.c.o -o cmTC_724e3   && :
+        [2/2] : && /usr/bin/ccache  clang  -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_54c7e.dir/CMakeCCompilerABI.c.o -o cmTC_54c7e   && :
         clang version 21.1.6
         Target: x86_64-pc-linux-gnu
         Thread model: posix
@@ -1134,7 +1134,7 @@ events:
         Candidate multilib: .;@m64
         Candidate multilib: 32;@m32
         Selected multilib: .;@m64
-         "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_724e3 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_724e3.dir/CMakeCCompilerABI.c.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o
+         "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_54c7e /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_54c7e.dir/CMakeCCompilerABI.c.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o
         LLD 21.1.6 (compatible with GNU linkers)
         
       exitCode: 0
@@ -1168,10 +1168,10 @@ events:
       Parsed C implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|"|[0-9]+>[ 	-]*Build:[ 	0-9]+ ms[ 	]*)?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)))("|,| |$)]
-        ignore line: [Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-ro0Bef']
+        ignore line: [Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-E2OnYE']
         ignore line: []
-        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_724e3]
-        ignore line: [[1/2] /usr/bin/ccache  clang   -v -MD -MT CMakeFiles/cmTC_724e3.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_724e3.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_724e3.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c]
+        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_54c7e]
+        ignore line: [[1/2] /usr/bin/ccache  clang   -v -MD -MT CMakeFiles/cmTC_54c7e.dir/CMakeCCompilerABI.c.o -MF CMakeFiles/cmTC_54c7e.dir/CMakeCCompilerABI.c.o.d -o CMakeFiles/cmTC_54c7e.dir/CMakeCCompilerABI.c.o -c /usr/share/cmake/Modules/CMakeCCompilerABI.c]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-pc-linux-gnu]
         ignore line: [Thread model: posix]
@@ -1196,7 +1196,7 @@ events:
         ignore line: [ /usr/local/include]
         ignore line: [ /usr/include]
         ignore line: [End of search list.]
-        ignore line: [[2/2] : && /usr/bin/ccache  clang  -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_724e3.dir/CMakeCCompilerABI.c.o -o cmTC_724e3   && :]
+        ignore line: [[2/2] : && /usr/bin/ccache  clang  -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_54c7e.dir/CMakeCCompilerABI.c.o -o cmTC_54c7e   && :]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-pc-linux-gnu]
         ignore line: [Thread model: posix]
@@ -1210,7 +1210,7 @@ events:
         ignore line: [@m32]
         ignore line: [Selected multilib: .]
         ignore line: [@m64]
-        link line: [ "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_724e3 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_724e3.dir/CMakeCCompilerABI.c.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o]
+        link line: [ "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_54c7e /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_54c7e.dir/CMakeCCompilerABI.c.o -lgcc --as-needed -lgcc_s --no-as-needed -lc -lgcc --as-needed -lgcc_s --no-as-needed /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o]
           arg [/usr/bin/ld.lld] ==> ignore
           arg [--hash-style=gnu] ==> ignore
           arg [--build-id] ==> ignore
@@ -1221,7 +1221,7 @@ events:
           arg [-dynamic-linker] ==> ignore
           arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
           arg [-o] ==> ignore
-          arg [cmTC_724e3] ==> ignore
+          arg [cmTC_54c7e] ==> ignore
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o]
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o]
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o]
@@ -1232,7 +1232,7 @@ events:
           arg [-L/lib] ==> dir [/lib]
           arg [-L/usr/lib] ==> dir [/usr/lib]
           arg [-v] ==> ignore
-          arg [CMakeFiles/cmTC_724e3.dir/CMakeCCompilerABI.c.o] ==> ignore
+          arg [CMakeFiles/cmTC_54c7e.dir/CMakeCCompilerABI.c.o] ==> ignore
           arg [-lgcc] ==> lib [gcc]
           arg [--as-needed] ==> ignore
           arg [-lgcc_s] ==> lib [gcc_s]
@@ -1281,8 +1281,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-izsoU1"
-      binary: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-izsoU1"
+      source: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-oHpEx4"
+      binary: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-oHpEx4"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
       CMAKE_CXX_FLAGS: "-Oz"
@@ -1293,10 +1293,10 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-izsoU1'
+        Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-oHpEx4'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_1b9b1
-        [1/2] /usr/bin/ccache  clang++   -Oz    -v -MD -MT CMakeFiles/cmTC_1b9b1.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_1b9b1.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_1b9b1.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+        Run Build Command(s): /usr/bin/ninja -v cmTC_7a68e
+        [1/2] /usr/bin/ccache  clang++   -Oz    -v -MD -MT CMakeFiles/cmTC_7a68e.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_7a68e.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_7a68e.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp
         clang version 21.1.6
         Target: x86_64-pc-linux-gnu
         Thread model: posix
@@ -1321,7 +1321,7 @@ events:
          /usr/local/include
          /usr/include
         End of search list.
-        [2/2] : && /usr/bin/ccache  clang++ -Oz -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_1b9b1.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_1b9b1   && :
+        [2/2] : && /usr/bin/ccache  clang++ -Oz -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_7a68e.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_7a68e   && :
         clang version 21.1.6
         Target: x86_64-pc-linux-gnu
         Thread model: posix
@@ -1332,7 +1332,7 @@ events:
         Candidate multilib: .;@m64
         Candidate multilib: 32;@m32
         Selected multilib: .;@m64
-         "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_1b9b1 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_1b9b1.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o
+         "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_7a68e /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_7a68e.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o
         LLD 21.1.6 (compatible with GNU linkers)
         
       exitCode: 0
@@ -1372,10 +1372,10 @@ events:
       Parsed CXX implicit link information:
         link line regex: [^( *|.*[/\\])(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
         linker tool regex: [^[ 	]*(->|"|[0-9]+>[ 	-]*Build:[ 	0-9]+ ms[ 	]*)?[ 	]*(([^"]*[/\\])?(ld[0-9]*(|\\.[a-rt-z][a-z]*|\\.s[a-np-z][a-z]*|\\.so[a-z]+)))("|,| |$)]
-        ignore line: [Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-izsoU1']
+        ignore line: [Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-oHpEx4']
         ignore line: []
-        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_1b9b1]
-        ignore line: [[1/2] /usr/bin/ccache  clang++   -Oz    -v -MD -MT CMakeFiles/cmTC_1b9b1.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_1b9b1.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_1b9b1.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_7a68e]
+        ignore line: [[1/2] /usr/bin/ccache  clang++   -Oz    -v -MD -MT CMakeFiles/cmTC_7a68e.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_7a68e.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_7a68e.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-pc-linux-gnu]
         ignore line: [Thread model: posix]
@@ -1403,7 +1403,7 @@ events:
         ignore line: [ /usr/local/include]
         ignore line: [ /usr/include]
         ignore line: [End of search list.]
-        ignore line: [[2/2] : && /usr/bin/ccache  clang++ -Oz -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_1b9b1.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_1b9b1   && :]
+        ignore line: [[2/2] : && /usr/bin/ccache  clang++ -Oz -fuse-ld=lld -v -Wl,-v CMakeFiles/cmTC_7a68e.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_7a68e   && :]
         ignore line: [clang version 21.1.6]
         ignore line: [Target: x86_64-pc-linux-gnu]
         ignore line: [Thread model: posix]
@@ -1417,7 +1417,7 @@ events:
         ignore line: [@m32]
         ignore line: [Selected multilib: .]
         ignore line: [@m64]
-        link line: [ "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_1b9b1 /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_1b9b1.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o]
+        link line: [ "/usr/bin/ld.lld" --hash-style=gnu --build-id --eh-frame-hdr -m elf_x86_64 -pie -dynamic-linker /lib64/ld-linux-x86-64.so.2 -o cmTC_7a68e /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1 -L/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64 -L/lib/../lib64 -L/usr/lib64 -L/lib -L/usr/lib -v CMakeFiles/cmTC_7a68e.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o /usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crtn.o]
           arg [/usr/bin/ld.lld] ==> ignore
           arg [--hash-style=gnu] ==> ignore
           arg [--build-id] ==> ignore
@@ -1428,7 +1428,7 @@ events:
           arg [-dynamic-linker] ==> ignore
           arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
           arg [-o] ==> ignore
-          arg [cmTC_1b9b1] ==> ignore
+          arg [cmTC_7a68e] ==> ignore
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/Scrt1.o]
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib64/crti.o]
           arg [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o] ==> obj [/usr/bin/../lib64/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o]
@@ -1439,7 +1439,7 @@ events:
           arg [-L/lib] ==> dir [/lib]
           arg [-L/usr/lib] ==> dir [/usr/lib]
           arg [-v] ==> ignore
-          arg [CMakeFiles/cmTC_1b9b1.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+          arg [CMakeFiles/cmTC_7a68e.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
           arg [-lstdc++] ==> lib [stdc++]
           arg [-lm] ==> lib [m]
           arg [-lgcc_s] ==> lib [gcc_s]
@@ -1488,8 +1488,8 @@ events:
     checks:
       - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
     directories:
-      source: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-OjGY5T"
-      binary: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-OjGY5T"
+      source: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-pPMbTD"
+      binary: "/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-pPMbTD"
     cmakeVariables:
       CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps"
       CMAKE_C_FLAGS: ""
@@ -1499,11 +1499,11 @@ events:
       variable: "CMAKE_HAVE_LIBC_PTHREAD"
       cached: true
       stdout: |
-        Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-OjGY5T'
+        Change Dir: '/home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-pPMbTD'
         
-        Run Build Command(s): /usr/bin/ninja -v cmTC_755e0
-        [1/2] /usr/bin/ccache  clang -DCMAKE_HAVE_LIBC_PTHREAD   -MD -MT CMakeFiles/cmTC_755e0.dir/src.c.o -MF CMakeFiles/cmTC_755e0.dir/src.c.o.d -o CMakeFiles/cmTC_755e0.dir/src.c.o -c /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-OjGY5T/src.c
-        [2/2] : && /usr/bin/ccache  clang  -fuse-ld=lld CMakeFiles/cmTC_755e0.dir/src.c.o -o cmTC_755e0   && :
+        Run Build Command(s): /usr/bin/ninja -v cmTC_060c1
+        [1/2] /usr/bin/ccache  clang -DCMAKE_HAVE_LIBC_PTHREAD   -MD -MT CMakeFiles/cmTC_060c1.dir/src.c.o -MF CMakeFiles/cmTC_060c1.dir/src.c.o.d -o CMakeFiles/cmTC_060c1.dir/src.c.o -c /home/tylerk/falcon-dev/instrument-script-server/build/CMakeFiles/CMakeScratch/TryCompile-pPMbTD/src.c
+        [2/2] : && /usr/bin/ccache  clang  -fuse-ld=lld CMakeFiles/cmTC_060c1.dir/src.c.o -o cmTC_060c1   && :
         
       exitCode: 0
   -

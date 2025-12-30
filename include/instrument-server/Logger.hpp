@@ -1,6 +1,7 @@
 #pragma once
 #include <fmt/format.h>
 #include <memory>
+#include <spdlog/async.h>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
@@ -17,19 +18,19 @@ public:
   }
 
   // Initialize with file and console sinks
-  void init(const std::string &log_file = "instrument_server.log",
+  void init(const std::string &log_file = "instrument_server. log",
             spdlog::level::level_enum level = spdlog::level::debug) {
     std::lock_guard<std::mutex> lock(mutex_);
 
     // If already initialized, just update level
     if (logger_) {
       logger_->set_level(level);
-      // ensure flush behavior follows requested level
-      logger_->flush_on(level);
       return;
     }
 
     try {
+      spdlog::init_thread_pool(8192, 1);
+
       auto console_sink =
           std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
       console_sink->set_level(spdlog::level::info);
@@ -39,11 +40,16 @@ public:
       file_sink->set_level(spdlog::level::trace);
 
       std::vector<spdlog::sink_ptr> sinks{console_sink, file_sink};
-      logger_ = std::make_shared<spdlog::logger>("instrument", sinks.begin(),
-                                                 sinks.end());
+
+      logger_ = std::make_shared<spdlog::async_logger>(
+          "instrument", sinks.begin(), sinks.end(), spdlog::thread_pool(),
+          spdlog::async_overflow_policy::block // Block if queue full (prevents
+                                               // message loss)
+      );
+
       logger_->set_level(level);
-      // flush on the requested level so tests can rely on timely flushes
-      logger_->flush_on(level);
+
+      logger_->flush_on(spdlog::level::warn);
 
       // Don't register if already exists
       if (!spdlog::get("instrument")) {
@@ -61,12 +67,20 @@ public:
   // This allows subsequent init() calls to recreate sinks (useful for tests).
   void shutdown() {
     std::lock_guard<std::mutex> lock(mutex_);
+
+    if (logger_) {
+      logger_->flush();
+    }
+
     try {
       // drop the named logger from spdlog registry
       spdlog::drop("instrument");
     } catch (...) {
       // ignore drop errors
     }
+
+    spdlog::shutdown();
+
     logger_.reset();
   }
 
@@ -116,14 +130,18 @@ private:
     if (!logger_)
       return;
 
-    // Format:  [instrument_name] [instruction_id] message
-    std::string prefix = fmt::format("[{}] [{}] ", instr_name, instr_id);
-    std::string full_msg = prefix + fmt::format(fmt::runtime(fmt_str),
-                                                std::forward<Args>(args)...);
-    logger_->log(level, full_msg);
+    try {
+      logger_->log(
+          level, "[{}] [{}] {}", instr_name, instr_id,
+          fmt::format(fmt::runtime(fmt_str), std::forward<Args>(args)...));
+    } catch (const std::exception &e) {
+      // Fallback if formatting fails
+      logger_->log(spdlog::level::err, "[LOGGER] [ERROR] Format failed: {}",
+                   e.what());
+    }
   }
 
-  std::shared_ptr<spdlog::logger> logger_;
+  std::shared_ptr<spdlog::async_logger> logger_; // ✅ Changed to async_logger
   std::mutex mutex_;
 };
 

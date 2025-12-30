@@ -100,18 +100,31 @@ void InstrumentWorkerProxy::stop_worker_process() {
 
 void InstrumentWorkerProxy::join_response_thread_with_timeout() {
   if (response_thread_.joinable()) {
+    // Give thread 500ms to exit gracefully
+    running_.store(false, std::memory_order_release);
+
     auto start = std::chrono::steady_clock::now();
     while (response_thread_.joinable()) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      if (std::chrono::steady_clock::now() - start > std::chrono::seconds(1)) {
-        LOG_ERROR(instrument_name_, "PROXY",
-                  "Response thread did not exit in time, detaching");
+      auto elapsed = std::chrono::steady_clock::now() - start;
+      if (elapsed > std::chrono::milliseconds(500)) {
+        LOG_WARN(instrument_name_, "PROXY",
+                 "Response thread did not exit in time, detaching");
         response_thread_.detach();
-        return;
+        break;
       }
-    }
-    if (response_thread_.joinable()) {
-      response_thread_.join();
+
+      // Try to join with timeout
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+      if (response_thread_.joinable()) {
+        try {
+          response_thread_.join();
+          LOG_DEBUG(instrument_name_, "PROXY",
+                    "Response thread joined successfully");
+          break;
+        } catch (...) {
+          // Thread still running, continue waiting
+        }
+      }
     }
   }
 }

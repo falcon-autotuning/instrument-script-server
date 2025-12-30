@@ -201,14 +201,13 @@ void RuntimeContext::execute_parallel_buffer() {
       continue;
     }
 
-    // Generate unique ID now
     cmd.id = fmt::format(
         "{}-{}", cmd.instrument_name,
         std::chrono::steady_clock::now().time_since_epoch().count());
 
     LOG_DEBUG(
         "LUA_CONTEXT", "PARALLEL",
-        "Dispatching sync command: {} to {} (token={}, expects_response={})",
+        "Dispatching sync command:  {} to {} (token={}, expects_response={})",
         cmd.verb, cmd.instrument_name, sync_token, cmd.expects_response);
 
     futures.push_back(worker->execute(std::move(cmd)));
@@ -229,6 +228,20 @@ void RuntimeContext::execute_parallel_buffer() {
       LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Future exception: {}", e.what());
     }
   }
+
+  // ✅ REUSE: We already have the instruments list from earlier!
+  // No need to query SyncCoordinator again
+  for (const auto &inst_name : instruments) {
+    auto worker = registry_.get_instrument(inst_name);
+    if (worker) {
+      worker->send_sync_continue(sync_token);
+      LOG_DEBUG("LUA_CONTEXT", "PARALLEL",
+                "Sent SYNC_CONTINUE to {} for token={}", inst_name, sync_token);
+    }
+  }
+
+  // Now clear the barrier
+  sync_coordinator_.clear_barrier(sync_token);
 
   LOG_INFO("LUA_CONTEXT", "PARALLEL", "Parallel block complete (token={})",
            sync_token);
