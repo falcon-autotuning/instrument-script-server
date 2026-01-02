@@ -56,7 +56,7 @@ if(_IMPORT_PREFIX STREQUAL "/")
 endif()
 
 # Create imported target InstrumentServer::instrument-server-core
-add_library(InstrumentServer::instrument-server-core STATIC IMPORTED)
+add_library(InstrumentServer::instrument-server-core SHARED IMPORTED)
 
 set_target_properties(InstrumentServer::instrument-server-core PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;${_IMPORT_PREFIX}/include"

@@ -1,3 +1,4 @@
+#include "PluginTestFixture.hpp"
 #include "instrument-server/Logger.hpp"
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include "instrument-server/server/ServerDaemon.hpp"
@@ -6,9 +7,10 @@
 
 using namespace instserver;
 
-class InstrumentRegistryTest : public ::testing::Test {
+class InstrumentRegistryTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
+    PluginTestFixture::SetUp();
     InstrumentLogger::instance().init("registry_test.log",
                                       spdlog::level::debug);
 

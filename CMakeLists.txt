@@ -62,7 +62,7 @@ configure_file(${CMAKE_SOURCE_DIR}/src/embedded_schemas.cpp.in
 
 # Core library
 add_library(
-  instrument-server-core STATIC
+  instrument-server-core SHARED
   src/SchemaValidator.cpp
   src/SerializedCommand.cpp
   src/ipc/SharedQueue.cpp

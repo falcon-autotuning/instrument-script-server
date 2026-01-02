@@ -22,11 +22,13 @@ rule CXX_COMPILER__instrument-server-core_unscanned_
 
 
 #############################################
-# Rule for linking CXX static library.
+# Rule for linking CXX shared library.
 
-rule CXX_STATIC_LIBRARY_LINKER__instrument-server-core_
-  command = $PRE_LINK && /usr/bin/cmake -E rm -f $TARGET_FILE && /usr/bin/llvm-ar qc $TARGET_FILE $LINK_FLAGS $in && /usr/bin/llvm-ranlib $TARGET_FILE && $POST_BUILD
-  description = Linking CXX static library $TARGET_FILE
+rule CXX_SHARED_LIBRARY_LINKER__instrument-server-core_
+  depfile = $DEP_FILE
+  deps = gcc
+  command = $PRE_LINK && /usr/bin/ccache  clang++ -fPIC $LANGUAGE_COMPILE_FLAGS $ARCH_FLAGS $LINK_FLAGS $SONAME_FLAG$SONAME -o $TARGET_FILE $in $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
+  description = Linking CXX shared library $TARGET_FILE
   restat = $RESTAT
 
 
@@ -320,13 +322,13 @@ rule C_COMPILER__mock_visa_plugin_unscanned_
 
 
 #############################################
-# Rule for linking CXX shared module.
+# Rule for linking C shared module.
 
-rule CXX_MODULE_LIBRARY_LINKER__mock_visa_plugin_
+rule C_MODULE_LIBRARY_LINKER__mock_visa_plugin_
   depfile = $DEP_FILE
   deps = gcc
-  command = $PRE_LINK && /usr/bin/ccache  clang++ -fPIC $LANGUAGE_COMPILE_FLAGS $ARCH_FLAGS $LINK_FLAGS $SONAME_FLAG$SONAME -o $TARGET_FILE $in $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
-  description = Linking CXX shared module $TARGET_FILE
+  command = $PRE_LINK && /usr/bin/ccache  clang -fPIC $LANGUAGE_COMPILE_FLAGS $ARCH_FLAGS $LINK_FLAGS $SONAME_FLAG$SONAME -o $TARGET_FILE $in $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
+  description = Linking C shared module $TARGET_FILE
   restat = $RESTAT
 
 
@@ -341,13 +343,13 @@ rule C_COMPILER__mock_visa_large_data_plugin_unscanned_
 
 
 #############################################
-# Rule for linking CXX shared module.
+# Rule for linking C shared module.
 
-rule CXX_MODULE_LIBRARY_LINKER__mock_visa_large_data_plugin_
+rule C_MODULE_LIBRARY_LINKER__mock_visa_large_data_plugin_
   depfile = $DEP_FILE
   deps = gcc
-  command = $PRE_LINK && /usr/bin/ccache  clang++ -fPIC $LANGUAGE_COMPILE_FLAGS $ARCH_FLAGS $LINK_FLAGS $SONAME_FLAG$SONAME -o $TARGET_FILE $in $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
-  description = Linking CXX shared module $TARGET_FILE
+  command = $PRE_LINK && /usr/bin/ccache  clang -fPIC $LANGUAGE_COMPILE_FLAGS $ARCH_FLAGS $LINK_FLAGS $SONAME_FLAG$SONAME -o $TARGET_FILE $in $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
+  description = Linking C shared module $TARGET_FILE
   restat = $RESTAT
 
 

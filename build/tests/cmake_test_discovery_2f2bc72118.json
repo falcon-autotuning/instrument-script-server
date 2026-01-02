@@ -103,37 +103,37 @@
         {
           "name": "Singleton",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
-          "line": 32
+          "line": 34
         },
         {
           "name": "CreateInstrumentFromConfig",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
-          "line": 39
+          "line": 41
         },
         {
           "name": "ListInstruments",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
-          "line": 57
+          "line": 59
         },
         {
           "name": "HasInstrument",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
-          "line": 67
+          "line": 69
         },
         {
           "name": "GetInstrument",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
-          "line": 73
+          "line": 75
         },
         {
           "name": "RemoveInstrument",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
-          "line": 80
+          "line": 82
         },
         {
           "name": "StopAll",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_instrument_registry.cpp",
-          "line": 101
+          "line": 103
         }
       ]
     },
@@ -200,22 +200,22 @@
         {
           "name": "LargeDataInBuffer",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_visa_large_data.cpp",
-          "line": 60
+          "line": 64
         },
         {
           "name": "BufferMetadata",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_visa_large_data.cpp",
-          "line": 107
+          "line": 111
         },
         {
           "name": "ExportLargeData",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_visa_large_data.cpp",
-          "line": 139
+          "line": 143
         },
         {
           "name": "MultipleBuffers",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_visa_large_data.cpp",
-          "line": 179
+          "line": 183
         }
       ]
     },
@@ -226,12 +226,12 @@
         {
           "name": "MeasureWithoutDaemon",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measure_command.cpp",
-          "line": 65
+          "line": 123
         },
         {
           "name": "MeasureWithDaemon",
           "file": "\/home\/tylerk\/falcon-dev\/instrument-script-server\/tests\/integration\/test_measure_command.cpp",
-          "line": 79
+          "line": 137
         }
       ]
     }

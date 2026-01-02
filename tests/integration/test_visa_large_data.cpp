@@ -34,10 +34,14 @@ TEST_F(VISALargeDataTest, SmallDataInResponse) {
   plugin::PluginLoader loader(plugin_path_);
   ASSERT_TRUE(loader.is_loaded());
 
-  PluginConfig config = {0};
+  // Use a more complete configuration
+  PluginConfig config;
+  memset(&config, 0, sizeof(PluginConfig));
   strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(config.connection_json, "{\"address\": \"mock://test\"}",
+  strncpy(config.connection_json, "{\"address\":\"mock://test\"}",
           PLUGIN_MAX_PAYLOAD - 1);
+  // Add a default empty API definition if none is provided
+  strncpy(config.api_definition_json, "{}", PLUGIN_MAX_PAYLOAD - 1);
 
   ASSERT_EQ(loader.initialize(config), 0);
 

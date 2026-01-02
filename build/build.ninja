@@ -36,7 +36,7 @@ include CMakeFiles/rules.ninja
 
 cmake_ninja_workdir = /home/tylerk/falcon-dev/instrument-script-server/build/
 # =============================================================================
-# Object build statements for STATIC_LIBRARY target instrument-server-core
+# Object build statements for SHARED_LIBRARY target instrument-server-core
 
 
 #############################################
@@ -45,174 +45,179 @@ cmake_ninja_workdir = /home/tylerk/falcon-dev/instrument-script-server/build/
 build cmake_object_order_depends_target_instrument-server-core: phony || .
 
 build CMakeFiles/instrument-server-core.dir/src/SchemaValidator.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/SchemaValidator.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/SchemaValidator.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/src/SerializedCommand.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/SerializedCommand.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/SerializedCommand.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/src/ipc/SharedQueue.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/ipc/SharedQueue.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/ipc/SharedQueue.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src/ipc
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/src/ipc/ProcessManager.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/ipc/ProcessManager.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/ipc/ProcessManager.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src/ipc
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/src/ipc/DataBufferManager.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/ipc/DataBufferManager.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/ipc/DataBufferManager.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src/ipc
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/src/ipc/DataBufferManager_c_api.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/ipc/DataBufferManager_c_api.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/ipc/DataBufferManager_c_api.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src/ipc
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/src/plugin/PluginLoader.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/plugin/PluginLoader.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/plugin/PluginLoader.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src/plugin
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/src/plugin/PluginRegistry.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/plugin/PluginRegistry.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/plugin/PluginRegistry.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src/plugin
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/src/server/InstrumentRegistry.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/server/InstrumentRegistry.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/server/InstrumentRegistry.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src/server
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/src/server/InstrumentWorkerProxy.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/server/InstrumentWorkerProxy.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/server/InstrumentWorkerProxy.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src/server
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/src/server/RuntimeContext.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/server/RuntimeContext.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/server/RuntimeContext.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src/server
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/src/server/SyncCoordinator.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/server/SyncCoordinator.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/server/SyncCoordinator.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src/server
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/src/server/ServerDaemon.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/src/server/ServerDaemon.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/src/server/ServerDaemon.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir/src/server
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 build CMakeFiles/instrument-server-core.dir/embedded_schemas.cpp.o: CXX_COMPILER__instrument-server-core_unscanned_ /home/tylerk/falcon-dev/instrument-script-server/build/embedded_schemas.cpp || cmake_object_order_depends_target_instrument-server-core
-  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB
+  DEFINES = -DFMT_SHARED -DSPDLOG_COMPILED_LIB -DSPDLOG_FMT_EXTERNAL -DSPDLOG_SHARED_LIB -Dinstrument_server_core_EXPORTS
   DEP_FILE = CMakeFiles/instrument-server-core.dir/embedded_schemas.cpp.o.d
   FLAGS = -Oz -std=gnu++17 -fPIC
   INCLUDES = -I/home/tylerk/falcon-dev/instrument-script-server/include
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   OBJECT_FILE_DIR = CMakeFiles/instrument-server-core.dir
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
 
 # =============================================================================
-# Link build statements for STATIC_LIBRARY target instrument-server-core
+# Link build statements for SHARED_LIBRARY target instrument-server-core
 
 
 #############################################
-# Link the static library libinstrument-server-core.a
+# Link the shared library libinstrument-server-core.so
 
-build libinstrument-server-core.a: CXX_STATIC_LIBRARY_LINKER__instrument-server-core_ CMakeFiles/instrument-server-core.dir/src/SchemaValidator.cpp.o CMakeFiles/instrument-server-core.dir/src/SerializedCommand.cpp.o CMakeFiles/instrument-server-core.dir/src/ipc/SharedQueue.cpp.o CMakeFiles/instrument-server-core.dir/src/ipc/ProcessManager.cpp.o CMakeFiles/instrument-server-core.dir/src/ipc/DataBufferManager.cpp.o CMakeFiles/instrument-server-core.dir/src/ipc/DataBufferManager_c_api.cpp.o CMakeFiles/instrument-server-core.dir/src/plugin/PluginLoader.cpp.o CMakeFiles/instrument-server-core.dir/src/plugin/PluginRegistry.cpp.o CMakeFiles/instrument-server-core.dir/src/server/InstrumentRegistry.cpp.o CMakeFiles/instrument-server-core.dir/src/server/InstrumentWorkerProxy.cpp.o CMakeFiles/instrument-server-core.dir/src/server/RuntimeContext.cpp.o CMakeFiles/instrument-server-core.dir/src/server/SyncCoordinator.cpp.o CMakeFiles/instrument-server-core.dir/src/server/ServerDaemon.cpp.o CMakeFiles/instrument-server-core.dir/embedded_schemas.cpp.o
+build libinstrument-server-core.so: CXX_SHARED_LIBRARY_LINKER__instrument-server-core_ CMakeFiles/instrument-server-core.dir/src/SchemaValidator.cpp.o CMakeFiles/instrument-server-core.dir/src/SerializedCommand.cpp.o CMakeFiles/instrument-server-core.dir/src/ipc/SharedQueue.cpp.o CMakeFiles/instrument-server-core.dir/src/ipc/ProcessManager.cpp.o CMakeFiles/instrument-server-core.dir/src/ipc/DataBufferManager.cpp.o CMakeFiles/instrument-server-core.dir/src/ipc/DataBufferManager_c_api.cpp.o CMakeFiles/instrument-server-core.dir/src/plugin/PluginLoader.cpp.o CMakeFiles/instrument-server-core.dir/src/plugin/PluginRegistry.cpp.o CMakeFiles/instrument-server-core.dir/src/server/InstrumentRegistry.cpp.o CMakeFiles/instrument-server-core.dir/src/server/InstrumentWorkerProxy.cpp.o CMakeFiles/instrument-server-core.dir/src/server/RuntimeContext.cpp.o CMakeFiles/instrument-server-core.dir/src/server/SyncCoordinator.cpp.o CMakeFiles/instrument-server-core.dir/src/server/ServerDaemon.cpp.o CMakeFiles/instrument-server-core.dir/embedded_schemas.cpp.o | /usr/lib/libspdlog.so.1.16.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libfmt.so.12.1.0
+  DEP_FILE = CMakeFiles/instrument-server-core.dir/link.d
   LANGUAGE_COMPILE_FLAGS = -Oz
+  LINK_FLAGS = -shared -Xlinker --dependency-file=CMakeFiles/instrument-server-core.dir/link.d
+  LINK_LIBRARIES = /usr/lib/libspdlog.so.1.16.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl  /usr/lib/libfmt.so.12.1.0
   OBJECT_DIR = CMakeFiles/instrument-server-core.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/instrument-server-core.pdb
-  TARGET_FILE = libinstrument-server-core.a
+  SONAME = libinstrument-server-core.so
+  SONAME_FLAG = -Wl,-soname,
+  TARGET_COMPILE_PDB = CMakeFiles/instrument-server-core.dir/
+  TARGET_FILE = libinstrument-server-core.so
   TARGET_PDB = libinstrument-server-core.pdb
   TARGET_SUPPORT_DIR = CMakeFiles/instrument-server-core.dir
 
@@ -244,11 +249,11 @@ build CMakeFiles/instrument-server.dir/src/server/instrument_server_main.cpp.o: 
 #############################################
 # Link the executable instrument-server
 
-build instrument-server: CXX_EXECUTABLE_LINKER__instrument-server_ CMakeFiles/instrument-server.dir/src/server/instrument_server_main.cpp.o | libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.a
+build instrument-server: CXX_EXECUTABLE_LINKER__instrument-server_ CMakeFiles/instrument-server.dir/src/server/instrument_server_main.cpp.o | libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.so
   DEP_FILE = CMakeFiles/instrument-server.dir/link.d
   FLAGS = -Oz
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/instrument-server.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build:  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
   OBJECT_DIR = CMakeFiles/instrument-server.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -285,11 +290,11 @@ build CMakeFiles/instrument-worker.dir/src/workers/generic_worker_main.cpp.o: CX
 #############################################
 # Link the executable instrument-worker
 
-build instrument-worker: CXX_EXECUTABLE_LINKER__instrument-worker_ CMakeFiles/instrument-worker.dir/src/workers/generic_worker_main.cpp.o | libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.a
+build instrument-worker: CXX_EXECUTABLE_LINKER__instrument-worker_ CMakeFiles/instrument-worker.dir/src/workers/generic_worker_main.cpp.o | libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.so
   DEP_FILE = CMakeFiles/instrument-worker.dir/link.d
   FLAGS = -Oz
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/instrument-worker.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build:  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
   OBJECT_DIR = CMakeFiles/instrument-worker.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -326,11 +331,11 @@ build CMakeFiles/validate-instrument-api.dir/src/instrument_api_validator_main.c
 #############################################
 # Link the executable validate-instrument-api
 
-build validate-instrument-api: CXX_EXECUTABLE_LINKER__validate-instrument-api_ CMakeFiles/validate-instrument-api.dir/src/instrument_api_validator_main.cpp.o | libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.a
+build validate-instrument-api: CXX_EXECUTABLE_LINKER__validate-instrument-api_ CMakeFiles/validate-instrument-api.dir/src/instrument_api_validator_main.cpp.o | libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.so
   DEP_FILE = CMakeFiles/validate-instrument-api.dir/link.d
   FLAGS = -Oz
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/validate-instrument-api.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build:  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
   OBJECT_DIR = CMakeFiles/validate-instrument-api.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -367,11 +372,11 @@ build CMakeFiles/validate-instrument-config.dir/src/instrument_config_validator_
 #############################################
 # Link the executable validate-instrument-config
 
-build validate-instrument-config: CXX_EXECUTABLE_LINKER__validate-instrument-config_ CMakeFiles/validate-instrument-config.dir/src/instrument_config_validator_main.cpp.o | libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.a
+build validate-instrument-config: CXX_EXECUTABLE_LINKER__validate-instrument-config_ CMakeFiles/validate-instrument-config.dir/src/instrument_config_validator_main.cpp.o | libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.so
   DEP_FILE = CMakeFiles/validate-instrument-config.dir/link.d
   FLAGS = -Oz
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/validate-instrument-config.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build:  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
   OBJECT_DIR = CMakeFiles/validate-instrument-config.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -408,11 +413,11 @@ build CMakeFiles/validate-quantum-dot-config.dir/src/quantum_dot_config_validato
 #############################################
 # Link the executable validate-quantum-dot-config
 
-build validate-quantum-dot-config: CXX_EXECUTABLE_LINKER__validate-quantum-dot-config_ CMakeFiles/validate-quantum-dot-config.dir/src/quantum_dot_config_validator_main.cpp.o | libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.a
+build validate-quantum-dot-config: CXX_EXECUTABLE_LINKER__validate-quantum-dot-config_ CMakeFiles/validate-quantum-dot-config.dir/src/quantum_dot_config_validator_main.cpp.o | libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.so
   DEP_FILE = CMakeFiles/validate-quantum-dot-config.dir/link.d
   FLAGS = -Oz
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/validate-quantum-dot-config.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build:  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
   OBJECT_DIR = CMakeFiles/validate-quantum-dot-config.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -449,11 +454,11 @@ build CMakeFiles/template-expander.dir/src/template_expander.cpp.o: CXX_COMPILER
 #############################################
 # Link the executable template-expander
 
-build template-expander: CXX_EXECUTABLE_LINKER__template-expander_ CMakeFiles/template-expander.dir/src/template_expander.cpp.o | libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.a
+build template-expander: CXX_EXECUTABLE_LINKER__template-expander_ CMakeFiles/template-expander.dir/src/template_expander.cpp.o | libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.so
   DEP_FILE = CMakeFiles/template-expander.dir/link.d
   FLAGS = -Oz
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/template-expander.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build:  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
   OBJECT_DIR = CMakeFiles/template-expander.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -490,11 +495,11 @@ build CMakeFiles/generate-instrument-config.dir/src/instrument_configuration_gen
 #############################################
 # Link the executable generate-instrument-config
 
-build generate-instrument-config: CXX_EXECUTABLE_LINKER__generate-instrument-config_ CMakeFiles/generate-instrument-config.dir/src/instrument_configuration_generator.cpp.o | libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.a
+build generate-instrument-config: CXX_EXECUTABLE_LINKER__generate-instrument-config_ CMakeFiles/generate-instrument-config.dir/src/instrument_configuration_generator.cpp.o | libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.so
   DEP_FILE = CMakeFiles/generate-instrument-config.dir/link.d
   FLAGS = -Oz
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=CMakeFiles/generate-instrument-config.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build:  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
   OBJECT_DIR = CMakeFiles/generate-instrument-config.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -830,7 +835,7 @@ build tests/CMakeFiles/test-utils.dir/test_utils/TestFixtures.cpp.o: CXX_COMPILE
 #############################################
 # Link the static library tests/libtest-utils.a
 
-build tests/libtest-utils.a: CXX_STATIC_LIBRARY_LINKER__test-utils_ tests/CMakeFiles/test-utils.dir/test_utils/MockInstrument.cpp.o tests/CMakeFiles/test-utils.dir/test_utils/TestFixtures.cpp.o || libinstrument-server-core.a
+build tests/libtest-utils.a: CXX_STATIC_LIBRARY_LINKER__test-utils_ tests/CMakeFiles/test-utils.dir/test_utils/MockInstrument.cpp.o tests/CMakeFiles/test-utils.dir/test_utils/TestFixtures.cpp.o || libinstrument-server-core.so
   LANGUAGE_COMPILE_FLAGS = -Oz
   OBJECT_DIR = tests/CMakeFiles/test-utils.dir
   POST_BUILD = :
@@ -978,11 +983,11 @@ build tests/CMakeFiles/unit_tests.dir/unit/test_plugin_registry.cpp.o: CXX_COMPI
 #############################################
 # Link the executable tests/unit_tests
 
-build tests/unit_tests tests/unit_tests[1]_tests.cmake | ${cmake_ninja_workdir}tests/unit_tests[1]_tests.cmake: CXX_EXECUTABLE_LINKER__unit_tests_ tests/CMakeFiles/unit_tests.dir/unit/test_serialization.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_sync_coordinator.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_runtime_context_generic.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_ipc_queue.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_server_daemon.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_schema_validator.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_loader.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_api_lookup.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_data_buffer_manager.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_loading.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_registry.cpp.o | libinstrument-server-core.a tests/libtest-utils.a /usr/lib/libgtest_main.so.1.17.0 libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument-server-core.a tests/libtest-utils.a
+build tests/unit_tests tests/unit_tests[1]_tests.cmake | ${cmake_ninja_workdir}tests/unit_tests[1]_tests.cmake: CXX_EXECUTABLE_LINKER__unit_tests_ tests/CMakeFiles/unit_tests.dir/unit/test_serialization.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_sync_coordinator.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_runtime_context_generic.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_ipc_queue.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_server_daemon.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_schema_validator.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_loader.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_api_lookup.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_data_buffer_manager.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_loading.cpp.o tests/CMakeFiles/unit_tests.dir/unit/test_plugin_registry.cpp.o | tests/libtest-utils.a /usr/lib/libgtest_main.so.1.17.0 libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument-server-core.so tests/libtest-utils.a
   DEP_FILE = tests/CMakeFiles/unit_tests.dir/link.d
   FLAGS = -Oz
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=tests/CMakeFiles/unit_tests.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  tests/libtest-utils.a  /usr/lib/libgtest_main.so.1.17.0  libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl  /usr/lib/libgtest.so.1.17.0
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  tests/libtest-utils.a  /usr/lib/libgtest_main.so.1.17.0  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl  /usr/lib/libgtest.so.1.17.0
   OBJECT_DIR = tests/CMakeFiles/unit_tests.dir
   POST_BUILD = cd /home/tylerk/falcon-dev/instrument-script-server/build/tests && /usr/bin/cmake -D TEST_TARGET=unit_tests -D TEST_EXECUTABLE=/home/tylerk/falcon-dev/instrument-script-server/build/tests/unit_tests -D TEST_EXECUTOR= -D TEST_WORKING_DIR=/home/tylerk/falcon-dev/instrument-script-server/build/tests -D TEST_EXTRA_ARGS= -D TEST_PROPERTIES= -D TEST_PREFIX= -D TEST_SUFFIX= -D TEST_FILTER= -D NO_PRETTY_TYPES=FALSE -D NO_PRETTY_VALUES=FALSE -D TEST_LIST=unit_tests_TESTS -D CTEST_FILE=/home/tylerk/falcon-dev/instrument-script-server/build/tests/unit_tests[1]_tests.cmake -D TEST_DISCOVERY_TIMEOUT=5 -D TEST_DISCOVERY_EXTRA_ARGS= -D TEST_XML_OUTPUT_DIR= -P /usr/share/cmake/Modules/GoogleTestAddTests.cmake
   PRE_LINK = :
@@ -1097,11 +1102,11 @@ build tests/CMakeFiles/integration_tests.dir/integration/test_measure_command.cp
 #############################################
 # Link the executable tests/integration_tests
 
-build tests/integration_tests tests/integration_tests[1]_tests.cmake | ${cmake_ninja_workdir}tests/integration_tests[1]_tests.cmake: CXX_EXECUTABLE_LINKER__integration_tests_ tests/CMakeFiles/integration_tests.dir/integration/test_daemon_lifecycle.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_parallel_execution.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_end_to_end.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_cli_commands.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_instrument_registry.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_measurement_scripts.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_visa_large_data.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_measure_command.cpp.o | libinstrument-server-core.a tests/libtest-utils.a /usr/lib/libgtest_main.so.1.17.0 libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument-server-core.a tests/libtest-utils.a
+build tests/integration_tests tests/integration_tests[1]_tests.cmake | ${cmake_ninja_workdir}tests/integration_tests[1]_tests.cmake: CXX_EXECUTABLE_LINKER__integration_tests_ tests/CMakeFiles/integration_tests.dir/integration/test_daemon_lifecycle.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_parallel_execution.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_end_to_end.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_cli_commands.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_instrument_registry.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_measurement_scripts.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_visa_large_data.cpp.o tests/CMakeFiles/integration_tests.dir/integration/test_measure_command.cpp.o | tests/libtest-utils.a /usr/lib/libgtest_main.so.1.17.0 libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument-server-core.so tests/libtest-utils.a
   DEP_FILE = tests/CMakeFiles/integration_tests.dir/link.d
   FLAGS = -Oz
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=tests/CMakeFiles/integration_tests.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  tests/libtest-utils.a  /usr/lib/libgtest_main.so.1.17.0  -lm  libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl  /usr/lib/libgtest.so.1.17.0
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  tests/libtest-utils.a  /usr/lib/libgtest_main.so.1.17.0  -lm  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl  /usr/lib/libgtest.so.1.17.0
   OBJECT_DIR = tests/CMakeFiles/integration_tests.dir
   POST_BUILD = cd /home/tylerk/falcon-dev/instrument-script-server/build/tests && /usr/bin/cmake -D TEST_TARGET=integration_tests -D TEST_EXECUTABLE=/home/tylerk/falcon-dev/instrument-script-server/build/tests/integration_tests -D TEST_EXECUTOR= -D TEST_WORKING_DIR=/home/tylerk/falcon-dev/instrument-script-server/build/tests -D TEST_EXTRA_ARGS= -D TEST_PROPERTIES= -D TEST_PREFIX= -D TEST_SUFFIX= -D TEST_FILTER= -D NO_PRETTY_TYPES=FALSE -D NO_PRETTY_VALUES=FALSE -D TEST_LIST=integration_tests_TESTS -D CTEST_FILE=/home/tylerk/falcon-dev/instrument-script-server/build/tests/integration_tests[1]_tests.cmake -D TEST_DISCOVERY_TIMEOUT=5 -D TEST_DISCOVERY_EXTRA_ARGS= -D TEST_XML_OUTPUT_DIR= -P /usr/share/cmake/Modules/GoogleTestAddTests.cmake
   PRE_LINK = :
@@ -1150,11 +1155,11 @@ build tests/CMakeFiles/perf_tests.dir/performance/test_sync_overhead.cpp.o: CXX_
 #############################################
 # Link the executable tests/perf_tests
 
-build tests/perf_tests: CXX_EXECUTABLE_LINKER__perf_tests_ tests/CMakeFiles/perf_tests.dir/performance/test_ipc_throughput.cpp.o tests/CMakeFiles/perf_tests.dir/performance/test_sync_overhead.cpp.o | libinstrument-server-core.a tests/libtest-utils.a /usr/lib/libgtest_main.so.1.17.0 libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument-server-core.a tests/libtest-utils.a
+build tests/perf_tests: CXX_EXECUTABLE_LINKER__perf_tests_ tests/CMakeFiles/perf_tests.dir/performance/test_ipc_throughput.cpp.o tests/CMakeFiles/perf_tests.dir/performance/test_sync_overhead.cpp.o | tests/libtest-utils.a /usr/lib/libgtest_main.so.1.17.0 libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so /usr/lib/libgtest.so.1.17.0 || libinstrument-server-core.so tests/libtest-utils.a
   DEP_FILE = tests/CMakeFiles/perf_tests.dir/link.d
   FLAGS = -Oz
   LINK_FLAGS = -fuse-ld=lld -Xlinker --dependency-file=tests/CMakeFiles/perf_tests.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  tests/libtest-utils.a  /usr/lib/libgtest_main.so.1.17.0  libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl  /usr/lib/libgtest.so.1.17.0
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  tests/libtest-utils.a  /usr/lib/libgtest_main.so.1.17.0  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl  /usr/lib/libgtest.so.1.17.0
   OBJECT_DIR = tests/CMakeFiles/perf_tests.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -1191,11 +1196,11 @@ build tests/CMakeFiles/mock_plugin.dir/mocks/mock_plugin.cpp.o: CXX_COMPILER__mo
 #############################################
 # Link the shared module tests/mock_plugin.so
 
-build tests/mock_plugin.so: CXX_MODULE_LIBRARY_LINKER__mock_plugin_ tests/CMakeFiles/mock_plugin.dir/mocks/mock_plugin.cpp.o | libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.a
+build tests/mock_plugin.so: CXX_MODULE_LIBRARY_LINKER__mock_plugin_ tests/CMakeFiles/mock_plugin.dir/mocks/mock_plugin.cpp.o | libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.so
   DEP_FILE = tests/CMakeFiles/mock_plugin.dir/link.d
   LANGUAGE_COMPILE_FLAGS = -Oz
   LINK_FLAGS = -shared -Xlinker --dependency-file=tests/CMakeFiles/mock_plugin.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build:  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
   OBJECT_DIR = tests/CMakeFiles/mock_plugin.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -1232,11 +1237,10 @@ build tests/CMakeFiles/mock_visa_plugin.dir/mocks/mock_visa_plugin.c.o: C_COMPIL
 #############################################
 # Link the shared module tests/mock_visa_plugin.so
 
-build tests/mock_visa_plugin.so: CXX_MODULE_LIBRARY_LINKER__mock_visa_plugin_ tests/CMakeFiles/mock_visa_plugin.dir/mocks/mock_visa_plugin.c.o | libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.a
+build tests/mock_visa_plugin.so: C_MODULE_LIBRARY_LINKER__mock_visa_plugin_ tests/CMakeFiles/mock_visa_plugin.dir/mocks/mock_visa_plugin.c.o | libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.so
   DEP_FILE = tests/CMakeFiles/mock_visa_plugin.dir/link.d
-  LANGUAGE_COMPILE_FLAGS = -Oz
   LINK_FLAGS = -shared -Xlinker --dependency-file=tests/CMakeFiles/mock_visa_plugin.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
   OBJECT_DIR = tests/CMakeFiles/mock_visa_plugin.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -1273,11 +1277,10 @@ build tests/CMakeFiles/mock_visa_large_data_plugin.dir/mocks/mock_visa_large_dat
 #############################################
 # Link the shared module tests/mock_visa_large_data_plugin.so
 
-build tests/mock_visa_large_data_plugin.so: CXX_MODULE_LIBRARY_LINKER__mock_visa_large_data_plugin_ tests/CMakeFiles/mock_visa_large_data_plugin.dir/mocks/mock_visa_large_data_plugin.c.o | libinstrument-server-core.a /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.a
+build tests/mock_visa_large_data_plugin.so: C_MODULE_LIBRARY_LINKER__mock_visa_large_data_plugin_ tests/CMakeFiles/mock_visa_large_data_plugin.dir/mocks/mock_visa_large_data_plugin.c.o | libinstrument-server-core.so /usr/lib/libspdlog.so.1.16.0 /usr/lib/libfmt.so.12.1.0 /usr/lib/liblua5.4.so /usr/lib/libm.so || libinstrument-server-core.so
   DEP_FILE = tests/CMakeFiles/mock_visa_large_data_plugin.dir/link.d
-  LANGUAGE_COMPILE_FLAGS = -Oz
   LINK_FLAGS = -shared -Xlinker --dependency-file=tests/CMakeFiles/mock_visa_large_data_plugin.dir/link.d
-  LINK_LIBRARIES = libinstrument-server-core.a  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
+  LINK_LIBRARIES = -Wl,-rpath,/home/tylerk/falcon-dev/instrument-script-server/build  libinstrument-server-core.so  /usr/lib/libspdlog.so.1.16.0  /usr/lib/libfmt.so.12.1.0  -lyaml-cpp  /usr/lib/liblua5.4.so  -lm  -lrt  -lpthread  -ldl
   OBJECT_DIR = tests/CMakeFiles/mock_visa_large_data_plugin.dir
   POST_BUILD = :
   PRE_LINK = :
@@ -1386,27 +1389,27 @@ build tests/install/strip: phony tests/CMakeFiles/install/strip.util
 #############################################
 # Custom command for tests/CMakeFiles/test_unit
 
-build tests/CMakeFiles/test_unit | ${cmake_ninja_workdir}tests/CMakeFiles/test_unit: CUSTOM_COMMAND tests/unit_tests || libinstrument-server-core.a tests/libtest-utils.a tests/unit_tests
+build tests/CMakeFiles/test_unit | ${cmake_ninja_workdir}tests/CMakeFiles/test_unit: CUSTOM_COMMAND tests/unit_tests || libinstrument-server-core.so tests/libtest-utils.a tests/unit_tests
   COMMAND = cd /home/tylerk/falcon-dev/instrument-script-server/build && /home/tylerk/falcon-dev/instrument-script-server/build/tests/unit_tests
 
 
 #############################################
 # Custom command for tests/CMakeFiles/test_integration
 
-build tests/CMakeFiles/test_integration | ${cmake_ninja_workdir}tests/CMakeFiles/test_integration: CUSTOM_COMMAND tests/integration_tests || libinstrument-server-core.a tests/integration_tests tests/libtest-utils.a
+build tests/CMakeFiles/test_integration | ${cmake_ninja_workdir}tests/CMakeFiles/test_integration: CUSTOM_COMMAND tests/integration_tests || libinstrument-server-core.so tests/integration_tests tests/libtest-utils.a
   COMMAND = cd /home/tylerk/falcon-dev/instrument-script-server/build && /home/tylerk/falcon-dev/instrument-script-server/build/tests/integration_tests
 
 
 #############################################
 # Custom command for tests/CMakeFiles/test_perf
 
-build tests/CMakeFiles/test_perf | ${cmake_ninja_workdir}tests/CMakeFiles/test_perf: CUSTOM_COMMAND tests/perf_tests || libinstrument-server-core.a tests/libtest-utils.a tests/perf_tests
+build tests/CMakeFiles/test_perf | ${cmake_ninja_workdir}tests/CMakeFiles/test_perf: CUSTOM_COMMAND tests/perf_tests || libinstrument-server-core.so tests/libtest-utils.a tests/perf_tests
   COMMAND = cd /home/tylerk/falcon-dev/instrument-script-server/build && /home/tylerk/falcon-dev/instrument-script-server/build/tests/perf_tests
 
 # =============================================================================
 # Target aliases.
 
-build instrument-server-core: phony libinstrument-server-core.a
+build instrument-server-core: phony libinstrument-server-core.so
 
 build integration_tests: phony tests/integration_tests
 
@@ -1448,7 +1451,7 @@ build unit_tests: phony tests/unit_tests
 #############################################
 # Folder: /home/tylerk/falcon-dev/instrument-script-server/build
 
-build all: phony libinstrument-server-core.a instrument-server instrument-worker validate-instrument-api validate-instrument-config validate-quantum-dot-config template-expander generate-instrument-config examples/plugins/simple_serial/all plugins/visa/all tests/all
+build all: phony libinstrument-server-core.so instrument-server instrument-worker validate-instrument-api validate-instrument-config validate-quantum-dot-config template-expander generate-instrument-config examples/plugins/simple_serial/all plugins/visa/all tests/all
 
 # =============================================================================
 
