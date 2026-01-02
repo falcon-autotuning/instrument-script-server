@@ -1,5 +1,6 @@
 # Build artifacts
 build/
+_codeql_build_dir/
 *.o
 *.a
 *.so
