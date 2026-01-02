@@ -1,0 +1,10 @@
+[2026-01-02 19:21:38.165] [instrument] [info] [DAEMON] [START] Starting server daemon
+[2026-01-02 19:21:38.165] [instrument] [info] [DAEMON] [INIT] Created PID file: /run/user/1001/instrument-server/server.pid (PID: 6351)
+[2026-01-02 19:21:38.165] [instrument] [info] [DAEMON] [START] Server daemon started (PID: 6351)
+[2026-01-02 19:21:38.165] [instrument] [info] [DAEMON] [LOOP] Daemon loop started
+[2026-01-02 19:21:38.671] [instrument] [info] [DAEMON] [STOP] Stopping server daemon
+[2026-01-02 19:21:38.671] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments
+[2026-01-02 19:21:38.765] [instrument] [info] [DAEMON] [LOOP] Daemon loop exited
+[2026-01-02 19:21:38.766] [instrument] [info] [DAEMON] [CLEANUP] Removed PID file
+[2026-01-02 19:21:38.766] [instrument] [info] [DAEMON] [STOP] Server daemon stopped
+[2026-01-02 19:21:38.766] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments

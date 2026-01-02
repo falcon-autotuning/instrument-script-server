@@ -7,7 +7,7 @@ if(CMAKE_VERSION VERSION_LESS "2.8.12")
    message(FATAL_ERROR "CMake >= 2.8.12 required")
 endif()
 cmake_policy(PUSH)
-cmake_policy(VERSION 2.8.12...4.0)
+cmake_policy(VERSION 2.8.12...3.29)
 #----------------------------------------------------------------
 # Generated CMake target import file.
 #----------------------------------------------------------------
@@ -60,7 +60,7 @@ add_library(InstrumentServer::instrument-server-core STATIC IMPORTED)
 
 set_target_properties(InstrumentServer::instrument-server-core PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include;${_IMPORT_PREFIX}/include"
-  INTERFACE_LINK_LIBRARIES "spdlog::spdlog;nlohmann_json::nlohmann_json;yaml-cpp;/usr/lib/liblua5.4.so;/usr/lib/libm.so;rt;pthread;dl"
+  INTERFACE_LINK_LIBRARIES "spdlog::spdlog;nlohmann_json::nlohmann_json;yaml-cpp;/usr/lib/x86_64-linux-gnu/liblua5.3.so;/usr/lib/x86_64-linux-gnu/libm.so;rt;pthread;dl"
 )
 
 # Load information for each installed configuration.

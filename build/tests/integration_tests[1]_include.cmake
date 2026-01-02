@@ -1,5 +1,5 @@
-if(EXISTS "/home/tylerk/falcon-dev/instrument-script-server/build/tests/integration_tests[1]_tests.cmake")
-  include("/home/tylerk/falcon-dev/instrument-script-server/build/tests/integration_tests[1]_tests.cmake")
+if(EXISTS "/home/runner/work/instrument-script-server/instrument-script-server/build/tests/integration_tests[1]_tests.cmake")
+  include("/home/runner/work/instrument-script-server/instrument-script-server/build/tests/integration_tests[1]_tests.cmake")
 else()
   add_test(integration_tests_NOT_BUILT integration_tests_NOT_BUILT)
 endif()

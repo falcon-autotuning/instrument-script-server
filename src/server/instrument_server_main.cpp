@@ -181,7 +181,7 @@ int cmd_daemon(int argc, char **argv) {
     }
 
     // Initialize logger
-    InstrumentLogger::instance().init("instrument_server. log",
+    InstrumentLogger::instance().init("instrument_server.log",
                                       parse_log_level(log_level));
 
     LOG_INFO("MAIN", "DAEMON_START", "Starting server daemon");
@@ -294,7 +294,7 @@ int cmd_start(int argc, char **argv) {
     auto &registry = InstrumentRegistry::instance();
 
     if (!registry.create_instrument(config_path)) {
-      std::cerr << "Failed to create instrument from:  " << config_path << "\n";
+      std::cerr << "Failed to create instrument from: " << config_path << "\n";
       return 1;
     }
 
@@ -332,7 +332,7 @@ int cmd_stop(int argc, char **argv) {
   }
 
   registry.remove_instrument(name);
-  std::cout << "Stopped instrument:  " << name << "\n";
+  std::cout << "Stopped instrument: " << name << "\n";
 
   return 0;
 }
@@ -358,7 +358,7 @@ int cmd_status(int argc, char **argv) {
     return 1;
   }
 
-  std::cout << "Instrument:  " << name << "\n";
+  std::cout << "Instrument: " << name << "\n";
   std::cout << "  Status: " << (proxy->is_alive() ? "RUNNING" : "STOPPED")
             << "\n";
 
@@ -419,7 +419,7 @@ int cmd_measure(int argc, char **argv) {
     }
   }
 
-  InstrumentLogger::instance().init("instrument_server. log",
+  InstrumentLogger::instance().init("instrument_server.log",
                                     parse_log_level(log_level));
 
   try {
@@ -427,9 +427,9 @@ int cmd_measure(int argc, char **argv) {
 
     auto instruments = registry.list_instruments();
     if (instruments.empty()) {
-      std::cerr << "Error:  No instruments running\n";
+      std::cerr << "Error: No instruments running\n";
       std::cerr
-          << "Start instruments first:  instrument-server start <config>\n";
+          << "Start instruments first: instrument-server start <config>\n";
       return 1;
     }
 
@@ -447,7 +447,7 @@ int cmd_measure(int argc, char **argv) {
     RuntimeContext ctx(registry, sync_coordinator);
     lua["context"] = &ctx;
 
-    std::cout << "Running measurement.. .\n";
+    std::cout << "Running measurement...\n";
 
     auto result = lua.safe_script_file(script_path);
 
@@ -508,7 +508,7 @@ int cmd_test(int argc, char **argv) {
     std::string instrument_name = instruments.back();
     auto proxy = registry.get_instrument(instrument_name);
 
-    std::cout << "Testing:  " << instrument_name << "\n";
+    std::cout << "Testing: " << instrument_name << "\n";
     std::cout << "Command: " << verb << "\n";
 
     SerializedCommand cmd;
@@ -631,7 +631,7 @@ int cmd_plugins(int argc, char **argv) {
     std::cout << "  " << protocol << " -> " << plugin_path << "\n";
   }
 
-  std::cout << "\nTotal:  " << protocols.size() << " plugin(s)\n";
+  std::cout << "\nTotal: " << protocols.size() << " plugin(s)\n";
 
   return 0;
 }
