@@ -1,0 +1,2 @@
+/usr/bin/ar qc libtest-utils.a "CMakeFiles/test-utils.dir/test_utils/MockInstrument.cpp.o" "CMakeFiles/test-utils.dir/test_utils/TestFixtures.cpp.o"
+/usr/bin/ranlib libtest-utils.a
