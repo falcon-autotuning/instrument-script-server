@@ -9,7 +9,7 @@ using namespace instserver;
 class InstrumentRegistryTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    InstrumentLogger::instance().init("registry_test. log",
+    InstrumentLogger::instance().init("registry_test.log",
                                       spdlog::level::debug);
 
     test_data_dir_ = std::filesystem::current_path() / "tests" / "data";
@@ -37,7 +37,7 @@ TEST_F(InstrumentRegistryTest, Singleton) {
 }
 
 TEST_F(InstrumentRegistryTest, CreateInstrumentFromConfig) {
-  auto config_path = test_data_dir_ / "mock_instrument.yaml";
+  auto config_path = test_data_dir_ / "mock_instrument1.yaml";
 
   if (!std::filesystem::exists(config_path)) {
     GTEST_SKIP() << "Test config not found";
@@ -80,7 +80,7 @@ TEST_F(InstrumentRegistryTest, GetInstrument) {
 TEST_F(InstrumentRegistryTest, RemoveInstrument) {
   auto &registry = InstrumentRegistry::instance();
 
-  auto config_path = test_data_dir_ / "mock_instrument.yaml";
+  auto config_path = test_data_dir_ / "mock_instrument1.yaml";
 
   if (!std::filesystem::exists(config_path)) {
     GTEST_SKIP() << "Test config not found";
