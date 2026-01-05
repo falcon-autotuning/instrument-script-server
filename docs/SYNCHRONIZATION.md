@@ -825,4 +825,4 @@ end)
 
 - [Architecture](ARCHITECTURE.md) - System design
 - [CLI Usage](CLI_USAGE.md) - Running measurements
-- [Main README](../README.md) - Getting started
+- [Main README](index.md) - Getting started

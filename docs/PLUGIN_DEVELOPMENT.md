@@ -1030,4 +1030,4 @@ int32_t get_waveform(const PluginCommand *cmd, PluginResponse *resp) {
 
 - [Architecture](ARCHITECTURE.md) - System design
 - [CLI Usage](CLI_USAGE.md) - Testing plugins
-- [Main README](../README.md) - Getting started and installation
+- [Main README](index.md) - Getting started and installation

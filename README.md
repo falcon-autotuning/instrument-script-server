@@ -36,11 +36,11 @@ instrument-server daemon stop
 
 ## Documentation
 
-- **[Configuration Guide](docs/CONFIGURATION.md)** - How to write instrument configurations and API definitions
-- **[CLI Usage](docs/CLI_USAGE.md)** - Complete command-line interface reference
-- **[Plugin Development](docs/PLUGIN_DEVELOPMENT.md)** - Creating custom instrument drivers
-- **[Architecture](docs/ARCHITECTURE.md)** - System design and components
-- **[Synchronization](docs/SYNCHRONIZATION.md)** - Parallel execution protocol
+- **[Configuration Guide](CONFIGURATION.md)** - How to write instrument configurations and API definitions
+- **[CLI Usage](CLI_USAGE.md)** - Complete command-line interface reference
+- **[Plugin Development](PLUGIN_DEVELOPMENT.md)** - Creating custom instrument drivers
+- **[Architecture](ARCHITECTURE.md)** - System design and components
+- **[Synchronization](SYNCHRONIZATION.md)** - Parallel execution protocol
 
 ## Installation
 
@@ -85,7 +85,7 @@ Configuration files are located in the `examples/` folder:
 - **[examples/instrument-apis/](examples/instrument-apis/)** - Sample API definitions
 - **[examples/scripts/](examples/scripts/)** - Sample measurement scripts
 
-See the [Configuration Guide](docs/CONFIGURATION.md) for detailed information on the JSON schema.
+See the [Configuration Guide](CONFIGURATION.md) for detailed information on the JSON schema.
 
 ## Example Workflow
 
