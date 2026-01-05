@@ -4,7 +4,7 @@ Complete guide to using the `instrument-server` command-line interface.
 
 ## Table of Contents
 
-<!--toc:start-->
+<!--toc: start-->
 - [Instrument Server CLI Usage Guide](#instrument-server-cli-usage-guide)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
@@ -31,6 +31,8 @@ Complete guide to using the `instrument-server` command-line interface.
   - [Plugin Management](#plugin-management)
     - [List Available Plugins](#list-available-plugins)
     - [Discover Plugins](#discover-plugins)
+  - [Configuration Validation](#configuration-validation)
+    - [Validate Command](#validate-command)
   - [Logging](#logging)
     - [Log Levels](#log-levels)
     - [Log Files](#log-files)
@@ -39,7 +41,7 @@ Complete guide to using the `instrument-server` command-line interface.
     - [Example 1: Basic Measurement](#example-1-basic-measurement)
     - [Example 2: Development Workflow](#example-2-development-workflow)
     - [Example 3: Multi-Instrument Setup](#example-3-multi-instrument-setup)
-    - [Example 4:  Troubleshooting](#example-4-troubleshooting)
+    - [Example 4: Troubleshooting](#example-4-troubleshooting)
   - [Exit Codes](#exit-codes)
   - [Environment Variables](#environment-variables)
   - [See Also](#see-also)
@@ -47,7 +49,8 @@ Complete guide to using the `instrument-server` command-line interface.
 
 ## Overview
 
-The `instrument-server` command provides a unified interface for all instrument server operations. All commands follow the pattern:
+The `instrument-server` command provides a unified interface for all instrument server operations.
+All commands follow the pattern:
 
 ```bash
 instrument-server <command> [subcommand] [options]
@@ -59,9 +62,10 @@ instrument-server <command> [subcommand] [options]
 |----------|----------|-------------|
 | **Daemon** | `daemon start/stop/status` | Manage server daemon |
 | **Instruments** | `start`, `stop`, `status`, `list` | Manage instruments |
-| **Measurements** | `measure <type> <script>` | Run measurement scripts |
+| **Measurements** | `measure <script>` | Run measurement scripts |
 | **Testing** | `test <config> <verb>` | Test instrument commands |
 | **Plugins** | `plugins`, `discover` | Manage plugins |
+| **Validation** | `validate config/api <file>` | Validate configuration files |
 
 ### Global Options
 
@@ -102,7 +106,7 @@ Daemon running in background
 - Must be running before any instrument operations
 - Only one daemon instance can run at a time
 - Daemon persists until explicitly stopped
-- On Linux:  PID file stored in `/tmp/instrument-server-$USER/server.pid`
+- On Linux:  PID file stored in `/tmp/instrument-server-$USER/server. pid`
 - On Windows: PID file stored in `%LOCALAPPDATA%\InstrumentServer\server.pid`
 
 ### Stop Daemon
@@ -317,7 +321,7 @@ instrument-server measure <script> [--log-level <level>]
 instrument-server measure scripts/iv_curve.lua
 
 # With debug logging
-instrument-server measure scripts/test.lua --log-level debug
+instrument-server measure scripts/test. lua --log-level debug
 
 # Save output to file
 instrument-server measure scripts/sweep.lua > data.csv
@@ -335,7 +339,7 @@ All scripts have access to a global `context` object:
 context:log("Script starting")
 
 -- Your measurement logic here
-local value = context:call("DMM1. Measure")
+local value = context:call("DMM1.Measure")
 print(value)
 
 context:log("Script complete")
@@ -347,7 +351,7 @@ context:log("Script complete")
 -- Basic:  InstrumentName.CommandVerb
 context:call("DAC1.SetVoltage", 5.0)
 
--- With channel: InstrumentName: Channel.CommandVerb
+-- With channel:  InstrumentName: Channel.CommandVerb
 context:call("DAC1:1.SetVoltage", 3.3)
 
 -- Return value
@@ -361,8 +365,8 @@ local voltage = context:call("DMM1.MeasureVoltage")
 ```lua
 for v = 0, 5, 0.1 do
     context:call("DAC1.Set", v)
-    local i = context:call("DMM1. Measure")
-    print(string.format("%.3f,%.6e", v, i))
+    local i = context:call("DMM1.Measure")
+    print(string.format("%. 3f,%. 6e", v, i))
 end
 ```
 
@@ -400,7 +404,7 @@ Create reusable Lua modules for common measurement patterns:
 ```bash
 # Directory structure
 measurements/
-├── dc_sweep. lua
+├── dc_sweep.lua
 ├── waveform_1d.lua
 └── stability_diagram.lua
 ```
@@ -433,7 +437,7 @@ Use it:
 package.path = package.path .. ";./measurements/?. lua"
 local dc_sweep = require("dc_sweep")
 
-local results = dc_sweep.sweep("DAC1.SetVoltage", "DMM1. Measure", 0, 5, 0.1)
+local results = dc_sweep.sweep("DAC1.SetVoltage", "DMM1.Measure", 0, 5, 0.1)
 
 for _, point in ipairs(results) do
     print(string.format("%. 3f,%.6e", point[1], point[2]))
@@ -552,7 +556,7 @@ instrument-server plugins
 **Output:**
 
 ```
-Available plugins: 
+Available plugins:
 
   VISA -> /usr/local/lib/instrument-plugins/visa_builtin.so
   SimpleSerial -> /usr/local/lib/instrument-plugins/simple_serial_plugin.so
@@ -598,8 +602,8 @@ Discovering plugins in:
 
 Found 2 plugin(s):
 
-Protocol: CustomDAQ
-  Path: /opt/custom-plugins/custom_daq.so
+Protocol:  CustomDAQ
+  Path: /opt/custom-plugins/custom_daq. so
   Name: Custom DAQ Plugin
   Version: 2.1.0
   Description: High-speed data acquisition plugin
@@ -610,6 +614,50 @@ Protocol: MySerial
   Version: 1.0.0
   Description: Custom serial protocol implementation
 ```
+
+## Configuration Validation
+
+Validate configuration files against JSON schemas before using them.
+
+### Validate Command
+
+```bash
+# Validate instrument configuration
+instrument-server validate config <file>
+
+# Validate API definition
+instrument-server validate api <file>
+```
+
+**Examples:**
+
+```bash
+# Validate instrument configuration
+instrument-server validate config examples/instrument-configurations/agi_34401_config.yaml
+
+# Validate API definition
+instrument-server validate api examples/instrument-apis/agi_34401a.yaml
+```
+
+**Output (success):**
+
+```
+✓ Configuration is valid
+```
+
+**Output (error):**
+
+```
+✗ Validation failed:
+  - Field 'name' must match pattern ^[A-Z][A-Z0-9_]*$
+  - Missing required field 'io_config'
+```
+
+**Notes:**
+
+- Validates against JSON schemas in `schemas/` directory
+- Checks required fields, data types, and constraints
+- Use before starting instruments to catch configuration errors early
 
 ## Logging
 
@@ -679,7 +727,7 @@ instrument-server start configs/dmm1.yaml
 instrument-server list
 
 # 4. Run measurement
-instrument-server measure dc scripts/iv_curve.lua
+instrument-server measure scripts/iv_curve.lua
 
 # 5. Check instrument status
 instrument-server status DMM1
@@ -698,24 +746,28 @@ instrument-server daemon stop
 # 1. Start daemon with debug logging
 instrument-server daemon start --log-level debug
 
-# 2. Test instrument with custom plugin
+# 2. Validate configuration before using
+instrument-server validate config configs/test_instrument.yaml
+instrument-server validate api apis/test_api.yaml
+
+# 3. Test instrument with custom plugin
 instrument-server test configs/test_instrument.yaml IDN --plugin ./my_plugin. so
 
 # If test succeeds, start instrument
 instrument-server start configs/test_instrument.yaml --plugin ./my_plugin.so
 
-# 3. Run test measurement with debug logging
-instrument-server measure dc scripts/test_measurement.lua --log-level debug
+# 4. Run test measurement with debug logging
+instrument-server measure scripts/test_measurement.lua --log-level debug
 
-# 4. Check logs for issues
+# 5. Check logs for issues
 tail -f instrument_server.log
 tail -f worker_TestInstrument.log
 
-# 5. Stop and restart instrument if needed
+# 6. Stop and restart instrument if needed
 instrument-server stop TestInstrument
 instrument-server start configs/test_instrument.yaml --plugin ./my_plugin.so
 
-# 6. Cleanup
+# 7. Cleanup
 instrument-server daemon stop
 ```
 
@@ -746,19 +798,19 @@ for inst in DAC1 DAC2 DAC3 DMM1 DMM2 Scope1; do
 done
 
 # 6. Run complex measurement with parallel execution
-instrument-server measure waveform2d scripts/stability_diagram.lua
+instrument-server measure scripts/stability_diagram.lua
 
 # 7. Selective shutdown
 instrument-server stop Scope1
 
 # 8. Continue with remaining instruments
-instrument-server measure dc scripts/final_measurement.lua
+instrument-server measure scripts/final_measurement.lua
 
 # 9. Complete shutdown
 instrument-server daemon stop
 ```
 
-### Example 4:  Troubleshooting
+### Example 4: Troubleshooting
 
 ```bash
 # 1. Check daemon status
@@ -769,27 +821,31 @@ if [ $? -ne 0 ]; then
     instrument-server daemon start
 fi
 
-# 2. Try starting instrument with debug logging
+# 2. Validate configuration files
+instrument-server validate config configs/problematic_instrument.yaml
+instrument-server validate api apis/problematic_api.yaml
+
+# 3. Try starting instrument with debug logging
 instrument-server start configs/problematic_instrument.yaml --log-level debug
 
-# 3. Check logs immediately
+# 4. Check logs immediately
 tail -20 instrument_server.log
 
-# 4. Test specific command
+# 5. Test specific command
 instrument-server test configs/problematic_instrument.yaml IDN
 
-# 5. If plugin issue, try with explicit plugin path
+# 6. If plugin issue, try with explicit plugin path
 instrument-server start configs/problematic_instrument.yaml \
     --plugin /usr/local/lib/instrument-plugins/visa_builtin.so \
     --log-level debug
 
-# 6. Monitor worker log
+# 7. Monitor worker log
 tail -f worker_ProblematicInstrument.log
 
-# 7. Check IPC issues (Linux)
+# 8. Check IPC issues (Linux)
 ls -la /tmp/instrument-server-$USER/
 
-# 8. Clean up if needed
+# 9. Clean up if needed
 instrument-server daemon stop
 rm -rf /tmp/instrument-server-$USER/
 ```
@@ -821,7 +877,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-instrument-server measure dc scripts/measurement.lua
+instrument-server measure scripts/measurement.lua
 result=$? 
 
 instrument-server daemon stop
@@ -839,6 +895,7 @@ Currently no environment variables are used.  Configuration is via:
 ## See Also
 
 - [Main README](../README.md) - Getting started and overview
+- [Configuration Guide](CONFIGURATION.md) - Writing configuration files
 - [Architecture](ARCHITECTURE.md) - System design and components
 - [Plugin Development](PLUGIN_DEVELOPMENT.md) - Writing instrument plugins
 - [Synchronization Protocol](SYNCHRONIZATION.md) - Parallel execution details
