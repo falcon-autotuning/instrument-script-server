@@ -15,6 +15,9 @@ unit-test:
 integration-tests:
 	LLVM_PROFILE_FILE=$(BUILD_DIR)/integration_tests.profraw PATH=./build:$$PATH ./build/tests/integration_tests
 
+perf-tests:
+	LLVM_PROFILE_FILE=$(BUILD_DIR)/perf_tests.profraw PATH=./build:$$PATH ./build/tests/perf_tests
+
 coverage: build unit-test integration-tests
 	llvm-profdata merge -sparse $(BUILD_DIR)/*.profraw -o $(BUILD_DIR)/instrument_server_core.profdata
 	llvm-cov show $(BUILD_DIR)/libinstrument-server-core.so \

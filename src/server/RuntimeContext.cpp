@@ -15,7 +15,7 @@ sol::object RuntimeContext::call(const std::string &func_name,
   LOG_DEBUG("LUA_CONTEXT", "CALL", "Calling function: {}", func_name);
 
   // Parse func_name:  format is "InstrumentID.CommandVerb" or
-  // "InstrumentID: Channel.CommandVerb"
+  // "InstrumentID:Channel.CommandVerb"
   size_t dot_pos = func_name.find('.');
   if (dot_pos == std::string::npos) {
     LOG_ERROR("LUA_CONTEXT", "CALL", "Invalid function name format: {}",
@@ -229,7 +229,6 @@ void RuntimeContext::execute_parallel_buffer() {
     }
   }
 
-  // ✅ REUSE: We already have the instruments list from earlier!
   // No need to query SyncCoordinator again
   for (const auto &inst_name : instruments) {
     auto worker = registry_.get_instrument(inst_name);

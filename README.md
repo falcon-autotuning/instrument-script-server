@@ -100,12 +100,12 @@ instrument-server start examples/instrument-configurations/dso9254a_config.yaml
 # 3. Write and run a measurement script
 cat > simple_measurement.lua << 'EOF'
 -- Set voltage and measure
-context: call("INSTRUMENT_NAME. SET_VOLTAGE", {voltage = 5.0})
+context: call("INSTRUMENT_NAME.SET_VOLTAGE", {voltage = 5.0})
 local result = context:call("INSTRUMENT_NAME.MEASURE_VOLTAGE")
 print("Measured:  " .. result ..  " V")
 EOF
 
-instrument-server measure dc simple_measurement.lua
+instrument-server measure simple_measurement.lua
 
 # 4. Check status
 instrument-server list

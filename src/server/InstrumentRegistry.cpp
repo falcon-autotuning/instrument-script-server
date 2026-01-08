@@ -140,46 +140,45 @@ InstrumentRegistry::get_instrument_metadata(const std::string &name) const {
   return it->second;
 }
 
-bool InstrumentRegistry::command_expects_response(
-    const std::string &instrument_name, const std::string &verb) const {
-  std::lock_guard lock(mutex_);
-
-  auto meta_it = metadata_.find(instrument_name);
-  if (meta_it == metadata_.end()) {
+const nlohmann::json *
+find_command_def(const std::map<std::string, InstrumentMetadata> &metadata,
+                 const std::string &instrument_name, const std::string &verb) {
+  auto meta_it = metadata.find(instrument_name);
+  if (meta_it == metadata.end()) {
     LOG_WARN("REGISTRY", "API_LOOKUP", "No metadata found for instrument: {}",
              instrument_name);
-    return false;
+    return nullptr;
   }
-
   const auto &api_def = meta_it->second.api_def;
-
-  // Check if commands section exists
   if (!api_def.contains("commands") || !api_def["commands"].is_object()) {
     LOG_WARN("REGISTRY", "API_LOOKUP",
              "No commands section in API definition for:  {}", instrument_name);
-    return false;
+    return nullptr;
   }
-
   const auto &commands = api_def["commands"];
-
-  // Look up the command verb
   if (!commands.contains(verb)) {
     LOG_WARN("REGISTRY", "API_LOOKUP",
              "Command '{}' not found in API definition for instrument '{}'",
              verb, instrument_name);
+    return nullptr;
+  }
+  return &commands[verb];
+}
+
+bool InstrumentRegistry::command_expects_response(
+    const std::string &instrument_name, const std::string &verb) const {
+  std::lock_guard lock(mutex_);
+
+  const nlohmann::json *cmd_def =
+      find_command_def(metadata_, instrument_name, verb);
+  if (!cmd_def) {
     return false;
   }
 
-  const auto &cmd_def = commands[verb];
-
-  // According to schema:  command has "outputs" array
-  // If outputs exists and is non-empty array, response is expected
-  if (cmd_def.contains("outputs") && cmd_def["outputs"].is_array()) {
-    const auto &outputs = cmd_def["outputs"];
-    return !outputs.empty(); // Has outputs = expects response
+  if (cmd_def->contains("outputs") && (*cmd_def)["outputs"].is_array()) {
+    const auto &outputs = (*cmd_def)["outputs"];
+    return !outputs.empty();
   }
-
-  // No outputs field or empty outputs = no response expected
   return false;
 }
 
@@ -192,54 +191,53 @@ InstrumentRegistry::get_response_type(const std::string &instrument_name,
   if (meta_it == metadata_.end()) {
     return std::nullopt;
   }
-
   const auto &api_def = meta_it->second.api_def;
 
-  if (!api_def.contains("commands") || !api_def["commands"].is_object()) {
+  const nlohmann::json *cmd_def =
+      find_command_def(metadata_, instrument_name, verb);
+  if (!cmd_def) {
     return std::nullopt;
   }
 
-  const auto &commands = api_def["commands"];
-
-  if (!commands.contains(verb)) {
+  if (!cmd_def->contains("outputs") || !(*cmd_def)["outputs"].is_array()) {
     return std::nullopt;
   }
-
-  const auto &cmd_def = commands[verb];
-
-  // Get outputs array
-  if (!cmd_def.contains("outputs") || !cmd_def["outputs"].is_array()) {
-    return std::nullopt;
-  }
-
-  const auto &outputs = cmd_def["outputs"];
+  const auto &outputs = (*cmd_def)["outputs"];
   if (outputs.empty()) {
     return std::nullopt;
   }
-
-  // Get first output name
   std::string output_name = outputs[0].get<std::string>();
 
-  // Look up the output in io definitions
-  if (!api_def.contains("io") || !api_def["io"].is_array()) {
-    LOG_WARN("REGISTRY", "API_LOOKUP",
-             "No io section in API definition for:  {}", instrument_name);
-    return std::nullopt;
+  // Search in io section
+  if (api_def.contains("io") && api_def["io"].is_array()) {
+    for (const auto &io : api_def["io"]) {
+      if (io.contains("name") && io["name"].get<std::string>() == output_name) {
+        if (io.contains("type")) {
+          return io["type"].get<std::string>();
+        }
+      }
+    }
   }
 
-  const auto &io_defs = api_def["io"];
-
-  // Find the io definition with matching name
-  for (const auto &io : io_defs) {
-    if (io.contains("name") && io["name"].get<std::string>() == output_name) {
-      if (io.contains("type")) {
-        return io["type"].get<std::string>();
+  // Search in channel_groups' io_types
+  if (api_def.contains("channel_groups") &&
+      api_def["channel_groups"].is_array()) {
+    for (const auto &group : api_def["channel_groups"]) {
+      if (group.contains("io_types") && group["io_types"].is_array()) {
+        for (const auto &io_type : group["io_types"]) {
+          if (io_type.contains("suffix") &&
+              io_type["suffix"].get<std::string>() == output_name) {
+            if (io_type.contains("type")) {
+              return io_type["type"].get<std::string>();
+            }
+          }
+        }
       }
     }
   }
 
   LOG_WARN("REGISTRY", "API_LOOKUP",
-           "Output '{}' not found in io definitions for instrument '{}'",
+           "Output '{}' not found in io or channel_groups for instrument '{}'",
            output_name, instrument_name);
   return std::nullopt;
 }

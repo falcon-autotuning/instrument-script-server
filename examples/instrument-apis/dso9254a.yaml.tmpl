@@ -66,7 +66,6 @@ commands:
     channel_group: analog
     outputs: [sample_rate]
     returns: float
-    query: true
   GET_DATA:
     template: "WAV:DATA? {analog}"
     description: "Retrieve waveform data from the specified channel"
@@ -74,7 +73,6 @@ commands:
     channel_group: analog
     outputs: [waveform]
     returns: array<float>
-    query: true
   SET_VOLTAGE_RANGE:
     template: "CHAN{analog}:RANG {value}"
     description: "Set voltage range for channel"
@@ -93,7 +91,6 @@ commands:
     channel_group: analog
     outputs: [voltage_range]
     returns: float
-    query: true
   GET_TRIGGER_LEVEL:
     template: "TRIG:LEV? {analog}"
     description: "Query trigger level for channel"
@@ -101,4 +98,3 @@ commands:
     channel_group: analog
     outputs: [trigger_level]
     returns: float
-    query: true
