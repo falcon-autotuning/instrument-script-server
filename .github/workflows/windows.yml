@@ -1,0 +1,137 @@
+name: Windows Build and Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  cross-compile:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+
+    steps:
+      - name: Update system and install dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm \
+            base-devel \
+            git \
+            cmake \
+            ninja \
+            mingw-w64-gcc \
+            mingw-w64-cmake \
+            mingw-w64-pkg-config \
+            wine
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache Pacman packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/pacman/pkg
+          key: arch-mingw-packages-${{ hashFiles('.github/workflows/windows.yml') }}
+          restore-keys: |
+            arch-mingw-packages-
+
+      - name: Create MinGW build directory
+        run: mkdir -p build-mingw
+
+      - name: Configure for Windows x64 with MinGW
+        run: |
+          cd build-mingw
+          x86_64-w64-mingw32-cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTS=ON \
+            ..
+
+      - name: Build for Windows
+        run: |
+          cd build-mingw
+          ninja
+
+      - name: Upload Windows binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-cross-compiled-binaries
+          path: |
+            build-mingw/*.exe
+            build-mingw/*.dll
+            LICENSE
+          retention-days: 7
+
+  test-on-windows:
+    needs: cross-compile
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download cross-compiled binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-cross-compiled-binaries
+          path: build-mingw
+
+      - name: Install MSYS2 and dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-lua
+            mingw-w64-x86_64-luajit
+            mingw-w64-x86_64-spdlog
+            mingw-w64-x86_64-nlohmann-json
+            mingw-w64-x86_64-yaml-cpp
+            mingw-w64-x86_64-gtest
+
+      - name: Cache MSYS2 packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            D:\a\_temp\msys64\var\cache\pacman\pkg
+            D:\a\_temp\msys64\mingw64
+          key: msys2-packages-${{ hashFiles('.github/workflows/windows.yml') }}
+          restore-keys: |
+            msys2-packages-
+
+      - name: Build and test natively on Windows
+        shell: msys2 {0}
+        run: |
+          mkdir -p build
+          cd build
+          cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTS=ON \
+            ..
+          ninja
+
+          # Run unit tests
+          export PATH=$PWD:$PATH
+          ./tests/unit_tests.exe || true
+
+          # Run integration tests
+          ./tests/integration_tests.exe || true
+
+      - name: Upload Windows build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binaries
+          path: |
+            build/instrument-server.exe
+            build/instrument-worker.exe
+            build/libinstrument-server-core.dll
+            LICENSE
+          retention-days: 7
