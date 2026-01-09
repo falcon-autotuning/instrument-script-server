@@ -42,7 +42,9 @@ set(TEST_SCRIPTS
     error_handling.lua
     channel_addressing.lua
     return_types.lua
-    table_params.lua)
+    table_params.lua
+    multiple_returns.lua
+    large_buffer_returns.lua)
 
 foreach(SCRIPT ${TEST_SCRIPTS})
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/test_scripts/${SCRIPT}

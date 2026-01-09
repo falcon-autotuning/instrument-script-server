@@ -79,6 +79,32 @@ static CommandResponse from_plugin_response(const PluginResponse &presp) {
     }
   }
 
+  // Copy large data buffer fields
+  resp.has_large_data = presp.has_large_data;
+  if (presp.has_large_data) {
+    resp.buffer_id = presp.data_buffer_id;
+    resp.element_count = presp.data_element_count;
+    
+    // Convert data type enum to string
+    switch (presp.data_type) {
+    case 0:
+      resp.data_type = "float32";
+      break;
+    case 1:
+      resp.data_type = "float64";
+      break;
+    case 2:
+      resp.data_type = "int32";
+      break;
+    case 3:
+      resp.data_type = "int64";
+      break;
+    default:
+      resp.data_type = "unknown";
+      break;
+    }
+  }
+
   return resp;
 }
 namespace {

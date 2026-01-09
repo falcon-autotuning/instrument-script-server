@@ -101,6 +101,14 @@ std::string serialize_response(const CommandResponse &resp) {
     }
   }
 
+  // Serialize large data buffer fields
+  j["has_large_data"] = resp.has_large_data;
+  if (resp.has_large_data) {
+    j["buffer_id"] = resp.buffer_id;
+    j["element_count"] = resp.element_count;
+    j["data_type"] = resp.data_type;
+  }
+
   return j.dump();
 }
 
@@ -128,6 +136,16 @@ CommandResponse deserialize_response(const std::string &json) {
       resp.return_value = j["return_value"].get<bool>();
     } else if (type == "array") {
       resp.return_value = j["return_value"].get<std::vector<double>>();
+    }
+  }
+
+  // Deserialize large data buffer fields
+  if (j.contains("has_large_data")) {
+    resp.has_large_data = j["has_large_data"];
+    if (resp.has_large_data) {
+      resp.buffer_id = j["buffer_id"];
+      resp.element_count = j["element_count"];
+      resp.data_type = j["data_type"];
     }
   }
 

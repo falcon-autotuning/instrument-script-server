@@ -136,3 +136,15 @@ commands:
     description: "Reset instrument"
     parameters: []
     outputs: []
+
+  GET_LARGE_DATA:
+    template: "WAVEFORM:DATA?"
+    description: "Get large waveform data"
+    parameters: []
+    outputs: [waveform]
+
+  GET_SMALL_DATA:
+    template: "DATA:SMALL?"
+    description: "Get small data value"
+    parameters: []
+    outputs: [current]

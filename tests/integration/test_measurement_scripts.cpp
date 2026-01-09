@@ -1,5 +1,6 @@
 #include "PluginTestFixture.hpp"
 #include "instrument-server/Logger.hpp"
+#include "instrument-server/plugin/PluginRegistry.hpp"
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include "instrument-server/server/RuntimeContext.hpp"
 #include "instrument-server/server/ServerDaemon.hpp"
@@ -371,18 +372,67 @@ TEST_F(MeasurementScriptTest, ChannelAddressingWithReturns) {
 
 TEST_F(MeasurementScriptTest, LargeBufferReturns) {
   // This test requires mock_visa_large_data_plugin
+  // Register the large data plugin with a different protocol name to avoid conflicts
+  auto &plugin_reg = plugin::PluginRegistry::instance();
+  try {
+    plugin_reg.load_plugin("VISA_LARGE", "./build/tests/mock_visa_large_data_plugin.so");
+  } catch (const std::exception &e) {
+    GTEST_SKIP() << "Large data plugin not available: " << e.what();
+  }
+  
+  // Create a modified API file with VISA_LARGE protocol
+  std::string api_content = R"(
+api_version: "1.0.0"
+instrument:
+  vendor: "MockVendor"
+  model: "MockModel"
+  identifier: "MockAPI"
+  description: "Mock instrument for testing"
+
+protocol:
+  type: VISA_LARGE
+
+io:
+  - name: waveform
+    type: array
+    role: output
+    description: "Array of measurements"
+  - name: current
+    type: float
+    role: output
+    description: "Measured current"
+    unit: "A"
+
+commands:
+  GET_LARGE_DATA:
+    template: "WAVEFORM:DATA?"
+    description: "Get large waveform data"
+    parameters: []
+    outputs: [waveform]
+
+  GET_SMALL_DATA:
+    template: "DATA:SMALL?"
+    description: "Get small data value"
+    parameters: []
+    outputs: [current]
+)";
+  
+  std::string api_path = "/tmp/mock_api_large.yaml";
+  std::ofstream api_file(api_path);
+  api_file << api_content;
+  api_file.close();
+  
   // Load the special test scope configuration
   auto &registry = InstrumentRegistry::instance();
   
   // Create a test configuration for TestScope that uses the large data plugin
+  // Use a pseudo-protocol name so it doesn't conflict with the VISA plugin already loaded
   std::string test_scope_config = R"(
-instrument:
-  name: TestScope
-  connection:
-    protocol: VISA
-    address: "mock://testscope"
-  api: tests/data/mock_api.yaml
-  plugin: ./build/tests/mock_visa_large_data_plugin.so
+name: TestScope
+api_ref: /tmp/mock_api_large.yaml
+connection:
+  type: VISA_LARGE
+  address: "mock://testscope"
 )";
   
   // Write config to temporary file
@@ -396,7 +446,7 @@ instrument:
     registry.create_instrument(config_path);
   } catch (const std::exception &e) {
     // Plugin might not be available
-    GTEST_SKIP() << "Large data plugin not available: " << e.what();
+    GTEST_SKIP() << "Failed to create instrument: " << e.what();
   }
   
   auto ctx = run_script_with_context("large_buffer_returns.lua");
