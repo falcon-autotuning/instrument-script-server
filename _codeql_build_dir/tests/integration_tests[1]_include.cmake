@@ -1,5 +1,0 @@
-if(EXISTS "/home/runner/work/instrument-script-server/instrument-script-server/_codeql_build_dir/tests/integration_tests[1]_tests.cmake")
-  include("/home/runner/work/instrument-script-server/instrument-script-server/_codeql_build_dir/tests/integration_tests[1]_tests.cmake")
-else()
-  add_test(integration_tests_NOT_BUILT integration_tests_NOT_BUILT)
-endif()

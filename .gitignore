@@ -1,2 +1,3 @@
 build/
 *.log
+_codeql_*

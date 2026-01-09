@@ -1,5 +1,0 @@
-name: MockInstrument2
-api_ref: tests/data/mock_api.yaml
-connection:
-  type: VISA
-  address: "mock://test2"
