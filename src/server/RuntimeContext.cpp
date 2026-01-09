@@ -113,6 +113,45 @@ sol::object RuntimeContext::call(const std::string &func_name,
     return sol::nil;
   }
 
+  // Collect the result
+  CallResult result;
+  result.command_id = resp.command_id;
+  result.instrument_name = instrument_spec; // Use full spec with channel if present
+  result.verb = verb;
+  result.params = params;
+  result.executed_at = std::chrono::steady_clock::now();
+  
+  // Handle large data buffer
+  if (resp.has_large_data) {
+    result.has_large_data = true;
+    result.buffer_id = resp.buffer_id;
+    result.element_count = resp.element_count;
+    result.data_type = resp.data_type;
+    result.return_type = "buffer";
+  } else if (resp.return_value) {
+    // Handle direct return value
+    result.return_value = resp.return_value;
+    
+    // Determine type string
+    if (std::holds_alternative<double>(*resp.return_value)) {
+      result.return_type = "double";
+    } else if (std::holds_alternative<int64_t>(*resp.return_value)) {
+      result.return_type = "int64";
+    } else if (std::holds_alternative<std::string>(*resp.return_value)) {
+      result.return_type = "string";
+    } else if (std::holds_alternative<bool>(*resp.return_value)) {
+      result.return_type = "bool";
+    } else if (std::holds_alternative<std::vector<double>>(*resp.return_value)) {
+      result.return_type = "array";
+    }
+  } else {
+    // No return value but expects response means command succeeded
+    result.return_value = true;
+    result.return_type = "bool";
+  }
+  
+  collected_results_.push_back(std::move(result));
+
   // Return result
   if (resp.return_value) {
     if (auto d = std::get_if<double>(&*resp.return_value)) {

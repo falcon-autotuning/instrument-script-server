@@ -8,6 +8,7 @@
 #include <csignal>
 #include <filesystem>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
 #include <string>
 #include <vector>
@@ -107,6 +108,44 @@ bool ensure_daemon_running() {
     return false;
   }
   return true;
+}
+
+// Helper to convert ParamValue to string for display
+std::string param_value_to_string(const ParamValue &val) {
+  if (auto d = std::get_if<double>(&val)) {
+    return std::to_string(*d);
+  } else if (auto i = std::get_if<int64_t>(&val)) {
+    return std::to_string(*i);
+  } else if (auto s = std::get_if<std::string>(&val)) {
+    return *s;
+  } else if (auto b = std::get_if<bool>(&val)) {
+    return *b ? "true" : "false";
+  } else if (auto arr = std::get_if<std::vector<double>>(&val)) {
+    std::string result = "[";
+    for (size_t i = 0; i < arr->size(); ++i) {
+      if (i > 0) result += ", ";
+      result += std::to_string((*arr)[i]);
+    }
+    result += "]";
+    return result;
+  }
+  return "unknown";
+}
+
+// Helper to convert ParamValue to JSON
+nlohmann::json param_value_to_json(const ParamValue &val) {
+  if (auto d = std::get_if<double>(&val)) {
+    return *d;
+  } else if (auto i = std::get_if<int64_t>(&val)) {
+    return *i;
+  } else if (auto s = std::get_if<std::string>(&val)) {
+    return *s;
+  } else if (auto b = std::get_if<bool>(&val)) {
+    return *b;
+  } else if (auto arr = std::get_if<std::vector<double>>(&val)) {
+    return *arr;
+  }
+  return nullptr;
 }
 
 int cmd_daemon(int argc, char **argv);
@@ -401,7 +440,7 @@ int cmd_measure(int argc, char **argv) {
   if (argc < 1) {
     std::cerr << "Error: measure requires script path\n";
     std::cerr
-        << "Usage: instrument-server measure <script> [--log-level <level>]\n";
+        << "Usage: instrument-server measure <script> [--json] [--log-level <level>]\n";
     return 1;
   }
 
@@ -411,11 +450,14 @@ int cmd_measure(int argc, char **argv) {
 
   std::string script_path = argv[0];
   std::string log_level = "info";
+  bool json_output = false;
 
   for (int i = 1; i < argc; i++) {
     std::string arg = argv[i];
     if (arg == "--log-level" && i + 1 < argc) {
       log_level = argv[++i];
+    } else if (arg == "--json") {
+      json_output = true;
     }
   }
 
@@ -447,7 +489,9 @@ int cmd_measure(int argc, char **argv) {
     RuntimeContext ctx(registry, sync_coordinator);
     lua["context"] = &ctx;
 
-    std::cout << "Running measurement.. .\n";
+    if (!json_output) {
+      std::cout << "Running measurement.. .\n";
+    }
 
     auto result = lua.safe_script_file(script_path);
 
@@ -457,7 +501,91 @@ int cmd_measure(int argc, char **argv) {
       return 1;
     }
 
-    std::cout << "Measurement complete\n";
+    // Get collected results
+    const auto &results = ctx.get_results();
+    
+    if (json_output) {
+      // JSON output
+      nlohmann::json output;
+      output["status"] = "success";
+      output["script"] = std::filesystem::path(script_path).filename().string();
+      output["results"] = nlohmann::json::array();
+      
+      for (size_t i = 0; i < results.size(); ++i) {
+        const auto &r = results[i];
+        nlohmann::json result_json;
+        result_json["index"] = i;
+        result_json["instrument"] = r.instrument_name;
+        result_json["verb"] = r.verb;
+        
+        // Convert params to JSON
+        nlohmann::json params_json;
+        for (const auto &[key, value] : r.params) {
+          params_json[key] = param_value_to_json(value);
+        }
+        result_json["params"] = params_json;
+        
+        // Execution timestamp (milliseconds since epoch)
+        auto ms_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(
+          r.executed_at.time_since_epoch()).count();
+        result_json["executed_at_ms"] = ms_since_epoch;
+        
+        // Return value
+        nlohmann::json return_json;
+        if (r.has_large_data) {
+          return_json["type"] = "buffer";
+          return_json["buffer_id"] = r.buffer_id;
+          return_json["element_count"] = r.element_count;
+          return_json["data_type"] = r.data_type;
+        } else if (r.return_value) {
+          return_json["type"] = r.return_type;
+          return_json["value"] = param_value_to_json(*r.return_value);
+        }
+        result_json["return"] = return_json;
+        
+        output["results"].push_back(result_json);
+      }
+      
+      std::cout << output.dump(2) << "\n";
+    } else {
+      // Text output
+      std::cout << "Measurement complete\n";
+      
+      if (!results.empty()) {
+        std::cout << "\n=== Script Results ===\n";
+        
+        for (size_t i = 0; i < results.size(); ++i) {
+          const auto &r = results[i];
+          
+          // Build params string
+          std::string params_str;
+          if (!r.params.empty()) {
+            bool first = true;
+            for (const auto &[key, value] : r.params) {
+              if (key == "channel") continue; // Skip channel param as it's in instrument name
+              if (!first) params_str += ", ";
+              params_str += param_value_to_string(value);
+              first = false;
+            }
+          }
+          
+          // Format: [0] MockInstrument1:1.SET(5.0) -> [bool] true
+          std::cout << "[" << i << "] " << r.instrument_name << "." << r.verb << "(" << params_str << ") -> ";
+          
+          if (r.has_large_data) {
+            std::cout << "[buffer] " << r.buffer_id << " (" << r.element_count 
+                     << " elements, " << r.data_type << ")\n";
+          } else if (r.return_value) {
+            std::cout << "[" << r.return_type << "] " << param_value_to_string(*r.return_value) << "\n";
+          } else {
+            std::cout << "[void]\n";
+          }
+        }
+        
+        std::cout << "======================\n";
+      }
+    }
+    
     return 0;
 
   } catch (const std::exception &e) {

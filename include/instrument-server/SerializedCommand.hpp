@@ -33,6 +33,12 @@ struct CommandResponse {
   std::string error_message;
   std::string text_response;
   std::optional<ParamValue> return_value;
+  
+  // Large data buffer fields
+  bool has_large_data{false};
+  std::string buffer_id;
+  uint64_t element_count{0};
+  std::string data_type;
 };
 
 } // namespace instserver
