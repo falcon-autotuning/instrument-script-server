@@ -30,3 +30,21 @@ coverage-overview:
 		-instr-profile=$(BUILD_DIR)/instrument_server_core.profdata \
 		-ignore-filename-regex='(tests/)' \
 		-Xdemangler c++filt -Xdemangler -n
+
+build-win:
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && \
+	cmake -G Ninja \
+		-DCMAKE_SYSTEM_NAME=Windows \
+		-DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
+		-DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
+		-DCMAKE_BUILD_TYPE=Release \
+		.. && ninja
+
+wine-unit-test: build-win
+	WINEPATH="$(BUILD_DIR)" wine $(BUILD_DIR)/tests/unit_tests.exe
+
+wine-integration-test: build-win
+	WINEPATH="$(BUILD_DIR)" wine $(BUILD_DIR)/tests/integration_tests.exe
+
+clean:
+	rm -rf build build-win
