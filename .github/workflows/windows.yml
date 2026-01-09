@@ -24,6 +24,9 @@ jobs:
           options: -v ${{ github.workspace }}:/workspace
           run: |
             set -e
+            # Enable [community] repo for mingw-w64 packages
+            sed -i '/^\[community\]/,/^Include/ s/^#//' /etc/pacman.conf
+            pacman -Sy
             pacman -Syu --noconfirm
             pacman -S --noconfirm \
               base-devel \
