@@ -82,7 +82,8 @@ gtest_discover_tests(integration_tests)
 
 # Performance tests
 add_executable(perf_tests performance/test_ipc_throughput.cpp
-                          performance/test_sync_overhead.cpp)
+                          performance/test_sync_overhead.cpp
+                          performance/test_end_to_end_overhead.cpp)
 
 target_link_libraries(perf_tests PRIVATE instrument-server-core test-utils
                                          GTest::gtest GTest::gtest_main)
