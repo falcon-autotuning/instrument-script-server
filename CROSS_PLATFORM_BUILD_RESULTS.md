@@ -160,9 +160,9 @@ This architecture ensures the code compiles and runs correctly on both platforms
 
 The codebase demonstrates excellent cross-platform design:
 - **Headers**: Properly uses `#ifdef _WIN32` where needed
-- **IPC**: Uses POSIX message queues on Linux (Windows would need named pipes adaptation)
-- **Process Management**: Uses fork() on Linux (tested with worker processes)
-- **Plugins**: Dynamic library loading works across platforms
+- **IPC**: Uses boost::interprocess::message_queue (handles Windows/POSIX differences internally)
+- **Process Management**: Platform-specific implementations (CreateProcess on Windows, spawn/fork on Linux)
+- **Plugins**: Dynamic library loading with platform-specific APIs (LoadLibrary vs dlopen)
 - **Build System**: CMake properly detects platform and adjusts configuration
 
 ### Code Observations
