@@ -35,11 +35,16 @@ jobs:
             spdlog \
             nlohmann-json \
             yaml-cpp \
-            gtest \
-            sol2
+            gtest
 
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install sol2 (header-only library)
+        run: |
+          git clone --depth 1 --branch v3.3.0 https://github.com/ThePhD/sol2.git /tmp/sol2
+          mkdir -p /usr/local/include/sol
+          cp -r /tmp/sol2/include/sol/* /usr/local/include/sol/
 
       - name: Cache Pacman packages
         uses: actions/cache@v4
@@ -56,10 +61,14 @@ jobs:
         run: make build
 
       - name: Run unit tests
-        run: make unit-test
+        run: |
+          make unit-test
+          echo "Unit tests completed"
 
       - name: Run integration tests
-        run: make integration-tests
+        run: |
+          make integration-tests
+          echo "Integration tests completed"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
