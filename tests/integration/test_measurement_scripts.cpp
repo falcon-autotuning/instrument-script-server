@@ -86,8 +86,48 @@ protected:
     }
   }
 
+  RuntimeContext* run_script_with_context(const std::string &script_name) {
+    auto script_path = test_scripts_dir_ / script_name;
+
+    if (!std::filesystem::exists(script_path)) {
+      LOG_ERROR("TEST", "SCRIPT", "Script not found: {}", script_path.string());
+      return nullptr;
+    }
+
+    try {
+      auto &registry = InstrumentRegistry::instance();
+      auto &sync_coordinator = sync_coordinator_;
+
+      sol::state lua;
+      lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::table,
+                         sol::lib::string, sol::lib::io, sol::lib::os);
+
+      bind_runtime_context(lua, registry, sync_coordinator);
+
+      // Use member context
+      test_context_ = std::make_unique<RuntimeContext>(registry, sync_coordinator);
+      lua["context"] = test_context_.get();
+
+      auto result = lua.safe_script_file(script_path.string());
+
+      if (!result.valid()) {
+        sol::error err = result;
+        LOG_ERROR("TEST", "SCRIPT", "Script error: {}", err.what());
+        return nullptr;
+      }
+
+      return test_context_.get();
+
+    } catch (const std::exception &e) {
+      LOG_ERROR("TEST", "SCRIPT", "Exception: {}", e.what());
+      return nullptr;
+    }
+  }
+
   std::filesystem::path test_scripts_dir_;
   std::filesystem::path test_configs_dir_;
+  SyncCoordinator sync_coordinator_;
+  std::unique_ptr<RuntimeContext> test_context_;
 };
 
 TEST_F(MeasurementScriptTest, SimpleCall) {
@@ -140,4 +180,59 @@ TEST_F(MeasurementScriptTest, ScriptWithOutput) {
 
   // Verify some output was produced
   EXPECT_FALSE(output.empty());
+}
+
+TEST_F(MeasurementScriptTest, MultipleReturns) {
+  auto ctx = run_script_with_context("multiple_returns.lua");
+  ASSERT_NE(ctx, nullptr);
+  
+  const auto &results = ctx->get_results();
+  
+  // Should have collected multiple results
+  EXPECT_GT(results.size(), 0);
+  
+  // Verify we have results with different types
+  bool has_double = false;
+  bool has_string = false;
+  bool has_bool = false;
+  
+  for (const auto &result : results) {
+    if (result.return_type == "double") has_double = true;
+    if (result.return_type == "string") has_string = true;
+    if (result.return_type == "bool") has_bool = true;
+    
+    // Each result should have basic metadata
+    EXPECT_FALSE(result.instrument_name.empty());
+    EXPECT_FALSE(result.verb.empty());
+  }
+  
+  EXPECT_TRUE(has_double);
+  EXPECT_TRUE(has_string);
+  EXPECT_TRUE(has_bool);
+}
+
+TEST_F(MeasurementScriptTest, ChannelAddressingWithReturns) {
+  auto ctx = run_script_with_context("channel_addressing.lua");
+  ASSERT_NE(ctx, nullptr);
+  
+  const auto &results = ctx->get_results();
+  
+  // Should have 4 results: 2 SETs and 2 GETs
+  EXPECT_EQ(results.size(), 4);
+  
+  // Verify channel addressing in instrument names
+  bool has_channel1 = false;
+  bool has_channel2 = false;
+  
+  for (const auto &result : results) {
+    if (result.instrument_name.find(":1") != std::string::npos) {
+      has_channel1 = true;
+    }
+    if (result.instrument_name.find(":2") != std::string::npos) {
+      has_channel2 = true;
+    }
+  }
+  
+  EXPECT_TRUE(has_channel1);
+  EXPECT_TRUE(has_channel2);
 }
