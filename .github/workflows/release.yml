@@ -11,10 +11,12 @@ on:
 jobs:
   # Trigger Arch Linux build
   arch-build:
+    permissions: {}
     uses: ./.github/workflows/arch-linux.yml
 
   # Trigger Windows build
   windows-build:
+    permissions: {}
     uses: ./.github/workflows/windows.yml
 
   create-release:
