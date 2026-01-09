@@ -35,6 +35,7 @@ jobs:
             mingw-w64-x86_64-nlohmann-json
             mingw-w64-x86_64-yaml-cpp
             mingw-w64-x86_64-gtest
+            mingw-w64-x86_64-boost
             git
 
       - name: Install sol2 (header-only library)
