@@ -70,12 +70,10 @@ jobs:
         run: |
           cd build
           echo "Running unit tests..."
-          ./tests/unit_tests.exe 2>&1 | tee unit_test_output.txt
-          if grep -q "\[  PASSED  \]" unit_test_output.txt; then
+          if ./tests/unit_tests.exe; then
             echo "✓ Unit tests passed successfully"
           else
-            echo "✗ Unit tests failed or did not complete"
-            cat unit_test_output.txt
+            echo "✗ Unit tests failed"
             exit 1
           fi
 
@@ -84,12 +82,10 @@ jobs:
         run: |
           cd build
           echo "Running integration tests..."
-          ./tests/integration_tests.exe 2>&1 | tee integration_test_output.txt
-          if grep -q "\[  PASSED  \]" integration_test_output.txt; then
+          if ./tests/integration_tests.exe; then
             echo "✓ Integration tests passed successfully"
           else
-            echo "✗ Integration tests failed or did not complete"
-            cat integration_test_output.txt
+            echo "✗ Integration tests failed"
             exit 1
           fi
 
