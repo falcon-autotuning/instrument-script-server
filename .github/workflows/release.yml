@@ -92,17 +92,32 @@ jobs:
           cat release-notes.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Determine release info
+        id: release-info
+        run: |
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "tag_name=release-${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "release_name=Release ${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "is_draft=true" >> $GITHUB_OUTPUT
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "tag_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "release_name=Release ${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "is_draft=false" >> $GITHUB_OUTPUT
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name != 'main' && github.ref_name || format('release-{0}', github.sha) }}
-          name: Release ${{ github.ref_name != 'main' && github.ref_name || github.sha }}
+          tag_name: ${{ steps.release-info.outputs.tag_name }}
+          name: ${{ steps.release-info.outputs.release_name }}
           body: ${{ steps.release-notes.outputs.notes }}
           files: |
             release/instrument-server-arch-linux-x64.tar.gz
             release/instrument-server-windows-x64.zip
             LICENSE
-          draft: ${{ github.ref_name == 'main' }}
-          prerelease: ${{ github.ref_name == 'main' }}
+          draft: ${{ steps.release-info.outputs.is_draft }}
+          prerelease: ${{ steps.release-info.outputs.is_prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
