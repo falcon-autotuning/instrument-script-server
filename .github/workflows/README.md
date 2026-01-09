@@ -13,42 +13,43 @@ This directory contains CI/CD workflows for the Instrument Script Server project
 **Steps:**
 1. Sets up Arch Linux container on Ubuntu runner
 2. Installs all required dependencies (clang, cmake, ninja, lua, etc.)
-3. Runs `make clean` to ensure clean build
-4. Runs `make build` to compile the project
-5. Runs `make unit-test` to execute unit tests
-6. Runs `make integration-tests` to execute integration tests
-7. Uploads build artifacts (binaries + LICENSE)
+3. Installs sol2 header-only library from source (v3.3.0)
+4. Runs `make clean` to ensure clean build
+5. Runs `make build` to compile the project
+6. Runs `make unit-test` to execute unit tests
+7. Runs `make integration-tests` to execute integration tests
+8. Uploads build artifacts (binaries + LICENSE)
 
 **Optimizations:**
 - Caches Pacman packages to speed up dependency installation
+
+**Key Fix:**
+- sol2 is not available in Arch repos, so it's cloned from GitHub
 
 ### 2. Windows Build and Test (`windows.yml`)
 
 **Trigger:** Push to main, pull requests, manual dispatch, or called by other workflows
 
-**Purpose:** Cross-compile for Windows and test natively on Windows
+**Purpose:** Build and test natively on Windows using MSYS2
 
-**Jobs:**
-
-#### `cross-compile`
-- Uses Arch Linux container with MinGW-w64 toolchain
-- Cross-compiles binaries for Windows x64
-- Uploads cross-compiled binaries for release
-
-#### `test-on-windows`
-- Runs on native Windows with MSYS2
-- Builds and tests natively to ensure all tests pass
-- Uploads test artifacts (temporary, 1 day retention)
-
-#### `package-windows`
-- Depends on both cross-compile and test-on-windows
-- Packages the cross-compiled binaries with LICENSE
-- Only runs if tests pass
-- Uploads final Windows package for release
+**Steps:**
+1. Uses Windows runner with MSYS2 environment
+2. Installs MinGW64 toolchain and all dependencies
+3. Installs sol2 header-only library from source (v3.3.0)
+4. Builds with CMake and Ninja
+5. Runs unit tests and validates exit codes
+6. Runs integration tests and validates exit codes
+7. Packages binaries with LICENSE
+8. Uploads Windows package for release
 
 **Optimizations:**
-- Caches Pacman packages for MinGW build
-- Caches MSYS2 packages for native Windows build
+- Caches MSYS2 packages for faster builds
+- Uses exit codes for reliable test validation
+
+**Key Changes:**
+- Simplified to native Windows build only (removed cross-compilation complexity)
+- sol2 installed from source since not in MSYS2 repos
+- Uses exit codes instead of grep patterns for test validation
 
 ### 3. Release (`release.yml`)
 
@@ -83,16 +84,14 @@ This directory contains CI/CD workflows for the Instrument Script Server project
 All workflows upload artifacts that are accessible from the GitHub Actions UI:
 
 - **arch-linux-binaries**: Compiled binaries for Arch Linux (7 days retention)
-- **windows-binaries**: Final packaged Windows binaries (7 days retention)
-- **windows-native-binaries**: Native Windows test binaries (1 day retention)
-- **windows-cross-compiled-binaries**: Cross-compiled Windows binaries (7 days retention)
+- **windows-binaries**: Native Windows binaries (7 days retention)
 
 ## Testing Strategy
 
 The workflows ensure quality through:
 
 1. **Arch Linux**: Native build and test using Makefile targets
-2. **Windows**: Cross-compilation for release + native build/test for validation
+2. **Windows**: Native build and test with MSYS2, validates exit codes
 3. **Release**: Only creates releases if all platform tests pass
 
 ## Dependencies
@@ -102,13 +101,15 @@ The workflows ensure quality through:
 - clang, lld, llvm
 - lua, luajit
 - spdlog, nlohmann-json, yaml-cpp
-- gtest, sol2
+- gtest
+- sol2 (installed from source)
 
 ### Windows (MSYS2/MinGW64)
 - cmake, ninja, gcc
 - lua, luajit
 - spdlog, nlohmann-json, yaml-cpp
 - gtest
+- sol2 (installed from source)
 
 ## Caching
 
@@ -118,6 +119,14 @@ Workflows cache dependency packages to improve build times:
 - **Windows**: MSYS2 package cache and mingw64 directory
 
 Cache keys are based on workflow file hashes to invalidate when dependencies change.
+
+## Known Issues & Solutions
+
+### sol2 Installation
+sol2 is a header-only library that's not available in standard package repositories. Both workflows clone it directly from GitHub (v3.3.0) and copy headers to the appropriate include directory.
+
+### Windows Cross-Compilation
+Initial cross-compilation approach was complex and had missing dependencies. Simplified to native Windows builds using MSYS2 for reliability.
 
 ## Future Improvements
 
