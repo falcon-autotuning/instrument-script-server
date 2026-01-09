@@ -7,6 +7,7 @@ A modular, process-isolated system for controlling scientific instruments for la
 - **Process Isolation**: Each instrument runs in a separate worker process for fault tolerance
 - **Plugin Architecture**: Instrument drivers as loadable plugins (VISA, serial, custom SDKs)
 - **Lua Scripting**: High-level measurement scripts with runtime contexts
+- **Automatic Result Collection**: All command return values are automatically captured with full traceability
 - **Synchronization**:  Parallel execution with precise timing coordination across instruments
 - **Cross-Platform**: Works on Linux and Windows
 
@@ -25,7 +26,10 @@ instrument-server start configs/instrument1.yaml
 instrument-server start configs/instrument2.yaml
 
 # Run a measurement
-instrument-server measure dc my_measurement.lua
+instrument-server measure my_measurement.lua
+
+# Run with JSON output for programmatic parsing
+instrument-server measure my_measurement.lua --json
 
 # Check status
 instrument-server list

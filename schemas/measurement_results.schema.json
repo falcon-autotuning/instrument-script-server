@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/falcon-autotuning/instrument-script-server/schemas/measurement_results.schema.json",
+  "title": "Measurement Results Schema",
+  "description": "Schema for measurement script results output with --json flag",
+  "type": "object",
+  "required": ["status", "script", "results"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["success", "error"],
+      "description": "Status of the measurement script execution"
+    },
+    "script": {
+      "type": "string",
+      "description": "Name of the measurement script that was executed"
+    },
+    "error": {
+      "type": "string",
+      "description": "Error message if status is 'error'"
+    },
+    "results": {
+      "type": "array",
+      "description": "Array of results from all context:call() operations in execution order",
+      "items": {
+        "$ref": "#/definitions/callResult"
+      }
+    }
+  },
+  "definitions": {
+    "callResult": {
+      "type": "object",
+      "required": ["index", "instrument", "verb", "params", "executed_at_ms", "return"],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Sequential index of this call in the script execution"
+        },
+        "instrument": {
+          "type": "string",
+          "description": "Instrument name, possibly with channel (e.g., 'MockInstrument1:1')"
+        },
+        "verb": {
+          "type": "string",
+          "description": "Command verb that was executed (e.g., 'GET', 'SET', 'MEASURE')"
+        },
+        "params": {
+          "type": "object",
+          "description": "Parameters passed to the command",
+          "additionalProperties": {
+            "oneOf": [
+              {"type": "number"},
+              {"type": "string"},
+              {"type": "boolean"},
+              {
+                "type": "array",
+                "items": {"type": "number"}
+              }
+            ]
+          }
+        },
+        "executed_at_ms": {
+          "type": "integer",
+          "description": "Timestamp in milliseconds since epoch when the command was executed"
+        },
+        "return": {
+          "oneOf": [
+            {"$ref": "#/definitions/directReturn"},
+            {"$ref": "#/definitions/bufferReturn"}
+          ]
+        }
+      }
+    },
+    "directReturn": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["double", "int64", "string", "bool", "array", "void"],
+          "description": "Type of the returned value"
+        },
+        "value": {
+          "description": "The actual return value",
+          "oneOf": [
+            {"type": "number"},
+            {"type": "string"},
+            {"type": "boolean"},
+            {
+              "type": "array",
+              "items": {"type": "number"}
+            },
+            {"type": "null"}
+          ]
+        }
+      }
+    },
+    "bufferReturn": {
+      "type": "object",
+      "required": ["type", "buffer_id", "element_count", "data_type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "buffer",
+          "description": "Indicates this is a large data buffer reference"
+        },
+        "buffer_id": {
+          "type": "string",
+          "description": "Unique identifier for the data buffer"
+        },
+        "element_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of elements in the buffer"
+        },
+        "data_type": {
+          "type": "string",
+          "enum": ["float32", "float64", "int32", "int64", "uint32", "uint64", "uint8"],
+          "description": "Data type of elements in the buffer"
+        }
+      }
+    }
+  }
+}

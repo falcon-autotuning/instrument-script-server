@@ -300,12 +300,13 @@ Run Lua measurement scripts that control running instruments.
 ### Measure Command
 
 ```bash
-instrument-server measure <script> [--log-level <level>]
+instrument-server measure <script> [--json] [--log-level <level>]
 ```
 
 **Arguments:**
 
 - `<script>`: Path to Lua measurement script
+- `--json`: Output results in JSON format (default: text format)
 - `--log-level <level>`: Logging level (default: info)
 
 **Requirements:**
@@ -317,15 +318,111 @@ instrument-server measure <script> [--log-level <level>]
 **Examples:**
 
 ```bash
-# Run measurement script
+# Run measurement script with text output
 instrument-server measure scripts/iv_curve.lua
 
-# With debug logging
-instrument-server measure scripts/test. lua --log-level debug
+# Get results in JSON format for programmatic parsing
+instrument-server measure scripts/iv_curve.lua --json
 
-# Save output to file
-instrument-server measure scripts/sweep.lua > data.csv
+# With debug logging
+instrument-server measure scripts/test.lua --log-level debug
+
+# Save JSON output to file
+instrument-server measure scripts/sweep.lua --json > results.json
 ```
+
+#### Automatic Result Collection
+
+All `context:call()` operations are automatically collected with full metadata, including:
+- Command ID and execution timestamp
+- Instrument name and verb (command)
+- Parameters passed to the command
+- Return value and type
+- Large data buffer references (for waveforms, arrays, etc.)
+
+Results are displayed after script execution in execution order, providing complete traceability of all measurements.
+
+#### Text Output Format
+
+By default, results are displayed in a human-readable format:
+
+```
+Running measurement...
+Measurement complete
+
+=== Script Results ===
+[0] MockInstrument1:1.SET(5.0) -> [bool] true
+[1] MockInstrument1:2.SET(3.0) -> [bool] true
+[2] MockInstrument1:1.GET() -> [double] 5.0
+[3] MockInstrument1:2.GET() -> [double] 3.0
+[4] Scope1.CAPTURE() -> [buffer] buf_abc123 (10000 elements, float32)
+======================
+```
+
+Each line shows:
+- **Index**: Sequential number of the call
+- **Instrument and Command**: Full command with channel if applicable
+- **Parameters**: Values passed to the command
+- **Return Value**: Type in brackets, followed by the value
+
+For large data buffers (waveforms, large arrays), the output shows a reference with:
+- **buffer_id**: Unique identifier for accessing the data
+- **element_count**: Number of data points
+- **data_type**: Type of data (float32, float64, int32, etc.)
+
+#### JSON Output Format
+
+Use `--json` flag to get structured output for automation and data processing:
+
+```bash
+instrument-server measure script.lua --json
+```
+
+Output structure:
+
+```json
+{
+  "status": "success",
+  "script": "iv_curve.lua",
+  "results": [
+    {
+      "index": 0,
+      "instrument": "MockInstrument1:1",
+      "verb": "SET",
+      "params": {"value": 5.0},
+      "executed_at_ms": 1704720615123,
+      "return": {
+        "type": "bool",
+        "value": true
+      }
+    },
+    {
+      "index": 4,
+      "instrument": "Scope1",
+      "verb": "CAPTURE",
+      "params": {},
+      "executed_at_ms": 1704720615127,
+      "return": {
+        "type": "buffer",
+        "buffer_id": "buf_abc123",
+        "element_count": 10000,
+        "data_type": "float32"
+      }
+    }
+  ]
+}
+```
+
+**JSON Schema**: The output conforms to the JSON schema at `schemas/measurement_results.schema.json` for validation and automated parsing.
+
+**Return Types**:
+- `double`: Floating-point number
+- `int64`: Integer value
+- `string`: Text value
+- `bool`: Boolean (true/false)
+- `array`: Array of numbers
+- `buffer`: Reference to large data buffer
+- `void`: Command with no return value
 
 ### Script Structure
 
