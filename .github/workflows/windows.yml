@@ -92,8 +92,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            D:\a\_temp\msys64\var\cache\pacman\pkg
-            D:\a\_temp\msys64\mingw64
+            ${{ runner.temp }}/msys64/var/cache/pacman/pkg
+            ${{ runner.temp }}/msys64/mingw64
           key: msys2-packages-${{ hashFiles('.github/workflows/windows.yml') }}
           restore-keys: |
             msys2-packages-
@@ -109,11 +109,10 @@ jobs:
             ..
           ninja
 
-          # Run unit tests
-          export PATH=$PWD:$PATH
+          # Run unit tests with absolute path
           ./tests/unit_tests.exe
 
-          # Run integration tests
+          # Run integration tests with absolute path
           ./tests/integration_tests.exe
 
       - name: Upload Windows test artifacts
