@@ -27,8 +27,7 @@ jobs:
             ninja \
             mingw-w64-gcc \
             mingw-w64-cmake \
-            mingw-w64-pkg-config \
-            wine
+            mingw-w64-pkg-config
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,7 +48,7 @@ jobs:
           cd build-mingw
           x86_64-w64-mingw32-cmake -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_TESTS=ON \
+            -DBUILD_TESTS=OFF \
             ..
 
       - name: Build for Windows
@@ -57,29 +56,21 @@ jobs:
           cd build-mingw
           ninja
 
-      - name: Upload Windows binaries
+      - name: Upload cross-compiled Windows binaries
         uses: actions/upload-artifact@v4
         with:
           name: windows-cross-compiled-binaries
           path: |
             build-mingw/*.exe
             build-mingw/*.dll
-            LICENSE
           retention-days: 7
 
   test-on-windows:
-    needs: cross-compile
     runs-on: windows-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Download cross-compiled binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-cross-compiled-binaries
-          path: build-mingw
 
       - name: Install MSYS2 and dependencies
         uses: msys2/setup-msys2@v2
@@ -120,18 +111,43 @@ jobs:
 
           # Run unit tests
           export PATH=$PWD:$PATH
-          ./tests/unit_tests.exe || true
+          ./tests/unit_tests.exe
 
           # Run integration tests
-          ./tests/integration_tests.exe || true
+          ./tests/integration_tests.exe
 
-      - name: Upload Windows build artifacts
+      - name: Upload Windows test artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows-binaries
+          name: windows-native-binaries
           path: |
             build/instrument-server.exe
             build/instrument-worker.exe
             build/libinstrument-server-core.dll
-            LICENSE
+          retention-days: 1
+
+  package-windows:
+    needs: [cross-compile, test-on-windows]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download cross-compiled binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-cross-compiled-binaries
+          path: windows-binaries
+
+      - name: Package Windows binaries with LICENSE
+        run: |
+          cp LICENSE windows-binaries/
+          ls -la windows-binaries/
+
+      - name: Upload final Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binaries
+          path: windows-binaries
           retention-days: 7
