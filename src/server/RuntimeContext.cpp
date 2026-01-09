@@ -144,10 +144,13 @@ sol::object RuntimeContext::call(const std::string &func_name,
     } else if (std::holds_alternative<std::vector<double>>(*resp.return_value)) {
       result.return_type = "array";
     }
-  } else {
-    // No return value but expects response means command succeeded
+  } else if (expects_response) {
+    // Command expected response but didn't return a value - indicates success
     result.return_value = true;
     result.return_type = "bool";
+  } else {
+    // Command doesn't expect response - mark as void
+    result.return_type = "void";
   }
   
   collected_results_.push_back(std::move(result));

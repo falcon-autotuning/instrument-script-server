@@ -490,7 +490,7 @@ int cmd_measure(int argc, char **argv) {
     lua["context"] = &ctx;
 
     if (!json_output) {
-      std::cout << "Running measurement.. .\n";
+      std::cout << "Running measurement...\n";
     }
 
     auto result = lua.safe_script_file(script_path);
@@ -562,7 +562,8 @@ int cmd_measure(int argc, char **argv) {
           if (!r.params.empty()) {
             bool first = true;
             for (const auto &[key, value] : r.params) {
-              if (key == "channel") continue; // Skip channel param as it's in instrument name
+              // Skip internal parameters like channel (shown in instrument name)
+              if (key == "channel") continue;
               if (!first) params_str += ", ";
               params_str += param_value_to_string(value);
               first = false;

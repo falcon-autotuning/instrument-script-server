@@ -200,8 +200,7 @@ TEST_F(MeasurementScriptTest, MultipleReturns) {
   }
   
   // Verify we captured returns in order - first should be GET_DOUBLE
-  EXPECT_TRUE(results[0].verb.find("GET_DOUBLE") != std::string::npos ||
-              results[0].verb == "GET_DOUBLE");
+  EXPECT_EQ(results[0].verb, "GET_DOUBLE");
 }
 
 TEST_F(MeasurementScriptTest, ChannelAddressingWithReturns) {
