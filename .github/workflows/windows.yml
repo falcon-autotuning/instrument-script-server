@@ -11,63 +11,7 @@ on:
   workflow_call:
 
 jobs:
-  cross-compile:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    container:
-      image: archlinux:latest
-
-    steps:
-      - name: Update system and install dependencies
-        run: |
-          pacman -Syu --noconfirm
-          pacman -S --noconfirm \
-            base-devel \
-            git \
-            cmake \
-            ninja \
-            mingw-w64-gcc \
-            mingw-w64-cmake \
-            mingw-w64-pkg-config
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Cache Pacman packages
-        uses: actions/cache@v4
-        with:
-          path: /var/cache/pacman/pkg
-          key: arch-mingw-packages-${{ hashFiles('.github/workflows/windows.yml') }}
-          restore-keys: |
-            arch-mingw-packages-
-
-      - name: Create MinGW build directory
-        run: mkdir -p build-mingw
-
-      - name: Configure for Windows x64 with MinGW
-        run: |
-          cd build-mingw
-          x86_64-w64-mingw32-cmake -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_TESTS=OFF \
-            ..
-
-      - name: Build for Windows
-        run: |
-          cd build-mingw
-          ninja
-
-      - name: Upload cross-compiled Windows binaries
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-cross-compiled-binaries
-          path: |
-            build-mingw/*.exe
-            build-mingw/*.dll
-          retention-days: 7
-
-  test-on-windows:
+  build-and-test:
     runs-on: windows-latest
     permissions:
       contents: read
@@ -91,6 +35,14 @@ jobs:
             mingw-w64-x86_64-nlohmann-json
             mingw-w64-x86_64-yaml-cpp
             mingw-w64-x86_64-gtest
+            git
+
+      - name: Install sol2 (header-only library)
+        shell: msys2 {0}
+        run: |
+          git clone --depth 1 --branch v3.3.0 https://github.com/ThePhD/sol2.git /tmp/sol2
+          mkdir -p /mingw64/include/sol
+          cp -r /tmp/sol2/include/sol/* /mingw64/include/sol/
 
       - name: Cache MSYS2 packages
         uses: actions/cache@v4
@@ -102,7 +54,7 @@ jobs:
           restore-keys: |
             msys2-packages-
 
-      - name: Build and test natively on Windows
+      - name: Build project
         shell: msys2 {0}
         run: |
           mkdir -p build
@@ -113,44 +65,45 @@ jobs:
             ..
           ninja
 
-          # Run unit tests with absolute path
-          ./tests/unit_tests.exe
+      - name: Run unit tests
+        shell: msys2 {0}
+        run: |
+          cd build
+          echo "Running unit tests..."
+          ./tests/unit_tests.exe 2>&1 | tee unit_test_output.txt
+          if grep -q "\[  PASSED  \]" unit_test_output.txt; then
+            echo "✓ Unit tests passed successfully"
+          else
+            echo "✗ Unit tests failed or did not complete"
+            cat unit_test_output.txt
+            exit 1
+          fi
 
-          # Run integration tests with absolute path
-          ./tests/integration_tests.exe
-
-      - name: Upload Windows test artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-native-binaries
-          path: |
-            build/instrument-server.exe
-            build/instrument-worker.exe
-            build/libinstrument-server-core.dll
-          retention-days: 1
-
-  package-windows:
-    needs: [cross-compile, test-on-windows]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download cross-compiled binaries
-        uses: actions/download-artifact@v4.1.3
-        with:
-          name: windows-cross-compiled-binaries
-          path: windows-binaries
+      - name: Run integration tests
+        shell: msys2 {0}
+        run: |
+          cd build
+          echo "Running integration tests..."
+          ./tests/integration_tests.exe 2>&1 | tee integration_test_output.txt
+          if grep -q "\[  PASSED  \]" integration_test_output.txt; then
+            echo "✓ Integration tests passed successfully"
+          else
+            echo "✗ Integration tests failed or did not complete"
+            cat integration_test_output.txt
+            exit 1
+          fi
 
       - name: Package Windows binaries with LICENSE
+        shell: msys2 {0}
         run: |
+          mkdir -p windows-binaries
+          cp build/instrument-server.exe windows-binaries/
+          cp build/instrument-worker.exe windows-binaries/
+          cp build/libinstrument-server-core.dll windows-binaries/
           cp LICENSE windows-binaries/
           ls -la windows-binaries/
 
-      - name: Upload final Windows package
+      - name: Upload Windows binaries
         uses: actions/upload-artifact@v4
         with:
           name: windows-binaries
