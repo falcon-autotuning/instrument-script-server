@@ -35,7 +35,8 @@ jobs:
             spdlog \
             nlohmann-json \
             yaml-cpp \
-            gtest
+            gtest \
+            boost
 
       - name: Checkout code
         uses: actions/checkout@v4
