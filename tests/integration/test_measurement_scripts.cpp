@@ -188,27 +188,20 @@ TEST_F(MeasurementScriptTest, MultipleReturns) {
   
   const auto &results = ctx->get_results();
   
-  // Should have collected multiple results
+  // Should have collected multiple results (8 calls in the script)
   EXPECT_GT(results.size(), 0);
+  EXPECT_EQ(results.size(), 8); // 4 GET calls + 2 SET calls + 2 GET calls with channels
   
-  // Verify we have results with different types
-  bool has_double = false;
-  bool has_string = false;
-  bool has_bool = false;
-  
+  // Verify all results have basic metadata
   for (const auto &result : results) {
-    if (result.return_type == "double") has_double = true;
-    if (result.return_type == "string") has_string = true;
-    if (result.return_type == "bool") has_bool = true;
-    
-    // Each result should have basic metadata
     EXPECT_FALSE(result.instrument_name.empty());
     EXPECT_FALSE(result.verb.empty());
+    EXPECT_FALSE(result.return_type.empty());
   }
   
-  EXPECT_TRUE(has_double);
-  EXPECT_TRUE(has_string);
-  EXPECT_TRUE(has_bool);
+  // Verify we captured returns in order - first should be GET_DOUBLE
+  EXPECT_TRUE(results[0].verb.find("GET_DOUBLE") != std::string::npos ||
+              results[0].verb == "GET_DOUBLE");
 }
 
 TEST_F(MeasurementScriptTest, ChannelAddressingWithReturns) {

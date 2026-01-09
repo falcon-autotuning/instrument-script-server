@@ -1,0 +1,99 @@
+[2026-01-09 00:30:03.174] [instrument] [info] [DAEMON] [START] Starting server daemon
+[2026-01-09 00:30:03.174] [instrument] [info] [DAEMON] [INIT] Created PID file: /run/user/1001/instrument-server/server.pid (PID: 6910)
+[2026-01-09 00:30:03.175] [instrument] [info] [DAEMON] [START] Server daemon started (PID: 6910)
+[2026-01-09 00:30:03.175] [instrument] [info] [DAEMON] [LOOP] Daemon loop started
+[2026-01-09 00:30:03.175] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /home/runner/work/instrument-script-server/instrument-script-server/tests/data/mock_instrument1.yaml
+[2026-01-09 00:30:03.177] [instrument] [info] [REGISTRY] [CREATE] Creating instrument 'MockInstrument1' with protocol 'VISA' using plugin:  ./build/tests/mock_visa_plugin.so
+[2026-01-09 00:30:03.177] [instrument] [info] [MockInstrument1] [PROXY] Starting worker proxy
+[2026-01-09 00:30:03.178] [instrument] [info] [IPC] [QUEUE_CREATE] Created queues for instrument: MockInstrument1
+[2026-01-09 00:30:03.178] [instrument] [info] [PROCESS] [SPAWN] Spawning worker for instrument:  MockInstrument1 with plugin: ./build/tests/mock_visa_plugin.so
+[2026-01-09 00:30:03.178] [instrument] [info] [PROCESS] [SPAWN] Worker spawned successfully:  PID=6914
+[2026-01-09 00:30:03.178] [instrument] [info] [MockInstrument1] [PROXY] Worker process spawned:  PID=6914
+[2026-01-09 00:30:03.178] [instrument] [info] [MockInstrument1] [PROXY] Response listener started
+[2026-01-09 00:30:03.678] [instrument] [info] [MockInstrument1] [PROXY] Worker proxy started successfully
+[2026-01-09 00:30:03.678] [instrument] [info] [REGISTRY] [CREATE] Instrument 'MockInstrument1' created successfully
+[2026-01-09 00:30:03.679] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /home/runner/work/instrument-script-server/instrument-script-server/tests/data/mock_instrument2.yaml
+[2026-01-09 00:30:03.681] [instrument] [info] [REGISTRY] [CREATE] Creating instrument 'MockInstrument2' with protocol 'VISA' using plugin:  ./build/tests/mock_visa_plugin.so
+[2026-01-09 00:30:03.681] [instrument] [info] [MockInstrument2] [PROXY] Starting worker proxy
+[2026-01-09 00:30:03.681] [instrument] [info] [IPC] [QUEUE_CREATE] Created queues for instrument: MockInstrument2
+[2026-01-09 00:30:03.681] [instrument] [info] [PROCESS] [SPAWN] Spawning worker for instrument:  MockInstrument2 with plugin: ./build/tests/mock_visa_plugin.so
+[2026-01-09 00:30:03.682] [instrument] [info] [PROCESS] [SPAWN] Worker spawned successfully:  PID=6917
+[2026-01-09 00:30:03.682] [instrument] [info] [MockInstrument2] [PROXY] Worker process spawned:  PID=6917
+[2026-01-09 00:30:03.682] [instrument] [info] [MockInstrument2] [PROXY] Response listener started
+[2026-01-09 00:30:04.182] [instrument] [info] [MockInstrument2] [PROXY] Worker proxy started successfully
+[2026-01-09 00:30:04.182] [instrument] [info] [REGISTRY] [CREATE] Instrument 'MockInstrument2' created successfully
+[2026-01-09 00:30:04.182] [instrument] [info] [REGISTRY] [CREATE] Loading instrument from: /home/runner/work/instrument-script-server/instrument-script-server/tests/data/mock_instrument3.yaml
+[2026-01-09 00:30:04.184] [instrument] [info] [REGISTRY] [CREATE] Creating instrument 'MockInstrument3' with protocol 'VISA' using plugin:  ./build/tests/mock_visa_plugin.so
+[2026-01-09 00:30:04.184] [instrument] [info] [MockInstrument3] [PROXY] Starting worker proxy
+[2026-01-09 00:30:04.185] [instrument] [info] [IPC] [QUEUE_CREATE] Created queues for instrument: MockInstrument3
+[2026-01-09 00:30:04.185] [instrument] [info] [PROCESS] [SPAWN] Spawning worker for instrument:  MockInstrument3 with plugin: ./build/tests/mock_visa_plugin.so
+[2026-01-09 00:30:04.185] [instrument] [info] [PROCESS] [SPAWN] Worker spawned successfully:  PID=6920
+[2026-01-09 00:30:04.185] [instrument] [info] [MockInstrument3] [PROXY] Worker process spawned:  PID=6920
+[2026-01-09 00:30:04.185] [instrument] [info] [MockInstrument3] [PROXY] Response listener started
+[2026-01-09 00:30:04.685] [instrument] [info] [MockInstrument3] [PROXY] Worker proxy started successfully
+[2026-01-09 00:30:04.685] [instrument] [info] [REGISTRY] [CREATE] Instrument 'MockInstrument3' created successfully
+[2026-01-09 00:30:04.686] [instrument] [info] [LUA_SCRIPT] [USER] Starting multiple returns test
+[2026-01-09 00:30:04.687] [instrument] [debug] [LUA_CONTEXT] [CALL] Calling function: MockInstrument1.GET_DOUBLE
+[2026-01-09 00:30:04.687] [instrument] [debug] [LUA_CONTEXT] [SEND] Sending command MockInstrument1.GET_DOUBLE (expects_response=true)
+[2026-01-09 00:30:04.687] [instrument] [debug] [MockInstrument1] [MockInstrument1-1] Enqueueing command:  GET_DOUBLE (sync=0)
+[2026-01-09 00:30:04.687] [instrument] [debug] [MockInstrument1] [MockInstrument1-1] Received response: success=true
+[2026-01-09 00:30:04.687] [instrument] [info] [LUA_SCRIPT] [USER] Double value: true
+[2026-01-09 00:30:04.687] [instrument] [debug] [LUA_CONTEXT] [CALL] Calling function: MockInstrument1.GET_STRING
+[2026-01-09 00:30:04.687] [instrument] [debug] [LUA_CONTEXT] [SEND] Sending command MockInstrument1.GET_STRING (expects_response=true)
+[2026-01-09 00:30:04.687] [instrument] [debug] [MockInstrument1] [MockInstrument1-2] Enqueueing command:  GET_STRING (sync=0)
+[2026-01-09 00:30:04.688] [instrument] [debug] [MockInstrument1] [MockInstrument1-2] Received response: success=true
+[2026-01-09 00:30:04.688] [instrument] [info] [LUA_SCRIPT] [USER] String value: true
+[2026-01-09 00:30:04.688] [instrument] [debug] [LUA_CONTEXT] [CALL] Calling function: MockInstrument1.GET_BOOL
+[2026-01-09 00:30:04.688] [instrument] [debug] [LUA_CONTEXT] [SEND] Sending command MockInstrument1.GET_BOOL (expects_response=true)
+[2026-01-09 00:30:04.688] [instrument] [debug] [MockInstrument1] [MockInstrument1-3] Enqueueing command:  GET_BOOL (sync=0)
+[2026-01-09 00:30:04.688] [instrument] [debug] [MockInstrument1] [MockInstrument1-3] Received response: success=true
+[2026-01-09 00:30:04.688] [instrument] [info] [LUA_SCRIPT] [USER] Boolean value: true
+[2026-01-09 00:30:04.688] [instrument] [debug] [LUA_CONTEXT] [CALL] Calling function: MockInstrument1.GET_ARRAY
+[2026-01-09 00:30:04.688] [instrument] [debug] [LUA_CONTEXT] [SEND] Sending command MockInstrument1.GET_ARRAY (expects_response=true)
+[2026-01-09 00:30:04.688] [instrument] [debug] [MockInstrument1] [MockInstrument1-4] Enqueueing command:  GET_ARRAY (sync=0)
+[2026-01-09 00:30:04.688] [instrument] [debug] [MockInstrument1] [MockInstrument1-4] Received response: success=true
+[2026-01-09 00:30:04.688] [instrument] [info] [LUA_SCRIPT] [USER] Array value: true
+[2026-01-09 00:30:04.688] [instrument] [debug] [LUA_CONTEXT] [CALL] Calling function: MockInstrument1:1.SET
+[2026-01-09 00:30:04.688] [instrument] [debug] [LUA_CONTEXT] [SEND] Sending command MockInstrument1.SET (expects_response=false)
+[2026-01-09 00:30:04.688] [instrument] [debug] [MockInstrument1] [MockInstrument1-5] Enqueueing command:  SET (sync=0)
+[2026-01-09 00:30:04.688] [instrument] [debug] [MockInstrument1] [MockInstrument1-5] Received response: success=true
+[2026-01-09 00:30:04.688] [instrument] [debug] [LUA_CONTEXT] [CALL] Calling function: MockInstrument1:2.SET
+[2026-01-09 00:30:04.688] [instrument] [debug] [LUA_CONTEXT] [SEND] Sending command MockInstrument1.SET (expects_response=false)
+[2026-01-09 00:30:04.688] [instrument] [debug] [MockInstrument1] [MockInstrument1-6] Enqueueing command:  SET (sync=0)
+[2026-01-09 00:30:04.689] [instrument] [debug] [MockInstrument1] [MockInstrument1-6] Received response: success=true
+[2026-01-09 00:30:04.689] [instrument] [debug] [LUA_CONTEXT] [CALL] Calling function: MockInstrument1:1.GET
+[2026-01-09 00:30:04.689] [instrument] [debug] [LUA_CONTEXT] [SEND] Sending command MockInstrument1.GET (expects_response=true)
+[2026-01-09 00:30:04.689] [instrument] [debug] [MockInstrument1] [MockInstrument1-7] Enqueueing command:  GET (sync=0)
+[2026-01-09 00:30:04.689] [instrument] [debug] [MockInstrument1] [MockInstrument1-7] Received response: success=true
+[2026-01-09 00:30:04.689] [instrument] [debug] [LUA_CONTEXT] [CALL] Calling function: MockInstrument1:2.GET
+[2026-01-09 00:30:04.689] [instrument] [debug] [LUA_CONTEXT] [SEND] Sending command MockInstrument1.GET (expects_response=true)
+[2026-01-09 00:30:04.689] [instrument] [debug] [MockInstrument1] [MockInstrument1-8] Enqueueing command:  GET (sync=0)
+[2026-01-09 00:30:04.689] [instrument] [debug] [MockInstrument1] [MockInstrument1-8] Received response: success=true
+[2026-01-09 00:30:04.689] [instrument] [info] [LUA_SCRIPT] [USER] Channel 1: true, Channel 2: true
+[2026-01-09 00:30:04.689] [instrument] [info] [LUA_SCRIPT] [USER] Multiple returns test complete
+[2026-01-09 00:30:04.689] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 3 instruments
+[2026-01-09 00:30:04.689] [instrument] [info] [MockInstrument1] [PROXY] Stopping worker proxy
+[2026-01-09 00:30:04.789] [instrument] [info] [MockInstrument1] [PROXY] Response listener stopped
+[2026-01-09 00:30:04.839] [instrument] [debug] [MockInstrument1] [PROXY] Response thread joined successfully
+[2026-01-09 00:30:04.840] [instrument] [info] [IPC] [QUEUE_CLEANUP] Cleaned up queues for:  MockInstrument1
+[2026-01-09 00:30:04.840] [instrument] [info] [MockInstrument1] [PROXY] Worker proxy stopped
+[2026-01-09 00:30:04.840] [instrument] [info] [MockInstrument2] [PROXY] Stopping worker proxy
+[2026-01-09 00:30:04.886] [instrument] [info] [MockInstrument2] [PROXY] Response listener stopped
+[2026-01-09 00:30:04.990] [instrument] [debug] [MockInstrument2] [PROXY] Response thread joined successfully
+[2026-01-09 00:30:04.990] [instrument] [info] [IPC] [QUEUE_CLEANUP] Cleaned up queues for:  MockInstrument2
+[2026-01-09 00:30:04.990] [instrument] [info] [MockInstrument2] [PROXY] Worker proxy stopped
+[2026-01-09 00:30:04.990] [instrument] [info] [MockInstrument3] [PROXY] Stopping worker proxy
+[2026-01-09 00:30:05.090] [instrument] [info] [MockInstrument3] [PROXY] Response listener stopped
+[2026-01-09 00:30:05.140] [instrument] [debug] [MockInstrument3] [PROXY] Response thread joined successfully
+[2026-01-09 00:30:05.141] [instrument] [info] [IPC] [QUEUE_CLEANUP] Cleaned up queues for:  MockInstrument3
+[2026-01-09 00:30:05.141] [instrument] [info] [MockInstrument3] [PROXY] Worker proxy stopped
+[2026-01-09 00:30:05.141] [instrument] [info] [PROCESS] [CLEANUP] Cleaning up all worker processes
+[2026-01-09 00:30:05.141] [instrument] [info] [PROCESS] [KILL] Killing process: PID=6920 (force=true)
+[2026-01-09 00:30:05.141] [instrument] [info] [PROCESS] [KILL] Killing process: PID=6917 (force=true)
+[2026-01-09 00:30:05.141] [instrument] [info] [PROCESS] [KILL] Killing process: PID=6914 (force=true)
+[2026-01-09 00:30:05.141] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments
+[2026-01-09 00:30:05.141] [instrument] [info] [DAEMON] [STOP] Stopping server daemon
+[2026-01-09 00:30:05.141] [instrument] [info] [REGISTRY] [STOP_ALL] Stopping 0 instruments
+[2026-01-09 00:30:05.176] [instrument] [info] [DAEMON] [LOOP] Daemon loop exited
+[2026-01-09 00:30:05.177] [instrument] [info] [DAEMON] [CLEANUP] Removed PID file
+[2026-01-09 00:30:05.177] [instrument] [info] [DAEMON] [STOP] Server daemon stopped
