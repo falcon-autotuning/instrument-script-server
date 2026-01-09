@@ -1,0 +1,1 @@
+/home/runner/work/instrument-script-server/.codeql-scratch/dbs/cpp/working/autobuild/bin/cc -fPIC -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/simple_serial_plugin.dir/link.d -shared  -o simple_serial_plugin.so CMakeFiles/simple_serial_plugin.dir/simple_serial.c.o
