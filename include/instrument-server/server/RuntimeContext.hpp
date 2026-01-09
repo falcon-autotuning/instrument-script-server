@@ -2,6 +2,7 @@
 #include "instrument-server/SerializedCommand.hpp"
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include "instrument-server/server/SyncCoordinator.hpp"
+#define SOL_NO_STD_OPTIONAL 1
 #include <sol/sol.hpp>
 #include <unordered_map>
 #include <vector>
@@ -15,11 +16,11 @@ struct CallResult {
   std::string verb;
   std::unordered_map<std::string, ParamValue> params;
   std::chrono::steady_clock::time_point executed_at;
-  
+
   // Either a direct return value...
   std::optional<ParamValue> return_value;
   std::string return_type;
-  
+
   // ...or a reference to large data buffer
   bool has_large_data{false};
   std::string buffer_id;
@@ -53,8 +54,10 @@ public:
   void log(const std::string &msg);
 
   /// Get collected results
-  const std::vector<CallResult>& get_results() const { return collected_results_; }
-  
+  const std::vector<CallResult> &get_results() const {
+    return collected_results_;
+  }
+
   /// Clear collected results
   void clear_results() { collected_results_.clear(); }
 
@@ -66,7 +69,7 @@ protected:
   bool in_parallel_block_{false};
   std::vector<SerializedCommand> parallel_buffer_;
   std::atomic<uint64_t> next_sync_token_{1};
-  
+
   // Collected results from all call() operations
   std::vector<CallResult> collected_results_;
 

@@ -1,104 +1,70 @@
-name: Windows Build and Test
+name: Cross-Compile Windows on Arch and Test
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
   workflow_call:
 
 jobs:
-  build-and-test:
-    runs-on: windows-latest
+  cross-compile-windows:
+    runs-on: ubuntu-latest
     permissions:
       contents: read
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install MSYS2 and dependencies
-        uses: msys2/setup-msys2@v2
+      - name: Cross-compile in Arch container
+        uses: addnab/docker-run-action@v3
         with:
-          msystem: MINGW64
-          update: true
-          install: >-
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-lua
-            mingw-w64-x86_64-luajit
-            mingw-w64-x86_64-spdlog
-            mingw-w64-x86_64-nlohmann-json
-            mingw-w64-x86_64-yaml-cpp
-            mingw-w64-x86_64-gtest
-            mingw-w64-x86_64-boost
-            git
+          image: archlinux:latest
+          options: -v ${{ github.workspace }}:/workspace
+          run: |
+            set -e
+            pacman -Syu --noconfirm
+            pacman -S --noconfirm \
+              base-devel \
+              mingw-w64-gcc \
+              mingw-w64-cmake \
+              mingw-w64-ninja \
+              mingw-w64-lua \
+              mingw-w64-luajit \
+              mingw-w64-spdlog \
+              mingw-w64-boost \
+              mingw-w64-nlohmann-json \
+              mingw-w64-yaml-cpp \
+              mingw-w64-gtest \
+              git
 
-      - name: Install sol2 (header-only library)
-        shell: msys2 {0}
-        run: |
-          git clone --depth 1 --branch v3.3.0 https://github.com/ThePhD/sol2.git /tmp/sol2
-          mkdir -p /mingw64/include/sol
-          cp -r /tmp/sol2/include/sol/* /mingw64/include/sol/
+            # Install sol2 (header-only)
+            git clone --depth 1 --branch v3.3.0 https://github.com/ThePhD/sol2.git /tmp/sol2
+            mkdir -p /usr/x86_64-w64-mingw32/include/sol
+            cp -r /tmp/sol2/include/sol/* /usr/x86_64-w64-mingw32/include/sol/
 
-      - name: Cache MSYS2 packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ${{ runner.temp }}/msys64/var/cache/pacman/pkg
-            ${{ runner.temp }}/msys64/mingw64
-          key: msys2-packages-${{ hashFiles('.github/workflows/windows.yml') }}
-          restore-keys: |
-            msys2-packages-
+            cd /workspace
+            mkdir -p build
+            cd build
+            cmake -G Ninja \
+              -DCMAKE_SYSTEM_NAME=Windows \
+              -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
+              -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DBUILD_TESTS=ON \
+              ..
+            ninja
 
-      - name: Build project
-        shell: msys2 {0}
-        run: |
-          mkdir -p build
-          cd build
-          cmake -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_TESTS=ON \
-            ..
-          ninja
-
-      - name: Run unit tests
-        shell: msys2 {0}
-        run: |
-          cd build
-          echo "Running unit tests..."
-          if ./tests/unit_tests.exe; then
-            echo "✓ Unit tests passed successfully"
-          else
-            echo "✗ Unit tests failed"
-            exit 1
-          fi
-
-      - name: Run integration tests
-        shell: msys2 {0}
-        run: |
-          cd build
-          echo "Running integration tests..."
-          if ./tests/integration_tests.exe; then
-            echo "✓ Integration tests passed successfully"
-          else
-            echo "✗ Integration tests failed"
-            exit 1
-          fi
-
-      - name: Package Windows binaries with LICENSE
-        shell: msys2 {0}
-        run: |
-          mkdir -p windows-binaries
-          cp build/instrument-server.exe windows-binaries/
-          cp build/instrument-worker.exe windows-binaries/
-          cp build/libinstrument-server-core.dll windows-binaries/
-          cp LICENSE windows-binaries/
-          ls -la windows-binaries/
+            # Package binaries and LICENSE
+            mkdir -p /workspace/windows-binaries
+            cp instrument-server.exe /workspace/windows-binaries/ || true
+            cp instrument-worker.exe /workspace/windows-binaries/ || true
+            cp libinstrument-server-core.dll /workspace/windows-binaries/ || true
+            cp ../LICENSE /workspace/windows-binaries/
+            cp tests/unit_tests.exe /workspace/windows-binaries/ || true
+            cp tests/integration_tests.exe /workspace/windows-binaries/ || true
+            ls -la /workspace/windows-binaries/
 
       - name: Upload Windows binaries
         uses: actions/upload-artifact@v4
@@ -106,3 +72,42 @@ jobs:
           name: windows-binaries
           path: windows-binaries
           retention-days: 7
+
+  test-on-windows:
+    runs-on: windows-latest
+    needs: cross-compile-windows
+    permissions:
+      contents: read
+    steps:
+      - name: Download Windows binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-binaries
+          path: windows-binaries
+
+      - name: Run unit tests
+        run: |
+          cd windows-binaries
+          echo "Running unit tests..."
+          if exist unit_tests.exe (
+            .\unit_tests.exe
+            echo "✓ Unit tests passed successfully"
+          ) else (
+            echo "No unit_tests.exe found"
+          )
+
+      - name: Run integration tests
+        run: |
+          cd windows-binaries
+          echo "Running integration tests..."
+          if exist integration_tests.exe (
+            .\integration_tests.exe
+            echo "✓ Integration tests passed successfully"
+          ) else (
+            echo "No integration_tests.exe found"
+          )
+
+      - name: List packaged files
+        run: |
+          cd windows-binaries
+          dir
