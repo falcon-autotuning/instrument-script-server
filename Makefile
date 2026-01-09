@@ -1,6 +1,6 @@
 BUILD_DIR=./build
 build:
-	mkdir -p build && cd build && CC="ccache clang" CXX="ccache clang++" \
+	mkdir -p build && cd build && CC="clang" CXX="clang++" \
 	cmake -G Ninja \
 	-DCMAKE_C_FLAGS="-fprofile-instr-generate -fcoverage-mapping" \
 	-DCMAKE_CXX_FLAGS="-fprofile-instr-generate -fcoverage-mapping -Oz -g" \
