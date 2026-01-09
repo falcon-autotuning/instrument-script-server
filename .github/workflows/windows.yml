@@ -24,23 +24,25 @@ jobs:
           options: -v ${{ github.workspace }}:/workspace
           run: |
             set -e
-            # Enable [community] repo for mingw-w64 packages
-            sed -i '/^\[community\]/,/^Include/ s/^#//' /etc/pacman.conf
-            pacman -Sy
-            pacman -Syu --noconfirm
-            pacman -S --noconfirm \
-              base-devel \
-              mingw-w64-gcc \
+            # Install base-devel, git, mingw-w64-gcc, and ninja from official repos
+            pacman -Syu --noconfirm base-devel git mingw-w64-gcc ninja
+
+            # Install yay (AUR helper)
+            git clone https://aur.archlinux.org/yay.git /tmp/yay
+            cd /tmp/yay
+            makepkg -si --noconfirm
+            cd /workspace
+
+            # Use yay to install the rest from AUR (non-interactive)
+            yay -S --noconfirm --mflags --skipinteg \
               mingw-w64-cmake \
-              mingw-w64-ninja \
               mingw-w64-lua \
               mingw-w64-luajit \
               mingw-w64-spdlog \
               mingw-w64-boost \
               mingw-w64-nlohmann-json \
               mingw-w64-yaml-cpp \
-              mingw-w64-gtest \
-              git
+              mingw-w64-gtest
 
             # Install sol2 (header-only)
             git clone --depth 1 --branch v3.3.0 https://github.com/ThePhD/sol2.git /tmp/sol2
