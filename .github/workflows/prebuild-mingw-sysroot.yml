@@ -1,0 +1,127 @@
+name: Prebuild — mingw sysroot (create prebuilt tarball & upload to Release)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 0" # weekly build (optional) — run weekly by default; adjust as needed
+
+permissions:
+  contents: write # required to create/update releases and upload assets
+
+jobs:
+  prebuild-mingw-sysroot:
+    name: Build mingw sysroot and publish release asset
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: >-
+        -v /home/runner/work/instrument-script-server/instrument-script-server:/workspace
+    env:
+      SYSROOT_TARBALL_NAME: mingw-sysroot.tar.gz
+      SYSROOT_TARBALL_PATH: /tmp/mingw-sysroot.tar.gz
+      RELEASE_TAG: mingw-prebuilt-latest
+      WORKSPACE: /workspace
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore pacman cache
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/pacman/pkg
+          key: ${{ runner.os }}-pacman-cache-v1
+
+      - name: Prepare pacman keys and install base packages
+        run: |
+          set -euo pipefail
+          rm -rf /etc/pacman.d/gnupg || true
+          pacman-key --init || true
+          pacman-key --populate archlinux
+          pacman -Syu --noconfirm --needed base-devel git mingw-w64-gcc ninja
+
+      - name: Create builder user
+        run: |
+          set -euo pipefail
+          useradd -m -s /bin/bash builder || true
+          mkdir -p /home/builder
+          chown -R builder:builder /home/builder
+          chown -R builder:builder /workspace || true
+
+      - name: Build yay and install AUR mingw packages as builder
+        run: |
+          set -euo pipefail
+          runuser -u builder -- bash -lc '
+            set -euo pipefail
+            cd "$HOME"
+            # build yay if missing
+            if [ ! -d "$HOME/yay" ]; then
+              git clone https://aur.archlinux.org/yay.git
+            fi
+            cd yay
+            makepkg -si --noconfirm
+            # AUR packages required (all are AUR per your confirmation)
+            AUR_PKGS=(
+              mingw-w64-cmake
+              mingw-w64-lua
+              mingw-w64-luajit
+              mingw-w64-spdlog
+              mingw-w64-boost
+              mingw-w64-nlohmann-json
+              mingw-w64-yaml-cpp
+              mingw-w64-gtest
+            )
+            for p in "${AUR_PKGS[@]}"; do
+              echo "Installing AUR pkg: $p"
+              yay -S --noconfirm --mflags --skipinteg "$p"
+            done
+          '
+
+      - name: Ensure sol2 headers (header-only)
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch v3.3.0 https://github.com/ThePhD/sol2.git /tmp/sol2 || true
+          mkdir -p /usr/x86_64-w64-mingw32/include/sol
+          cp -r /tmp/sol2/include/sol/* /usr/x86_64-w64-mingw32/include/sol/ || true
+          chown -R root:root /usr/x86_64-w64-mingw32/include/sol || true
+
+      - name: Create tarball of mingw sysroot
+        run: |
+          set -euo pipefail
+          # create tarball containing usr/x86_64-w64-mingw32/* so extraction to / reproduces paths
+          if [ ! -d /usr/x86_64-w64-mingw32 ]; then
+            echo "ERROR: expected /usr/x86_64-w64-mingw32 to exist but it does not"
+            ls -la /usr || true
+            exit 1
+          fi
+          tar -C / -czf "${SYSROOT_TARBALL_PATH}" usr/x86_64-w64-mingw32
+          ls -lh "${SYSROOT_TARBALL_PATH}"
+
+      - name: Upload tarball as workflow artifact (backup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mingw-sysroot-tarball
+          path: /tmp/mingw-sysroot.tar.gz
+
+      - name: Create or update Release and upload asset
+        id: release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Mingw prebuilt sysroot (${{ github.run_id }})
+          body: |
+            Mingw prebuilt sysroot produced by workflow run ${{ github.run_id }}.
+            Contains usr/x86_64-w64-mingw32/ with headers, libs and binaries needed for cross-compilation.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload release asset (mingw-sysroot.tar.gz)
+        uses: softprops/action-gh-release@v1
+        with:
+          files: /tmp/mingw-sysroot.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Done (print release info)
+        run: |
+          echo "Prebuild completed. Release tag: ${RELEASE_TAG}"
+          echo "Artifact is uploaded as mingw-sysroot.tar.gz on the release ${RELEASE_TAG}"

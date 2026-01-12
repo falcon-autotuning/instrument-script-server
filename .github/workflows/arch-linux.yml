@@ -43,7 +43,7 @@ jobs:
 
       - name: Install sol2 (header-only library)
         run: |
-          git clone --depth 1 --branch v3.3.0 https://github.com/ThePhD/sol2.git /tmp/sol2
+          git clone --depth 1 --branch v3.5.0 https://github.com/ThePhD/sol2.git /tmp/sol2
           mkdir -p /usr/local/include/sol
           cp -r /tmp/sol2/include/sol/* /usr/local/include/sol/
 

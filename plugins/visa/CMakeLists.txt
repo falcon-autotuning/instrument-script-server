@@ -24,7 +24,7 @@ if(NOT VISA_LIBRARY OR NOT VISA_INCLUDE_DIR)
   message(WARNING "NI-VISA not found.  VISA plugin will not be built.")
   message(
     WARNING
-      "Install NI-VISA from:  https://www.ni.com/en-us/support/downloads/drivers/download. ni-visa.html"
+      "Install NI-VISA from:  https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html"
   )
   return()
 endif()

@@ -6,60 +6,118 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      PREBUILT_URL:
+        description: "Optional URL to a prebuilt mingw-sysroot tar.gz. If empty, the workflow downloads the mingw-sysroot.tar.gz asset from the release tagged mingw-prebuilt-latest."
+        required: false
+        default: ""
   workflow_call:
 
+permissions:
+  contents: read
+
 jobs:
-  cross-compile-windows:
+  cross-build-windows:
+    name: Build Windows cross (use prebuilt mingw sysroot)
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    container:
+      image: archlinux:latest
+      options: >-
+        -v /home/runner/work/instrument-script-server/instrument-script-server:/workspace
+    env:
+      WORKSPACE: /workspace
+      BUILD_DIR: /workspace/build
+      PACMAN_CACHE_KEY: pacman-archlinux-v1
+      PREBUILT_RELEASE_TAG: mingw-prebuilt-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cross-compile in Arch container
-        uses: addnab/docker-run-action@v3
+      - name: Restore pacman cache
+        uses: actions/cache@v4
         with:
-          image: archlinux:latest
-          options: -v ${{ github.workspace }}:/workspace
-          run: |
-            set -e
-            # Install base-devel, git, mingw-w64-gcc, and ninja from official repos
-            pacman -Syu --noconfirm base-devel git mingw-w64-gcc ninja
+          path: /var/cache/pacman/pkg
+          key: ${{ runner.os }}-${{ env.PACMAN_CACHE_KEY }}
+          restore-keys: |
+            ${{ runner.os }}-${{ env.PACMAN_CACHE_KEY }}-
 
-            # Install yay (AUR helper)
-            git clone https://aur.archlinux.org/yay.git /tmp/yay
-            cd /tmp/yay
-            makepkg -si --noconfirm
-            cd /workspace
+      - name: Prepare pacman keys and install host tools
+        run: |
+          set -euo pipefail
+          # fresh gnupg to avoid "no secret key" during pacman operations in new containers
+          rm -rf /etc/pacman.d/gnupg || true
+          pacman-key --init || true
+          pacman-key --populate archlinux
 
-            # Create a non-root user
-            useradd -m builder
-            chown -R builder:builder /workspace
+          # Install minimal official packages needed on the host to drive the cross build.
+          # The mingw sysroot (headers/libs) will come from the prebuilt tarball.
+          pacman -Syu --noconfirm --needed \
+            base-devel \
+            git \
+            mingw-w64-gcc \
+            cmake \
+            ninja \
+            curl \
+            jq
 
-            # Switch to builder and install yay + AUR packages
-            su builder <<'EOF'
-            cd ~
-            git clone https://aur.archlinux.org/yay.git
-            cd yay
-            makepkg -si --noconfirm
-            yay -S --noconfirm --mflags --skipinteg \
-              mingw-w64-cmake \
-              mingw-w64-lua \
-              mingw-w64-luajit \
-              mingw-w64-spdlog \
-              mingw-w64-boost \
-              mingw-w64-nlohmann-json \
-              mingw-w64-yaml-cpp \
-              mingw-w64-gtest
-            EOF
+      - name: Resolve PREBUILT_URL from release if not provided
+        id: resolve_prebuilt
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.PREBUILT_URL }}" ]; then
+            echo "prebuilt_url=${{ inputs.PREBUILT_URL }}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
 
-            # Install sol2 (header-only)
-            git clone --depth 1 --branch v3.3.0 https://github.com/ThePhD/sol2.git /tmp/sol2
-            mkdir -p /usr/x86_64-w64-mingw32/include/sol
-            cp -r /tmp/sol2/include/sol/* /usr/x86_64-w64-mingw32/include/sol/
+          echo "No PREBUILT_URL input provided — resolving latest prebuilt release asset from this repository (tag: ${PREBUILT_RELEASE_TAG})..."
 
-            cd /workspace
+          API_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${PREBUILT_RELEASE_TAG}"
+          AUTH_HEADER="Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"
+
+          DOWNLOAD_URL=$(curl -sSL -H "Accept: application/vnd.github+json" -H "$AUTH_HEADER" "$API_URL" \
+            | jq -r '.assets[] | select(.name=="mingw-sysroot.tar.gz") | .browser_download_url // empty')
+
+          if [ -z "$DOWNLOAD_URL" ]; then
+            echo "ERROR: no mingw-sysroot.tar.gz asset found in release ${PREBUILT_RELEASE_TAG}"
+            exit 1
+          fi
+
+          echo "Resolved PREBUILT_URL: $DOWNLOAD_URL"
+          echo "prebuilt_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
+
+      - name: Download & extract prebuilt mingw sysroot
+        run: |
+          set -euo pipefail
+          PREBUILT_URL="${{ steps.resolve_prebuilt.outputs.prebuilt_url }}"
+          if [ -z "$PREBUILT_URL" ]; then
+            echo "No PREBUILT_URL resolved; aborting."
+            exit 1
+          fi
+          echo "Downloading prebuilt sysroot from: $PREBUILT_URL"
+          # Use GITHUB_TOKEN so private releases are accessible
+          curl -fsSL -H "Accept: application/octet-stream" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$PREBUILT_URL" -o /tmp/mingw-sysroot.tar.gz
+          echo "Extracting mingw sysroot (tar contains usr/x86_64-w64-mingw32/...)"
+          tar -xzf /tmp/mingw-sysroot.tar.gz -C /
+          echo "Listing /usr/x86_64-w64-mingw32:"
+          ls -la /usr/x86_64-w64-mingw32 || true
+
+      - name: Create builder user and set permissions
+        run: |
+          set -euo pipefail
+          useradd -m -s /bin/bash builder || true
+          mkdir -p /home/builder
+          chown -R builder:builder /home/builder
+          chown -R builder:builder /workspace || true
+
+      - name: Configure & build (cmake + ninja) as builder
+        run: |
+          set -euo pipefail
+          mkdir -p "${BUILD_DIR}"
+          cd "${BUILD_DIR}"
+          # run the whole build as an unprivileged builder user
+          runuser -u builder -- bash -lc '
+            set -euo pipefail
+            cd /workspace || exit 1
             mkdir -p build
             cd build
             cmake -G Ninja \
@@ -69,28 +127,33 @@ jobs:
               -DCMAKE_BUILD_TYPE=Release \
               -DBUILD_TESTS=ON \
               ..
-            ninja
+            ninja -v
+          '
 
-            # Package binaries and LICENSE
-            mkdir -p /workspace/windows-binaries
-            cp instrument-server.exe /workspace/windows-binaries/ || true
-            cp instrument-worker.exe /workspace/windows-binaries/ || true
-            cp libinstrument-server-core.dll /workspace/windows-binaries/ || true
-            cp ../LICENSE /workspace/windows-binaries/
-            cp tests/unit_tests.exe /workspace/windows-binaries/ || true
-            cp tests/integration_tests.exe /workspace/windows-binaries/ || true
-            ls -la /workspace/windows-binaries/
+      - name: Collect windows-binaries artifact
+        run: |
+          set -euo pipefail
+          mkdir -p /workspace/windows-binaries
+          cd /workspace/build || exit 0
+          cp instrument-server.exe /workspace/windows-binaries/ 2>/dev/null || true
+          cp instrument-worker.exe /workspace/windows-binaries/ 2>/dev/null || true
+          cp libinstrument-server-core.dll /workspace/windows-binaries/ 2>/dev/null || true
+          cp ../LICENSE /workspace/windows-binaries/ 2>/dev/null || true
+          cp tests/unit_tests.exe /workspace/windows-binaries/ 2>/dev/null || true
+          cp tests/integration_tests.exe /workspace/windows-binaries/ 2>/dev/null || true
+          ls -la /workspace/windows-binaries || true
 
-      - name: Upload Windows binaries
+      - name: Upload windows binaries artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-binaries
-          path: windows-binaries
+          path: /workspace/windows-binaries
           retention-days: 7
 
   test-on-windows:
+    name: Test built Windows artifacts
     runs-on: windows-latest
-    needs: cross-compile-windows
+    needs: cross-build-windows
     permissions:
       contents: read
     steps:
