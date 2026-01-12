@@ -1,0 +1,2671 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Server for managing scientific instruments in Cpp">
+      
+      
+      
+      
+        <link rel="prev" href="../SYNCHRONIZATION/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/icons/icon-256.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Overview - Instrument Script Server</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#instrument-server-architecture" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Instrument Script Server" class="md-header__button md-logo" aria-label="Instrument Script Server" data-md-component="logo">
+      
+  <img src="../assets/icons/icon-256.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Instrument Script Server
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Overview
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../CONFIGURATION/" class="md-tabs__link">
+          
+  
+  
+  Configurations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../IPC_PROTOCOL/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Instrument Script Server" class="md-nav__button md-logo" aria-label="Instrument Script Server" data-md-component="logo">
+      
+  <img src="../assets/icons/icon-256.png" alt="logo">
+
+    </a>
+    Instrument Script Server
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Welcome to Instrument Script Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLI_USAGE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configurations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Configurations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONFIGURATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setting up Instruments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PLUGIN_DEVELOPMENT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Non-VISA plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../IPC_PROTOCOL/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server Communications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SYNCHRONIZATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronzing Instruments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Design Principles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#process-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process Model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Process Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#server-daemon-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server Daemon Process
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worker-processes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worker Processes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-processes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Processes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Components
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Components">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#serverdaemon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ServerDaemon
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrumentregistry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        InstrumentRegistry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrumentworkerproxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        InstrumentWorkerProxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#synccoordinator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SyncCoordinator
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ipc-communication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IPC Communication
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="IPC Communication">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#transport-shared-memory-queues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transport: Shared Memory Queues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#message-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serialization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#synchronization-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synchronization System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Synchronization System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#protocol-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protocol Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timing-guarantees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timing Guarantees
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugin-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plugin System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#plugin-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plugin-loader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Loader
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plugin-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#instrument-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instrument Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Definition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-execution-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Execution Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parallel-execution-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parallel Execution Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#worker-death" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worker Death
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sync-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sync Timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plugin-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Error
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-characteristics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Characteristics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Characteristics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#latency-measurements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Latency Measurements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#throughput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Throughput
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scalability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scalability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimization-opportunities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optimization Opportunities
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-specific-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Platform-Specific Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Platform-Specific Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#future-enhancements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Future Enhancements
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Future Enhancements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hot-reload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hot Reload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#web-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web Interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Design Principles
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#process-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Process Model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Process Model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#server-daemon-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server Daemon Process
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#worker-processes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worker Processes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-processes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Processes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Components
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Components">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#serverdaemon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ServerDaemon
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrumentregistry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        InstrumentRegistry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrumentworkerproxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        InstrumentWorkerProxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#synccoordinator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SyncCoordinator
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ipc-communication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IPC Communication
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="IPC Communication">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#transport-shared-memory-queues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Transport: Shared Memory Queues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#message-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#serialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serialization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#synchronization-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synchronization System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Synchronization System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#protocol-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protocol Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timing-guarantees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timing Guarantees
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugin-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plugin System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#plugin-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plugin-loader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Loader
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plugin-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration System
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration System">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#instrument-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instrument Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Definition
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-execution-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Execution Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parallel-execution-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parallel Execution Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#worker-death" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Worker Death
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sync-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sync Timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plugin-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Error
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-characteristics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Characteristics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Characteristics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#latency-measurements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Latency Measurements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#throughput" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Throughput
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scalability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scalability
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimization-opportunities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optimization Opportunities
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#platform-specific-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Platform-Specific Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Platform-Specific Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#future-enhancements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Future Enhancements
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Future Enhancements">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#hot-reload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hot Reload
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#web-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Web Interface
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="instrument-server-architecture">Instrument Server Architecture<a class="headerlink" href="#instrument-server-architecture" title="Permanent link">&para;</a></h1>
+<p>Detailed technical documentation of the system architecture, components, and design decisions.</p>
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<!--toc:start-->
+<ul>
+<li><a href="#instrument-server-architecture">Instrument Server Architecture</a></li>
+<li><a href="#table-of-contents">Table of Contents</a></li>
+<li><a href="#system-overview">System Overview</a><ul>
+<li><a href="#key-design-principles">Key Design Principles</a></li>
+</ul>
+</li>
+<li><a href="#process-model">Process Model</a><ul>
+<li><a href="#server-daemon-process">Server Daemon Process</a></li>
+<li><a href="#worker-processes">Worker Processes</a></li>
+<li><a href="#command-processes">Command Processes</a></li>
+</ul>
+</li>
+<li><a href="#core-components">Core Components</a><ul>
+<li><a href="#serverdaemon">ServerDaemon</a></li>
+<li><a href="#instrumentregistry">InstrumentRegistry</a></li>
+<li><a href="#instrumentworkerproxy">InstrumentWorkerProxy</a></li>
+<li><a href="#synccoordinator">SyncCoordinator</a></li>
+</ul>
+</li>
+<li><a href="#ipc-communication">IPC Communication</a><ul>
+<li><a href="#transport-shared-memory-queues">Transport:  Shared Memory Queues</a></li>
+<li><a href="#message-format">Message Format</a></li>
+<li><a href="#serialization">Serialization</a></li>
+</ul>
+</li>
+<li><a href="#synchronization-system">Synchronization System</a><ul>
+<li><a href="#protocol-overview">Protocol Overview</a></li>
+<li><a href="#timing-guarantees">Timing Guarantees</a></li>
+</ul>
+</li>
+<li><a href="#plugin-system">Plugin System</a><ul>
+<li><a href="#plugin-interface">Plugin Interface</a></li>
+<li><a href="#plugin-loader">Plugin Loader</a></li>
+<li><a href="#plugin-registry">Plugin Registry</a></li>
+</ul>
+</li>
+<li><a href="#configuration-system">Configuration System</a><ul>
+<li><a href="#instrument-configuration">Instrument Configuration</a></li>
+<li><a href="#api-definition">API Definition</a></li>
+</ul>
+</li>
+<li><a href="#data-flow">Data Flow</a><ul>
+<li><a href="#command-execution-flow">Command Execution Flow</a></li>
+<li><a href="#parallel-execution-flow">Parallel Execution Flow</a></li>
+</ul>
+</li>
+<li><a href="#error-handling">Error Handling</a><ul>
+<li><a href="#worker-death">Worker Death</a></li>
+<li><a href="#command-timeout">Command Timeout</a></li>
+<li><a href="#sync-timeout">Sync Timeout</a></li>
+<li><a href="#plugin-error">Plugin Error</a></li>
+</ul>
+</li>
+<li><a href="#performance-characteristics">Performance Characteristics</a><ul>
+<li><a href="#latency-measurements">Latency Measurements</a></li>
+<li><a href="#throughput">Throughput</a></li>
+<li><a href="#scalability">Scalability</a></li>
+<li><a href="#optimization-opportunities">Optimization Opportunities</a></li>
+</ul>
+</li>
+<li><a href="#platform-specific-details">Platform-Specific Details</a><ul>
+<li><a href="#linux">Linux</a></li>
+<li><a href="#windows">Windows</a></li>
+</ul>
+</li>
+<li><a href="#future-enhancements">Future Enhancements</a><ul>
+<li><a href="#hot-reload">Hot Reload</a></li>
+<li><a href="#web-interface">Web Interface</a></li>
+</ul>
+</li>
+<li><a href="#see-also">See Also</a></li>
+</ul>
+<!--toc:end-->
+
+<h2 id="system-overview">System Overview<a class="headerlink" href="#system-overview" title="Permanent link">&para;</a></h2>
+<p>The Instrument Server uses a <strong>multi-process, daemon-based architecture</strong> with IPC for communication and synchronization.</p>
+<div class="language-text highlight"><pre><span></span><code>┌───────────────────────────────────────────────────────────────┐
+│                      User Commands                            │
+│  instrument-server start/stop/measure/...                     │
+└───────────────────────────────────────────────────────────────┘
+                          ↓
+┌───────────────────────────────────────────────────────────────┐
+│                   Server Daemon Process                       │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │ ServerDaemon                                             │ │
+│  │  - Lifecycle management                                  │ │
+│  │  - PID file handling                                     │ │
+│  │  - Signal handling                                       │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │ InstrumentRegistry                                       │ │
+│  │  - Tracks all instruments                                │ │
+│  │  - Creates InstrumentWorkerProxy per instrument          │ │
+│  │  - Manages worker lifecycles                             │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │ SyncCoordinator                                          │ │
+│  │  - Manages sync barriers                                 │ │
+│  │  - Tracks ACKs from workers                              │ │
+│  │  - Broadcasts SYNC_CONTINUE                              │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │ InstrumentWorkerProxy (per instrument)                   │ │
+│  │  - IPC client                                            │ │
+│  │  - Command serialization                                 │ │
+│  │  - Response handling                                     │ │
+│  │  - Heartbeat monitoring                                  │ │
+│  └──────────────────────────────────────────────────────────┘ │
+└───────────────────────────────────────────────────────────────┘
+                          ↓ Shared Memory IPC
+┌───────────────────────────────────────────────────────────────┐
+│                    Worker Processes                           │
+│                                                               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
+│  │ instrument-  │  │ instrument-  │  │ instrument-  │         │
+│  │ worker       │  │ worker       │  │ worker       │         │
+│  │ (DMM1)       │  │ (DAC1)       │  │ (Scope1)     │         │
+│  │              │  │              │  │              │         │
+│  │ ┌──────────┐ │  │ ┌──────────┐ │  │ ┌──────────┐ │         │
+│  │ │ Plugin   │ │  │ │ Plugin   │ │  │ │ Plugin   │ │         │
+│  │ │ Loader   │ │  │ │ Loader   │ │  │ │ Loader   │ │         │
+│  │ └──────────┘ │  │ └──────────┘ │  │ └──────────┘ │         │
+│  └──────────────┘  └──────────────┘  └──────────────┘         │
+└───────────────────────────────────────────────────────────────┘
+                          ↓
+┌───────────────────────────────────────────────────────────────┐
+│                    Hardware Layer                             │
+│  VISA • Serial • USB • Network • Native SDKs                  │
+└───────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<h3 id="key-design-principles">Key Design Principles<a class="headerlink" href="#key-design-principles" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Process Isolation</strong>: Each instrument runs in separate process - crashes don't affect others</li>
+<li><strong>Daemon Model</strong>: Long-lived background process manages state</li>
+<li><strong>IPC Communication</strong>: Fast shared memory queues for message passing</li>
+<li><strong>Plugin Architecture</strong>: Instrument drivers as loadable modules</li>
+<li><strong>Synchronization</strong>: Precise timing coordination via barrier protocol</li>
+</ol>
+<h2 id="process-model">Process Model<a class="headerlink" href="#process-model" title="Permanent link">&para;</a></h2>
+<h3 id="server-daemon-process">Server Daemon Process<a class="headerlink" href="#server-daemon-process" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose</strong>: Long-lived background process managing all state</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul>
+<li>Maintain InstrumentRegistry</li>
+<li>Coordinate SyncBarriers</li>
+<li>Handle user commands (via new invocations)</li>
+<li>Monitor worker health</li>
+</ul>
+<p><strong>Lifecycle</strong>:</p>
+<div class="language-text highlight"><pre><span></span><code>daemon start → Create PID file → Initialize Registry → Event loop
+                                                         ↓
+daemon stop  ← Cleanup IPC ← Stop all workers ← Signal handling
+</code></pre></div>
+<p><strong>Implementation</strong>:  <code>src/server/ServerDaemon.cpp</code></p>
+<h3 id="worker-processes">Worker Processes<a class="headerlink" href="#worker-processes" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose</strong>: Isolated execution environment for each instrument</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul>
+<li>Load and initialize plugin</li>
+<li>Execute commands from IPC queue</li>
+<li>Send heartbeats</li>
+<li>Handle sync protocol</li>
+</ul>
+<p><strong>Lifecycle</strong>:</p>
+<div class="language-text highlight"><pre><span></span><code>registry.create_instrument() → fork() → load plugin → IPC loop
+                                                        ↓
+registry.remove_instrument() ← cleanup ← shutdown ← SIGTERM
+</code></pre></div>
+<p><strong>Implementation</strong>: <code>src/workers/generic_worker_main.cpp</code></p>
+<h3 id="command-processes">Command Processes<a class="headerlink" href="#command-processes" title="Permanent link">&para;</a></h3>
+<p><strong>Purpose</strong>: Short-lived processes for user commands</p>
+<p><strong>Responsibilities</strong>:</p>
+<ul>
+<li>Parse command-line arguments</li>
+<li>Connect to daemon via registry</li>
+<li>Execute command</li>
+<li>Return result</li>
+</ul>
+<p><strong>Lifecycle</strong>:</p>
+<div class="language-text highlight"><pre><span></span><code>instrument-server &lt;cmd&gt; → Connect to registry → Execute → Exit
+</code></pre></div>
+<p><strong>Implementation</strong>: <code>src/tools/instrument_server_main.cpp</code></p>
+<h2 id="core-components">Core Components<a class="headerlink" href="#core-components" title="Permanent link">&para;</a></h2>
+<h3 id="serverdaemon">ServerDaemon<a class="headerlink" href="#serverdaemon" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>src/server/ServerDaemon.cpp</code></p>
+<p><strong>Key Methods</strong>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="kt">bool</span><span class="w"> </span><span class="nf">start</span><span class="p">();</span><span class="w">                    </span><span class="c1">// Start daemon</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">stop</span><span class="p">();</span><span class="w">                     </span><span class="c1">// Stop daemon</span>
+<span class="kt">bool</span><span class="w"> </span><span class="nf">is_running</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w">         </span><span class="c1">// Check if running</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">is_already_running</span><span class="p">();</span><span class="w"> </span><span class="c1">// Check for existing instance</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="nf">get_daemon_pid</span><span class="p">();</span><span class="w">     </span><span class="c1">// Get PID of running daemon</span>
+</code></pre></div>
+<p><strong>State Management</strong>:</p>
+<ul>
+<li>PID file: <code>/tmp/instrument-server-$USER/server. pid</code> (Linux)</li>
+<li>PID file: <code>%LOCALAPPDATA%\InstrumentServer\server.pid</code> (Windows)</li>
+<li>Singleton pattern ensures one instance</li>
+</ul>
+<p><strong>Thread Model</strong>:  Single-threaded event loop</p>
+<h3 id="instrumentregistry">InstrumentRegistry<a class="headerlink" href="#instrumentregistry" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>src/server/InstrumentRegistry.cpp</code></p>
+<p><strong>Key Methods</strong>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="kt">bool</span><span class="w"> </span><span class="nf">create_instrument</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">config_path</span><span class="p">);</span>
+<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">InstrumentWorkerProxy</span><span class="o">&gt;</span><span class="w"> </span><span class="n">get_instrument</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">name</span><span class="p">);</span>
+<span class="kt">bool</span><span class="w"> </span><span class="nf">has_instrument</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">remove_instrument</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">name</span><span class="p">);</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">list_instruments</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">stop_all</span><span class="p">();</span>
+</code></pre></div>
+<p><strong>Data Structures</strong>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InstrumentRegistry</span><span class="w"> </span><span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="k">mutable</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">mutex_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">InstrumentWorkerProxy</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">instruments_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">SyncCoordinator</span><span class="w"> </span><span class="n">sync_coordinator_</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+<p><strong>Thread Safety</strong>: All methods protected by mutex</p>
+<h3 id="instrumentworkerproxy">InstrumentWorkerProxy<a class="headerlink" href="#instrumentworkerproxy" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>src/server/InstrumentWorkerProxy.cpp</code></p>
+<p><strong>Purpose</strong>: Client-side IPC proxy for each instrument</p>
+<p><strong>Key Methods</strong>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="kt">bool</span><span class="w"> </span><span class="nf">start</span><span class="p">();</span><span class="w">                                    </span><span class="c1">// Spawn worker</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">stop</span><span class="p">();</span><span class="w">                                     </span><span class="c1">// Stop worker</span>
+<span class="n">std</span><span class="o">::</span><span class="n">future</span><span class="o">&lt;</span><span class="n">CommandResponse</span><span class="o">&gt;</span><span class="w"> </span><span class="n">execute</span><span class="p">(</span><span class="n">SerializedCommand</span><span class="w"> </span><span class="n">cmd</span><span class="p">);</span>
+<span class="n">CommandResponse</span><span class="w"> </span><span class="nf">execute_sync</span><span class="p">(</span><span class="n">SerializedCommand</span><span class="w"> </span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">timeout</span><span class="p">);</span>
+<span class="kt">bool</span><span class="w"> </span><span class="nf">is_alive</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w">                          </span><span class="c1">// Check worker health</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">send_sync_continue</span><span class="p">(</span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">sync_token</span><span class="p">);</span><span class="w">   </span><span class="c1">// Sync protocol</span>
+</code></pre></div>
+<p><strong>Thread Model</strong>:</p>
+<ul>
+<li>Main thread: Command dispatch</li>
+<li>Response thread: IPC message listener</li>
+</ul>
+<p><strong>State</strong>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InstrumentWorkerProxy</span><span class="w"> </span><span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">ipc</span><span class="o">::</span><span class="n">SharedQueue</span><span class="o">&gt;</span><span class="w"> </span><span class="n">ipc_queue_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">ipc</span><span class="o">::</span><span class="n">ProcessId</span><span class="w"> </span><span class="n">worker_pid_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="w"> </span><span class="n">promise</span><span class="o">&lt;</span><span class="n">CommandResponse</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">pending_responses_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="w"> </span><span class="n">response_thread_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="w"> </span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">running_</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+<h3 id="synccoordinator">SyncCoordinator<a class="headerlink" href="#synccoordinator" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>src/server/SyncCoordinator.cpp</code></p>
+<p><strong>Purpose</strong>: Coordinate parallel execution across instruments</p>
+<p><strong>Key Methods</strong>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="kt">void</span><span class="w"> </span><span class="nf">register_barrier</span><span class="p">(</span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">token</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="w"> </span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&amp;</span><span class="n">instruments</span><span class="p">);</span>
+<span class="kt">bool</span><span class="w"> </span><span class="nf">handle_ack</span><span class="p">(</span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">token</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">instrument</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">clear_barrier</span><span class="p">(</span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">token</span><span class="p">);</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">get_waiting_instruments</span><span class="p">(</span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">token</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
+</code></pre></div>
+<p><strong>Data Structures</strong>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SyncCoordinator</span><span class="w"> </span><span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">SyncBarrier</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">set</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expected_instruments</span><span class="p">;</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">set</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="w"> </span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">acked_instruments</span><span class="p">;</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="w"> </span><span class="n">chrono</span><span class="o">::</span><span class="n">steady_clock</span><span class="o">::</span><span class="n">time_point</span><span class="w"> </span><span class="n">created_at</span><span class="p">;</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="k">mutable</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">mutex_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="p">,</span><span class="w"> </span><span class="n">SyncBarrier</span><span class="o">&gt;</span><span class="w"> </span><span class="n">barriers_</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+<p><strong>See Also</strong>:  <a href="../SYNCHRONIZATION/">SYNCHRONIZATION.md</a></p>
+<h2 id="ipc-communication">IPC Communication<a class="headerlink" href="#ipc-communication" title="Permanent link">&para;</a></h2>
+<h3 id="transport-shared-memory-queues">Transport:  Shared Memory Queues<a class="headerlink" href="#transport-shared-memory-queues" title="Permanent link">&para;</a></h3>
+<p><strong>Implementation</strong>: <code>src/ipc/SharedQueue.cpp</code></p>
+<p><strong>Platform</strong>:</p>
+<ul>
+<li>Linux:  POSIX shared memory (<code>shm_open</code>, <code>mmap</code>)</li>
+<li>Windows: Named shared memory (<code>CreateFileMapping</code>, <code>MapViewOfFile</code>)</li>
+</ul>
+<p><strong>Queue Structure</strong>:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">SharedQueue</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Ring buffer in shared memory</span>
+<span class="w">  </span><span class="c1">// Lock-free for single producer, single consumer</span>
+<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">head</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">tail</span><span class="p">;</span>
+<span class="w">  </span><span class="n">IPCMessage</span><span class="w"> </span><span class="n">messages</span><span class="p">[</span><span class="n">QUEUE_SIZE</span><span class="p">];</span>
+<span class="p">};</span>
+</code></pre></div>
+<h3 id="message-format">Message Format<a class="headerlink" href="#message-format" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>include/instrument-server/ipc/IPCMessage.hpp</code></p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="k">struct</span><span class="w"> </span><span class="nc">IPCMessage</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Type</span><span class="w"> </span><span class="o">:</span><span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">COMMAND</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="n">RESPONSE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">    </span><span class="n">HEARTBEAT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">    </span><span class="n">SHUTDOWN</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+<span class="w">    </span><span class="n">SYNC_ACK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">    </span><span class="n">SYNC_CONTINUE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">6</span>
+<span class="w">  </span><span class="p">};</span>
+
+<span class="w">  </span><span class="n">Type</span><span class="w"> </span><span class="n">type</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">id</span><span class="p">;</span><span class="w">           </span><span class="c1">// Message ID</span>
+<span class="w">  </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">sync_token</span><span class="p">;</span><span class="w">   </span><span class="c1">// Synchronization group</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">payload_size</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">char</span><span class="w"> </span><span class="n">payload</span><span class="p">[</span><span class="mi">4096</span><span class="p">];</span><span class="w">    </span><span class="c1">// Serialized command/response (JSON)</span>
+<span class="p">};</span>
+</code></pre></div>
+<h3 id="serialization">Serialization<a class="headerlink" href="#serialization" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>src/SerializedCommand.cpp</code></p>
+<p>Commands and responses serialized as JSON:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">serialize_command</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">SerializedCommand</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cmd</span><span class="p">);</span>
+<span class="n">SerializedCommand</span><span class="w"> </span><span class="nf">deserialize_command</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">json</span><span class="p">);</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">serialize_response</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">CommandResponse</span><span class="w"> </span><span class="o">&amp;</span><span class="n">resp</span><span class="p">);</span>
+<span class="n">CommandResponse</span><span class="w"> </span><span class="nf">deserialize_response</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">json</span><span class="p">);</span>
+</code></pre></div>
+<p><strong>Format Example</strong>:</p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DMM1-12345&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;instrument_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DMM1&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;verb&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MEASURE&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;expects_response&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;timeout_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;sync_token&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;channel&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;range&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;AUTO&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="synchronization-system">Synchronization System<a class="headerlink" href="#synchronization-system" title="Permanent link">&para;</a></h2>
+<p><strong>Full details</strong>:  <a href="../SYNCHRONIZATION/">SYNCHRONIZATION.md</a></p>
+<h3 id="protocol-overview">Protocol Overview<a class="headerlink" href="#protocol-overview" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>RuntimeContext</strong> detects <code>parallel()</code> block</li>
+<li>Commands buffered instead of immediate execution</li>
+<li>All commands tagged with same <code>sync_token</code></li>
+<li><strong>SyncCoordinator</strong> registers barrier with participating instruments</li>
+<li>Commands dispatched to workers</li>
+<li>Workers execute, send RESPONSE, then SYNC_ACK</li>
+<li>Workers block until SYNC_CONTINUE received</li>
+<li><strong>SyncCoordinator</strong> waits for all ACKs</li>
+<li>When complete, broadcasts SYNC_CONTINUE to all workers</li>
+<li>Workers unblock and proceed to next command</li>
+</ol>
+<h3 id="timing-guarantees">Timing Guarantees<a class="headerlink" href="#timing-guarantees" title="Permanent link">&para;</a></h3>
+<ul>
+<li>All instruments in parallel block complete before any advances</li>
+<li>No instrument can proceed past sync point until all ready</li>
+<li>Call blocks (sequential) execute on single instrument immediately</li>
+</ul>
+<h2 id="plugin-system">Plugin System<a class="headerlink" href="#plugin-system" title="Permanent link">&para;</a></h2>
+<p><strong>Full details</strong>: <a href="../PLUGIN_DEVELOPMENT/">PLUGIN_DEVELOPMENT.md</a></p>
+<h3 id="plugin-interface">Plugin Interface<a class="headerlink" href="#plugin-interface" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>include/instrument-server/plugin/PluginInterface.h</code></p>
+<div class="language-c highlight"><pre><span></span><code><span class="c1">// Required exports</span>
+<span class="n">PluginMetadata</span><span class="w"> </span><span class="nf">plugin_get_metadata</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_initialize</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginConfig</span><span class="w"> </span><span class="o">*</span><span class="n">config</span><span class="p">);</span>
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_execute_command</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginCommand</span><span class="w"> </span><span class="o">*</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">PluginResponse</span><span class="w"> </span><span class="o">*</span><span class="n">resp</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">plugin_shutdown</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="plugin-loader">Plugin Loader<a class="headerlink" href="#plugin-loader" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>src/plugin/PluginLoader. cpp</code></p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PluginLoader</span><span class="w"> </span><span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">PluginLoader</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">path</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">is_loaded</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
+<span class="w">  </span><span class="n">PluginMetadata</span><span class="w"> </span><span class="nf">get_metadata</span><span class="p">();</span>
+<span class="w">  </span><span class="kt">int32_t</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginConfig</span><span class="w"> </span><span class="o">&amp;</span><span class="n">config</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">int32_t</span><span class="w"> </span><span class="nf">execute_command</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginCommand</span><span class="w"> </span><span class="o">&amp;</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">PluginResponse</span><span class="w"> </span><span class="o">&amp;</span><span class="n">resp</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">shutdown</span><span class="p">();</span>
+
+<span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">handle_</span><span class="p">;</span><span class="w">  </span><span class="c1">// dlopen/LoadLibrary handle</span>
+<span class="w">  </span><span class="c1">// Function pointers to plugin exports</span>
+<span class="p">};</span>
+</code></pre></div>
+<h3 id="plugin-registry">Plugin Registry<a class="headerlink" href="#plugin-registry" title="Permanent link">&para;</a></h3>
+<p><strong>File</strong>: <code>src/plugin/PluginRegistry.cpp</code></p>
+<p>Maps protocol types to plugin paths:</p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PluginRegistry</span><span class="w"> </span><span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">discover_plugins</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&amp;</span><span class="n">search_paths</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">register_plugin</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">protocol</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">path</span><span class="p">);</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">get_plugin_path</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="o">&amp;</span><span class="n">protocol</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">list_protocols</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
+
+<span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">plugins_</span><span class="p">;</span><span class="w"> </span><span class="c1">// protocol -&gt; path</span>
+<span class="p">};</span>
+</code></pre></div>
+<h2 id="configuration-system">Configuration System<a class="headerlink" href="#configuration-system" title="Permanent link">&para;</a></h2>
+<h3 id="instrument-configuration">Instrument Configuration<a class="headerlink" href="#instrument-configuration" title="Permanent link">&para;</a></h3>
+<p><strong>Format</strong>:  YAML</p>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DMM1</span><span class="w">                    </span><span class="c1"># Instrument instance name</span>
+<span class="nt">api_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apis/keithley. yaml</span><span class="w">   </span><span class="c1"># API definition file</span>
+<span class="nt">connection</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">VISA</span><span class="w">                  </span><span class="c1"># Protocol type (maps to plugin)</span>
+<span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TCPIP::192.168.1.100::</span><span class="nv"> </span><span class="s">INSTR&quot;</span>
+<span class="w">  </span><span class="nt">timeout</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+</code></pre></div>
+<p><strong>Loading</strong>: <code>InstrumentRegistry:: create_instrument()</code></p>
+<ol>
+<li>Load YAML → JSON</li>
+<li>Load referenced API definition</li>
+<li>Extract protocol type</li>
+<li>Lookup plugin via PluginRegistry</li>
+<li>Create InstrumentWorkerProxy</li>
+<li>Spawn worker with plugin path</li>
+</ol>
+<h3 id="api-definition">API Definition<a class="headerlink" href="#api-definition" title="Permanent link">&para;</a></h3>
+<p><strong>Format</strong>:  YAML</p>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">VISA</span>
+
+<span class="nt">commands</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">MEASURE</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Measure</span><span class="nv"> </span><span class="s">DC</span><span class="nv"> </span><span class="s">voltage&quot;</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;:</span><span class="nv"> </span><span class="s">MEAS:VOLT:DC?&quot;</span>
+<span class="w">    </span><span class="nt">response_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">double</span>
+
+<span class="w">  </span><span class="nt">SET_VOLTAGE</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Set</span><span class="nv"> </span><span class="s">output</span><span class="nv"> </span><span class="s">voltage&quot;</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;:</span><span class="nv"> </span><span class="s">SOUR:VOLT</span><span class="nv"> </span><span class="s">{voltage}&quot;</span>
+<span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">voltage</span><span class="p">:</span><span class="w"> </span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">double</span>
+<span class="w">        </span><span class="nt">required</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">        </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-10.0</span>
+<span class="w">        </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10.0</span>
+</code></pre></div>
+<p><strong>Validation</strong>: <code>SchemaValidator</code> class validates against JSON schemas</p>
+<h2 id="data-flow">Data Flow<a class="headerlink" href="#data-flow" title="Permanent link">&para;</a></h2>
+<h3 id="command-execution-flow">Command Execution Flow<a class="headerlink" href="#command-execution-flow" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>1.  Lua script:  context: call(&quot;DMM1.Measure&quot;)
+      ↓
+2. RuntimeContext. call()
+      ↓
+3. RuntimeContext.send_command()
+      ↓
+4. InstrumentRegistry.get_instrument(&quot;DMM1&quot;)
+      ↓
+5. InstrumentWorkerProxy.execute_sync()
+      ↓
+6. serialize_command() → JSON
+      ↓
+7. IPC:  Send to worker&#39;s queue
+      ↓
+8. Worker: Receive from queue
+      ↓
+9. deserialize_command() → SerializedCommand
+      ↓
+10. Convert to PluginCommand
+      ↓
+11. PluginLoader.execute_command()
+      ↓
+12. Plugin: Actual hardware communication
+      ↓
+13. PluginResponse → CommandResponse
+      ↓
+14. serialize_response() → JSON
+      ↓
+15. IPC: Send to server&#39;s queue
+      ↓
+16. InstrumentWorkerProxy:  Receive response
+      ↓
+17. deserialize_response() → CommandResponse
+      ↓
+18. Fulfill promise/future
+      ↓
+19. RuntimeContext:  Return to Lua
+</code></pre></div>
+<h3 id="parallel-execution-flow">Parallel Execution Flow<a class="headerlink" href="#parallel-execution-flow" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>1. Lua: context:parallel(function() ... end)
+      ↓
+2. RuntimeContext. parallel()
+   - Set in_parallel_block_ = true
+      ↓
+3. Execute Lua block
+   - Each call() buffers command
+      ↓
+4. RuntimeContext.execute_parallel_buffer()
+   - Generate sync_token
+   - Register barrier with SyncCoordinator
+      ↓
+5. Dispatch all commands (with sync_token)
+      ↓
+6. Workers execute commands
+      ↓
+7. Workers send RESPONSE
+      ↓
+8. Workers send SYNC_ACK
+      ↓
+9. Workers BLOCK (wait for SYNC_CONTINUE)
+      ↓
+10. SyncCoordinator: Collect ACKs
+      ↓
+11. When all ACKed:  Broadcast SYNC_CONTINUE
+      ↓
+12. Workers receive SYNC_CONTINUE
+      ↓
+13. Workers unblock
+      ↓
+14. parallel() returns to Lua
+</code></pre></div>
+<h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
+<h3 id="worker-death">Worker Death<a class="headerlink" href="#worker-death" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>Worker process crashes/dies
+      ↓
+Heartbeat timeout detected
+      ↓
+InstrumentWorkerProxy.is_alive() → false
+      ↓
+All pending promises failed with &quot;Worker died&quot;
+      ↓
+Error propagated to user
+</code></pre></div>
+<h3 id="command-timeout">Command Timeout<a class="headerlink" href="#command-timeout" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>Command sent to worker
+      ↓
+future.wait_for(timeout)
+      ↓
+Timeout expires
+      ↓
+Return CommandResponse{success=false, error=&quot;Timeout&quot;}
+</code></pre></div>
+<h3 id="sync-timeout">Sync Timeout<a class="headerlink" href="#sync-timeout" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>Sync barrier registered
+      ↓
+Not all ACKs received within timeout
+      ↓
+Log error with missing instruments
+      ↓
+Force-complete barrier (broadcast SYNC_CONTINUE anyway)
+      ↓
+Prevents deadlock, but results may be invalid
+</code></pre></div>
+<h3 id="plugin-error">Plugin Error<a class="headerlink" href="#plugin-error" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>Plugin.execute_command() returns error
+      ↓
+PluginResponse. success = false
+      ↓
+CommandResponse.success = false
+      ↓
+RuntimeContext.call() returns nil
+      ↓
+Lua script handles error
+</code></pre></div>
+<h2 id="performance-characteristics">Performance Characteristics<a class="headerlink" href="#performance-characteristics" title="Permanent link">&para;</a></h2>
+<h3 id="latency-measurements">Latency Measurements<a class="headerlink" href="#latency-measurements" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Typical Time</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IPC round-trip</td>
+<td>200 µs</td>
+<td>Shared memory</td>
+</tr>
+<tr>
+<td>Command serialization</td>
+<td>50 µs</td>
+<td>JSON encoding</td>
+</tr>
+<tr>
+<td>Sync coordination</td>
+<td>500 µs</td>
+<td>Barrier overhead</td>
+</tr>
+<tr>
+<td>Plugin call</td>
+<td>1-100 ms</td>
+<td>Hardware dependent</td>
+</tr>
+</tbody>
+</table>
+<h3 id="throughput">Throughput<a class="headerlink" href="#throughput" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Rate</th>
+<th>Bottleneck</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Single command</td>
+<td>~1000 cmd/s</td>
+<td>Instrument response</td>
+</tr>
+<tr>
+<td>Pipelined (queue depth 10)</td>
+<td>~5000 cmd/s</td>
+<td>IPC + serialization</td>
+</tr>
+<tr>
+<td>Parallel (3 instruments)</td>
+<td>~3000 cmd/s total</td>
+<td>Sync coordination</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scalability">Scalability<a class="headerlink" href="#scalability" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Tested</strong>: 20 simultaneous instruments</li>
+<li><strong>Memory</strong>: ~50 MB per worker process</li>
+<li><strong>CPU</strong>:  Minimal (event-driven, mostly I/O wait)</li>
+<li><strong>Limit</strong>: OS process limit, shared memory availability</li>
+</ul>
+<h3 id="optimization-opportunities">Optimization Opportunities<a class="headerlink" href="#optimization-opportunities" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Binary serialization</strong> instead of JSON (2-3x faster)</li>
+<li><strong>Lock-free queues</strong> for IPC (10-20% improvement)</li>
+<li><strong>Command batching</strong> (reduce IPC overhead)</li>
+<li><strong>Thread pool</strong> for response handling (higher concurrency)</li>
+</ol>
+<h2 id="platform-specific-details">Platform-Specific Details<a class="headerlink" href="#platform-specific-details" title="Permanent link">&para;</a></h2>
+<h3 id="linux">Linux<a class="headerlink" href="#linux" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>IPC</strong>: POSIX shared memory (<code>/dev/shm/</code>)</li>
+<li><strong>PID file</strong>: <code>/tmp/instrument-server-$USER/server.pid</code></li>
+<li><strong>Process creation</strong>: <code>fork()</code> + <code>execl()</code></li>
+<li><strong>Signals</strong>:  SIGTERM for graceful shutdown</li>
+</ul>
+<h3 id="windows">Windows<a class="headerlink" href="#windows" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>IPC</strong>: Named shared memory (<code>Global\instserver_*</code>)</li>
+<li><strong>PID file</strong>: <code>%LOCALAPPDATA%\InstrumentServer\server.pid</code></li>
+<li><strong>Process creation</strong>: <code>CreateProcess()</code></li>
+<li><strong>Termination</strong>: <code>TerminateProcess()</code> with SIGTERM equivalent</li>
+</ul>
+<h2 id="future-enhancements">Future Enhancements<a class="headerlink" href="#future-enhancements" title="Permanent link">&para;</a></h2>
+<h3 id="hot-reload">Hot Reload<a class="headerlink" href="#hot-reload" title="Permanent link">&para;</a></h3>
+<p>Restart worker without interrupting others:</p>
+<div class="language-bash highlight"><pre><span></span><code>instrument-server<span class="w"> </span>reload<span class="w"> </span>DMM1
+</code></pre></div>
+<p><strong>Implementation</strong>: Track worker state, spawn new worker, transfer state</p>
+<h3 id="web-interface">Web Interface<a class="headerlink" href="#web-interface" title="Permanent link">&para;</a></h3>
+<p>HTTP API for remote control:</p>
+<div class="language-http highlight"><pre><span></span><code><span class="err">POST /api/instruments/start</span>
+<span class="err">POST /api/measurements/run</span>
+<span class="err">GET  /api/instruments/status</span>
+</code></pre></div>
+<p><strong>Implementation</strong>: Embedded HTTP server in daemon</p>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../CLI_USAGE/">CLI Usage</a> - Command-line interface</li>
+<li><a href="../PLUGIN_DEVELOPMENT/">Plugin Development</a> - Writing plugins</li>
+<li><a href="../SYNCHRONIZATION/">Synchronization</a> - Parallel execution details</li>
+<li><a href="../README.md">Main README</a> - Getting started</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

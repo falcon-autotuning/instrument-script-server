@@ -1,0 +1,2756 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Server for managing scientific instruments in Cpp">
+      
+      
+      
+      
+        <link rel="prev" href="../CONFIGURATION/">
+      
+      
+        <link rel="next" href="../IPC_PROTOCOL/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/icons/icon-256.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Non-VISA plugins - Instrument Script Server</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#plugin-development-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Instrument Script Server" class="md-header__button md-logo" aria-label="Instrument Script Server" data-md-component="logo">
+      
+  <img src="../assets/icons/icon-256.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Instrument Script Server
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Non-VISA plugins
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../CONFIGURATION/" class="md-tabs__link">
+          
+  
+  
+  Configurations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../IPC_PROTOCOL/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Instrument Script Server" class="md-nav__button md-logo" aria-label="Instrument Script Server" data-md-component="logo">
+      
+  <img src="../assets/icons/icon-256.png" alt="logo">
+
+    </a>
+    Instrument Script Server
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Welcome to Instrument Script Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLI_USAGE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configurations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Configurations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONFIGURATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setting up Instruments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Non-VISA plugins
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Non-VISA plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Plugins?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plugin-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in Plugins
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugin-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Interface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plugin Interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#required-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required Functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#header-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Header File
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-install-instrumentserver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Install InstrumentServer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-create-your-plugin-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Create Your Plugin Project
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-build-and-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Build and Install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-test-your-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Test Your Plugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#development-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Development Workflow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Development Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-add_instrument_plugin-helper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using add_instrument_plugin() Helper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#without-add_instrument_plugin-helper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Without add_instrument_plugin() Helper
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building Plugins
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Building Plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cross-platform-cmake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-Platform CMake
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Plugins
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing Plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-verify-plugin-loads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Verify Plugin Loads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-test-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Test Metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-test-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Test Commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-integration-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Integration Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-unit-testing-plugin-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Unit Testing Plugin Directly
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Plugins
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example Plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-1-simple-echo-plugin-no-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 1: Simple Echo Plugin (No Dependencies)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2-serial-port-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 2: Serial Port Plugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-3-visa-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 3: VISA Plugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#handling-large-data-in-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Handling Large Data in Plugins
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Handling Large Data in Plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-data-buffers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to Use Data Buffers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-data-buffers-in-c-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating Data Buffers in C Plugins
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-type-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Type Codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buffer-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Buffer Lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linking-to-databuffermanager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linking to DataBufferManager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-oscilloscope-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: Oscilloscope Plugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../IPC_PROTOCOL/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server Communications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SYNCHRONIZATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronzing Instruments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why Plugins?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plugin-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#built-in-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Built-in Plugins
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plugin-interface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plugin Interface
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Plugin Interface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#required-functions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required Functions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#header-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Header File
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-install-instrumentserver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Install InstrumentServer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-create-your-plugin-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Create Your Plugin Project
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-build-and-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Build and Install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-test-your-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Test Your Plugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#development-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Development Workflow
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Development Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#using-add_instrument_plugin-helper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using add_instrument_plugin() Helper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#without-add_instrument_plugin-helper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Without add_instrument_plugin() Helper
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building Plugins
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Building Plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#linux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#macos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        macOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cross-platform-cmake" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-Platform CMake
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing Plugins
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing Plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-verify-plugin-loads" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Verify Plugin Loads
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-test-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Test Metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-test-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Test Commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-integration-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Integration Testing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-unit-testing-plugin-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Unit Testing Plugin Directly
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Plugins
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example Plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-1-simple-echo-plugin-no-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 1: Simple Echo Plugin (No Dependencies)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2-serial-port-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 2: Serial Port Plugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-3-visa-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 3: VISA Plugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#handling-large-data-in-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Handling Large Data in Plugins
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Handling Large Data in Plugins">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-data-buffers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to Use Data Buffers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-data-buffers-in-c-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating Data Buffers in C Plugins
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-type-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Type Codes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#buffer-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Buffer Lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linking-to-databuffermanager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linking to DataBufferManager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-oscilloscope-plugin" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: Oscilloscope Plugin
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="plugin-development-guide">Plugin Development Guide<a class="headerlink" href="#plugin-development-guide" title="Permanent link">&para;</a></h1>
+<p>Complete guide to developing instrument driver plugins for the Instrument Server.</p>
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<!--toc:start-->
+<ul>
+<li><a href="#plugin-development-guide">Plugin Development Guide</a></li>
+<li><a href="#table-of-contents">Table of Contents</a></li>
+<li><a href="#overview">Overview</a><ul>
+<li><a href="#why-plugins">Why Plugins?</a></li>
+<li><a href="#plugin-types">Plugin Types</a></li>
+</ul>
+</li>
+<li><a href="#built-in-plugins">Built-in Plugins</a></li>
+<li><a href="#plugin-interface">Plugin Interface</a><ul>
+<li><a href="#required-functions">Required Functions</a></li>
+<li><a href="#header-file">Header File</a></li>
+</ul>
+</li>
+<li><a href="#quick-start">Quick Start</a><ul>
+<li><a href="#step-1-install-instrumentserver">Step 1: Install InstrumentServer</a></li>
+<li><a href="#step-2-create-your-plugin-project">Step 2: Create Your Plugin Project</a></li>
+<li><a href="#step-3-build-and-install">Step 3: Build and Install</a></li>
+<li><a href="#step-4-test-your-plugin">Step 4: Test Your Plugin</a></li>
+</ul>
+</li>
+<li><a href="#development-workflow">Development Workflow</a><ul>
+<li><a href="#using-addinstrumentplugin-helper">Using add_instrument_plugin() Helper</a></li>
+<li><a href="#without-addinstrumentplugin-helper">Without add_instrument_plugin() Helper</a></li>
+</ul>
+</li>
+<li><a href="#building-plugins">Building Plugins</a><ul>
+<li><a href="#linux">Linux</a></li>
+<li><a href="#macos">macOS</a></li>
+<li><a href="#windows">Windows</a></li>
+<li><a href="#cross-platform-cmake">Cross-Platform CMake</a></li>
+</ul>
+</li>
+<li><a href="#testing-plugins">Testing Plugins</a><ul>
+<li><a href="#1-verify-plugin-loads">1. Verify Plugin Loads</a></li>
+<li><a href="#2-test-metadata">2. Test Metadata</a></li>
+<li><a href="#3-test-commands">3. Test Commands</a></li>
+<li><a href="#4-integration-testing">4. Integration Testing</a></li>
+<li><a href="#5-unit-testing-plugin-directly">5. Unit Testing Plugin Directly</a></li>
+</ul>
+</li>
+<li><a href="#example-plugins">Example Plugins</a><ul>
+<li><a href="#example-1-simple-echo-plugin-no-dependencies">Example 1: Simple Echo Plugin (No Dependencies)</a></li>
+<li><a href="#example-2-serial-port-plugin">Example 2: Serial Port Plugin</a></li>
+<li><a href="#example-3-visa-plugin">Example 3: VISA Plugin</a></li>
+</ul>
+</li>
+<li><a href="#handling-large-data-in-plugins">Handling Large Data in Plugins</a><ul>
+<li><a href="#when-to-use-data-buffers">When to Use Data Buffers</a></li>
+<li><a href="#creating-data-buffers-in-c-plugins">Creating Data Buffers in C Plugins</a></li>
+<li><a href="#data-type-codes">Data Type Codes</a></li>
+<li><a href="#buffer-lifecycle">Buffer Lifecycle</a></li>
+<li><a href="#linking-to-databuffermanager">Linking to DataBufferManager</a></li>
+<li><a href="#example-oscilloscope-plugin">Example: Oscilloscope Plugin</a></li>
+</ul>
+</li>
+<li><a href="#see-also">See Also</a></li>
+</ul>
+<!--toc:end-->
+
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Plugins are <strong>shared libraries</strong> (. so on Linux, .dll on Windows, .dylib on macOS) that implement the instrument driver interface. The server loads plugins dynamically at runtime.</p>
+<h3 id="why-plugins">Why Plugins?<a class="headerlink" href="#why-plugins" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Modularity</strong>: Add new instruments without recompiling server</li>
+<li><strong>Isolation</strong>: Plugin crashes don't affect server</li>
+<li><strong>Flexibility</strong>: Use any SDK (VISA, vendor SDKs, custom protocols)</li>
+<li><strong>Distribution</strong>:  Distribute plugins independently</li>
+<li><strong>Easy Development</strong>: Use <code>add_instrument_plugin()</code> CMake helper</li>
+</ul>
+<h3 id="plugin-types">Plugin Types<a class="headerlink" href="#plugin-types" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Protocol adapter</strong></td>
+<td>Generic protocol handler</td>
+<td>VISA, Serial, TCP</td>
+</tr>
+<tr>
+<td><strong>Vendor SDK</strong></td>
+<td>Wraps vendor library</td>
+<td>NI-DAQmx, Keithley SDK</td>
+</tr>
+<tr>
+<td><strong>Custom protocol</strong></td>
+<td>Proprietary communication</td>
+<td>Custom serial, USB HID</td>
+</tr>
+</tbody>
+</table>
+<h2 id="built-in-plugins">Built-in Plugins<a class="headerlink" href="#built-in-plugins" title="Permanent link">&para;</a></h2>
+<p>The server includes the following built-in plugins that are <strong>automatically loaded</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Protocol</th>
+<th>Description</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>VISA</strong></td>
+<td>NI-VISA protocol for GPIB, USB, Ethernet, Serial</td>
+<td>✅ Built-in</td>
+</tr>
+</tbody>
+</table>
+<p>These plugins are available without any configuration.  You only need to create custom plugins for:</p>
+<ul>
+<li>Proprietary vendor SDKs (NI-DAQmx, Keithley, etc.)</li>
+<li>Custom protocols not covered by VISA</li>
+<li>Special communication requirements</li>
+</ul>
+<h2 id="plugin-interface">Plugin Interface<a class="headerlink" href="#plugin-interface" title="Permanent link">&para;</a></h2>
+<h3 id="required-functions">Required Functions<a class="headerlink" href="#required-functions" title="Permanent link">&para;</a></h3>
+<p>Every plugin must export these four C functions:</p>
+<div class="language-c highlight"><pre><span></span><code><span class="n">PluginMetadata</span><span class="w"> </span><span class="nf">plugin_get_metadata</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_initialize</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginConfig</span><span class="w"> </span><span class="o">*</span><span class="n">config</span><span class="p">);</span>
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_execute_command</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginCommand</span><span class="w"> </span><span class="o">*</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">PluginResponse</span><span class="w"> </span><span class="o">*</span><span class="n">resp</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">plugin_shutdown</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+</code></pre></div>
+<h3 id="header-file">Header File<a class="headerlink" href="#header-file" title="Permanent link">&para;</a></h3>
+<p><strong>Location</strong>: <code>&lt;instrument-server/plugin/PluginInterface.h&gt;</code></p>
+<p>After installing InstrumentServer, this header is available at:</p>
+<ul>
+<li>Linux/macOS: <code>/usr/local/include/instrument-server/plugin/PluginInterface.h</code></li>
+<li>Windows: <code>C:\Program Files\InstrumentServer\include\instrument-server\plugin\PluginInterface.h</code></li>
+</ul>
+<div class="language-c highlight"><pre><span></span><code><span class="cp">#ifndef INSTRUMENT_PLUGIN_INTERFACE_H</span>
+<span class="cp">#define INSTRUMENT_PLUGIN_INTERFACE_H</span>
+
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdint.h&gt;</span>
+
+<span class="cp">#define INSTRUMENT_PLUGIN_API_VERSION 1</span>
+<span class="cp">#define PLUGIN_MAX_STRING_LEN 256</span>
+<span class="cp">#define PLUGIN_MAX_PAYLOAD 4096</span>
+<span class="cp">#define PLUGIN_MAX_PARAMS 32</span>
+
+<span class="c1">// Parameter types</span>
+<span class="k">typedef</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">PARAM_TYPE_NONE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="n">PARAM_TYPE_DOUBLE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="n">PARAM_TYPE_INT64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">    </span><span class="n">PARAM_TYPE_STRING</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">    </span><span class="n">PARAM_TYPE_BOOL</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span>
+<span class="w">    </span><span class="n">PARAM_TYPE_UINT64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span>
+<span class="p">}</span><span class="w"> </span><span class="n">ParamType</span><span class="p">;</span>
+
+<span class="c1">// Parameter value union</span>
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">ParamType</span><span class="w"> </span><span class="n">type</span><span class="p">;</span>
+<span class="w">    </span><span class="k">union</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">double</span><span class="w"> </span><span class="n">d_val</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">i64_val</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">u64_val</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">char</span><span class="w"> </span><span class="n">str_val</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="w">        </span><span class="kt">bool</span><span class="w"> </span><span class="n">b_val</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="n">value</span><span class="p">;</span>
+<span class="p">}</span><span class="w"> </span><span class="n">PluginParamValue</span><span class="p">;</span>
+
+<span class="c1">// Named parameter</span>
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">name</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="w">    </span><span class="n">PluginParamValue</span><span class="w"> </span><span class="n">value</span><span class="p">;</span>
+<span class="p">}</span><span class="w"> </span><span class="n">PluginParam</span><span class="p">;</span>
+
+<span class="c1">// Plugin metadata</span>
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">api_version</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">name</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">version</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">protocol_type</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">description</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="p">}</span><span class="w"> </span><span class="n">PluginMetadata</span><span class="p">;</span>
+
+<span class="c1">// Plugin configuration</span>
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">instrument_name</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">connection_json</span><span class="p">[</span><span class="n">PLUGIN_MAX_PAYLOAD</span><span class="p">];</span><span class="w">  </span><span class="c1">// JSON string</span>
+<span class="p">}</span><span class="w"> </span><span class="n">PluginConfig</span><span class="p">;</span>
+
+<span class="c1">// Command from server</span>
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">id</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">instrument_name</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">verb</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">expects_response</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">param_count</span><span class="p">;</span>
+<span class="w">    </span><span class="n">PluginParam</span><span class="w"> </span><span class="n">params</span><span class="p">[</span><span class="n">PLUGIN_MAX_PARAMS</span><span class="p">];</span>
+<span class="p">}</span><span class="w"> </span><span class="n">PluginCommand</span><span class="p">;</span>
+
+<span class="c1">// Response to server</span>
+<span class="k">typedef</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">command_id</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">instrument_name</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+
+<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">success</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">error_code</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">error_message</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">text_response</span><span class="p">[</span><span class="n">PLUGIN_MAX_PAYLOAD</span><span class="p">];</span>
+<span class="w">    </span><span class="n">PluginParamValue</span><span class="w"> </span><span class="n">return_value</span><span class="p">;</span>
+<span class="p">}</span><span class="w"> </span><span class="n">PluginResponse</span><span class="p">;</span>
+
+<span class="c1">// Plugin API functions (must be exported)</span>
+<span class="cp">#ifdef __cplusplus</span>
+<span class="k">extern</span><span class="w"> </span><span class="s">&quot;C&quot;</span><span class="w"> </span><span class="p">{</span>
+<span class="cp">#endif</span>
+
+<span class="n">PluginMetadata</span><span class="w"> </span><span class="nf">plugin_get_metadata</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_initialize</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginConfig</span><span class="w"> </span><span class="o">*</span><span class="n">config</span><span class="p">);</span>
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_execute_command</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginCommand</span><span class="w"> </span><span class="o">*</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">PluginResponse</span><span class="w"> </span><span class="o">*</span><span class="n">resp</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">plugin_shutdown</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+
+<span class="cp">#ifdef __cplusplus</span>
+<span class="p">}</span>
+<span class="cp">#endif</span>
+
+<span class="cp">#endif </span><span class="c1">// INSTRUMENT_PLUGIN_INTERFACE_H</span>
+</code></pre></div>
+<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<p>This is the <strong>recommended workflow</strong> for creating a custom plugin after installing InstrumentServer.</p>
+<h3 id="step-1-install-instrumentserver">Step 1: Install InstrumentServer<a class="headerlink" href="#step-1-install-instrumentserver" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Clone and build InstrumentServer</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/falcon-autotuning/instrument-script-server.git
+<span class="nb">cd</span><span class="w"> </span>instrument-script-server
+mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..<span class="w"> </span>
+cmake<span class="w"> </span>--build<span class="w"> </span>.
+sudo<span class="w"> </span>cmake<span class="w"> </span>--install<span class="w"> </span>.
+</code></pre></div>
+<p>This installs:</p>
+<ul>
+<li>Headers to <code>/usr/local/include/instrument-server/</code></li>
+<li>CMake config to <code>/usr/local/lib/cmake/InstrumentServer/</code></li>
+<li>Helper function <code>add_instrument_plugin()</code></li>
+</ul>
+<h3 id="step-2-create-your-plugin-project">Step 2: Create Your Plugin Project<a class="headerlink" href="#step-2-create-your-plugin-project" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code>mkdir<span class="w"> </span>my_instrument_plugin
+<span class="nb">cd</span><span class="w"> </span>my_instrument_plugin
+</code></pre></div>
+<p><strong>Create <code>CMakeLists.txt</code>:</strong></p>
+<div class="language-cmake highlight"><pre><span></span><code><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span><span class="w"> </span><span class="s">3.20</span><span class="p">)</span>
+<span class="nb">project</span><span class="p">(</span><span class="s">MyInstrumentPlugin</span><span class="w"> </span><span class="s">VERSION</span><span class="w"> </span><span class="s">1.0.0</span><span class="p">)</span>
+
+<span class="c"># Find the installed InstrumentServer package</span>
+<span class="nb">find_package</span><span class="p">(</span><span class="s">InstrumentServer</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
+
+<span class="c"># Create your plugin using the helper function</span>
+<span class="nb">add_instrument_plugin</span><span class="p">(</span><span class="s">my_instrument_plugin</span>
+<span class="w">  </span><span class="s">SOURCES</span><span class="w"> </span>
+<span class="w">    </span><span class="s">my_plugin.c</span>
+<span class="w">  </span><span class="s">LINK_LIBRARIES</span>
+<span class="w">    </span><span class="c"># Add your instrument&#39;s SDK here</span>
+<span class="w">    </span><span class="c"># my_instrument_sdk</span>
+<span class="p">)</span>
+
+<span class="c"># Install to standard location</span>
+<span class="nb">install</span><span class="p">(</span><span class="s">TARGETS</span><span class="w"> </span><span class="s">my_instrument_plugin</span>
+<span class="w">  </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">lib/instrument-plugins</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><strong>Create <code>my_plugin.c</code>:</strong></p>
+<div class="language-c highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;instrument-server/plugin/PluginInterface.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string.h&gt;</span>
+
+<span class="c1">// Your instrument SDK includes</span>
+<span class="c1">// #include &lt;my_instrument_sdk.h&gt;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">g_device_handle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span>
+
+<span class="n">PluginMetadata</span><span class="w"> </span><span class="nf">plugin_get_metadata</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">PluginMetadata</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+<span class="w">  </span><span class="n">meta</span><span class="p">.</span><span class="n">api_version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">INSTRUMENT_PLUGIN_API_VERSION</span><span class="p">;</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;My Instrument Plugin&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="w"> </span><span class="n">version</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;1.0.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">protocol_type</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyInstrument&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">description</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Driver for my custom instrument&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">meta</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_initialize</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginConfig</span><span class="w"> </span><span class="o">*</span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Parse config-&gt;connection_json to get connection parameters</span>
+<span class="w">  </span><span class="c1">// Open connection to instrument</span>
+<span class="w">  </span><span class="c1">// g_device_handle = my_sdk_open(... );</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">g_device_handle</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_execute_command</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginCommand</span><span class="w"> </span><span class="o">*</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">PluginResponse</span><span class="w"> </span><span class="o">*</span><span class="n">resp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">command_id</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">instrument_name</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">instrument_name</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">verb</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;IDN&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Query instrument identity</span>
+<span class="w">    </span><span class="c1">// char idn[256];</span>
+<span class="w">    </span><span class="c1">// my_sdk_query(g_device_handle, &quot;*IDN?&quot;, idn);</span>
+
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">    </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">text_response</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;My Instrument v1.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_PAYLOAD</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">verb</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MEASURE&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Perform measurement</span>
+<span class="w">    </span><span class="c1">// double value = my_sdk_measure(g_device_handle);</span>
+
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">return_value</span><span class="p">.</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PARAM_TYPE_DOUBLE</span><span class="p">;</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">return_value</span><span class="p">.</span><span class="n">value</span><span class="p">.</span><span class="n">d_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">3.14159</span><span class="p">;</span><span class="w">  </span><span class="c1">// Replace with actual measurement</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">error_message</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Unknown command&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">plugin_shutdown</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">g_device_handle</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// my_sdk_close(g_device_handle);</span>
+<span class="w">    </span><span class="n">g_device_handle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="step-3-build-and-install">Step 3: Build and Install<a class="headerlink" href="#step-3-build-and-install" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..<span class="w"> </span>
+cmake<span class="w"> </span>--build<span class="w"> </span>.
+sudo<span class="w"> </span>cmake<span class="w"> </span>--install<span class="w"> </span>.
+</code></pre></div>
+<p>Your plugin is now installed to <code>/usr/local/lib/instrument-plugins/my_instrument_plugin.so</code></p>
+<h3 id="step-4-test-your-plugin">Step 4: Test Your Plugin<a class="headerlink" href="#step-4-test-your-plugin" title="Permanent link">&para;</a></h3>
+<p>Create instrument configuration:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span class="c1"># my_instrument. yaml</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MyInstrument1</span>
+<span class="nt">api_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_api. yaml</span>
+<span class="nt">connection</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MyInstrument</span><span class="w">  </span><span class="c1"># Must match plugin&#39;s protocol_type</span>
+<span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;COM3&quot;</span><span class="w">      </span><span class="c1"># Or whatever your instrument needs</span>
+</code></pre></div>
+<div class="language-yaml highlight"><pre><span></span><code><span class="c1"># my_api.yaml</span>
+<span class="nt">protocol</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MyInstrument</span>
+
+<span class="nt">commands</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">IDN</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Identity</span><span class="nv"> </span><span class="s">query&quot;</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;IDN&quot;</span>
+<span class="w">    </span><span class="nt">response_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+
+<span class="w">  </span><span class="nt">MEASURE</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w">  </span><span class="s">&quot;Perform</span><span class="nv"> </span><span class="s">measurement&quot;</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MEASURE&quot;</span>
+<span class="w">    </span><span class="nt">response_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">double</span>
+</code></pre></div>
+<p>Test the plugin:</p>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Test with explicit plugin path</span>
+instrument-server<span class="w"> </span><span class="nb">test</span><span class="w"> </span>my_instrument.yaml<span class="w"> </span>IDN<span class="w"> </span>--plugin<span class="w"> </span>./build/my_instrument_plugin.so
+
+<span class="c1"># After installation, test without path</span>
+instrument-server<span class="w"> </span><span class="nb">test</span><span class="w"> </span>my_instrument.yaml<span class="w"> </span>IDN
+
+<span class="c1"># If successful, start using it</span>
+instrument-server<span class="w"> </span>daemon<span class="w"> </span>start
+instrument-server<span class="w"> </span>start<span class="w"> </span>my_instrument.yaml
+instrument-server<span class="w"> </span>status<span class="w"> </span>MyInstrument1
+</code></pre></div>
+<h2 id="development-workflow">Development Workflow<a class="headerlink" href="#development-workflow" title="Permanent link">&para;</a></h2>
+<h3 id="using-add_instrument_plugin-helper">Using add_instrument_plugin() Helper<a class="headerlink" href="#using-add_instrument_plugin-helper" title="Permanent link">&para;</a></h3>
+<p>The <code>add_instrument_plugin()</code> CMake function (provided by InstrumentServer) automatically handles:</p>
+<p>✅ Creating MODULE library (for dynamic loading)<br />
+✅ Removing <code>lib</code> prefix<br />
+✅ Setting correct suffix (. so/. dll/. dylib)<br />
+✅ Position-independent code<br />
+✅ Symbol visibility<br />
+✅ Include paths  </p>
+<p><strong>Basic usage:</strong></p>
+<div class="language-cmake highlight"><pre><span></span><code><span class="nb">find_package</span><span class="p">(</span><span class="s">InstrumentServer</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
+
+<span class="nb">add_instrument_plugin</span><span class="p">(</span><span class="s">my_plugin</span>
+<span class="w">  </span><span class="s">SOURCES</span><span class="w"> </span><span class="s">my_plugin.</span><span class="w"> </span><span class="s">c</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><strong>With SDK dependencies:</strong></p>
+<div class="language-cmake highlight"><pre><span></span><code><span class="nb">add_instrument_plugin</span><span class="p">(</span><span class="s">my_plugin</span>
+<span class="w">  </span><span class="s">SOURCES</span><span class="w"> </span>
+<span class="w">    </span><span class="s">my_plugin.c</span>
+<span class="w">    </span><span class="s">helper.</span><span class="w"> </span><span class="s">c</span>
+<span class="w">  </span><span class="s">LINK_LIBRARIES</span>
+<span class="w">    </span><span class="s">my_vendor_sdk</span>
+<span class="w">  </span><span class="s">INCLUDE_DIRS</span>
+<span class="w">    </span><span class="o">${</span><span class="nv">CMAKE_CURRENT_SOURCE_DIR</span><span class="o">}</span><span class="s">/include</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><strong>Multiple plugins:</strong></p>
+<div class="language-cmake highlight"><pre><span></span><code><span class="nb">add_instrument_plugin</span><span class="p">(</span><span class="s">plugin1</span><span class="w"> </span><span class="s">SOURCES</span><span class="w"> </span><span class="s">plugin1.c</span><span class="p">)</span>
+<span class="nb">add_instrument_plugin</span><span class="p">(</span><span class="s">plugin2</span><span class="w"> </span><span class="s">SOURCES</span><span class="w"> </span><span class="s">plugin2.c</span><span class="p">)</span>
+<span class="nb">add_instrument_plugin</span><span class="p">(</span><span class="s">plugin3</span><span class="w"> </span><span class="s">SOURCES</span><span class="w"> </span><span class="s">plugin3.c</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="without-add_instrument_plugin-helper">Without add_instrument_plugin() Helper<a class="headerlink" href="#without-add_instrument_plugin-helper" title="Permanent link">&para;</a></h3>
+<p>If you prefer manual control or can't use the helper:</p>
+<div class="language-cmake highlight"><pre><span></span><code><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span><span class="w"> </span><span class="s">3.20</span><span class="p">)</span>
+<span class="nb">project</span><span class="p">(</span><span class="s">MyPlugin</span><span class="p">)</span>
+
+<span class="nb">add_library</span><span class="p">(</span><span class="s">my_plugin</span><span class="w"> </span><span class="s">MODULE</span><span class="w"> </span><span class="s">my_plugin.c</span><span class="p">)</span>
+
+<span class="nb">set_target_properties</span><span class="p">(</span><span class="s">my_plugin</span><span class="w"> </span><span class="s">PROPERTIES</span>
+<span class="w">  </span><span class="s">PREFIX</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="w">                          </span><span class="c"># No &#39;lib&#39; prefix</span>
+<span class="w">  </span><span class="s">POSITION_INDEPENDENT_CODE</span><span class="w"> </span><span class="s">ON</span>
+<span class="w">  </span><span class="s">C_VISIBILITY_PRESET</span><span class="w"> </span><span class="s">default</span><span class="w">        </span><span class="c"># Export symbols</span>
+<span class="p">)</span>
+
+<span class="nb">target_include_directories</span><span class="p">(</span><span class="s">my_plugin</span><span class="w"> </span><span class="s">PRIVATE</span>
+<span class="w">  </span><span class="s">/usr/local/include</span><span class="w">  </span><span class="c"># Or wherever InstrumentServer is installed</span>
+<span class="p">)</span>
+
+<span class="c"># Link your SDK</span>
+<span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">my_plugin</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">my_instrument_sdk</span><span class="p">)</span>
+
+<span class="nb">install</span><span class="p">(</span><span class="s">TARGETS</span><span class="w"> </span><span class="s">my_plugin</span><span class="w"> </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">lib/instrument-plugins</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="building-plugins">Building Plugins<a class="headerlink" href="#building-plugins" title="Permanent link">&para;</a></h2>
+<h3 id="linux">Linux<a class="headerlink" href="#linux" title="Permanent link">&para;</a></h3>
+<p><strong>With CMake (recommended):</strong></p>
+<div class="language-bash highlight"><pre><span></span><code>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..<span class="w"> </span>
+cmake<span class="w"> </span>--build<span class="w"> </span>.
+sudo<span class="w"> </span>cmake<span class="w"> </span>--install<span class="w"> </span>.
+</code></pre></div>
+<p><strong>Manual compilation (for simple plugins):</strong></p>
+<div class="language-bash highlight"><pre><span></span><code>gcc<span class="w"> </span>-shared<span class="w"> </span>-fPIC<span class="w"> </span>-o<span class="w"> </span>my_plugin.so<span class="w"> </span>my_plugin.c<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-I/usr/local/include<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-L/usr/local/lib<span class="w"> </span>-lmy_sdk
+</code></pre></div>
+<h3 id="macos">macOS<a class="headerlink" href="#macos" title="Permanent link">&para;</a></h3>
+<p><strong>With CMake:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code>mkdir<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..
+cmake<span class="w"> </span>--build<span class="w"> </span>.
+sudo<span class="w"> </span>cmake<span class="w"> </span>--install<span class="w"> </span>.
+</code></pre></div>
+<p><strong>Manual compilation:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code>clang<span class="w"> </span>-shared<span class="w"> </span>-fPIC<span class="w"> </span>-o<span class="w"> </span>my_plugin.dylib<span class="w"> </span>my_plugin.<span class="w"> </span>c<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>-I/usr/local/include<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>-L/usr/local/lib<span class="w"> </span>-lmy_sdk
+</code></pre></div>
+<h3 id="windows">Windows<a class="headerlink" href="#windows" title="Permanent link">&para;</a></h3>
+<p><strong>With CMake and MSVC:</strong></p>
+<div class="language-powershell highlight"><pre><span></span><code><span class="n">mkdir</span> <span class="n">build</span>
+<span class="nb">cd </span><span class="n">build</span>
+<span class="n">cmake</span> <span class="p">..</span> <span class="n">-G</span> <span class="s2">&quot;Visual Studio 16 2019&quot;</span>
+<span class="n">cmake</span> <span class="p">-</span><span class="n">-build</span> <span class="p">.</span>  <span class="p">-</span><span class="n">-config</span> <span class="n">Release</span>
+<span class="n">cmake</span> <span class="p">-</span><span class="n">-install</span> <span class="p">.</span> <span class="p">-</span><span class="n">-config</span> <span class="n">Release</span>
+</code></pre></div>
+<p><strong>With MinGW:</strong></p>
+<div class="language-powershell highlight"><pre><span></span><code><span class="n">gcc</span> <span class="n">-shared</span> <span class="n">-o</span> <span class="n">my_plugin</span><span class="p">.</span> <span class="n">dll</span> <span class="n">my_plugin</span><span class="p">.</span><span class="n">c</span> <span class="p">^</span>
+    <span class="n">-I</span><span class="s2">&quot;C:\Program Files\InstrumentServer\include&quot;</span> <span class="p">^</span>
+    <span class="n">-L</span><span class="s2">&quot;C:\Program Files\MySDK\lib&quot;</span> <span class="n">-lmy_sdk</span>
+</code></pre></div>
+<h3 id="cross-platform-cmake">Cross-Platform CMake<a class="headerlink" href="#cross-platform-cmake" title="Permanent link">&para;</a></h3>
+<div class="language-cmake highlight"><pre><span></span><code><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span><span class="w"> </span><span class="s">3.20</span><span class="p">)</span>
+<span class="nb">project</span><span class="p">(</span><span class="s">MyPlugin</span><span class="p">)</span>
+
+<span class="nb">find_package</span><span class="p">(</span><span class="s">InstrumentServer</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
+
+<span class="c"># Works on all platforms</span>
+<span class="nb">add_instrument_plugin</span><span class="p">(</span><span class="s">my_plugin</span>
+<span class="w">  </span><span class="s">SOURCES</span><span class="w"> </span><span class="s">my_plugin.c</span>
+<span class="w">  </span><span class="s">LINK_LIBRARIES</span><span class="w"> </span><span class="s">my_sdk</span>
+<span class="p">)</span>
+
+<span class="c"># Platform-specific options</span>
+<span class="nb">if</span><span class="p">(</span><span class="s">WIN32</span><span class="p">)</span>
+<span class="w">  </span><span class="nb">target_compile_definitions</span><span class="p">(</span><span class="s">my_plugin</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">WINDOWS_SPECIFIC</span><span class="p">)</span>
+<span class="nb">elseif</span><span class="p">(</span><span class="s">APPLE</span><span class="p">)</span>
+<span class="w">  </span><span class="nb">target_compile_definitions</span><span class="p">(</span><span class="s">my_plugin</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">MACOS_SPECIFIC</span><span class="p">)</span>
+<span class="nb">else</span><span class="p">()</span>
+<span class="w">  </span><span class="nb">target_compile_definitions</span><span class="p">(</span><span class="s">my_plugin</span><span class="w"> </span><span class="s">PRIVATE</span><span class="w"> </span><span class="s">LINUX_SPECIFIC</span><span class="p">)</span>
+<span class="nb">endif</span><span class="p">()</span>
+
+<span class="nb">install</span><span class="p">(</span><span class="s">TARGETS</span><span class="w"> </span><span class="s">my_plugin</span><span class="w"> </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">lib/instrument-plugins</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="testing-plugins">Testing Plugins<a class="headerlink" href="#testing-plugins" title="Permanent link">&para;</a></h2>
+<h3 id="1-verify-plugin-loads">1. Verify Plugin Loads<a class="headerlink" href="#1-verify-plugin-loads" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Check if plugin is discoverable</span>
+instrument-server<span class="w"> </span>plugins
+
+<span class="c1"># Should list your plugin if installed to standard location</span>
+</code></pre></div>
+<h3 id="2-test-metadata">2. Test Metadata<a class="headerlink" href="#2-test-metadata" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Test with explicit path</span>
+instrument-server<span class="w"> </span>discover<span class="w"> </span>/path/to/my/plugins
+
+<span class="c1"># Should show plugin details</span>
+</code></pre></div>
+<h3 id="3-test-commands">3. Test Commands<a class="headerlink" href="#3-test-commands" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Create minimal config files (shown in Quick Start)</span>
+<span class="c1"># Then test individual commands</span>
+
+instrument-server<span class="w"> </span><span class="nb">test</span><span class="w"> </span>my_instrument.yaml<span class="w"> </span>IDN
+instrument-server<span class="w"> </span><span class="nb">test</span><span class="w"> </span>my_instrument.yaml<span class="w"> </span>MEASURE
+</code></pre></div>
+<h3 id="4-integration-testing">4. Integration Testing<a class="headerlink" href="#4-integration-testing" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Start daemon</span>
+instrument-server<span class="w"> </span>daemon<span class="w"> </span>start
+
+<span class="c1"># Start instrument</span>
+instrument-server<span class="w"> </span>start<span class="w"> </span>my_instrument.<span class="w"> </span>yaml
+
+<span class="c1"># Check status</span>
+instrument-server<span class="w"> </span>status<span class="w"> </span>MyInstrument1
+
+<span class="c1"># Run measurement script</span>
+instrument-server<span class="w"> </span>measure<span class="w"> </span>dc<span class="w"> </span>test_measurement.lua
+
+<span class="c1"># Cleanup</span>
+instrument-server<span class="w"> </span>stop<span class="w"> </span>MyInstrument1
+instrument-server<span class="w"> </span>daemon<span class="w"> </span>stop
+</code></pre></div>
+<h3 id="5-unit-testing-plugin-directly">5. Unit Testing Plugin Directly<a class="headerlink" href="#5-unit-testing-plugin-directly" title="Permanent link">&para;</a></h3>
+<p>Create a test program:</p>
+<div class="language-c highlight"><pre><span></span><code><span class="c1">// test_plugin.c</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;assert.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;dlfcn.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;instrument-server/plugin/PluginInterface.h&gt;</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Load plugin</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">handle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dlopen</span><span class="p">(</span><span class="s">&quot;./my_plugin.so&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">RTLD_NOW</span><span class="p">);</span>
+<span class="w">  </span><span class="n">assert</span><span class="p">(</span><span class="n">handle</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// Get metadata</span>
+<span class="w">  </span><span class="k">typedef</span><span class="w"> </span><span class="n">PluginMetadata</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">GetMetadataFunc</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+<span class="w">  </span><span class="n">GetMetadataFunc</span><span class="w"> </span><span class="n">get_metadata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dlsym</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;plugin_get_metadata&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="n">assert</span><span class="p">(</span><span class="n">get_metadata</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span>
+
+<span class="w">  </span><span class="n">PluginMetadata</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_metadata</span><span class="p">();</span>
+<span class="w">  </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Plugin:  %s v%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">meta</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">meta</span><span class="p">.</span><span class="n">version</span><span class="p">);</span>
+<span class="w">  </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Protocol: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">meta</span><span class="p">.</span><span class="n">protocol_type</span><span class="p">);</span>
+<span class="w">  </span><span class="n">assert</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">api_version</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">INSTRUMENT_PLUGIN_API_VERSION</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// Test initialize</span>
+<span class="w">  </span><span class="k">typedef</span><span class="w"> </span><span class="kt">int32_t</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">InitFunc</span><span class="p">)(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginConfig</span><span class="o">*</span><span class="p">);</span>
+<span class="w">  </span><span class="n">InitFunc</span><span class="w"> </span><span class="n">init</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dlsym</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;plugin_initialize&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="n">assert</span><span class="p">(</span><span class="n">init</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span>
+
+<span class="w">  </span><span class="n">PluginConfig</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">config</span><span class="p">.</span><span class="n">instrument_name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Test&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">config</span><span class="p">.</span><span class="n">connection_json</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;{</span><span class="se">\&quot;</span><span class="s">address</span><span class="se">\&quot;</span><span class="s">:</span><span class="se">\&quot;</span><span class="s">test</span><span class="se">\&quot;</span><span class="s">}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_PAYLOAD</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">config</span><span class="p">);</span>
+<span class="w">  </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Initialize result: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">);</span>
+<span class="w">  </span><span class="n">assert</span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// Test command</span>
+<span class="w">  </span><span class="k">typedef</span><span class="w"> </span><span class="kt">int32_t</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">ExecFunc</span><span class="p">)(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginCommand</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">PluginResponse</span><span class="o">*</span><span class="p">);</span>
+<span class="w">  </span><span class="n">ExecFunc</span><span class="w"> </span><span class="n">exec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dlsym</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;plugin_execute_command&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="n">assert</span><span class="p">(</span><span class="n">exec</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span>
+
+<span class="w">  </span><span class="n">PluginCommand</span><span class="w"> </span><span class="n">cmd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">cmd</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;test-1&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">cmd</span><span class="p">.</span><span class="n">instrument_name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Test&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">cmd</span><span class="p">.</span><span class="n">verb</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;IDN&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">cmd</span><span class="p">.</span><span class="n">expects_response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">PluginResponse</span><span class="w"> </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+<span class="w">  </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">exec</span><span class="p">(</span><span class="o">&amp;</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">resp</span><span class="p">);</span>
+<span class="w">  </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Command result: %d, success: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">,</span><span class="w"> </span><span class="n">resp</span><span class="p">.</span><span class="n">success</span><span class="p">);</span>
+<span class="w">  </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;Response: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">resp</span><span class="p">.</span><span class="n">text_response</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// Cleanup</span>
+<span class="w">  </span><span class="k">typedef</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="n">ShutdownFunc</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+<span class="w">  </span><span class="n">ShutdownFunc</span><span class="w"> </span><span class="n">shutdown</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dlsym</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;plugin_shutdown&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">shutdown</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">shutdown</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">dlclose</span><span class="p">(</span><span class="n">handle</span><span class="p">);</span>
+<span class="w">  </span><span class="n">printf</span><span class="p">(</span><span class="s">&quot;All tests passed!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Compile and run:</p>
+<div class="language-bash highlight"><pre><span></span><code>gcc<span class="w"> </span>-o<span class="w"> </span>test_plugin<span class="w"> </span>test_plugin.c<span class="w"> </span>-ldl<span class="w"> </span>-I/usr/local/include
+./test_plugin
+</code></pre></div>
+<h2 id="example-plugins">Example Plugins<a class="headerlink" href="#example-plugins" title="Permanent link">&para;</a></h2>
+<h3 id="example-1-simple-echo-plugin-no-dependencies">Example 1: Simple Echo Plugin (No Dependencies)<a class="headerlink" href="#example-1-simple-echo-plugin-no-dependencies" title="Permanent link">&para;</a></h3>
+<div class="language-c highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;instrument-server/plugin/PluginInterface.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">g_initialized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="n">PluginMetadata</span><span class="w"> </span><span class="nf">plugin_get_metadata</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">PluginMetadata</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+<span class="w">  </span><span class="n">meta</span><span class="p">.</span><span class="n">api_version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">INSTRUMENT_PLUGIN_API_VERSION</span><span class="p">;</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Echo Plugin&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">version</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;1.0.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">protocol_type</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Echo&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">description</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Simple echo plugin for testing&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">meta</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_initialize</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginConfig</span><span class="w"> </span><span class="o">*</span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[Echo] Initializing for %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="o">-&gt;</span><span class="n">instrument_name</span><span class="p">);</span>
+<span class="w">  </span><span class="n">g_initialized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_execute_command</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginCommand</span><span class="w"> </span><span class="o">*</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">PluginResponse</span><span class="w"> </span><span class="o">*</span><span class="n">resp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">command_id</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">instrument_name</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">instrument_name</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">g_initialized</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">    </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">error_message</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Not initialized&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="c1">// Echo back the command verb</span>
+<span class="w">  </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">  </span><span class="n">snprintf</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">text_response</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_PAYLOAD</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Echo: %s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">verb</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">plugin_shutdown</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[Echo] Shutting down</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="n">g_initialized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>CMakeLists.txt:</strong></p>
+<div class="language-cmake highlight"><pre><span></span><code><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span><span class="w"> </span><span class="s">3.20</span><span class="p">)</span>
+<span class="nb">project</span><span class="p">(</span><span class="s">EchoPlugin</span><span class="p">)</span>
+
+<span class="nb">find_package</span><span class="p">(</span><span class="s">InstrumentServer</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
+<span class="nb">add_instrument_plugin</span><span class="p">(</span><span class="s">echo_plugin</span><span class="w"> </span><span class="s">SOURCES</span><span class="w"> </span><span class="s">echo_plugin.c</span><span class="p">)</span>
+<span class="nb">install</span><span class="p">(</span><span class="s">TARGETS</span><span class="w"> </span><span class="s">echo_plugin</span><span class="w"> </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">lib/instrument-plugins</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="example-2-serial-port-plugin">Example 2: Serial Port Plugin<a class="headerlink" href="#example-2-serial-port-plugin" title="Permanent link">&para;</a></h3>
+<div class="language-c highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;instrument-server/plugin/PluginInterface.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;fcntl.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;unistd.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;termios.h&gt;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">g_fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+
+<span class="n">PluginMetadata</span><span class="w"> </span><span class="nf">plugin_get_metadata</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">PluginMetadata</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+<span class="w">  </span><span class="n">meta</span><span class="p">.</span><span class="n">api_version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">INSTRUMENT_PLUGIN_API_VERSION</span><span class="p">;</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Serial Port Plugin&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="w"> </span><span class="n">version</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;1.0.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">protocol_type</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Serial&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">description</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Serial port communication&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">meta</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_initialize</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginConfig</span><span class="w"> </span><span class="o">*</span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Parse port from config-&gt;connection_json</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;/dev/ttyUSB0&quot;</span><span class="p">;</span><span class="w">  </span><span class="c1">// TODO: Parse from JSON</span>
+
+<span class="w">  </span><span class="n">g_fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open</span><span class="p">(</span><span class="n">port</span><span class="p">,</span><span class="w"> </span><span class="n">O_RDWR</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">O_NOCTTY</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">g_fd</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="c1">// Configure serial port</span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">termios</span><span class="w"> </span><span class="n">options</span><span class="p">;</span>
+<span class="w">  </span><span class="n">tcgetattr</span><span class="p">(</span><span class="n">g_fd</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">options</span><span class="p">);</span>
+<span class="w">  </span><span class="n">cfsetispeed</span><span class="p">(</span><span class="o">&amp;</span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="n">B9600</span><span class="p">);</span>
+<span class="w">  </span><span class="n">cfsetospeed</span><span class="p">(</span><span class="o">&amp;</span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="n">B9600</span><span class="p">);</span>
+<span class="w">  </span><span class="n">options</span><span class="p">.</span><span class="n">c_cflag</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="p">(</span><span class="n">CLOCAL</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">CREAD</span><span class="p">);</span>
+<span class="w">  </span><span class="n">options</span><span class="p">.</span><span class="n">c_cflag</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="o">~</span><span class="n">PARENB</span><span class="p">;</span>
+<span class="w">  </span><span class="n">options</span><span class="p">.</span><span class="n">c_cflag</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="o">~</span><span class="n">CSTOPB</span><span class="p">;</span>
+<span class="w">  </span><span class="n">options</span><span class="p">.</span><span class="n">c_cflag</span><span class="w"> </span><span class="o">&amp;=</span><span class="w"> </span><span class="o">~</span><span class="n">CSIZE</span><span class="p">;</span>
+<span class="w">  </span><span class="n">options</span><span class="p">.</span><span class="n">c_cflag</span><span class="w"> </span><span class="o">|=</span><span class="w"> </span><span class="n">CS8</span><span class="p">;</span>
+<span class="w">  </span><span class="n">tcsetattr</span><span class="p">(</span><span class="n">g_fd</span><span class="p">,</span><span class="w"> </span><span class="n">TCSANOW</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">options</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_execute_command</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginCommand</span><span class="w"> </span><span class="o">*</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">PluginResponse</span><span class="w"> </span><span class="o">*</span><span class="n">resp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">command_id</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">instrument_name</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">instrument_name</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">g_fd</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">    </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">error_message</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Port not open&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="c1">// Send command</span>
+<span class="w">  </span><span class="kt">char</span><span class="w"> </span><span class="n">command</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+<span class="w">  </span><span class="n">snprintf</span><span class="p">(</span><span class="n">command</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">command</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">verb</span><span class="p">);</span>
+<span class="w">  </span><span class="n">write</span><span class="p">(</span><span class="n">g_fd</span><span class="p">,</span><span class="w"> </span><span class="n">command</span><span class="p">,</span><span class="w"> </span><span class="n">strlen</span><span class="p">(</span><span class="n">command</span><span class="p">));</span>
+
+<span class="w">  </span><span class="c1">// Read response</span>
+<span class="w">  </span><span class="kt">char</span><span class="w"> </span><span class="n">buffer</span><span class="p">[</span><span class="mi">1024</span><span class="p">];</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">read</span><span class="p">(</span><span class="n">g_fd</span><span class="p">,</span><span class="w"> </span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">buffer</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;\0&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">    </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">text_response</span><span class="p">,</span><span class="w"> </span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_PAYLOAD</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">error_message</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Read failed&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">plugin_shutdown</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">g_fd</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">close</span><span class="p">(</span><span class="n">g_fd</span><span class="p">);</span>
+<span class="w">    </span><span class="n">g_fd</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="example-3-visa-plugin">Example 3: VISA Plugin<a class="headerlink" href="#example-3-visa-plugin" title="Permanent link">&para;</a></h3>
+<div class="language-c highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;instrument-server/plugin/PluginInterface.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;visa. h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string. h&gt;</span>
+
+<span class="k">static</span><span class="w"> </span><span class="n">ViSession</span><span class="w"> </span><span class="n">g_rm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VI_NULL</span><span class="p">;</span>
+<span class="k">static</span><span class="w"> </span><span class="n">ViSession</span><span class="w"> </span><span class="n">g_instr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VI_NULL</span><span class="p">;</span>
+
+<span class="n">PluginMetadata</span><span class="w"> </span><span class="nf">plugin_get_metadata</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">PluginMetadata</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+<span class="w">  </span><span class="n">meta</span><span class="p">.</span><span class="n">api_version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">INSTRUMENT_PLUGIN_API_VERSION</span><span class="p">;</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;VISA Plugin&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">version</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;1.0.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">protocol_type</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;VISA&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">meta</span><span class="p">.</span><span class="n">description</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;VISA/SCPI instrument driver&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">meta</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_initialize</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginConfig</span><span class="w"> </span><span class="o">*</span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Parse VISA address from config-&gt;connection_json</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;TCPIP:: 192.168.1.1:: INSTR&quot;</span><span class="p">;</span><span class="w">  </span><span class="c1">// TODO: Parse from JSON</span>
+
+<span class="w">  </span><span class="n">ViStatus</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">viOpenDefaultRM</span><span class="p">(</span><span class="o">&amp;</span><span class="n">g_rm</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">VI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">viOpen</span><span class="p">(</span><span class="n">g_rm</span><span class="p">,</span><span class="w"> </span><span class="n">address</span><span class="p">,</span><span class="w"> </span><span class="n">VI_NULL</span><span class="p">,</span><span class="w"> </span><span class="n">VI_NULL</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">g_instr</span><span class="p">);</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">VI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">viClose</span><span class="p">(</span><span class="n">g_rm</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">-2</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_execute_command</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginCommand</span><span class="w"> </span><span class="o">*</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">PluginResponse</span><span class="w"> </span><span class="o">*</span><span class="n">resp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">command_id</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">instrument_name</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">instrument_name</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">g_instr</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">VI_NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">    </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">error_message</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;VISA not initialized&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="c1">// Send SCPI command</span>
+<span class="w">  </span><span class="n">viPrintf</span><span class="p">(</span><span class="n">g_instr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">verb</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// If expects response, read it</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">expects_response</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">buffer</span><span class="p">[</span><span class="mi">256</span><span class="p">];</span>
+<span class="w">    </span><span class="n">ViUInt32</span><span class="w"> </span><span class="n">ret_count</span><span class="p">;</span>
+<span class="w">    </span><span class="n">ViStatus</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">viScanf</span><span class="p">(</span><span class="n">g_instr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;%t&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ret_count</span><span class="p">,</span><span class="w"> </span><span class="n">buffer</span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">VI_SUCCESS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">      </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">text_response</span><span class="p">,</span><span class="w"> </span><span class="n">buffer</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_PAYLOAD</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">error_code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">status</span><span class="p">;</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">status</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">plugin_shutdown</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">g_instr</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">VI_NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">viClose</span><span class="p">(</span><span class="n">g_instr</span><span class="p">);</span>
+<span class="w">    </span><span class="n">g_instr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VI_NULL</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">g_rm</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">VI_NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">viClose</span><span class="p">(</span><span class="n">g_rm</span><span class="p">);</span>
+<span class="w">    </span><span class="n">g_rm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VI_NULL</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>CMakeLists.txt for VISA plugin:</strong></p>
+<div class="language-cmake highlight"><pre><span></span><code><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span><span class="w"> </span><span class="s">3.20</span><span class="p">)</span>
+<span class="nb">project</span><span class="p">(</span><span class="s">VISAPlugin</span><span class="p">)</span>
+
+<span class="nb">find_package</span><span class="p">(</span><span class="s">InstrumentServer</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
+
+<span class="c"># Find VISA library</span>
+<span class="nb">find_library</span><span class="p">(</span><span class="s">VISA_LIBRARY</span><span class="w"> </span><span class="s">NAMES</span><span class="w"> </span><span class="s">visa</span><span class="w"> </span><span class="s">visa64</span><span class="w"> </span><span class="s">PATHS</span><span class="w"> </span><span class="s">/usr/local/vxipnp/linux64/lib</span><span class="p">)</span>
+
+<span class="nb">add_instrument_plugin</span><span class="p">(</span><span class="s">visa_plugin</span>
+<span class="w">  </span><span class="s">SOURCES</span><span class="w"> </span><span class="s">visa_plugin.c</span>
+<span class="w">  </span><span class="s">LINK_LIBRARIES</span><span class="w"> </span><span class="o">${</span><span class="nv">VISA_LIBRARY</span><span class="o">}</span>
+<span class="p">)</span>
+
+<span class="nb">install</span><span class="p">(</span><span class="s">TARGETS</span><span class="w"> </span><span class="s">visa_plugin</span><span class="w"> </span><span class="s">LIBRARY</span><span class="w"> </span><span class="s">DESTINATION</span><span class="w"> </span><span class="s">lib/instrument-plugins</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="handling-large-data-in-plugins">Handling Large Data in Plugins<a class="headerlink" href="#handling-large-data-in-plugins" title="Permanent link">&para;</a></h2>
+<h3 id="when-to-use-data-buffers">When to Use Data Buffers<a class="headerlink" href="#when-to-use-data-buffers" title="Permanent link">&para;</a></h3>
+<p>Use data buffers when your plugin returns:</p>
+<ul>
+<li>Oscilloscope waveforms (&gt;1000 points)</li>
+<li>Spectrum analyzer traces</li>
+<li>Camera images</li>
+<li>Large measurement arrays</li>
+<li>Any data &gt;1KB</li>
+</ul>
+<h3 id="creating-data-buffers-in-c-plugins">Creating Data Buffers in C Plugins<a class="headerlink" href="#creating-data-buffers-in-c-plugins" title="Permanent link">&para;</a></h3>
+<div class="language-c highlight"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;instrument-server/ipc/DataBufferManager_C.h&gt;</span>
+
+<span class="kt">int32_t</span><span class="w"> </span><span class="nf">plugin_execute_command</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginCommand</span><span class="w"> </span><span class="o">*</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">PluginResponse</span><span class="w"> </span><span class="o">*</span><span class="n">resp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// ... execute command and get data ...</span>
+
+<span class="w">  </span><span class="c1">// Example: Large waveform data</span>
+<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">num_points</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10000</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">waveform</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_waveform_from_instrument</span><span class="p">();</span>
+
+<span class="w">  </span><span class="c1">// Create buffer</span>
+<span class="w">  </span><span class="kt">char</span><span class="w"> </span><span class="n">buffer_id</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data_buffer_create</span><span class="p">(</span>
+<span class="w">      </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">instrument_name</span><span class="p">,</span>
+<span class="w">      </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">,</span>
+<span class="w">      </span><span class="mi">0</span><span class="p">,</span><span class="w">  </span><span class="c1">// 0 = FLOAT32, 1 = FLOAT64, 2 = INT32, etc.</span>
+<span class="w">      </span><span class="n">num_points</span><span class="p">,</span>
+<span class="w">      </span><span class="n">waveform</span><span class="p">,</span>
+<span class="w">      </span><span class="n">buffer_id</span>
+<span class="w">  </span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Success - set response</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">has_large_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">    </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">data_buffer_id</span><span class="p">,</span><span class="w"> </span><span class="n">buffer_id</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">data_element_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">num_points</span><span class="p">;</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">data_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">  </span><span class="c1">// FLOAT32</span>
+
+<span class="w">    </span><span class="n">snprintf</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">text_response</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_PAYLOAD</span><span class="p">,</span>
+<span class="w">             </span><span class="s">&quot;Waveform data in buffer %s&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">buffer_id</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">    </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">error_message</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Failed to create buffer&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">free</span><span class="p">(</span><span class="n">waveform</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">result</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="data-type-codes">Data Type Codes<a class="headerlink" href="#data-type-codes" title="Permanent link">&para;</a></h3>
+<div class="language-c highlight"><pre><span></span><code><span class="c1">// Data type enum values for data_buffer_create()</span>
+<span class="cp">#define DATA_TYPE_FLOAT32  0</span>
+<span class="cp">#define DATA_TYPE_FLOAT64  1</span>
+<span class="cp">#define DATA_TYPE_INT32    2</span>
+<span class="cp">#define DATA_TYPE_INT64    3</span>
+<span class="cp">#define DATA_TYPE_UINT32   4</span>
+<span class="cp">#define DATA_TYPE_UINT64   5</span>
+<span class="cp">#define DATA_TYPE_UINT8    6</span>
+</code></pre></div>
+<h3 id="buffer-lifecycle">Buffer Lifecycle<a class="headerlink" href="#buffer-lifecycle" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Plugin creates buffer</strong> - Calls <code>data_buffer_create()</code></li>
+<li><strong>Server receives buffer ID</strong> - In <code>PluginResponse</code></li>
+<li><strong>Lua accesses buffer</strong> - Via <code>get_buffer()</code></li>
+<li><strong>User exports data</strong> - Calls <code>buffer:export_csv()</code> or <code>buffer:export_binary()</code></li>
+<li><strong>User releases buffer</strong> - Calls <code>buffer:release()</code></li>
+<li><strong>Auto cleanup</strong> - Buffer freed when ref count reaches 0</li>
+</ol>
+<h3 id="linking-to-databuffermanager">Linking to DataBufferManager<a class="headerlink" href="#linking-to-databuffermanager" title="Permanent link">&para;</a></h3>
+<p>In your plugin's <code>CMakeLists.txt</code>:</p>
+<div class="language-cmake highlight"><pre><span></span><code><span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">your_plugin</span>
+<span class="w">  </span><span class="s">PRIVATE</span>
+<span class="w">    </span><span class="s">InstrumentServerCore</span><span class="w">  </span><span class="c"># Provides DataBufferManager C API</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="example-oscilloscope-plugin">Example: Oscilloscope Plugin<a class="headerlink" href="#example-oscilloscope-plugin" title="Permanent link">&para;</a></h3>
+<div class="language-c highlight"><pre><span></span><code><span class="kt">int32_t</span><span class="w"> </span><span class="nf">get_waveform</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">PluginCommand</span><span class="w"> </span><span class="o">*</span><span class="n">cmd</span><span class="p">,</span><span class="w"> </span><span class="n">PluginResponse</span><span class="w"> </span><span class="o">*</span><span class="n">resp</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Query number of points</span>
+<span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">num_points</span><span class="p">;</span>
+<span class="w">  </span><span class="n">visa_query</span><span class="p">(</span><span class="n">g_session</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;WAV: POIN?&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">num_points</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// Allocate temporary buffer</span>
+<span class="w">  </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">waveform</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">malloc</span><span class="p">(</span><span class="n">num_points</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">float</span><span class="p">));</span>
+
+<span class="w">  </span><span class="c1">// Read waveform data from instrument</span>
+<span class="w">  </span><span class="n">visa_read_binary</span><span class="p">(</span><span class="n">g_session</span><span class="p">,</span><span class="w"> </span><span class="n">waveform</span><span class="p">,</span><span class="w"> </span><span class="n">num_points</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// Create shared buffer</span>
+<span class="w">  </span><span class="kt">char</span><span class="w"> </span><span class="n">buffer_id</span><span class="p">[</span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="p">];</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">data_buffer_create</span><span class="p">(</span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">instrument_name</span><span class="p">,</span><span class="w"> </span><span class="n">cmd</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                        </span><span class="n">DATA_TYPE_FLOAT32</span><span class="p">,</span><span class="w"> </span><span class="n">num_points</span><span class="p">,</span>
+<span class="w">                        </span><span class="n">waveform</span><span class="p">,</span><span class="w"> </span><span class="n">buffer_id</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">success</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">has_large_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">    </span><span class="n">strncpy</span><span class="p">(</span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">data_buffer_id</span><span class="p">,</span><span class="w"> </span><span class="n">buffer_id</span><span class="p">,</span><span class="w"> </span><span class="n">PLUGIN_MAX_STRING_LEN</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">data_element_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">num_points</span><span class="p">;</span>
+<span class="w">    </span><span class="n">resp</span><span class="o">-&gt;</span><span class="n">data_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DATA_TYPE_FLOAT32</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">free</span><span class="p">(</span><span class="n">waveform</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../ARCHITECTURE/">Architecture</a> - System design</li>
+<li><a href="../CLI_USAGE/">CLI Usage</a> - Testing plugins</li>
+<li><a href="../">Main README</a> - Getting started and installation</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
