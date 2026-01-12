@@ -33,7 +33,16 @@ jobs:
             makepkg -si --noconfirm
             cd /workspace
 
-            # Use yay to install the rest from AUR (non-interactive)
+            # Create a non-root user
+            useradd -m builder
+            chown -R builder:builder /workspace
+
+            # Switch to builder and install yay + AUR packages
+            su builder <<'EOF'
+            cd ~
+            git clone https://aur.archlinux.org/yay.git
+            cd yay
+            makepkg -si --noconfirm
             yay -S --noconfirm --mflags --skipinteg \
               mingw-w64-cmake \
               mingw-w64-lua \
@@ -43,6 +52,7 @@ jobs:
               mingw-w64-nlohmann-json \
               mingw-w64-yaml-cpp \
               mingw-w64-gtest
+            EOF
 
             # Install sol2 (header-only)
             git clone --depth 1 --branch v3.3.0 https://github.com/ThePhD/sol2.git /tmp/sol2

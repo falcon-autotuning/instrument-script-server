@@ -30,7 +30,6 @@ endif()
 
 # sol2 (header-only)
 find_path(SOL2_INCLUDE_DIR sol/sol.hpp REQUIRED)
-add_compile_definitions(SOL_NO_STD_OPTIONAL=1)
 
 # VISA (optional)
 find_library(

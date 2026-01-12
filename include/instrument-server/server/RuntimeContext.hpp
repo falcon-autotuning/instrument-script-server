@@ -2,7 +2,6 @@
 #include "instrument-server/SerializedCommand.hpp"
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include "instrument-server/server/SyncCoordinator.hpp"
-#define SOL_NO_STD_OPTIONAL 1
 #include <sol/sol.hpp>
 #include <unordered_map>
 #include <vector>
