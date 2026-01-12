@@ -1,6 +1,6 @@
 # Plugin Development Guide
 
-Complete guide to developing instrument driver plugins for the Falcon Instrument Server.
+Complete guide to developing instrument driver plugins for the Instrument Server.
 
 ## Table of Contents
 

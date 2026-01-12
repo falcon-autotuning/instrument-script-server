@@ -1,4 +1,4 @@
-# Falcon Instrument Script Server
+# Instrument Script Server
 
 A modular, process-isolated system for controlling scientific instruments for laboratory automation.
 
@@ -16,17 +16,20 @@ A modular, process-isolated system for controlling scientific instruments for la
 The Instrument Script Server is designed for high-performance laboratory automation with minimal overhead:
 
 ### End-to-End Performance (Best Case)
+
 - **Average Command Latency**: ~200 µs per command
 - **Throughput**: ~5,000 commands/second
 - **IPC Throughput**: 400,000+ messages/second
 - **Sync Barrier Overhead**: <4 µs per synchronization point
 
 ### Scalability
+
 - **Concurrent Instruments**: Supports 10+ instruments simultaneously
 - **Multi-instrument Commands**: 200 µs average latency with 10 concurrent instruments
 - **Setup Time**: ~500 ms per additional instrument
 
 ### Use Cases
+
 - Single instrument control: ~200 µs overhead per command
 - Complex measurements with parameters: ~220 µs overhead
 - Array/large data transfers: ~220 µs overhead
@@ -165,14 +168,10 @@ make test_integration    # Integration tests
 make test_perf          # Performance benchmarks
 ```
 
+## Contributing
+
+Contributions are welcome! Please see our [contribution guidelines](CONTRIBUTING.md).
+
 ## License
 
 See [LICENSE](LICENSE) for details.
-
-## Contributing
-
-Contributions are welcome! Please see our contribution guidelines.
-
-## Authors
-
-Falcon Autotuning Team
