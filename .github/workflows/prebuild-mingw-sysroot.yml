@@ -47,14 +47,22 @@ jobs:
           chown -R builder:builder /home/builder
           chown -R builder:builder /workspace || true
 
-      - name: Create safe sudoers for builder (recommended)
+      - name: Restore yay cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            /home/builder/.cache/yay
+            /home/builder/yay/pkg
+          key: ${{ runner.os }}-yay-cache-v1
+
+      - name: Create safe sudoers for builder (no heredoc)
         run: |
           set -euo pipefail
           rm -f /etc/sudoers.d/builder
-          # Write the sudoers entry with printf (no heredoc, no accidental indentation)
+          # Use printf to avoid heredoc/indentation issues in YAML blocks
           printf '%s\n' 'builder ALL=(ALL) NOPASSWD: /usr/bin/pacman' > /etc/sudoers.d/builder
           chmod 0440 /etc/sudoers.d/builder
-          # Validate syntax; fail fast if broken
+          # Validate syntax; this will fail the job if the file is invalid
           visudo -cf /etc/sudoers.d/builder
 
       - name: Build yay and install AUR mingw packages as builder
@@ -103,8 +111,10 @@ jobs:
           tar -C / -czf "${SYSROOT_TARBALL_PATH}" usr/x86_64-w64-mingw32
           echo "Tarball size:"
           ls -lh "${SYSROOT_TARBALL_PATH}"
-          echo "Tarball contents preview:"
-          tar -tf "${SYSROOT_TARBALL_PATH}" | head -n 50
+          echo "Tarball contents preview (first 50 lines):"
+          # Safer listing to avoid SIGPIPE (write to tmp file then head)
+          tar -tf "${SYSROOT_TARBALL_PATH}" > /tmp/mingw-tar-list.txt
+          head -n 50 /tmp/mingw-tar-list.txt
 
       - name: Upload tarball as workflow artifact (backup)
         uses: actions/upload-artifact@v4
