@@ -1,0 +1,100 @@
+name: Native Windows Build and Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test-windows:
+    name: Build and Test on Windows (vcpkg)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: "c8696863d371ab7f46e213d8f5ca923c4aef2a00"
+
+      - name: Install dependencies via vcpkg (manifest)
+        run: |
+          vcpkg install --triplet x64-windows
+        shell: pwsh
+
+      - name: Configure CMake with vcpkg toolchain
+        run: |
+          cmake -B build `
+            -S . `
+            -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DBUILD_TESTS=ON `
+            -G "Visual Studio 17 2022" `
+            -A x64
+        shell: pwsh
+
+      - name: Build project
+        run: |
+          cmake --build build --config Release --verbose
+        shell: pwsh
+
+      - name: Run unit tests
+        run: |
+          if (Test-Path "build/Release/unit_tests.exe") {
+            Write-Host "Running unit tests..."
+            & build/Release/unit_tests.exe
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Unit tests failed with exit code $LASTEXITCODE"
+              exit $LASTEXITCODE
+            }
+            Write-Host "✓ Unit tests passed successfully"
+          } else {
+            Write-Host "No unit_tests.exe found, skipping..."
+          }
+        shell: pwsh
+
+      - name: Run integration tests
+        run: |
+          if (Test-Path "build/Release/integration_tests.exe") {
+            Write-Host "Running integration tests..."
+            & build/Release/integration_tests.exe
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Integration tests failed with exit code $LASTEXITCODE"
+              exit $LASTEXITCODE
+            }
+            Write-Host "✓ Integration tests passed successfully"
+          } else {
+            Write-Host "No integration_tests.exe found, skipping..."
+          }
+        shell: pwsh
+
+      - name: Collect artifacts
+        run: |
+          New-Item -ItemType Directory -Force -Path windows-binaries
+          Copy-Item -Path "LICENSE" -Destination "windows-binaries/" -ErrorAction SilentlyContinue
+          Get-ChildItem -Path "build" -Recurse -Include *.exe,*.dll | Copy-Item -Destination "windows-binaries/" -ErrorAction SilentlyContinue
+          Get-ChildItem -Path "windows-binaries"
+        shell: pwsh
+
+      - name: Upload Windows binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binaries
+          path: windows-binaries/
+          retention-days: 7
+
+      - name: Setup tmate session for debugging (on failure)
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+        with:
+          limit-access-to-actor: true

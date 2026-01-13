@@ -1,0 +1,15 @@
+{
+  "name": "instrument-script-server",
+  "version-string": "0.1.0",
+  "description": "vcpkg manifest for instrument-script-server (native Windows build)",
+  "builtin-baseline": "c8696863d371ab7f46e213d8f5ca923c4aef2a00",
+  "dependencies": [
+    "lua",
+    "nlohmann-json",
+    "fmt",
+    "spdlog",
+    "sol2",
+    "catch2",
+    "gtest"
+  ]
+}
