@@ -47,15 +47,14 @@ jobs:
           chown -R builder:builder /home/builder
           chown -R builder:builder /workspace || true
 
-      - name: Create safe sudoers for builder
+      - name: Create safe sudoers for builder (recommended)
         run: |
           set -euo pipefail
           rm -f /etc/sudoers.d/builder
-          cat <<'EOF' >/etc/sudoers.d/builder
-builder ALL=(ALL) NOPASSWD: /usr/bin/pacman
-EOF
+          # Write the sudoers entry with printf (no heredoc, no accidental indentation)
+          printf '%s\n' 'builder ALL=(ALL) NOPASSWD: /usr/bin/pacman' > /etc/sudoers.d/builder
           chmod 0440 /etc/sudoers.d/builder
-          # Validate syntax; this will fail the job if the file is invalid
+          # Validate syntax; fail fast if broken
           visudo -cf /etc/sudoers.d/builder
 
       - name: Build yay and install AUR mingw packages as builder
