@@ -148,30 +148,56 @@ jobs:
       - name: Write clang->mingw CMake toolchain file
         run: |
           set -euo pipefail
-          cat > /tmp/mingw-clang-toolchain.cmake <<'EOF'
+          # detect versioned GCC libdir (where libgcc/libgcc_eh live)
+          CANDIDATES=(
+            "/usr/lib/gcc/x86_64-w64-mingw32"
+            "/usr/lib/gcc/x86_64-w64-mingw32/"*
+            "/usr/x86_64-w64-mingw32/lib/gcc/x86_64-w64-mingw32"
+            "/usr/x86_64-w64-mingw32/lib/gcc/x86_64-w64-mingw32/"*
+          )
+          MINGW_GCC_LIBDIR=""
+          for d in "${CANDIDATES[@]}"; do
+            if [ -d "${d}" ] && ls "${d}"/libgcc* >/dev/null 2>&1; then
+              MINGW_GCC_LIBDIR="${d}"
+              break
+            fi
+          done
+          if [ -n "${MINGW_GCC_LIBDIR}" ]; then
+            echo "Detected MINGW_GCC_LIBDIR=${MINGW_GCC_LIBDIR}"
+          else
+            echo "Warning: could not detect MINGW_GCC_LIBDIR; toolchain will be written without extra -L"
+          fi
+
+          cat > /tmp/mingw-clang-toolchain.cmake <<EOF
           # clang -> mingw-w64 sysroot toolchain for x86_64-w64-mingw32
           set(CMAKE_SYSTEM_NAME Windows)
           set(CMAKE_SYSTEM_VERSION 1)
           set(CMAKE_C_COMPILER clang)
           set(CMAKE_CXX_COMPILER clang++)
           set(CMAKE_SYSROOT /usr/x86_64-w64-mingw32)
-          set(CMAKE_FIND_ROOT_PATH ${CMAKE_SYSROOT})
-          # Prefer the sysroot for libs/includes; do not search host paths for programs
+          set(CMAKE_FIND_ROOT_PATH \${CMAKE_SYSROOT})
           set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
           set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
           set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
           set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-          # clang flags
           set(CLANG_TARGET "--target=x86_64-w64-mingw32")
-          set(CLANG_SYSROOT "--sysroot=${CMAKE_SYSROOT}")
+          set(CLANG_SYSROOT "--sysroot=\${CMAKE_SYSROOT}")
+          EOF
+          if [ -n "${MINGW_GCC_LIBDIR}" ]; then
+            cat >> /tmp/mingw-clang-toolchain.cmake <<EOF
+          set(CMAKE_C_FLAGS "\${CLANG_TARGET} \${CLANG_SYSROOT} --gcc-toolchain=\${CMAKE_SYSROOT} \${CMAKE_C_FLAGS}")
+          set(CMAKE_CXX_FLAGS "\${CLANG_TARGET} \${CLANG_SYSROOT} --gcc-toolchain=\${CMAKE_SYSROOT} \${CMAKE_CXX_FLAGS}")
+          set(CMAKE_EXE_LINKER_FLAGS "\${CLANG_TARGET} \${CLANG_SYSROOT} -fuse-ld=lld -L${MINGW_GCC_LIBDIR} \${CMAKE_EXE_LINKER_FLAGS}")
+          set(CMAKE_SHARED_LINKER_FLAGS "\${CMAKE_EXE_LINKER_FLAGS}")
+          EOF
+          else
+            cat >> /tmp/mingw-clang-toolchain.cmake <<'EOF'
           set(CMAKE_C_FLAGS "${CLANG_TARGET} ${CLANG_SYSROOT} ${CMAKE_C_FLAGS}")
           set(CMAKE_CXX_FLAGS "${CLANG_TARGET} ${CLANG_SYSROOT} ${CMAKE_CXX_FLAGS}")
-          # If libgcc/libgcc_eh are installed under /usr (pacman), add that libdir so lld can find libgcc.
-          # Adjust this path if your distribution uses a version subdirectory (e.g. /usr/lib/gcc/x86_64-w64-mingw32/15/)
-          set(MINGW_GCC_LIBDIR "/usr/lib/gcc/x86_64-w64-mingw32")
-          set(CMAKE_EXE_LINKER_FLAGS "${CLANG_TARGET} ${CLANG_SYSROOT} -fuse-ld=lld -L${MINGW_GCC_LIBDIR} ${CMAKE_EXE_LINKER_FLAGS}")
+          set(CMAKE_EXE_LINKER_FLAGS "${CLANG_TARGET} ${CLANG_SYSROOT} -fuse-ld=lld ${CMAKE_EXE_LINKER_FLAGS}")
           set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
           EOF
+          fi
           chmod 0644 /tmp/mingw-clang-toolchain.cmake
           echo "Wrote toolchain file to /tmp/mingw-clang-toolchain.cmake"
 
