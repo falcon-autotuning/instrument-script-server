@@ -91,8 +91,9 @@ set_target_properties(instrument-server-core
                       PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries(
-  instrument-server-core PUBLIC spdlog::spdlog nlohmann_json::nlohmann_json
-                                yaml-cpp ${LUA_LIBRARIES} ${PLATFORM_LIBS})
+  instrument-server-core
+  PUBLIC spdlog::spdlog nlohmann_json::nlohmann_json yaml-cpp::yaml-cpp
+         ${LUA_LIBRARIES} ${PLATFORM_LIBS})
 
 target_include_directories(
   instrument-server-core PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
@@ -107,7 +108,7 @@ target_link_libraries(instrument-worker PRIVATE instrument-server-core)
 
 # VISA built-in plugin (optional)
 if(HAVE_VISA)
-  add_library(visa_builtin MODULE src/workers/visa_builtin. cpp)
+  add_library(visa_builtin MODULE src/workers/visa_builtin.cpp)
   target_link_libraries(visa_builtin PRIVATE instrument-server-core
                                              ${VISA_LIBRARY})
   set_target_properties(visa_builtin PROPERTIES PREFIX "" OUTPUT_NAME
