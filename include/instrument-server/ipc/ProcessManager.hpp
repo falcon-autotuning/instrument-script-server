@@ -1,4 +1,5 @@
 #pragma once
+#include "instrument-server/ipc/PlatformTypes.hpp"
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -11,16 +12,6 @@
 
 namespace instserver {
 namespace ipc {
-
-#ifdef _WIN32
-#include <windows.h>
-using ProcessHandle = HANDLE;
-using ProcessId = DWORD;
-#else
-#include <sys/types.h>
-using ProcessHandle = pid_t;
-using ProcessId = pid_t;
-#endif
 
 /// Manages worker process lifecycle
 class ProcessManager {

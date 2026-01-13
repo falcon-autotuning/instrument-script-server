@@ -1,6 +1,8 @@
 #include "instrument-server/ipc/ProcessManager.hpp"
 #include "instrument-server/Logger.hpp"
 
+#include <sstream>
+
 #ifdef _WIN32
 #include <processthreadsapi.h>
 #else
@@ -25,6 +27,29 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
   std::vector<std::string> args = {worker_executable, instrument_name,
                                    plugin_path};
 
+#ifdef _WIN32
+  // Windows:  spawn_process_impl needs to return both PID and HANDLE
+  // We'll handle this by having spawn_process_impl create the entry
+  ProcessId pid = spawn_process_impl(args);
+
+  if (pid == 0) {
+    LOG_ERROR("PROCESS", "SPAWN", "Failed to spawn worker for:  {}",
+              instrument_name);
+    return 0;
+  }
+
+  // Update the pre-created entry with additional info
+  {
+    std::lock_guard lock(mutex_);
+    auto it = processes_.find(pid);
+    if (it != processes_.end()) {
+      it->second->instrument_name = instrument_name;
+      it->second->plugin_path = plugin_path;
+      it->second->started_at = std::chrono::steady_clock::now();
+    }
+  }
+#else
+  // POSIX: spawn_process_impl just returns PID
   ProcessId pid = spawn_process_impl(args);
 
   if (pid == 0) {
@@ -48,6 +73,7 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
     std::lock_guard lock(mutex_);
     processes_[pid] = std::move(info);
   }
+#endif
 
   LOG_INFO("PROCESS", "SPAWN", "Worker spawned successfully:  PID={}", pid);
 
@@ -128,6 +154,18 @@ void ProcessManager::cleanup_all() {
     kill_process(pid, true);
     wait_for_exit(pid, std::chrono::milliseconds(2000));
   }
+
+#ifdef _WIN32
+  // Close all process handles on Windows
+  {
+    std::lock_guard lock(mutex_);
+    for (auto &[pid, info] : processes_) {
+      if (info->handle != nullptr) {
+        CloseHandle(info->handle);
+      }
+    }
+  }
+#endif
 
   processes_.clear();
 }
@@ -231,7 +269,22 @@ ProcessManager::spawn_process_impl(const std::vector<std::string> &args) {
 
   CloseHandle(pi.hThread); // Don't need thread handle
 
-  return pi.dwProcessId;
+  ProcessId pid = pi.dwProcessId;
+
+  // Store process info with the handle
+  auto info = std::make_unique<ProcessInfo>();
+  info->pid = pid;
+  info->handle = pi.hProcess; // Store the process handle
+  info->is_alive = true;
+  info->last_heartbeat =
+      std::chrono::steady_clock::now().time_since_epoch().count();
+
+  {
+    std::lock_guard lock(mutex_);
+    processes_[pid] = std::move(info);
+  }
+
+  return pid;
 }
 
 bool ProcessManager::kill_process_impl(ProcessHandle handle, bool force) {

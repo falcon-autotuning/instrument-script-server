@@ -36,11 +36,11 @@ SharedQueue::create_server_queue(const std::string &instrument_name) {
     LOG_INFO("IPC", "QUEUE_CREATE", "Created queues for instrument: {}",
              instrument_name);
 
-    // SERVER:  sends on request, receives on response
+    // SERVER:   sends on request, receives on response
     return std::make_unique<SharedQueue>(
         std::move(req_queue), std::move(resp_queue), req_name, resp_name, true);
   } catch (const interprocess_exception &ex) {
-    LOG_ERROR("IPC", "QUEUE_CREATE", "Failed to create queues: {}", ex.what());
+    LOG_ERROR("IPC", "QUEUE_CREATE", "Failed to create queues:  {}", ex.what());
     throw;
   }
 }
@@ -59,10 +59,10 @@ SharedQueue::create_worker_queue(const std::string &instrument_name) {
     auto resp_queue =
         std::make_unique<message_queue>(open_only, resp_name.c_str());
 
-    LOG_INFO("IPC", "QUEUE_OPEN", "Opened queues for instrument: {}",
+    LOG_INFO("IPC", "QUEUE_OPEN", "Opened queues for instrument:  {}",
              instrument_name);
 
-    // WORKER: receives on request, sends on response
+    // WORKER:  receives on request, sends on response
     return std::make_unique<SharedQueue>(std::move(req_queue),
                                          std::move(resp_queue), req_name,
                                          resp_name, false);
@@ -90,7 +90,6 @@ bool instserver::ipc::SharedQueue::send(const IPCMessage &msg,
     return false;
 
   try {
-    auto deadline = std::chrono::steady_clock::now() + timeout;
     auto abs_time = boost::posix_time::microsec_clock::universal_time() +
                     boost::posix_time::milliseconds(timeout.count());
 
@@ -142,7 +141,7 @@ SharedQueue::receive(std::chrono::milliseconds timeout) {
 
     return msg;
   } catch (const boost::interprocess::interprocess_exception &ex) {
-    LOG_ERROR("IPC", "RECV_ERROR", "Receive failed: {}", ex.what());
+    LOG_ERROR("IPC", "RECV_ERROR", "Receive failed:  {}", ex.what());
     return std::nullopt;
   }
 }
@@ -156,7 +155,7 @@ void SharedQueue::cleanup(const std::string &instrument_name) {
   message_queue::remove(req_name.c_str());
   message_queue::remove(resp_name.c_str());
 
-  LOG_INFO("IPC", "QUEUE_CLEANUP", "Cleaned up queues for:  {}",
+  LOG_INFO("IPC", "QUEUE_CLEANUP", "Cleaned up queues for:   {}",
            instrument_name);
 }
 

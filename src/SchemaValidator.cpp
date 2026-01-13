@@ -12,7 +12,7 @@ namespace instserver {
 extern const char *INSTRUMENT_API_SCHEMA;
 extern const char *INSTRUMENT_CONFIGURATION_SCHEMA;
 
-static std::string get_yaml_type(const YAML::Node &node) {
+[[maybe_unused]] static std::string get_yaml_type(const YAML::Node &node) {
   if (node.IsScalar())
     return "scalar";
   if (node.IsSequence())
@@ -37,7 +37,8 @@ static void add_error(ValidationResult &result,
   result.errors.push_back({node_path(path), msg, 0, 0});
 }
 
-static bool has_key(const YAML::Node &node, const std::string &key) {
+[[maybe_unused]] static bool has_key(const YAML::Node &node,
+                                     const std::string &key) {
   return node[key].IsDefined();
 }
 
@@ -282,7 +283,7 @@ std::string SchemaValidator::get_instrument_configuration_schema() {
   return INSTRUMENT_CONFIGURATION_SCHEMA;
 }
 
-// Helper: split semicolon-delimited string into vector
+// Helper:  split semicolon-delimited string into vector
 static std::vector<std::string> split_semicolon(const std::string &s) {
   std::vector<std::string> out;
   size_t start = 0, end;
@@ -404,7 +405,7 @@ SchemaValidator::validate_quantum_dot_device(const std::string &yaml_path) {
                     result, gpath,
                     "Second-to-last entry in Order must be a ReservoirGate");
               }
-              // Center: barrier-plunger-barrier pattern
+              // Center:  barrier-plunger-barrier pattern
               int plunger_count = 0, barrier_count = 0;
               for (size_t i = 2; i + 2 < n; ++i) {
                 if (i % 2 == 0) {
@@ -453,7 +454,7 @@ SchemaValidator::validate_quantum_dot_device(const std::string &yaml_path) {
       }
     }
 
-    // Validate wiringDC: must be empty or contain all global gates
+    // Validate wiringDC:  must be empty or contain all global gates
     if (doc["wiringDC"]) {
       const auto &wiring = doc["wiringDC"];
       if (!wiring.IsMap()) {
@@ -529,7 +530,7 @@ ValidationResult SchemaValidator::validate_instrument_configuration(
         std::string io_name = it->first.as<std::string>();
         const auto &io_entry = it->second;
         std::vector<std::string> io_path = {"io_config", io_name};
-        // Required fields: type, role
+        // Required fields:  type, role
         for (const auto &req : {"type", "role"}) {
           if (!io_entry[req] || !io_entry[req].IsDefined()) {
             add_error(result, io_path,
@@ -541,7 +542,7 @@ ValidationResult SchemaValidator::validate_instrument_configuration(
           std::string t = io_entry["type"].as<std::string>();
           if (t != "int" && t != "float" && t != "string" && t != "bool") {
             add_error(result, io_path,
-                      "type must be one of: int, float, string, bool");
+                      "type must be one of:  int, float, string, bool");
           }
         }
         // role must be one of input, output, inout

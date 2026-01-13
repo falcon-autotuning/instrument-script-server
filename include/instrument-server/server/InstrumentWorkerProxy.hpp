@@ -5,7 +5,6 @@
 #include "instrument-server/server/SyncCoordinator.hpp"
 #include <atomic>
 #include <future>
-#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -63,7 +62,7 @@ private:
   SyncCoordinator &sync_coordinator_;
 
   std::unique_ptr<ipc::SharedQueue> ipc_queue_;
-  ipc::ProcessId worker_pid_{0};
+  ProcessId worker_pid_{0};
 
   // Pending responses (message_id -> promise)
   std::unordered_map<uint64_t, std::promise<CommandResponse>>
