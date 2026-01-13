@@ -13,6 +13,12 @@ option(BUILD_TESTS "Build tests" ON)
 option(BUILD_EXAMPLES "Build example plugins" ON)
 option(BUILD_TOOLS "Build command-line tools" ON)
 
+# Windows-specific definitions
+if(WIN32)
+  add_compile_definitions(NOMINMAX)
+  add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+endif()
+
 # Find dependencies
 find_package(Threads REQUIRED)
 find_package(spdlog REQUIRED)
@@ -40,7 +46,7 @@ find_library(
   NAMES visa visa64
   PATHS /usr/local/vxipnp/linux64/lib)
 if(VISA_LIBRARY)
-  message(STATUS "Found VISA library: ${VISA_LIBRARY}")
+  message(STATUS "Found VISA library:  ${VISA_LIBRARY}")
   set(HAVE_VISA ON)
 else()
   message(STATUS "VISA not found, VISA built-in plugin will be disabled")
@@ -101,7 +107,7 @@ target_link_libraries(instrument-worker PRIVATE instrument-server-core)
 
 # VISA built-in plugin (optional)
 if(HAVE_VISA)
-  add_library(visa_builtin MODULE src/workers/visa_builtin.cpp)
+  add_library(visa_builtin MODULE src/workers/visa_builtin. cpp)
   target_link_libraries(visa_builtin PRIVATE instrument-server-core
                                              ${VISA_LIBRARY})
   set_target_properties(visa_builtin PROPERTIES PREFIX "" OUTPUT_NAME
@@ -123,10 +129,10 @@ if(BUILD_TOOLS)
                  src/quantum_dot_config_validator_main.cpp)
   target_link_libraries(validate-quantum-dot-config
                         PRIVATE instrument-server-core)
-  add_executable(template-expander src/template_expander.cpp)
+  add_executable(template-expander src/template_expander. cpp)
   target_link_libraries(template-expander PRIVATE instrument-server-core)
   add_executable(generate-instrument-config
-                 src/instrument_configuration_generator.cpp)
+                 src/instrument_configuration_generator. cpp)
   target_link_libraries(generate-instrument-config
                         PRIVATE instrument-server-core)
 endif()
@@ -177,7 +183,7 @@ install(
   DIRECTORY docs/
   DESTINATION share/doc/instrument-server
   FILES_MATCHING
-  PATTERN "*.md")
+  PATTERN "*. md")
 
 # Export targets for use by external plugins
 install(

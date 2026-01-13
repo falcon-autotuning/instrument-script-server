@@ -22,8 +22,12 @@ int data_buffer_create(const char *instrument_name, const char *command_id,
       return -1;
     }
 
+#ifdef _WIN32
+    strncpy_s(buffer_id_out, 128, buffer_id.c_str(), 127);
+#else
     strncpy(buffer_id_out, buffer_id.c_str(), 127);
     buffer_id_out[127] = '\0';
+#endif
 
     return 0;
   } catch (...) {
