@@ -61,7 +61,63 @@ jobs:
             Write-Host "No unit_tests.exe found, skipping..."
           }
         shell: pwsh
+# Use this job body to replace the existing build-and-test-windows steps
+jobs:
+  build-and-test-windows:
+    name: Build and Test on Windows (vcpkg + clang-cl)
+    runs-on: windows-latest
 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install LLVM (clang/clang-cl) via Chocolatey
+        # This installs LLVM into "C:\Program Files\LLVM" and adds it to PATH for the job
+        run: |
+          choco install llvm -y --no-progress
+          RefreshEnv
+        shell: pwsh
+
+      - name: Show clang versions (verify installation)
+        run: |
+          & "C:\Program Files\LLVM\bin\clang" --version || clang --version
+          & "C:\Program Files\LLVM\bin\clang-cl" --version || clang-cl --version
+        shell: pwsh
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: "c8696863d371ab7f46e213d8f5ca923c4aef2a00"
+
+      - name: Install dependencies via vcpkg (manifest or explicit)
+        # If you use vcpkg.json manifest keep this step simple (manifest mode)
+        run: |
+          # manifest mode (recommended) -- installs packages for x64-windows
+          vcpkg install --triplet x64-windows
+        shell: pwsh
+
+      - name: Configure CMake with clang-cl (Visual Studio generator)
+        run: |
+          cmake -B build `
+            -S . `
+            -G "Visual Studio 17 2022" `
+            -A x64 `
+            -T ClangCL `
+            -DCMAKE_C_COMPILER="C:/Program Files/LLVM/bin/clang-cl.exe" `
+            -DCMAKE_CXX_COMPILER="C:/Program Files/LLVM/bin/clang-cl.exe" `
+            -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DBUILD_TESTS=ON
+        shell: pwsh
+
+      - name: Build project (MSBuild via CMake)
+        run: |
+          cmake --build build --config Release --verbose
+        shell: pwsh
+
+      # ... rest of your test, artifact and tmate steps unchanged ...
       - name: Run integration tests
         run: |
           if (Test-Path "build/Release/integration_tests.exe") {

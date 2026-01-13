@@ -9,7 +9,6 @@
     "fmt",
     "spdlog",
     "sol2",
-    "catch2",
     "gtest"
   ]
 }
