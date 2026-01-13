@@ -15,6 +15,7 @@
 BUILD_DIR ?= ./build
 CMAKE ?= cmake
 NINJA ?= ninja
+CROSS_GCC ?= $(shell command -v x86_64-w64-mingw32-gcc 2>/dev/null || true)
 
 all: build
 
@@ -57,70 +58,82 @@ coverage-overview:
 # This target writes a temporary toolchain file to /tmp and invokes CMake with it.
 MINGW_SYSROOT ?= /usr/x86_64-w64-mingw32
 BUILD_DIR_WIN ?= build-win
+TOOLCHAIN_TEMPLATE ?= cmake/toolchains/mingw-clang-toolchain.cmake.tpl
+TMP_TOOLCHAIN=/tmp/mingw-clang-toolchain.cmake
 
+# Replace the build-win-clang recipe with this:
 build-win-clang:
 	@echo "Cross-building for Windows using clang -> mingw sysroot: $(MINGW_SYSROOT)"
 	@mkdir -p $(BUILD_DIR_WIN)
 	@bash -lc "\
 MINGW_SYSROOT='$(MINGW_SYSROOT)'; \
+CROSS_GCC='$(CROSS_GCC)'; \
 MINGW_GCC_LIBDIR=''; \
-CANDIDATES=( \
-  '/usr/lib/gcc/x86_64-w64-mingw32' \
-  '/usr/lib/gcc/x86_64-w64-mingw32/'* \
-  \"\${MINGW_SYSROOT}/lib/gcc/x86_64-w64-mingw32\" \
-  \"\${MINGW_SYSROOT}/lib/gcc/x86_64-w64-mingw32/\"* \
-); \
-for d in \"\${CANDIDATES[@]}\"; do \
-  if [ -d \"\$d\" ] && ls \"\$d\"/libgcc* >/dev/null 2>&1; then \
-    MINGW_GCC_LIBDIR=\"\$d\"; break; \
+echo 'CROSS_GCC=(make-level) $$CROSS_GCC'; \
+if [ -n \"$$CROSS_GCC\" ] && [ -x \"$$CROSS_GCC\" ]; then \
+  echo "Using CROSS_GCC: $$CROSS_GCC"; \
+  libgcc_path=\"$$( $$CROSS_GCC -print-file-name=libgcc.a 2>/dev/null || true )\"; \
+  if [ -f \"$$libgcc_path\" ]; then \
+    MINGW_GCC_LIBDIR=\"$$(dirname \"$$libgcc_path\")\"; \
+    echo \"  libgcc located via cross-gcc at: $$libgcc_path\"; \
+  else \
+    echo \"  cross-gcc present but did not return libgcc path (got: '$$libgcc_path')\"; \
   fi; \
-done; \
-if [ -n \"\$MINGW_GCC_LIBDIR\" ]; then echo \"Detected MINGW_GCC_LIBDIR=\$MINGW_GCC_LIBDIR\"; fi; \
-cat > /tmp/mingw-clang-toolchain.cmake <<'EOF'
-# clang -> mingw-w64 sysroot toolchain for x86_64-w64-mingw32
-set(CMAKE_SYSTEM_NAME Windows)
-set(CMAKE_SYSTEM_VERSION 1)
-set(CMAKE_C_COMPILER clang)
-set(CMAKE_CXX_COMPILER clang++)
-set(CMAKE_SYSROOT $(MINGW_SYSROOT))
-set(CMAKE_FIND_ROOT_PATH \${CMAKE_SYSROOT})
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-set(CLANG_TARGET \"--target=x86_64-w64-mingw32\")
-set(CLANG_SYSROOT \"--sysroot=\${CMAKE_SYSROOT}\")
-EOF; \
-if [ -n \"\$MINGW_GCC_LIBDIR\" ]; then \
-  cat >> /tmp/mingw-clang-toolchain.cmake <<EOF
-set(CMAKE_C_FLAGS \"\${CLANG_TARGET} \${CLANG_SYSROOT} --gcc-toolchain=\${CMAKE_SYSROOT} \${CMAKE_C_FLAGS}\")
-set(CMAKE_CXX_FLAGS \"\${CLANG_TARGET} \${CLANG_SYSROOT} --gcc-toolchain=\${CMAKE_SYSROOT} \${CMAKE_CXX_FLAGS}\")
-set(CMAKE_EXE_LINKER_FLAGS \"\${CLANG_TARGET} \${CLANG_SYSROOT} -fuse-ld=lld -L${MINGW_GCC_LIBDIR} \${CMAKE_EXE_LINKER_FLAGS}\")
-set(CMAKE_SHARED_LINKER_FLAGS \"\${CMAKE_EXE_LINKER_FLAGS}\")
-EOF; \
 else \
-  cat >> /tmp/mingw-clang-toolchain.cmake <<EOF
-set(CMAKE_C_FLAGS \"\${CLANG_TARGET} \${CLANG_SYSROOT} \${CMAKE_C_FLAGS}\")
-set(CMAKE_CXX_FLAGS \"\${CLANG_TARGET} \${CLANG_SYSROOT} \${CMAKE_CXX_FLAGS}\")
-set(CMAKE_EXE_LINKER_FLAGS \"\${CLANG_TARGET} \${CLANG_SYSROOT} -fuse-ld=lld \${CMAKE_EXE_LINKER_FLAGS}\")
-set(CMAKE_SHARED_LINKER_FLAGS \"\${CMAKE_EXE_LINKER_FLAGS}\")
-EOF; \
+  echo 'Cross-gcc not provided or not executable; will probe fallback locations'; \
 fi; \
-echo 'Using toolchain file: /tmp/mingw-clang-toolchain.cmake'; \
+if [ -z \"$$MINGW_GCC_LIBDIR\" ]; then \
+  CANDIDATES=( \
+    '/usr/lib/gcc/x86_64-w64-mingw32' \
+    '/usr/lib/gcc' \
+    '$(MINGW_SYSROOT)/lib/gcc/x86_64-w64-mingw32' \
+    '$(MINGW_SYSROOT)/lib/gcc' \
+    '$(MINGW_SYSROOT)/usr/lib/gcc/x86_64-w64-mingw32' \
+    '$(MINGW_SYSROOT)/usr/lib/gcc' \
+    '/usr/x86_64-w64-mingw32/lib' \
+    '/usr/x86_64-w64-mingw32/usr/lib' \
+  ); \
+  for d in \"$${CANDIDATES[@]}\"; do \
+    echo \"  checking: $$d\"; \
+    if [ -d \"$$d\" ]; then \
+      if ls \"$$d\"/libgcc* >/dev/null 2>&1 || ls \"$$d\"/*/libgcc* >/dev/null 2>&1; then \
+        if ls \"$$d\"/*/libgcc* >/dev/null 2>&1; then \
+          for sub in \"$$d\"/*; do \
+            if ls \"$$sub\"/libgcc* >/dev/null 2>&1; then MINGW_GCC_LIBDIR=\"$$sub\"; break; fi; \
+          done; \
+        else \
+          MINGW_GCC_LIBDIR=\"$$d\"; \
+        fi; \
+        break; \
+      fi; \
+    fi; \
+  done; \
+fi; \
+if [ -n \"$$MINGW_GCC_LIBDIR\" ]; then \
+  echo \"Detected MINGW_GCC_LIBDIR=$$MINGW_GCC_LIBDIR\"; \
+  MINGW_GCC_LDFLAGS='-L'\"$$MINGW_GCC_LIBDIR\"; \
+  TOOLCHAIN_ROOT=\"$$(printf '%s' \"$$MINGW_GCC_LIBDIR\" | sed -E 's#/lib/gcc.*##')\"; \
+  if [ -d \"$$TOOLCHAIN_ROOT\" ]; then \
+    echo \"Using TOOLCHAIN_ROOT=$$TOOLCHAIN_ROOT (for --gcc-toolchain)\"; \
+    MINGW_GCC_TOOLCHAIN_FLAG='--gcc-toolchain='\"$$TOOLCHAIN_ROOT\"; \
+  else \
+    echo 'Could not determine TOOLCHAIN_ROOT; leaving --gcc-toolchain empty'; \
+    MINGW_GCC_TOOLCHAIN_FLAG=''; \
+  fi; \
+else \
+  echo 'No MINGW_GCC_LIBDIR detected; continuing without --gcc-toolchain/-L'; \
+  MINGW_GCC_LDFLAGS=''; MINGW_GCC_TOOLCHAIN_FLAG=''; \
+fi; \
+# Use Make-expanded MINGW_SYSROOT directly (guaranteed set in Makefile) for substitution \
+sed -e \"s|@MINGW_SYSROOT@|$(MINGW_SYSROOT)|g\" \
+    -e \"s|@MINGW_GCC_LDFLAGS@|$$MINGW_GCC_LDFLAGS|g\" \
+    -e \"s|@MINGW_GCC_TOOLCHAIN_FLAG@|$$MINGW_GCC_TOOLCHAIN_FLAG|g\" \
+    \"$(TOOLCHAIN_TEMPLATE)\" > \"$(TMP_TOOLCHAIN)\"; \
+echo 'Wrote toolchain to $(TMP_TOOLCHAIN)'; sed -n '1,120p' \"$(TMP_TOOLCHAIN)\"; \
 $(CMAKE) -S . -B $(BUILD_DIR_WIN) -G Ninja \
-  -DCMAKE_TOOLCHAIN_FILE=/tmp/mingw-clang-toolchain.cmake \
+  -DCMAKE_TOOLCHAIN_FILE=\"$(TMP_TOOLCHAIN)\" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && $(NINJA) -C $(BUILD_DIR_WIN)"
-
-# Old build-win target kept for GCC-based mingw cross (preserved for convenience)
-build-win:
-	mkdir -p $(BUILD_DIR_WIN) && cd $(BUILD_DIR_WIN) && \
-	$(CMAKE) -G Ninja \
-		-DCMAKE_SYSTEM_NAME=Windows \
-		-DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
-		-DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
-		-DCMAKE_BUILD_TYPE=Release \
-		.. && $(NINJA) -C $(BUILD_DIR_WIN)
 
 # Run tests via wine against Windows cross-built binaries (clang or gcc builds)
 wine-unit-test: build-win
