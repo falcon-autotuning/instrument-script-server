@@ -9,6 +9,7 @@
     "fmt",
     "spdlog",
     "sol2",
-    "gtest"
+    "gtest",
+    "yaml-cpp"
   ]
 }
