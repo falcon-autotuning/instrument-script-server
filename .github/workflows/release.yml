@@ -5,7 +5,7 @@ on:
     branches:
       - main
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 jobs:
@@ -15,11 +15,12 @@ jobs:
     permissions:
       contents: read
 
-  # Trigger Windows build
+  # Trigger Windows build (grant packages: read so the called workflow can access GHCR)
   windows-build:
     uses: ./.github/workflows/windows.yml
     permissions:
       contents: read
+      packages: read
 
   create-release:
     needs: [arch-build, windows-build]
