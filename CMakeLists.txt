@@ -15,13 +15,9 @@ option(BUILD_TOOLS "Build command-line tools" ON)
 
 # Find dependencies
 find_package(Threads REQUIRED)
-find_package(spdlog CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
-find_package(yaml-cpp CONFIG REQUIRED)
-
-message(STATUS "CMAKE_SYSROOT=${CMAKE_SYSROOT}")
-message(STATUS "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
-message(STATUS "CMAKE_FIND_ROOT_PATH=${CMAKE_FIND_ROOT_PATH}")
+find_package(spdlog REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 # Lua (prefer LuaJIT if available)
 find_package(LuaJIT QUIET)
@@ -29,41 +25,11 @@ if(LuaJIT_FOUND)
   set(LUA_LIBRARIES ${LUAJIT_LIBRARIES})
   set(LUA_INCLUDE_DIR ${LUAJIT_INCLUDE_DIR})
 else()
-  if(CMAKE_CROSSCOMPILING)
-    # When cross-compiling, avoid FindLua header probing (can hang). A sysroot
-    # will usually have include and lib under CMAKE_SYSROOT.
-    message(
-      STATUS "Cross-compiling: using sysroot-provided Lua (no FindLua probing)")
-    set(LUA_INCLUDE_DIR "${CMAKE_SYSROOT}/include")
-    # Prefer static import library; adjust name if your sysroot provides a
-    # different file:
-    set(LUA_LIBRARY "${CMAKE_SYSROOT}/lib/liblua.a")
-    set(LUA_LIBRARIES "${LUA_LIBRARY}")
-  else()
-    find_package(Lua REQUIRED)
-  endif()
+  find_package(Lua REQUIRED)
 endif()
 
 # sol2 (header-only)
-if(CMAKE_CROSSCOMPILING)
-  # When cross-compiling, prefer sysroot paths to avoid long probing/regex
-  # parsing.
-  find_path(
-    SOL2_INCLUDE_DIR sol/sol.hpp
-    PATHS ${CMAKE_SYSROOT}/include ${CMAKE_SYSROOT}/usr/include
-    NO_DEFAULT_PATH)
-  if(NOT SOL2_INCLUDE_DIR)
-    message(WARNING "sol2 header not found in sysroot (${CMAKE_SYSROOT}). \
-Please install sol2 for the target toolchain or \
-pass -DSOL2_INCLUDE_DIR=/path/to/sol/includes")
-    # provide a sensible fallback so build can continue if headers are
-    # colocated:
-    set(SOL2_INCLUDE_DIR "${CMAKE_SYSROOT}/include")
-  endif()
-else()
-  # native build: use standard find_path (and require it)
-  find_path(SOL2_INCLUDE_DIR sol/sol.hpp REQUIRED)
-endif()
+find_path(SOL2_INCLUDE_DIR sol/sol.hpp REQUIRED)
 
 message(STATUS "Using sol2 includes: ${SOL2_INCLUDE_DIR}")
 include_directories(${SOL2_INCLUDE_DIR})
