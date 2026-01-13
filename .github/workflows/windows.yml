@@ -116,12 +116,14 @@ jobs:
           echo "Using prebuilt sysroot reference: ${REF}"
           mkdir -p /tmp/oras-out
           cd /tmp/oras-out
-          # Pull the artifact into the working directory
-          oras pull "${REF}" || {
+          # Pull the artifact into the working directory, allowing path traversal
+          # (our ORAS artifact may contain an absolute path like /tmp/mingw-sysroot.tar.gz)
+          oras pull --allow-path-traversal "${REF}" || {
             echo "oras pull failed for ${REF}"
             exit 1
           }
-          # Find a tarball in the pulled files
+          # The artifact producer may write the tarball to an absolute path (e.g. /tmp/...).
+          # Look for the tarball in the current dir and /tmp and normalize to /tmp/mingw-sysroot.tar.gz
           TARFILE=$(ls -1 *.tar.gz 2>/dev/null || true)
           if [ -z "${TARFILE}" ]; then
             TARFILE=$(ls -1 *.tgz 2>/dev/null || true)
@@ -130,14 +132,18 @@ jobs:
             TARFILE=$(ls -1 *.tar 2>/dev/null || true)
           fi
           if [ -z "${TARFILE}" ]; then
+            # fallback: check /tmp for tarballs written by ORAS with absolute paths
+            TARFILE=$(ls -1 /tmp/*.tar.gz 2>/dev/null || true)
+          fi
+          if [ -z "${TARFILE}" ]; then
             echo "ERROR: no tarball (.tar.gz/.tgz/.tar) found after oras pull"
             ls -la /tmp/oras-out || true
+            ls -la /tmp || true
             exit 1
           fi
-          # If multiple, pick the first line
           TARFILE=$(printf '%s\n' ${TARFILE} | head -n1)
           echo "Found tarball: ${TARFILE}"
-          mv "${TARFILE}" /tmp/mingw-sysroot.tar.gz
+          mv "${TARFILE}" /tmp/mingw-sysroot.tar.gz || true
           echo "Extracting mingw sysroot to / (expecting usr/x86_64-w64-mingw32/...)"
           tar -xzf /tmp/mingw-sysroot.tar.gz -C /
           echo "Resulting sysroot path listing:"
