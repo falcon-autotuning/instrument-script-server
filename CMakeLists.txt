@@ -130,10 +130,10 @@ if(BUILD_TOOLS)
                  src/quantum_dot_config_validator_main.cpp)
   target_link_libraries(validate-quantum-dot-config
                         PRIVATE instrument-server-core)
-  add_executable(template-expander src/template_expander. cpp)
+  add_executable(template-expander src/template_expander.cpp)
   target_link_libraries(template-expander PRIVATE instrument-server-core)
   add_executable(generate-instrument-config
-                 src/instrument_configuration_generator. cpp)
+                 src/instrument_configuration_generator.cpp)
   target_link_libraries(generate-instrument-config
                         PRIVATE instrument-server-core)
 endif()
