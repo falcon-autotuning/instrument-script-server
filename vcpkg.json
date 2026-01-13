@@ -11,6 +11,7 @@
     "sol2",
     "gtest",
     "yaml-cpp",
-    "boost-interprocess"
+    "boost-interprocess",
+    "boost-date-time"
   ]
 }
