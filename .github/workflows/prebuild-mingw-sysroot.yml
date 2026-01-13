@@ -55,6 +55,7 @@ jobs:
 builder ALL=(ALL) NOPASSWD: /usr/bin/pacman
 EOF
           chmod 0440 /etc/sudoers.d/builder
+          # Validate syntax; this will fail the job if the file is invalid
           visudo -cf /etc/sudoers.d/builder
 
       - name: Build yay and install AUR mingw packages as builder
