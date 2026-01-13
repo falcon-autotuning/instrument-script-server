@@ -61,17 +61,29 @@ jobs:
       - name: Install oras (OCI registry client)
         run: |
           set -euo pipefail
-          ORAS_TGZ="/tmp/oras.tar.gz"
-          curl -fsSL -o "${ORAS_TGZ}" "https://github.com/oras-project/oras/releases/latest/download/oras_linux_amd64.tar.gz"
-          tar -xzf "${ORAS_TGZ}" -C /usr/local/bin oras || true
-          # fallback extraction (some releases use different archive layout)
-          if [ ! -x /usr/local/bin/oras ]; then
-            tar -xzf "${ORAS_TGZ}" -C /tmp
-            ORAS_FOUND=$(find /tmp -type f -name oras -perm /a+x | head -n1 || true)
-            if [ -n "${ORAS_FOUND}" ]; then
-              install -m 0755 "${ORAS_FOUND}" /usr/local/bin/oras
-            fi
+          # Resolve the linux/amd64 asset URL for the latest ORAS release via the GitHub Releases API
+          ASSET_URL=$(curl -sSL "https://api.github.com/repos/oras-project/oras/releases/latest" \
+            | jq -r '.assets[] | select(.name | test("linux.*(amd64|x86_64)|amd64.*linux|x86_64.*linux"; "i")) | .browser_download_url' \
+            | head -n1)
+          if [ -z "${ASSET_URL:-}" ] || [ "${ASSET_URL}" = "null" ]; then
+            echo "Failed to find a Linux amd64 ORAS asset in latest release"
+            curl -sSL "https://api.github.com/repos/oras-project/oras/releases/latest" | jq -C .
+            exit 1
           fi
+          echo "Downloading ORAS from: ${ASSET_URL}"
+          curl -fsSL -o /tmp/oras.tar.gz "${ASSET_URL}"
+          mkdir -p /tmp/oras-install
+          tar -xzf /tmp/oras.tar.gz -C /tmp/oras-install
+          ORAS_BIN=$(find /tmp/oras-install -type f -name 'oras' -perm /a+x | head -n1 || true)
+          if [ -z "${ORAS_BIN}" ]; then
+            ORAS_BIN=$(find /tmp/oras-install -type f -name 'oras' | head -n1 || true)
+          fi
+          if [ -z "${ORAS_BIN}" ]; then
+            echo "oras binary not found in extracted archive:"
+            ls -la /tmp/oras-install || true
+            exit 1
+          fi
+          install -m 0755 "${ORAS_BIN}" /usr/local/bin/oras
           chmod +x /usr/local/bin/oras || true
           /usr/local/bin/oras version || true
 
