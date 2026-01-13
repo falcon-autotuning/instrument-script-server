@@ -7,18 +7,19 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      PREBUILT_URL:
-        description: "Optional URL to a prebuilt mingw-sysroot tar.gz. If empty, the workflow downloads the mingw-sysroot.tar.gz asset from the release tagged mingw-prebuilt-latest."
+      PREBUILT_REF:
+        description: "OCI reference for the prebuilt mingw sysroot (e.g., ghcr.io/OWNER/mingw-sysroot:latest). If empty, defaults to ghcr.io/<owner>/mingw-sysroot:latest"
         required: false
         default: ""
   workflow_call:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   cross-build-windows:
-    name: Build Windows cross (use prebuilt mingw sysroot)
+    name: Build Windows cross (use prebuilt mingw sysroot from GHCR)
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
@@ -28,7 +29,6 @@ jobs:
       WORKSPACE: /workspace
       BUILD_DIR: /workspace/build
       PACMAN_CACHE_KEY: pacman-archlinux-v1
-      PREBUILT_RELEASE_TAG: mingw-prebuilt-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,13 +44,9 @@ jobs:
       - name: Prepare pacman keys and install host tools
         run: |
           set -euo pipefail
-          # fresh gnupg to avoid "no secret key" during pacman operations in new containers
           rm -rf /etc/pacman.d/gnupg || true
           pacman-key --init || true
           pacman-key --populate archlinux
-
-          # Install minimal official packages needed on the host to drive the cross build.
-          # The mingw sysroot (headers/libs) will come from the prebuilt tarball.
           pacman -Syu --noconfirm --needed \
             base-devel \
             git \
@@ -58,47 +54,53 @@ jobs:
             cmake \
             ninja \
             curl \
-            jq
+            jq \
+            tar
 
-      - name: Resolve PREBUILT_URL from release if not provided
-        id: resolve_prebuilt
+      - name: Install oras (OCI registry client)
         run: |
           set -euo pipefail
-          if [ -n "${{ inputs.PREBUILT_URL }}" ]; then
-            echo "prebuilt_url=${{ inputs.PREBUILT_URL }}" >> $GITHUB_OUTPUT
-            exit 0
-          fi
+          ORAS_TGZ="/tmp/oras.tar.gz"
+          curl -fsSL -o "${ORAS_TGZ}" "https://github.com/oras-project/oras/releases/latest/download/oras_linux_amd64.tar.gz"
+          tar -xzf "${ORAS_TGZ}" -C /usr/local/bin oras
+          chmod +x /usr/local/bin/oras
+          oras version
 
-          echo "No PREBUILT_URL input provided — resolving latest prebuilt release asset from this repository (tag: ${PREBUILT_RELEASE_TAG})..."
-
-          API_URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${PREBUILT_RELEASE_TAG}"
-          AUTH_HEADER="Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}"
-
-          DOWNLOAD_URL=$(curl -sSL -H "Accept: application/vnd.github+json" -H "$AUTH_HEADER" "$API_URL" \
-            | jq -r '.assets[] | select(.name=="mingw-sysroot.tar.gz") | .browser_download_url // empty')
-
-          if [ -z "$DOWNLOAD_URL" ]; then
-            echo "ERROR: no mingw-sysroot.tar.gz asset found in release ${PREBUILT_RELEASE_TAG}"
-            exit 1
-          fi
-
-          echo "Resolved PREBUILT_URL: $DOWNLOAD_URL"
-          echo "prebuilt_url=$DOWNLOAD_URL" >> $GITHUB_OUTPUT
-
-      - name: Download & extract prebuilt mingw sysroot
+      - name: Login to GHCR (using GITHUB_TOKEN if needed)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          PREBUILT_URL="${{ steps.resolve_prebuilt.outputs.prebuilt_url }}"
-          if [ -z "$PREBUILT_URL" ]; then
-            echo "No PREBUILT_URL resolved; aborting."
+          # If the package is public you don't need auth. If it's private or GITHUB_TOKEN is required, login.
+          if [ -n "${GITHUB_TOKEN:-}" ]; then
+            echo "${GITHUB_TOKEN}" | oras login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+          else
+            echo "No GITHUB_TOKEN available; attempting unauthenticated pull (artifact must be public)."
+          fi
+
+      - name: Pull & extract prebuilt mingw sysroot from GHCR
+        env:
+          PREBUILT_REF_INPUT: ${{ inputs.PREBUILT_REF }}
+        run: |
+          set -euo pipefail
+          if [ -n "${PREBUILT_REF_INPUT}" ]; then
+            REF="${PREBUILT_REF_INPUT}"
+          else
+            REF="ghcr.io/${GITHUB_REPOSITORY_OWNER}/mingw-sysroot:latest"
+          fi
+          echo "Pulling prebuilt sysroot artifact from: ${REF}"
+          mkdir -p /tmp/oras-out
+          cd /tmp/oras-out
+          oras pull "${REF}"
+          TARFILE=$(ls -1 *.tar.gz 2>/dev/null || true)
+          if [ -z "${TARFILE}" ]; then
+            echo "ERROR: no .tar.gz artifact found after oras pull"
+            ls -la /tmp/oras-out || true
             exit 1
           fi
-          echo "Downloading prebuilt sysroot from: $PREBUILT_URL"
-          # Use GITHUB_TOKEN so private releases are accessible
-          curl -fsSL -H "Accept: application/octet-stream" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$PREBUILT_URL" -o /tmp/mingw-sysroot.tar.gz
+          mv "${TARFILE}" /tmp/mingw-sysroot.tar.gz
           echo "Extracting mingw sysroot (tar contains usr/x86_64-w64-mingw32/...)"
           tar -xzf /tmp/mingw-sysroot.tar.gz -C /
-          echo "Listing /usr/x86_64-w64-mingw32:"
           ls -la /usr/x86_64-w64-mingw32 || true
 
       - name: Create builder user and set permissions
@@ -114,7 +116,6 @@ jobs:
           set -euo pipefail
           mkdir -p "${BUILD_DIR}"
           cd "${BUILD_DIR}"
-          # run the whole build as an unprivileged builder user
           runuser -u builder -- bash -lc '
             set -euo pipefail
             cd /workspace || exit 1
@@ -163,29 +164,32 @@ jobs:
           name: windows-binaries
           path: windows-binaries
 
-      - name: Run unit tests
+      - name: Run unit tests (cmd)
+        shell: cmd
         run: |
           cd windows-binaries
-          echo "Running unit tests..."
+          echo Running unit tests...
           if exist unit_tests.exe (
             .\unit_tests.exe
-            echo "✓ Unit tests passed successfully"
+            echo ✓ Unit tests passed successfully
           ) else (
-            echo "No unit_tests.exe found"
+            echo No unit_tests.exe found
           )
 
-      - name: Run integration tests
+      - name: Run integration tests (cmd)
+        shell: cmd
         run: |
           cd windows-binaries
-          echo "Running integration tests..."
+          echo Running integration tests...
           if exist integration_tests.exe (
             .\integration_tests.exe
-            echo "✓ Integration tests passed successfully"
+            echo ✓ Integration tests passed successfully
           ) else (
-            echo "No integration_tests.exe found"
+            echo No integration_tests.exe found
           )
 
       - name: List packaged files
+        shell: cmd
         run: |
           cd windows-binaries
           dir

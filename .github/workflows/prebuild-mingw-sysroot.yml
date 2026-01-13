@@ -1,25 +1,24 @@
-name: Prebuild — mingw sysroot (create prebuilt tarball & upload to Release)
+name: Prebuild — mingw sysroot (create prebuilt tarball & push to GHCR with oras)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 3 * * 0" # weekly build (optional) — run weekly by default; adjust as needed
+    - cron: "0 3 * * 0" # weekly (UTC)
 
 permissions:
-  contents: write # required to create/update releases and upload assets
+  contents: read
+  packages: write
 
 jobs:
   prebuild-mingw-sysroot:
-    name: Build mingw sysroot and publish release asset
+    name: Build mingw sysroot and upload to GHCR
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
       options: >-
         -v /home/runner/work/instrument-script-server/instrument-script-server:/workspace
     env:
-      SYSROOT_TARBALL_NAME: mingw-sysroot.tar.gz
       SYSROOT_TARBALL_PATH: /tmp/mingw-sysroot.tar.gz
-      RELEASE_TAG: mingw-prebuilt-latest
       WORKSPACE: /workspace
     steps:
       - name: Checkout
@@ -38,7 +37,7 @@ jobs:
           pacman-key --init || true
           pacman-key --populate archlinux
           # Install minimal host packages and common build deps
-          pacman -Syu --noconfirm --needed base-devel git mingw-w64-gcc cmake ninja curl jq go sudo
+          pacman -Syu --noconfirm --needed base-devel git mingw-w64-gcc cmake ninja curl jq go sudo tar
 
       - name: Create builder user
         run: |
@@ -53,10 +52,9 @@ jobs:
           set -euo pipefail
           rm -f /etc/sudoers.d/builder
           cat <<'EOF' >/etc/sudoers.d/builder
-          builder ALL=(ALL) NOPASSWD: /usr/bin/pacman
-          EOF
+builder ALL=(ALL) NOPASSWD: /usr/bin/pacman
+EOF
           chmod 0440 /etc/sudoers.d/builder
-          # validate syntax; this will fail the job if the file is invalid
           visudo -cf /etc/sudoers.d/builder
 
       - name: Build yay and install AUR mingw packages as builder
@@ -65,7 +63,6 @@ jobs:
           runuser -u builder -- bash -lc '
             set -euo pipefail
             cd "$HOME"
-            # build yay if missing
             if [ ! -d "$HOME/yay" ]; then
               git clone https://aur.archlinux.org/yay.git
             fi
@@ -98,14 +95,16 @@ jobs:
       - name: Create tarball of mingw sysroot
         run: |
           set -euo pipefail
-          # create tarball containing usr/x86_64-w64-mingw32/* so extraction to / reproduces paths
           if [ ! -d /usr/x86_64-w64-mingw32 ]; then
             echo "ERROR: expected /usr/x86_64-w64-mingw32 to exist but it does not"
             ls -la /usr || true
             exit 1
           fi
           tar -C / -czf "${SYSROOT_TARBALL_PATH}" usr/x86_64-w64-mingw32
+          echo "Tarball size:"
           ls -lh "${SYSROOT_TARBALL_PATH}"
+          echo "Tarball contents preview:"
+          tar -tf "${SYSROOT_TARBALL_PATH}" | head -n 50
 
       - name: Upload tarball as workflow artifact (backup)
         uses: actions/upload-artifact@v4
@@ -113,26 +112,44 @@ jobs:
           name: mingw-sysroot-tarball
           path: /tmp/mingw-sysroot.tar.gz
 
-      - name: Create or update Release and upload asset
-        id: release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          name: Mingw prebuilt sysroot (${{ github.run_id }})
-          body: |
-            Mingw prebuilt sysroot produced by workflow run ${{ github.run_id }}.
-            Contains usr/x86_64-w64-mingw32/ with headers, libs and binaries needed for cross-compilation.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload release asset (mingw-sysroot.tar.gz)
-        uses: softprops/action-gh-release@v1
-        with:
-          files: /tmp/mingw-sysroot.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Done (print release info)
+      - name: Install oras (OCI registry client)
         run: |
-          echo "Prebuild completed. Release tag: ${RELEASE_TAG}"
-          echo "Artifact is uploaded as mingw-sysroot.tar.gz on the release ${RELEASE_TAG}"
+          set -euo pipefail
+          ORAS_TGZ="/tmp/oras.tar.gz"
+          curl -fsSL -o "${ORAS_TGZ}" "https://github.com/oras-project/oras/releases/latest/download/oras_linux_amd64.tar.gz"
+          tar -xzf "${ORAS_TGZ}" -C /usr/local/bin oras
+          chmod +x /usr/local/bin/oras
+          oras version
+
+      - name: Login to GHCR (using GITHUB_TOKEN)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GITHUB_TOKEN:-}" ]; then
+            echo "GITHUB_TOKEN not available; ensure workflow permissions allow packages: write"
+            exit 1
+          fi
+          echo "${GITHUB_TOKEN}" | oras login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+
+      - name: Push mingw sysroot to GHCR (versioned + latest)
+        id: push_oras
+        run: |
+          set -euo pipefail
+          REGISTRY="ghcr.io"
+          REPO="${{ github.repository_owner }}/mingw-sysroot"
+          VERSION_TAG="run-${GITHUB_RUN_ID}"
+          VERSION_REF="${REGISTRY}/${REPO}:${VERSION_TAG}"
+          LATEST_REF="${REGISTRY}/${REPO}:latest"
+          echo "Pushing versioned artifact ${VERSION_REF}"
+          oras push "${VERSION_REF}" /tmp/mingw-sysroot.tar.gz --artifact-type application/vnd.tar+gzip
+          echo "Pushing latest artifact ${LATEST_REF}"
+          oras push "${LATEST_REF}" /tmp/mingw-sysroot.tar.gz --artifact-type application/vnd.tar+gzip
+          echo "version_ref=${VERSION_REF}" >> $GITHUB_OUTPUT
+          echo "latest_ref=${LATEST_REF}" >> $GITHUB_OUTPUT
+
+      - name: Done (print refs)
+        run: |
+          echo "Uploaded OCI artifact refs:"
+          echo "version_ref = ${{ steps.push_oras.outputs.version_ref }}"
+          echo "latest_ref  = ${{ steps.push_oras.outputs.latest_ref }}"

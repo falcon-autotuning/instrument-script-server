@@ -1,0 +1,3200 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Server for managing scientific instruments in Cpp">
+      
+      
+      
+      
+        <link rel="prev" href="../CLI_USAGE/">
+      
+      
+        <link rel="next" href="../PLUGIN_DEVELOPMENT/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/icons/icon-256.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Setting up Instruments - Instrument Script Server</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#configuration-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Instrument Script Server" class="md-header__button md-logo" aria-label="Instrument Script Server" data-md-component="logo">
+      
+  <img src="../assets/icons/icon-256.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Instrument Script Server
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Setting up Instruments
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+  Configurations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../IPC_PROTOCOL/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Instrument Script Server" class="md-nav__button md-logo" aria-label="Instrument Script Server" data-md-component="logo">
+      
+  <img src="../assets/icons/icon-256.png" alt="logo">
+
+    </a>
+    Instrument Script Server
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Welcome to Instrument Script Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLI_USAGE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configurations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Configurations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setting up Instruments
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setting up Instruments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#instrument-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instrument Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instrument Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#required-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#field-descriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field Descriptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Field Descriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#name-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        name (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api_ref-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        api_ref (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connection-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        connection (required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="connection (required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#connectiontype-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        connection.type (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connectionaddress-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        connection.address (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connectionbaudrate-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        connection.baudrate (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connectioncustom-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        connection.custom (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#startup-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        startup (optional)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="startup (optional)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#startupinit_commands-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        startup.init_commands (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#startupdelay_ms-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        startup.delay_ms (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#io_config-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io_config (required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="io_config (required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        type (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#role-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        role (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unit-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        unit (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#offset-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        offset (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scale (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#complete-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-1-digital-multimeter-visa-over-lan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 1: Digital Multimeter (VISA over LAN)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2-oscilloscope-with-multiple-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 2: Oscilloscope with Multiple Channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-3-custom-serial-instrument" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 3: Custom Serial Instrument
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#instrument-api-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instrument API Definition
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instrument API Definition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-reference_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#required-fields_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#field-descriptions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field Descriptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Field Descriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api_version-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        api_version (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrument-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        instrument (required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="instrument (required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#instrumentvendor-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        instrument.vendor (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrumentmodel-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        instrument.model (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrumentidentifier-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        instrument.identifier (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrumentdesc-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        instrument.desc (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#protocol-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        protocol (required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="protocol (required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#protocoltype-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        protocol.type (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#io-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io (required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="io (required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ioname-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io[].name (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iotype-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io[].type (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iorole-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io[].role (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iounit-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io[].unit (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iodescription-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io[].description (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channel_groups-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        channel_groups (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#commands-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        commands (required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="commands (required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-name-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Name Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Object
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Command Object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#template-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        template (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#description-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        description (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        parameters (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outputs-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        outputs (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#returns-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        returns (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        query (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channel_group-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        channel_group (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#complete-examples_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-1-simple-digital-multimeter-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 1: Simple Digital Multimeter API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2-oscilloscope-with-channel-groups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 2: Oscilloscope with Channel Groups
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Validation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Validation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#validating-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validating Configurations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-validation-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Validation Errors
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Validation Errors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-name-must-match-pattern-a-za-z0-9_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "name must match pattern ^[A-Z][A-Z0-9_]*$"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-unknown-connection-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Unknown connection type"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-io_config-missing-required-port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "io_config missing required port"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-command-template-missing-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Command template missing parameter"
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Definitions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-directory-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Directory Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PLUGIN_DEVELOPMENT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Non-VISA plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../IPC_PROTOCOL/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server Communications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SYNCHRONIZATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronzing Instruments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#instrument-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instrument Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instrument Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#required-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#field-descriptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field Descriptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Field Descriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#name-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        name (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api_ref-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        api_ref (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connection-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        connection (required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="connection (required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#connectiontype-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        connection.type (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connectionaddress-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        connection.address (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connectionbaudrate-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        connection.baudrate (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connectioncustom-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        connection.custom (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#startup-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        startup (optional)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="startup (optional)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#startupinit_commands-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        startup.init_commands (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#startupdelay_ms-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        startup.delay_ms (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#io_config-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io_config (required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="io_config (required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        type (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#role-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        role (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unit-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        unit (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#offset-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        offset (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        scale (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#complete-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-1-digital-multimeter-visa-over-lan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 1: Digital Multimeter (VISA over LAN)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2-oscilloscope-with-multiple-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 2: Oscilloscope with Multiple Channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-3-custom-serial-instrument" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 3: Custom Serial Instrument
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#instrument-api-definition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instrument API Definition
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instrument API Definition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#purpose_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Purpose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#schema-reference_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#required-fields_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#field-descriptions_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field Descriptions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Field Descriptions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api_version-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        api_version (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrument-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        instrument (required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="instrument (required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#instrumentvendor-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        instrument.vendor (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrumentmodel-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        instrument.model (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrumentidentifier-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        instrument.identifier (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrumentdesc-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        instrument.desc (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#protocol-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        protocol (required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="protocol (required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#protocoltype-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        protocol.type (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#io-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io (required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="io (required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ioname-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io[].name (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iotype-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io[].type (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iorole-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io[].role (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iounit-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io[].unit (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iodescription-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        io[].description (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channel_groups-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        channel_groups (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#commands-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        commands (required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="commands (required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-name-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Name Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Object
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Command Object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#template-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        template (required)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#description-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        description (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameters-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        parameters (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outputs-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        outputs (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#returns-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        returns (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        query (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#channel_group-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        channel_group (optional)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#complete-examples_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-1-simple-digital-multimeter-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 1: Simple Digital Multimeter API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2-oscilloscope-with-channel-groups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example 2: Oscilloscope with Channel Groups
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Validation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration Validation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#validating-configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validating Configurations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-validation-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Validation Errors
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Validation Errors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-name-must-match-pattern-a-za-z0-9_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "name must match pattern ^[A-Z][A-Z0-9_]*$"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-unknown-connection-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Unknown connection type"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-io_config-missing-required-port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "io_config missing required port"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#error-command-template-missing-parameter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error: "Command template missing parameter"
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configuration-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration Files
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Definitions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-directory-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Directory Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="configuration-guide">Configuration Guide<a class="headerlink" href="#configuration-guide" title="Permanent link">&para;</a></h1>
+<p>Complete guide to configuring instruments and writing API definitions.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The Instrument Script Server uses two types of configuration files:</p>
+<ol>
+<li><strong>Instrument Configuration</strong> - Defines a specific instrument instance with connection details</li>
+<li><strong>Instrument API Definition</strong> - Defines the command set and protocol for an instrument type</li>
+</ol>
+<p>Both use YAML format and are validated against JSON schemas.</p>
+<h2 id="instrument-configuration">Instrument Configuration<a class="headerlink" href="#instrument-configuration" title="Permanent link">&para;</a></h2>
+<h3 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h3>
+<p>An instrument configuration file describes <strong>how to connect to a specific instrument instance</strong> on your system.
+It references an API definition and provides the physical connection details.</p>
+<h3 id="schema-reference">Schema Reference<a class="headerlink" href="#schema-reference" title="Permanent link">&para;</a></h3>
+<p>The configuration is validated against <a href="../schemas/instrument_configuration.schema.json"><code>schemas/instrument_configuration.schema.json</code></a>.</p>
+<h3 id="required-fields">Required Fields<a class="headerlink" href="#required-fields" title="Permanent link">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">INSTRUMENT_NAME</span><span class="w">          </span><span class="c1"># Unique identifier (uppercase with underscores)</span>
+<span class="nt">api_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">path/to/api.yaml</span><span class="w">     </span><span class="c1"># Path to the API definition file</span>
+<span class="nt">connection</span><span class="p">:</span><span class="w">                     </span><span class="c1"># Connection details</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VISA</span><span class="w">                   </span><span class="c1"># Connection type:  VISA or Custom</span>
+<span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="w">              </span><span class="c1"># Connection address</span>
+<span class="nt">io_config</span><span class="p">:</span><span class="w">                    </span><span class="c1"># Configuration for each IO port</span>
+<span class="w">  </span><span class="nt">port_name</span><span class="p">:</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input|output|inout</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">V</span>
+<span class="w">    </span><span class="nt">offset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">    </span><span class="nt">scale</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</code></pre></div>
+<h3 id="field-descriptions">Field Descriptions<a class="headerlink" href="#field-descriptions" title="Permanent link">&para;</a></h3>
+<h4 id="name-required"><code>name</code> (required)<a class="headerlink" href="#name-required" title="Permanent link">&para;</a></h4>
+<p><strong>Type</strong>: String (pattern: <code>^[A-Z][A-Z0-9_]*$</code>)</p>
+<p><strong>Description</strong>: Unique identifier for this instrument instance.<br />
+This is how you'll reference the instrument in measurement scripts.</p>
+<p><strong>Examples</strong>:</p>
+<ul>
+<li><code>DMM1</code>, <code>DMM2</code> - Multiple instances of the same instrument type</li>
+<li><code>SCOPE_LEFT</code>, <code>SCOPE_RIGHT</code> - Descriptive names</li>
+<li><code>DAC_GATE1</code>, <code>DAC_BIAS</code> - Function-based names</li>
+</ul>
+<h4 id="api_ref-required"><code>api_ref</code> (required)<a class="headerlink" href="#api_ref-required" title="Permanent link">&para;</a></h4>
+<p><strong>Type</strong>: String (file path)</p>
+<p><strong>Description</strong>: Path to the instrument API definition file.
+Can be absolute or relative to the configuration file location.</p>
+<p><strong>Examples</strong>:</p>
+<ul>
+<li><code>examples/instrument-apis/agi_34401a. yaml</code></li>
+<li><code>apis/keysight_scope.yaml</code></li>
+<li><code>/usr/local/share/instrument-apis/dmm. yaml</code></li>
+</ul>
+<h4 id="connection-required"><code>connection</code> (required)<a class="headerlink" href="#connection-required" title="Permanent link">&para;</a></h4>
+<p><strong>Type</strong>: Object</p>
+<p><strong>Description</strong>:  Specifies how to physically connect to the instrument.</p>
+<h5 id="connectiontype-required"><code>connection.type</code> (required)<a class="headerlink" href="#connectiontype-required" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String (enum: <code>VISA</code> | <code>Custom</code>)</p>
+<p><strong>Description</strong>: The connection protocol type.</p>
+<ul>
+<li><strong><code>VISA</code></strong>: For instruments using VISA protocol (GPIB, USB, LAN, Serial via VISA)</li>
+<li><strong><code>Custom</code></strong>: For custom protocols implemented in plugins</li>
+</ul>
+<h5 id="connectionaddress-optional"><code>connection.address</code> (optional)<a class="headerlink" href="#connectionaddress-optional" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String</p>
+<p><strong>Description</strong>: The connection address.  Format depends on the connection type.</p>
+<p><strong>VISA Address Examples</strong>:</p>
+<ul>
+<li>GPIB: <code>GPIB0::15::INSTR</code></li>
+<li>LAN/Ethernet: <code>TCPIP::192.168.0.100::INSTR</code></li>
+<li>USB:  <code>USB0::0x1234::0x5678::SN123:: INSTR</code></li>
+<li>Serial (via VISA): <code>ASRL1::INSTR</code></li>
+</ul>
+<p><strong>Custom Address Examples</strong>:</p>
+<ul>
+<li><code>/dev/ttyUSB0</code> (serial port)</li>
+<li><code>COM3</code> (Windows serial port)</li>
+<li><code>192.168.1.10: 5025</code> (TCP socket)</li>
+</ul>
+<h5 id="connectionbaudrate-optional"><code>connection.baudrate</code> (optional)<a class="headerlink" href="#connectionbaudrate-optional" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: Integer</p>
+<p><strong>Description</strong>: Baud rate for serial connections.</p>
+<p><strong>Example</strong>: <code>9600</code>, <code>115200</code></p>
+<h5 id="connectioncustom-optional"><code>connection.custom</code> (optional)<a class="headerlink" href="#connectioncustom-optional" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: Object</p>
+<p><strong>Description</strong>: Additional custom connection parameters as key-value pairs.</p>
+<p><strong>Example</strong>:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">connection</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Custom</span>
+<span class="w">  </span><span class="nt">custom</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">device</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/dev/ttyUSB0&quot;</span>
+<span class="w">    </span><span class="nt">baudrate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">115200</span>
+<span class="w">    </span><span class="nt">parity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;none&quot;</span>
+<span class="w">    </span><span class="nt">stop_bits</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</code></pre></div>
+<h4 id="startup-optional"><code>startup</code> (optional)<a class="headerlink" href="#startup-optional" title="Permanent link">&para;</a></h4>
+<p><strong>Type</strong>: Object</p>
+<p><strong>Description</strong>: Configuration for instrument startup behavior.</p>
+<h5 id="startupinit_commands-optional"><code>startup.init_commands</code> (optional)<a class="headerlink" href="#startupinit_commands-optional" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: Array of strings</p>
+<p><strong>Description</strong>: List of commands to send to the instrument immediately after connection.</p>
+<p><strong>Example</strong>:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">startup</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">init_commands</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*RST&quot;</span><span class="w">                    </span><span class="c1"># Reset instrument</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*CLS&quot;</span><span class="w">                    </span><span class="c1"># Clear status</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;SYST:REM&quot;</span><span class="w">               </span><span class="c1"># Set to remote mode</span>
+</code></pre></div>
+<h5 id="startupdelay_ms-optional"><code>startup.delay_ms</code> (optional)<a class="headerlink" href="#startupdelay_ms-optional" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: Integer</p>
+<p><strong>Description</strong>: Delay in milliseconds to wait after connecting before sending commands.</p>
+<p><strong>Example</strong>: <code>1000</code> (wait 1 second after connection)</p>
+<h4 id="io_config-required"><code>io_config</code> (required)<a class="headerlink" href="#io_config-required" title="Permanent link">&para;</a></h4>
+<p><strong>Type</strong>: Object</p>
+<p><strong>Description</strong>: Configuration for each IO port defined in the API.<br />
+Each IO port that has role <code>input</code>, <code>output</code>, or <code>inout</code> must be configured here.</p>
+<p>Each IO configuration must specify:</p>
+<h5 id="type-required"><code>type</code> (required)<a class="headerlink" href="#type-required" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String (enum: <code>int</code> | <code>float</code> | <code>bool</code> | <code>string</code>)</p>
+<p><strong>Description</strong>: Data type for this IO port.<br />
+Must match the type defined in the API.</p>
+<h5 id="role-required"><code>role</code> (required)<a class="headerlink" href="#role-required" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String (enum: <code>input</code> | <code>output</code> | <code>inout</code>)</p>
+<p><strong>Description</strong>: Direction of data flow.  Must match the role defined in the API.</p>
+<ul>
+<li><strong><code>input</code></strong>: Data flows into the instrument (e.g., voltage to set)</li>
+<li><strong><code>output</code></strong>: Data flows out from the instrument (e.g., measured current)</li>
+<li><strong><code>inout</code></strong>:  Bidirectional (e.g., configurable GPIO)</li>
+</ul>
+<h5 id="unit-optional"><code>unit</code> (optional)<a class="headerlink" href="#unit-optional" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String</p>
+<p><strong>Description</strong>: Physical unit for this IO port (e.g., <code>V</code>, <code>A</code>, <code>Hz</code>).</p>
+<h5 id="offset-optional"><code>offset</code> (optional)<a class="headerlink" href="#offset-optional" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: Number</p>
+<p><strong>Description</strong>: Offset value applied to the data:<br />
+<code>actual_value = raw_value * scale + offset</code></p>
+<p><strong>Default</strong>: <code>0</code></p>
+<h5 id="scale-optional"><code>scale</code> (optional)<a class="headerlink" href="#scale-optional" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: Number</p>
+<p><strong>Description</strong>: Scale factor applied to the data:
+<code>actual_value = raw_value * scale + offset</code></p>
+<p><strong>Default</strong>: <code>1</code></p>
+<h3 id="complete-examples">Complete Examples<a class="headerlink" href="#complete-examples" title="Permanent link">&para;</a></h3>
+<h4 id="example-1-digital-multimeter-visa-over-lan">Example 1: Digital Multimeter (VISA over LAN)<a class="headerlink" href="#example-1-digital-multimeter-visa-over-lan" title="Permanent link">&para;</a></h4>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DMM1</span>
+<span class="nt">api_ref</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">examples/instrument-apis/agi_34401a.yaml</span>
+<span class="nt">connection</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VISA</span>
+<span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TCPIP::192.168.0.100::INSTR&quot;</span>
+<span class="w">  </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+<span class="nt">startup</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">init_commands</span><span class="p">:</span><span class="w"> </span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*RST&quot;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;*CLS&quot;</span>
+<span class="w">  </span><span class="nt">delay_ms</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">500</span>
+<span class="nt">io_config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">voltage</span><span class="p">:</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">V</span>
+<span class="w">    </span><span class="nt">offset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">    </span><span class="nt">scale</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">measured_voltage</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">V</span>
+<span class="w">    </span><span class="nt">offset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">    </span><span class="nt">scale</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</code></pre></div>
+<h4 id="example-2-oscilloscope-with-multiple-channels">Example 2: Oscilloscope with Multiple Channels<a class="headerlink" href="#example-2-oscilloscope-with-multiple-channels" title="Permanent link">&para;</a></h4>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SCOPE1</span>
+<span class="nt">api_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">examples/instrument-apis/dso9254a_extended.yaml</span>
+<span class="nt">connection</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VISA</span>
+<span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;USB0::0x0957::0x179B::MY12345678::INSTR&quot;</span>
+<span class="nt">io_config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">analog1_waveform</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">V</span>
+<span class="w">  </span><span class="nt">analog2_waveform</span><span class="p">:</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">output</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">V</span>
+<span class="w">  </span><span class="nt">analog3_waveform</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">V</span>
+<span class="w">  </span><span class="nt">analog4_waveform</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">V</span>
+<span class="w">  </span><span class="nt">timebase</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">setting</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">s</span>
+</code></pre></div>
+<h4 id="example-3-custom-serial-instrument">Example 3: Custom Serial Instrument<a class="headerlink" href="#example-3-custom-serial-instrument" title="Permanent link">&para;</a></h4>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CUSTOM_DEVICE</span>
+<span class="nt">api_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apis/custom_serial_device.yaml</span>
+<span class="nt">connection</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Custom</span>
+<span class="w">  </span><span class="nt">custom</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">device</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/dev/ttyUSB0&quot;</span>
+<span class="w">    </span><span class="nt">baudrate</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">115200</span>
+<span class="nt">io_config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">setpoint</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">degC</span>
+<span class="w">    </span><span class="nt">offset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">    </span><span class="nt">scale</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">  </span><span class="nt">temperature</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">degC</span>
+<span class="w">    </span><span class="nt">offset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">    </span><span class="nt">scale</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</code></pre></div>
+<hr />
+<h2 id="instrument-api-definition">Instrument API Definition<a class="headerlink" href="#instrument-api-definition" title="Permanent link">&para;</a></h2>
+<h3 id="purpose_1">Purpose<a class="headerlink" href="#purpose_1" title="Permanent link">&para;</a></h3>
+<p>An API definition file describes <strong>what commands an instrument type supports</strong> and how to send those commands.  It's protocol-agnostic and reusable across multiple instances of the same instrument model.</p>
+<h3 id="schema-reference_1">Schema Reference<a class="headerlink" href="#schema-reference_1" title="Permanent link">&para;</a></h3>
+<p>The API is validated against <a href="../schemas/instrument_api.schema.json"><code>schemas/instrument_api.schema.json</code></a>.</p>
+<h3 id="required-fields_1">Required Fields<a class="headerlink" href="#required-fields_1" title="Permanent link">&para;</a></h3>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">api_version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.0.0&quot;</span><span class="w">           </span><span class="c1"># API schema version</span>
+<span class="nt">instrument</span><span class="p">:</span><span class="w">                      </span><span class="c1"># Instrument metadata</span>
+<span class="w">  </span><span class="nt">vendor</span><span class="p">:</span><span class="w">  </span><span class="s">&quot;Vendor</span><span class="nv"> </span><span class="s">Name&quot;</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Model</span><span class="nv"> </span><span class="s">Number&quot;</span>
+<span class="w">  </span><span class="nt">identifier</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;UNIQUE_ID&quot;</span>
+<span class="nt">protocol</span><span class="p">:</span><span class="w">                       </span><span class="c1"># Protocol type</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">VISA</span>
+<span class="nt">io</span><span class="p">:</span><span class="w">                             </span><span class="c1"># IO port definitions</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">port_name</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input|output|setting</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">V</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span>
+<span class="nt">commands</span><span class="p">:</span><span class="w">                      </span><span class="c1"># Command definitions</span>
+<span class="w">  </span><span class="nt">COMMAND_NAME</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;SCPI:</span><span class="nv"> </span><span class="s">COMMAND</span><span class="nv"> </span><span class="s">{param}&quot;</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">outputs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">...</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<h3 id="field-descriptions_1">Field Descriptions<a class="headerlink" href="#field-descriptions_1" title="Permanent link">&para;</a></h3>
+<h4 id="api_version-required"><code>api_version</code> (required)<a class="headerlink" href="#api_version-required" title="Permanent link">&para;</a></h4>
+<p><strong>Type</strong>: String (pattern: <code>^[0-9]+\.[0-9]+\.[0-9]+$</code>)</p>
+<p><strong>Description</strong>: Semantic version of the API schema format.</p>
+<p><strong>Example</strong>: <code>1.0.0</code></p>
+<h4 id="instrument-required"><code>instrument</code> (required)<a class="headerlink" href="#instrument-required" title="Permanent link">&para;</a></h4>
+<p><strong>Type</strong>: Object</p>
+<p><strong>Description</strong>: Metadata about the instrument.</p>
+<h5 id="instrumentvendor-required"><code>instrument.vendor</code> (required)<a class="headerlink" href="#instrumentvendor-required" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String</p>
+<p><strong>Description</strong>:  Manufacturer name.</p>
+<p><strong>Examples</strong>:  <code>Keysight</code>, <code>Agilent</code>, <code>Rohde &amp; Schwarz</code>, <code>Tektronix</code></p>
+<h5 id="instrumentmodel-required"><code>instrument.model</code> (required)<a class="headerlink" href="#instrumentmodel-required" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String</p>
+<p><strong>Description</strong>: Model number or identifier.</p>
+<p><strong>Examples</strong>: <code>DSO9254A</code>, <code>34401A</code>, <code>SMU2450</code></p>
+<h5 id="instrumentidentifier-required"><code>instrument.identifier</code> (required)<a class="headerlink" href="#instrumentidentifier-required" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String (pattern: <code>^[A-Z][A-Z0-9_]*$</code>)</p>
+<p><strong>Description</strong>: Unique identifier for this API definition.</p>
+<p><strong>Examples</strong>: <code>DMM1</code>, <code>SCOPE1</code>, <code>DAC_API</code></p>
+<h5 id="instrumentdesc-optional"><code>instrument.desc</code> (optional)<a class="headerlink" href="#instrumentdesc-optional" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String</p>
+<p><strong>Description</strong>: Human-readable description of the instrument.</p>
+<p><strong>Example</strong>: <code>High-Performance Oscilloscope with 4 analog channels</code></p>
+<h4 id="protocol-required"><code>protocol</code> (required)<a class="headerlink" href="#protocol-required" title="Permanent link">&para;</a></h4>
+<p><strong>Type</strong>: Object</p>
+<p><strong>Description</strong>: Protocol configuration.</p>
+<h5 id="protocoltype-required"><code>protocol.type</code> (required)<a class="headerlink" href="#protocoltype-required" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String (enum: <code>VISA</code> | <code>Custom</code>)</p>
+<p><strong>Description</strong>: Communication protocol.</p>
+<ul>
+<li><strong><code>VISA</code></strong>: Standard VISA protocol (plugin automatically uses VISA commands)</li>
+<li><strong><code>Custom</code></strong>: Custom protocol (requires a plugin implementation)</li>
+</ul>
+<h4 id="io-required"><code>io</code> (required)<a class="headerlink" href="#io-required" title="Permanent link">&para;</a></h4>
+<p><strong>Type</strong>: Array of objects</p>
+<p><strong>Description</strong>:  Defines all IO ports (inputs, outputs, settings, triggers, etc.) for the instrument.</p>
+<p>Each IO port object has:</p>
+<h5 id="ioname-required"><code>io[].name</code> (required)<a class="headerlink" href="#ioname-required" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String (pattern: <code>^[a-z][a-z0-9_]*$</code>)</p>
+<p><strong>Description</strong>: IO port name (lowercase with underscores).</p>
+<p><strong>Examples</strong>: <code>voltage</code>, <code>current</code>, <code>frequency</code>, <code>trigger_level</code></p>
+<h5 id="iotype-required"><code>io[].type</code> (required)<a class="headerlink" href="#iotype-required" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String (enum: <code>int</code> | <code>float</code> | <code>bool</code> | <code>string</code> | <code>array&lt;float&gt;</code> | <code>array&lt;int&gt;</code>)</p>
+<p><strong>Description</strong>: Data type for this IO port.</p>
+<h5 id="iorole-required"><code>io[].role</code> (required)<a class="headerlink" href="#iorole-required" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String (enum: <code>input</code> | <code>output</code> | <code>inout</code> | <code>setting</code> | <code>trigger-in</code> | <code>trigger-out</code> | <code>clock-in</code> | <code>clock-out</code>)</p>
+<p><strong>Description</strong>: The role/direction of this IO port.</p>
+<ul>
+<li><strong><code>input</code></strong>: Values written to the instrument</li>
+<li><strong><code>output</code></strong>: Values read from the instrument</li>
+<li><strong><code>inout</code></strong>: Bidirectional</li>
+<li><strong><code>setting</code></strong>: Configuration parameter</li>
+<li><strong><code>trigger-in</code></strong>: Trigger input</li>
+<li><strong><code>trigger-out</code></strong>: Trigger output</li>
+<li><strong><code>clock-in</code></strong>: Clock input</li>
+<li><strong><code>clock-out</code></strong>: Clock output</li>
+</ul>
+<h5 id="iounit-optional"><code>io[].unit</code> (optional)<a class="headerlink" href="#iounit-optional" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String</p>
+<p><strong>Description</strong>: Physical unit.</p>
+<p><strong>Examples</strong>: <code>V</code>, <code>A</code>, <code>Hz</code>, <code>s</code>, <code>degC</code>, <code>Ohm</code></p>
+<h5 id="iodescription-optional"><code>io[].description</code> (optional)<a class="headerlink" href="#iodescription-optional" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String</p>
+<p><strong>Description</strong>: Human-readable description of the IO port.</p>
+<h4 id="channel_groups-optional"><code>channel_groups</code> (optional)<a class="headerlink" href="#channel_groups-optional" title="Permanent link">&para;</a></h4>
+<p><strong>Type</strong>: Array of objects</p>
+<p><strong>Description</strong>:  Defines groups of channels (e.g., oscilloscope channels 1-4).</p>
+<p>See the <a href="../examples/instrument-apis/dso9254a.yaml.tmpl">dso9254a. yaml. tmpl</a> example for usage.</p>
+<h4 id="commands-required"><code>commands</code> (required)<a class="headerlink" href="#commands-required" title="Permanent link">&para;</a></h4>
+<p><strong>Type</strong>: Object</p>
+<p><strong>Description</strong>:  Defines all commands the instrument supports.  Each key is a command name, and each value is a command definition.</p>
+<h5 id="command-name-format">Command Name Format<a class="headerlink" href="#command-name-format" title="Permanent link">&para;</a></h5>
+<p><strong>Pattern</strong>: <code>^[A-Z][A-Z0-9_]*$</code></p>
+<p><strong>Examples</strong>:  <code>SET_VOLTAGE</code>, <code>MEASURE_CURRENT</code>, <code>GET_STATUS</code></p>
+<h5 id="command-object">Command Object<a class="headerlink" href="#command-object" title="Permanent link">&para;</a></h5>
+<p>Each command has:</p>
+<h6 id="template-required"><code>template</code> (required)<a class="headerlink" href="#template-required" title="Permanent link">&para;</a></h6>
+<p><strong>Type</strong>: String</p>
+<p><strong>Description</strong>:  The actual command string sent to the instrument.  Parameters in curly braces <code>{param}</code> are substituted at runtime.</p>
+<p><strong>VISA/SCPI Examples</strong>:</p>
+<ul>
+<li><code>*IDN?</code> (identity query)</li>
+<li><code>:SOUR:VOLT {voltage}</code> (set voltage)</li>
+<li><code>:MEAS:VOLT: DC?</code> (measure voltage)</li>
+<li><code>:CHAN{channel}:RANG {range}</code> (set channel range, using channel group)</li>
+</ul>
+<h6 id="description-optional"><code>description</code> (optional)<a class="headerlink" href="#description-optional" title="Permanent link">&para;</a></h6>
+<p><strong>Type</strong>: String</p>
+<p><strong>Description</strong>: Human-readable description of what the command does.</p>
+<h6 id="parameters-optional"><code>parameters</code> (optional)<a class="headerlink" href="#parameters-optional" title="Permanent link">&para;</a></h6>
+<p><strong>Type</strong>: Array of objects</p>
+<p><strong>Description</strong>:  Input parameters for the command.</p>
+<p>Each parameter object:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">voltage</span><span class="w">          </span><span class="c1"># Parameter name</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span><span class="w">           </span><span class="c1"># Data type</span>
+<span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...&quot;</span><span class="w">    </span><span class="c1"># Description (optional)</span>
+<span class="w">  </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">V</span><span class="w">              </span><span class="c1"># Physical unit (optional)</span>
+</code></pre></div>
+<p>Alternatively, you can reference an IO port:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">io</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">voltage</span><span class="w">           </span><span class="c1"># References the IO port named &quot;voltage&quot;</span>
+</code></pre></div>
+<h6 id="outputs-optional"><code>outputs</code> (optional)<a class="headerlink" href="#outputs-optional" title="Permanent link">&para;</a></h6>
+<p><strong>Type</strong>: Array of strings</p>
+<p><strong>Description</strong>: List of IO port names that this command produces values for.</p>
+<p><strong>Example</strong>:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">outputs</span><span class="p">:</span><span class="w">  </span><span class="p p-Indicator">[</span><span class="nv">measured_voltage</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># This command produces a value for the &quot;measured_voltage&quot; IO port</span>
+</code></pre></div>
+<h6 id="returns-optional"><code>returns</code> (optional)<a class="headerlink" href="#returns-optional" title="Permanent link">&para;</a></h6>
+<p><strong>Type</strong>: String (enum: <code>void</code> | <code>int</code> | <code>float</code> | <code>bool</code> | <code>string</code> | <code>array&lt;float&gt;</code> | <code>array&lt;int&gt;</code>)</p>
+<p><strong>Description</strong>: The return type of the command.  Use <code>void</code> for commands that don't return a value.</p>
+<h6 id="query-optional"><code>query</code> (optional)<a class="headerlink" href="#query-optional" title="Permanent link">&para;</a></h6>
+<p><strong>Type</strong>: Boolean</p>
+<p><strong>Description</strong>: If <code>true</code>, this command is a query (reads data from the instrument). If <code>false</code> or omitted, it's a write command.</p>
+<h6 id="channel_group-optional"><code>channel_group</code> (optional)<a class="headerlink" href="#channel_group-optional" title="Permanent link">&para;</a></h6>
+<p><strong>Type</strong>: String</p>
+<p><strong>Description</strong>: If this command operates on a channel, specify the channel group name here.</p>
+<h3 id="complete-examples_1">Complete Examples<a class="headerlink" href="#complete-examples_1" title="Permanent link">&para;</a></h3>
+<h4 id="example-1-simple-digital-multimeter-api">Example 1: Simple Digital Multimeter API<a class="headerlink" href="#example-1-simple-digital-multimeter-api" title="Permanent link">&para;</a></h4>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">api_version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.0.0&quot;</span>
+<span class="nt">instrument</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vendor</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Agilent&quot;</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;34401A&quot;</span>
+<span class="w">  </span><span class="nt">identifier</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DMM_API&quot;</span>
+<span class="w">  </span><span class="nt">desc</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;6.</span><span class="nv"> </span><span class="s">5</span><span class="nv"> </span><span class="s">Digit</span><span class="nv"> </span><span class="s">Digital</span><span class="nv"> </span><span class="s">Multimeter&quot;</span>
+
+<span class="nt">protocol</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;VISA&quot;</span>
+
+<span class="nt">io</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">voltage</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Voltage</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">set&quot;</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;V&quot;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">measured_voltage</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">output</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Measured</span><span class="nv"> </span><span class="s">DC</span><span class="nv"> </span><span class="s">voltage&quot;</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;V&quot;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">range</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">setting</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Measurement</span><span class="nv"> </span><span class="s">range&quot;</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;V&quot;</span>
+
+<span class="nt">commands</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">IDN</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*IDN?&quot;</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Query</span><span class="nv"> </span><span class="s">instrument</span><span class="nv"> </span><span class="s">identification&quot;</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">outputs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">returns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+<span class="w">    </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="nt">RESET</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*RST&quot;</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Reset</span><span class="nv"> </span><span class="s">instrument</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">default</span><span class="nv"> </span><span class="s">state&quot;</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">outputs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">returns</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">void</span>
+
+<span class="w">  </span><span class="nt">SET_VOLTAGE</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w">  </span><span class="s">&quot;:SOUR:VOLT</span><span class="nv"> </span><span class="s">{voltage}&quot;</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Set</span><span class="nv"> </span><span class="s">output</span><span class="nv"> </span><span class="s">voltage&quot;</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">io</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">voltage</span>
+<span class="w">    </span><span class="nt">outputs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">returns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">void</span>
+
+<span class="w">  </span><span class="nt">MEASURE_VOLTAGE</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;:</span><span class="nv"> </span><span class="s">MEAS:VOLT:DC?&quot;</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Measure</span><span class="nv"> </span><span class="s">DC</span><span class="nv"> </span><span class="s">voltage&quot;</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span><span class="w">  </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">outputs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">measured_voltage</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">returns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="nt">SET_RANGE</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w">  </span><span class="s">&quot;:VOLT:RANG</span><span class="nv"> </span><span class="s">{range}&quot;</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Set</span><span class="nv"> </span><span class="s">measurement</span><span class="nv"> </span><span class="s">range&quot;</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">io</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">range</span>
+<span class="w">    </span><span class="nt">outputs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">returns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">void</span>
+
+<span class="w">  </span><span class="nt">GET_RANGE</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;:</span><span class="nv"> </span><span class="s">VOLT:RANG?&quot;</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Query</span><span class="nv"> </span><span class="s">current</span><span class="nv"> </span><span class="s">measurement</span><span class="nv"> </span><span class="s">range&quot;</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">outputs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">range</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">returns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<h4 id="example-2-oscilloscope-with-channel-groups">Example 2: Oscilloscope with Channel Groups<a class="headerlink" href="#example-2-oscilloscope-with-channel-groups" title="Permanent link">&para;</a></h4>
+<div class="language-yaml highlight"><pre><span></span><code><span class="nt">api_version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.0.0&quot;</span>
+<span class="nt">instrument</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vendor</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Keysight&quot;</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;DSO9254A&quot;</span>
+<span class="w">  </span><span class="nt">identifier</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;SCOPE_API&quot;</span>
+<span class="w">  </span><span class="nt">desc</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;High-Performance</span><span class="nv"> </span><span class="s">Oscilloscope&quot;</span>
+
+<span class="nt">protocol</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;VISA&quot;</span>
+
+<span class="nt">channel_groups</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">analog</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Analog</span><span class="nv"> </span><span class="s">input</span><span class="nv"> </span><span class="s">channels&quot;</span>
+<span class="w">    </span><span class="nt">channel_parameter</span><span class="p">:</span><span class="w"> </span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">channel</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">int</span>
+<span class="w">      </span><span class="nt">min</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">      </span><span class="nt">max</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Oscilloscope</span><span class="nv"> </span><span class="s">channel</span><span class="nv"> </span><span class="s">number</span><span class="nv"> </span><span class="s">(1-4)&quot;</span>
+<span class="w">    </span><span class="nt">io_types</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">suffix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">waveform</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">        </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output</span>
+<span class="w">        </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;V&quot;</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Waveform</span><span class="nv"> </span><span class="s">data&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">suffix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">voltage_range</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">        </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">setting</span>
+<span class="w">        </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;V&quot;</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Voltage</span><span class="nv"> </span><span class="s">range</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">volts&quot;</span>
+
+<span class="nt">io</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">timebase</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">    </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">setting</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Global</span><span class="nv"> </span><span class="s">timebase</span><span class="nv"> </span><span class="s">setting&quot;</span>
+<span class="w">    </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;s&quot;</span>
+
+<span class="w">  </span><span class="c1"># The channel group automatically creates: </span>
+<span class="w">  </span><span class="c1"># analog1_waveform, analog2_waveform, analog3_waveform, analog4_waveform</span>
+<span class="w">  </span><span class="c1"># analog1_voltage_range, analog2_voltage_range, etc. </span>
+
+<span class="nt">commands</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">GET_WAVEFORM</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;:WAV:DATA?</span><span class="nv">  </span><span class="s">{analog}&quot;</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Retrieve</span><span class="nv"> </span><span class="s">waveform</span><span class="nv"> </span><span class="s">data</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">specified</span><span class="nv"> </span><span class="s">channel&quot;</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span><span class="w">  </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">channel_group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analog</span>
+<span class="w">    </span><span class="nt">outputs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">waveform</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">returns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">array&lt;float&gt;</span>
+<span class="w">    </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="w">  </span><span class="nt">SET_VOLTAGE_RANGE</span><span class="p">:</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;:CHAN{analog}:RANG</span><span class="nv"> </span><span class="s">{value}&quot;</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Set</span><span class="nv"> </span><span class="s">voltage</span><span class="nv"> </span><span class="s">range</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">channel&quot;</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">float</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Voltage</span><span class="nv"> </span><span class="s">range</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">volts&quot;</span>
+<span class="w">        </span><span class="nt">unit</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;V&quot;</span>
+<span class="w">    </span><span class="nt">channel_group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analog</span>
+<span class="w">    </span><span class="nt">outputs</span><span class="p">:</span><span class="w">  </span><span class="p p-Indicator">[</span><span class="nv">voltage_range</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">returns</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">void</span>
+
+<span class="w">  </span><span class="nt">SET_TIMEBASE</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;:TIM:SCAL</span><span class="nv"> </span><span class="s">{timebase}&quot;</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Set</span><span class="nv"> </span><span class="s">timebase</span><span class="nv"> </span><span class="s">(time</span><span class="nv"> </span><span class="s">per</span><span class="nv"> </span><span class="s">division)&quot;</span>
+<span class="w">    </span><span class="nt">parameters</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">io</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">timebase</span>
+<span class="w">    </span><span class="nt">outputs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">    </span><span class="nt">returns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">void</span>
+</code></pre></div>
+<hr />
+<h2 id="configuration-validation">Configuration Validation<a class="headerlink" href="#configuration-validation" title="Permanent link">&para;</a></h2>
+<p>The server includes built-in validation tools to check your configuration files against the JSON schemas.</p>
+<h3 id="validating-configurations">Validating Configurations<a class="headerlink" href="#validating-configurations" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Validate an instrument configuration</span>
+instrument-server<span class="w"> </span>validate<span class="w"> </span>config<span class="w"> </span>path/to/config.yaml
+
+<span class="c1"># Validate an API definition</span>
+instrument-server<span class="w"> </span>validate<span class="w"> </span>api<span class="w"> </span>path/to/api.yaml
+</code></pre></div>
+<h3 id="common-validation-errors">Common Validation Errors<a class="headerlink" href="#common-validation-errors" title="Permanent link">&para;</a></h3>
+<h4 id="error-name-must-match-pattern-a-za-z0-9_">Error: "name must match pattern ^[A-Z][A-Z0-9_]*$"<a class="headerlink" href="#error-name-must-match-pattern-a-za-z0-9_" title="Permanent link">&para;</a></h4>
+<p><strong>Problem</strong>:  Instrument name uses lowercase or special characters.</p>
+<p><strong>Solution</strong>: Use uppercase letters, numbers, and underscores only.  Must start with a letter.</p>
+<p><strong>Bad</strong>: <code>dmm1</code>, <code>DMM-1</code>, <code>1DMM</code><br />
+<strong>Good</strong>: <code>DMM1</code>, <code>DMM_PRIMARY</code>, <code>SCOPE_A</code></p>
+<h4 id="error-unknown-connection-type">Error: "Unknown connection type"<a class="headerlink" href="#error-unknown-connection-type" title="Permanent link">&para;</a></h4>
+<p><strong>Problem</strong>: <code>connection.type</code> is not <code>VISA</code> or <code>Custom</code>.</p>
+<p><strong>Solution</strong>: Use exactly <code>VISA</code> or <code>Custom</code> (case-sensitive).</p>
+<h4 id="error-io_config-missing-required-port">Error: "io_config missing required port"<a class="headerlink" href="#error-io_config-missing-required-port" title="Permanent link">&para;</a></h4>
+<p><strong>Problem</strong>: An IO port with role <code>input</code>, <code>output</code>, or <code>inout</code> is defined in the API but not configured.</p>
+<p><strong>Solution</strong>: Add the missing IO port to <code>io_config</code> in your configuration file.</p>
+<h4 id="error-command-template-missing-parameter">Error: "Command template missing parameter"<a class="headerlink" href="#error-command-template-missing-parameter" title="Permanent link">&para;</a></h4>
+<p><strong>Problem</strong>: A parameter is referenced in <code>{braces}</code> in the template but not defined in <code>parameters</code>.</p>
+<p><strong>Solution</strong>: Add the parameter to the <code>parameters</code> list.</p>
+<hr />
+<h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="configuration-files">Configuration Files<a class="headerlink" href="#configuration-files" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Use descriptive names</strong>:  <code>DMM_GATE_VOLTAGE</code> is better than <code>DMM1</code></li>
+<li><strong>Group related instruments</strong>: Use prefixes like <code>DAC_</code>, <code>SCOPE_</code>, etc.</li>
+<li><strong>Document with comments</strong>:  YAML supports <code>#</code> comments</li>
+<li><strong>Keep connection details separate</strong>: Consider environment variables for addresses</li>
+<li><strong>Validate before use</strong>: Always run validation before starting instruments</li>
+</ol>
+<h3 id="api-definitions">API Definitions<a class="headerlink" href="#api-definitions" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Be explicit</strong>:  Provide descriptions for all commands and IO ports</li>
+<li><strong>Use consistent naming</strong>: Follow SCPI conventions if applicable</li>
+<li><strong>Define units</strong>: Always specify physical units for measurements</li>
+<li><strong>Group related IOs</strong>: Use channel groups for multi-channel instruments</li>
+<li><strong>Test incrementally</strong>: Start with basic commands (IDN, RESET) before adding complex ones</li>
+</ol>
+<h3 id="example-directory-structure">Example Directory Structure<a class="headerlink" href="#example-directory-structure" title="Permanent link">&para;</a></h3>
+<div class="language-text highlight"><pre><span></span><code>my-lab-setup/
+├── configs/
+│   ├── dmm1.yaml              # Primary DMM
+│   ├── dmm2.yaml              # Secondary DMM
+│   ├── scope_left.yaml        # Left oscilloscope
+│   └── scope_right.yaml       # Right oscilloscope
+├── apis/
+│   ├── agilent_34401a.yaml   # DMM API
+│   └── keysight_scope. yaml   # Oscilloscope API
+└── scripts/
+    ├── iv_curve. lua
+    ├── stability_diagram.lua
+    └── calibration.lua
+</code></pre></div>
+<hr />
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../CLI_USAGE/">CLI Usage Guide</a> - How to use the command-line interface</li>
+<li><a href="../PLUGIN_DEVELOPMENT/">Plugin Development Guide</a> - Creating custom instrument drivers</li>
+<li><a href="../ARCHITECTURE/">Architecture Documentation</a> - System design and internals</li>
+<li><a href="../examples/instrument-configurations/">Example Configurations</a> - Working configuration examples</li>
+<li><a href="../examples/instrument-apis/">Example APIs</a> - Working API definition examples</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
