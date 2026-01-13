@@ -12,28 +12,9 @@
 BUILD_DIR ?= ./build-win
 CMAKE ?= cmake
 NINJA ?= ninja
-CROSS_GCC ?= x86_64-w64-mingw32-gcc
 
 all: build
 
-# Cross-build for Windows using system x86_64-w64-mingw32 sysroot + clang
-MINGW_SYSROOT ?= /usr/x86_64-w64-mingw32
-TOOLCHAIN_TEMPLATE ?= cmake/toolchains/mingw-clang-toolchain.cmake.tpl
-TMP_TOOLCHAIN=/tmp/mingw-clang-toolchain.cmake
-
-build-windows:
-	@echo "Cross-building for Windows using clang -> mingw sysroot:  $(MINGW_SYSROOT)"
-	@mkdir -p $(BUILD_DIR)
-	@MINGW_SYSROOT='$(MINGW_SYSROOT)' \
-	CROSS_GCC='$(CROSS_GCC)' \
-	TOOLCHAIN_TEMPLATE='$(TOOLCHAIN_TEMPLATE)' \
-	TMP_TOOLCHAIN='$(TMP_TOOLCHAIN)' \
-	BUILD_DIR='$(BUILD_DIR)' \
-	CMAKE='$(CMAKE)' \
-	NINJA='$(NINJA)' \
-	./scripts/build-windows.sh
-
-# Native (Linux) build - using clang toolchain and profile flags
 build: 
 	mkdir -p ./build
 	cd ./build && \
@@ -70,9 +51,3 @@ coverage-overview:
 		-ignore-filename-regex='(tests/)' \
 		-Xdemangler c++filt -Xdemangler -n
 
-# Run tests via wine against Windows cross-built binaries
-wine-unit-test:  build-windows
-	WINEPATH="$(BUILD_DIR)" wine "$(BUILD_DIR)/tests/unit_tests.exe"
-
-wine-integration-test: build-windows
-	WINEPATH="$(BUILD_DIR)" wine "$(BUILD_DIR)/tests/integration_tests.exe"

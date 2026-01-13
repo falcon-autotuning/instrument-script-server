@@ -65,12 +65,25 @@ jobs:
           cmake --build build --config Release --verbose
         shell: pwsh
 
-      # ... rest of your test, artifact and tmate steps unchanged ...
+      - name: Run unit tests
+        run: |
+          if (Test-Path "build/tests/unit_tests.exe") {
+            Write-Host "Running unit tests..."
+            & build/tests/unit_tests.exe
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Unit tests failed with exit code $LASTEXITCODE"
+              exit $LASTEXITCODE
+            }
+            Write-Host "✓ Unit tests passed successfully"
+          } else {
+            Write-Host "No unit_tests.exe found, skipping..."
+          }
+        shell: pwsh
       - name: Run integration tests
         run: |
-          if (Test-Path "build/Release/integration_tests.exe") {
+          if (Test-Path "build/tests/integration_tests.exe") {
             Write-Host "Running integration tests..."
-            & build/Release/integration_tests.exe
+            & build/tests/integration_tests.exe
             if ($LASTEXITCODE -ne 0) {
               Write-Error "Integration tests failed with exit code $LASTEXITCODE"
               exit $LASTEXITCODE

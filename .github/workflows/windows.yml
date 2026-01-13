@@ -2,9 +2,9 @@ name: Cross-Compile Windows on Arch and Test
 
 on:
   push:
-    branches: [main]
+    branches: [none]
   pull_request:
-    branches: [main]
+    branches: [none]
   workflow_dispatch:
     inputs:
       PREBUILT_REF:
