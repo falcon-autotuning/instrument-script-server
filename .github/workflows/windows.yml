@@ -41,7 +41,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ env.PACMAN_CACHE_KEY }}-
 
-      - name: Prepare pacman keys and install host tools
+      - name: Prepare pacman keys and install host tools (including tmate)
         run: |
           set -euo pipefail
           rm -rf /etc/pacman.d/gnupg || true
@@ -55,23 +55,31 @@ jobs:
             ninja \
             curl \
             jq \
-            tar
+            tar \
+            tmate
 
       - name: Install oras (OCI registry client)
         run: |
           set -euo pipefail
           ORAS_TGZ="/tmp/oras.tar.gz"
           curl -fsSL -o "${ORAS_TGZ}" "https://github.com/oras-project/oras/releases/latest/download/oras_linux_amd64.tar.gz"
-          tar -xzf "${ORAS_TGZ}" -C /usr/local/bin oras
-          chmod +x /usr/local/bin/oras
-          oras version
+          tar -xzf "${ORAS_TGZ}" -C /usr/local/bin oras || true
+          # fallback extraction (some releases use different archive layout)
+          if [ ! -x /usr/local/bin/oras ]; then
+            tar -xzf "${ORAS_TGZ}" -C /tmp
+            ORAS_FOUND=$(find /tmp -type f -name oras -perm /a+x | head -n1 || true)
+            if [ -n "${ORAS_FOUND}" ]; then
+              install -m 0755 "${ORAS_FOUND}" /usr/local/bin/oras
+            fi
+          fi
+          chmod +x /usr/local/bin/oras || true
+          /usr/local/bin/oras version || true
 
       - name: Login to GHCR (using GITHUB_TOKEN if needed)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          # If the package is public you don't need auth. If it's private or GITHUB_TOKEN is required, login.
           if [ -n "${GITHUB_TOKEN:-}" ]; then
             echo "${GITHUB_TOKEN}" | oras login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
           else
@@ -79,28 +87,48 @@ jobs:
           fi
 
       - name: Pull & extract prebuilt mingw sysroot from GHCR
+        # Support both workflow_dispatch and reusable workflow calls:
         env:
-          PREBUILT_REF_INPUT: ${{ inputs.PREBUILT_REF }}
+          INPUT_PREBUILT: ${{ inputs.PREBUILT_REF }}
+          EVENT_PREBUILT: ${{ github.event.inputs.PREBUILT_REF }}
         run: |
           set -euo pipefail
-          if [ -n "${PREBUILT_REF_INPUT}" ]; then
-            REF="${PREBUILT_REF_INPUT}"
+          # Prefer explicit inputs (reusable workflow inputs or workflow_dispatch inputs)
+          if [ -n "${INPUT_PREBUILT:-}" ]; then
+            REF="${INPUT_PREBUILT}"
+          elif [ -n "${EVENT_PREBUILT:-}" ]; then
+            REF="${EVENT_PREBUILT}"
           else
             REF="ghcr.io/${GITHUB_REPOSITORY_OWNER}/mingw-sysroot:latest"
           fi
-          echo "Pulling prebuilt sysroot artifact from: ${REF}"
+          echo "Using prebuilt sysroot reference: ${REF}"
           mkdir -p /tmp/oras-out
           cd /tmp/oras-out
-          oras pull "${REF}"
+          # Pull the artifact into the working directory
+          oras pull "${REF}" || {
+            echo "oras pull failed for ${REF}"
+            exit 1
+          }
+          # Find a tarball in the pulled files
           TARFILE=$(ls -1 *.tar.gz 2>/dev/null || true)
           if [ -z "${TARFILE}" ]; then
-            echo "ERROR: no .tar.gz artifact found after oras pull"
+            TARFILE=$(ls -1 *.tgz 2>/dev/null || true)
+          fi
+          if [ -z "${TARFILE}" ]; then
+            TARFILE=$(ls -1 *.tar 2>/dev/null || true)
+          fi
+          if [ -z "${TARFILE}" ]; then
+            echo "ERROR: no tarball (.tar.gz/.tgz/.tar) found after oras pull"
             ls -la /tmp/oras-out || true
             exit 1
           fi
+          # If multiple, pick the first line
+          TARFILE=$(printf '%s\n' ${TARFILE} | head -n1)
+          echo "Found tarball: ${TARFILE}"
           mv "${TARFILE}" /tmp/mingw-sysroot.tar.gz
-          echo "Extracting mingw sysroot (tar contains usr/x86_64-w64-mingw32/...)"
+          echo "Extracting mingw sysroot to / (expecting usr/x86_64-w64-mingw32/...)"
           tar -xzf /tmp/mingw-sysroot.tar.gz -C /
+          echo "Resulting sysroot path listing:"
           ls -la /usr/x86_64-w64-mingw32 || true
 
       - name: Create builder user and set permissions
@@ -150,6 +178,24 @@ jobs:
           name: windows-binaries
           path: /workspace/windows-binaries
           retention-days: 7
+
+      - name: Start tmate session for debugging on failure
+        if: ${{ failure() }}
+        run: |
+          set -euo pipefail
+          # tmate is installed earlier via pacman. Ensure it's available.
+          if ! command -v tmate >/dev/null 2>&1; then
+            pacman -S --noconfirm tmate || true
+          fi
+          TMATE_SOCK=/tmp/tmate.sock
+          tmate -S "${TMATE_SOCK}" new-session -d
+          tmate -S "${TMATE_SOCK}" wait tmate-ready
+          echo "===== TMATE CONNECTION INFO ====="
+          tmate -S "${TMATE_SOCK}" display -p '#{tmate_ssh}'
+          tmate -S "${TMATE_SOCK}" display -p '#{tmate_web}'
+          echo "================================="
+          # Keep session alive so you can connect; job will time out per workflow/job timeout
+          while true; do sleep 60; done
 
   test-on-windows:
     name: Test built Windows artifacts
