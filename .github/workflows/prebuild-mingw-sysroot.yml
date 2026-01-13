@@ -30,14 +30,14 @@ jobs:
           path: /var/cache/pacman/pkg
           key: ${{ runner.os }}-pacman-cache-v1
 
-      - name: Prepare pacman keys and install base packages
+      - name: Prepare pacman keys and install base packages (including tmate)
         run: |
           set -euo pipefail
           rm -rf /etc/pacman.d/gnupg || true
           pacman-key --init || true
           pacman-key --populate archlinux
-          # Install minimal host packages and common build deps
-          pacman -Syu --noconfirm --needed base-devel git mingw-w64-gcc cmake ninja curl jq go sudo tar findutils
+          # Install minimal host packages and common build deps + tmate for debugging
+          pacman -Syu --noconfirm --needed base-devel git mingw-w64-gcc cmake ninja curl jq go sudo tar findutils tmate
 
       - name: Create builder user
         run: |
@@ -112,7 +112,6 @@ jobs:
           echo "Tarball size:"
           ls -lh "${SYSROOT_TARBALL_PATH}"
           echo "Tarball contents preview (first 50 lines):"
-          # Safer listing to avoid SIGPIPE (write to tmp file then head)
           tar -tf "${SYSROOT_TARBALL_PATH}" > /tmp/mingw-tar-list.txt
           head -n 50 /tmp/mingw-tar-list.txt
 
@@ -140,7 +139,6 @@ jobs:
           tar -xzf /tmp/oras.tar.gz -C /tmp/oras-install
           ORAS_BIN=$(find /tmp/oras-install -type f -name 'oras' -perm /a+x | head -n1 || true)
           if [ -z "${ORAS_BIN}" ]; then
-            # fallback: find any file named oras
             ORAS_BIN=$(find /tmp/oras-install -type f -name 'oras' | head -n1 || true)
           fi
           if [ -z "${ORAS_BIN}" ]; then
@@ -173,9 +171,10 @@ jobs:
           VERSION_REF="${REGISTRY}/${REPO}:${VERSION_TAG}"
           LATEST_REF="${REGISTRY}/${REPO}:latest"
           echo "Pushing versioned artifact ${VERSION_REF}"
-          oras push "${VERSION_REF}" /tmp/mingw-sysroot.tar.gz --artifact-type application/vnd.tar+gzip
+          # Allow absolute path here intentionally (oras path validation blocks absolute paths by default)
+          oras push "${VERSION_REF}" /tmp/mingw-sysroot.tar.gz --artifact-type application/vnd.tar+gzip --disable-path-validation
           echo "Pushing latest artifact ${LATEST_REF}"
-          oras push "${LATEST_REF}" /tmp/mingw-sysroot.tar.gz --artifact-type application/vnd.tar+gzip
+          oras push "${LATEST_REF}" /tmp/mingw-sysroot.tar.gz --artifact-type application/vnd.tar+gzip --disable-path-validation
           echo "version_ref=${VERSION_REF}" >> $GITHUB_OUTPUT
           echo "latest_ref=${LATEST_REF}" >> $GITHUB_OUTPUT
 
@@ -184,3 +183,23 @@ jobs:
           echo "Uploaded OCI artifact refs:"
           echo "version_ref = ${{ steps.push_oras.outputs.version_ref }}"
           echo "latest_ref  = ${{ steps.push_oras.outputs.latest_ref }}"
+
+      - name: Start tmate session for debugging on failure
+        if: ${{ failure() }}
+        run: |
+          set -euo pipefail
+          # tmate should already be installed via pacman above; ensure it's present
+          if ! command -v tmate >/dev/null 2>&1; then
+            pacman -S --noconfirm tmate || true
+          fi
+          # Start a detached tmate session and print connection info
+          TMATE_SOCK=/tmp/tmate.sock
+          tmate -S "${TMATE_SOCK}" new-session -d
+          tmate -S "${TMATE_SOCK}" wait tmate-ready
+          echo "===== TMATE CONNECTION INFO ====="
+          tmate -S "${TMATE_SOCK}" display -p '#{tmate_ssh}'
+          tmate -S "${TMATE_SOCK}" display -p '#{tmate_web}'
+          echo "================================="
+          # Keep session alive so you can connect; job will time out eventually according to workflow/job timeout
+          # Sleep in a loop to be robust to signals
+          while true; do sleep 60; done
