@@ -66,6 +66,8 @@ instrument-server daemon stop
 
 ## Documentation
 
+Find it [here](https://falcon-autotuning.github.io/instrument-script-server/).
+
 - **[Configuration Guide](CONFIGURATION.md)** - How to write instrument configurations and API definitions
 - **[CLI Usage](CLI_USAGE.md)** - Complete command-line interface reference
 - **[Plugin Development](PLUGIN_DEVELOPMENT.md)** - Creating custom instrument drivers
