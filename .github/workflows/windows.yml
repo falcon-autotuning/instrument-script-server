@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   cross-build-windows:
-    name: Build Windows cross (use prebuilt mingw sysroot from GHCR)
+    name: Build Windows cross (use prebuilt mingw sysroot from GHCR, clang)
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
@@ -41,7 +41,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ env.PACMAN_CACHE_KEY }}-
 
-      - name: Prepare pacman keys and install host tools (including tmate)
+      - name: Prepare pacman keys and install host tools (including clang, lld, tmate)
         run: |
           set -euo pipefail
           rm -rf /etc/pacman.d/gnupg || true
@@ -56,21 +56,23 @@ jobs:
             curl \
             jq \
             tar \
+            clang \
+            lld \
             tmate
 
-      - name: Install oras (OCI registry client)
+      - name: Install oras (OCI registry client) - robust via GitHub API
         run: |
           set -euo pipefail
-          # Resolve the linux/amd64 asset URL for the latest ORAS release via the GitHub Releases API
-          ASSET_URL=$(curl -sSL "https://api.github.com/repos/oras-project/oras/releases/latest" \
-            | jq -r '.assets[] | select(.name | test("linux.*(amd64|x86_64)|amd64.*linux|x86_64.*linux"; "i")) | .browser_download_url' \
-            | head -n1)
+          API="https://api.github.com/repos/oras-project/oras/releases/latest"
+          echo "Querying ORAS releases via $API"
+          ASSET_URL=$(curl -sSL "$API" | jq -r '.assets[] | select(.name | test("linux.*(amd64|x86_64)|amd64.*linux|x86_64.*linux"; "i")) | .browser_download_url' | head -n1)
           if [ -z "${ASSET_URL:-}" ] || [ "${ASSET_URL}" = "null" ]; then
             echo "Failed to find a Linux amd64 ORAS asset in latest release"
-            curl -sSL "https://api.github.com/repos/oras-project/oras/releases/latest" | jq -C .
+            echo "Release JSON:"
+            curl -sSL "$API" | jq -C .
             exit 1
           fi
-          echo "Downloading ORAS from: ${ASSET_URL}"
+          echo "Found ORAS asset: ${ASSET_URL}"
           curl -fsSL -o /tmp/oras.tar.gz "${ASSET_URL}"
           mkdir -p /tmp/oras-install
           tar -xzf /tmp/oras.tar.gz -C /tmp/oras-install
@@ -99,13 +101,11 @@ jobs:
           fi
 
       - name: Pull & extract prebuilt mingw sysroot from GHCR
-        # Support both workflow_dispatch and reusable workflow calls:
         env:
           INPUT_PREBUILT: ${{ inputs.PREBUILT_REF }}
           EVENT_PREBUILT: ${{ github.event.inputs.PREBUILT_REF }}
         run: |
           set -euo pipefail
-          # Prefer explicit inputs (reusable workflow inputs or workflow_dispatch inputs)
           if [ -n "${INPUT_PREBUILT:-}" ]; then
             REF="${INPUT_PREBUILT}"
           elif [ -n "${EVENT_PREBUILT:-}" ]; then
@@ -116,78 +116,86 @@ jobs:
           echo "Using prebuilt sysroot reference: ${REF}"
           mkdir -p /tmp/oras-out
           cd /tmp/oras-out
-          # Pull the artifact into the working directory, allowing path traversal
-          # (our ORAS artifact may contain an absolute path like /tmp/mingw-sysroot.tar.gz)
-          oras pull --allow-path-traversal "${REF}" || {
-            echo "oras pull failed for ${REF}"
-            exit 1
-          }
-          # The artifact producer may write the tarball to an absolute path (e.g. /tmp/...).
-          # Look for the tarball in the current dir and /tmp and normalize to /tmp/mingw-sysroot.tar.gz
+          # artifact may contain absolute paths; allow traversal
+          oras pull --allow-path-traversal "${REF}" || { echo "oras pull failed for ${REF}"; exit 1; }
+          # find tarball either here or in /tmp (some pushes used absolute path)
           TARFILE=$(ls -1 *.tar.gz 2>/dev/null || true)
-          if [ -z "${TARFILE}" ]; then
-            TARFILE=$(ls -1 *.tgz 2>/dev/null || true)
-          fi
-          if [ -z "${TARFILE}" ]; then
-            TARFILE=$(ls -1 *.tar 2>/dev/null || true)
-          fi
-          if [ -z "${TARFILE}" ]; then
-            # fallback: check /tmp for tarballs written by ORAS with absolute paths
-            TARFILE=$(ls -1 /tmp/*.tar.gz 2>/dev/null || true)
-          fi
-          if [ -z "${TARFILE}" ]; then
-            echo "ERROR: no tarball (.tar.gz/.tgz/.tar) found after oras pull"
-            ls -la /tmp/oras-out || true
-            ls -la /tmp || true
-            exit 1
-          fi
+          if [ -z "${TARFILE}" ]; then TARFILE=$(ls -1 *.tgz 2>/dev/null || true); fi
+          if [ -z "${TARFILE}" ]; then TARFILE=$(ls -1 *.tar 2>/dev/null || true); fi
+          if [ -z "${TARFILE}" ]; then TARFILE=$(ls -1 /tmp/*.tar.gz 2>/dev/null || true); fi
+          if [ -z "${TARFILE}" ]; then echo "ERROR: no tarball found after oras pull"; ls -la /tmp/oras-out || true; ls -la /tmp || true; exit 1; fi
           TARFILE=$(printf '%s\n' ${TARFILE} | head -n1)
           echo "Found tarball: ${TARFILE}"
           mv "${TARFILE}" /tmp/mingw-sysroot.tar.gz || true
+          echo "Inspecting tarball contents (top entries):"
+          tar -tzf /tmp/mingw-sysroot.tar.gz | sed -n '1,40p' || true
           echo "Extracting mingw sysroot to / (expecting usr/x86_64-w64-mingw32/...)"
           tar -xzf /tmp/mingw-sysroot.tar.gz -C /
           echo "Resulting sysroot path listing:"
           ls -la /usr/x86_64-w64-mingw32 || true
 
-      - name: Create builder user and set permissions
+      - name: Create builder user and ensure build dir ownership
         run: |
           set -euo pipefail
           useradd -m -s /bin/bash builder || true
           mkdir -p /home/builder
           chown -R builder:builder /home/builder
-          chown -R builder:builder /workspace || true
+          # create build dir and ensure builder owns it (do not chown whole workspace)
+          mkdir -p "${BUILD_DIR}"
+          chown -R builder:builder "${BUILD_DIR}" || true
+          chmod -R u+rwX "${BUILD_DIR}" || true
 
-      - name: Configure & build (cmake + ninja) as builder
+      - name: Write clang->mingw CMake toolchain file
         run: |
           set -euo pipefail
+          cat > /tmp/mingw-clang-toolchain.cmake <<'EOF'
+          # clang -> mingw-w64 sysroot toolchain for x86_64-w64-mingw32
+          set(CMAKE_SYSTEM_NAME Windows)
+          set(CMAKE_SYSTEM_VERSION 1)
+          set(CMAKE_C_COMPILER clang)
+          set(CMAKE_CXX_COMPILER clang++)
+          set(CMAKE_SYSROOT /usr/x86_64-w64-mingw32)
+          set(CMAKE_FIND_ROOT_PATH ${CMAKE_SYSROOT})
+          # Prefer the sysroot for libs/includes; do not search host paths for programs
+          set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+          set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+          set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+          set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+          # clang flags
+          set(CLANG_TARGET "--target=x86_64-w64-mingw32")
+          set(CLANG_SYSROOT "--sysroot=${CMAKE_SYSROOT}")
+          set(CMAKE_C_FLAGS "${CLANG_TARGET} ${CLANG_SYSROOT} ${CMAKE_C_FLAGS}")
+          set(CMAKE_CXX_FLAGS "${CLANG_TARGET} ${CLANG_SYSROOT} ${CMAKE_CXX_FLAGS}")
+          set(CMAKE_EXE_LINKER_FLAGS "${CLANG_TARGET} ${CLANG_SYSROOT} -fuse-ld=lld ${CMAKE_EXE_LINKER_FLAGS}")
+          set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+          EOF
+          chmod 0644 /tmp/mingw-clang-toolchain.cmake
+          echo "Wrote toolchain file to /tmp/mingw-clang-toolchain.cmake"
+
+      - name: Configure & build with clang (cmake + ninja) as builder
+        run: |
+          set -euo pipefail
+          # ensure build dir exists (owned by builder)
           mkdir -p "${BUILD_DIR}"
-          cd "${BUILD_DIR}"
+          chown -R builder:builder "${BUILD_DIR}" || true
           runuser -u builder -- bash -lc '
             set -euo pipefail
-            cd /workspace || exit 1
-            mkdir -p build
-            cd build
-            cmake -G Ninja \
-              -DCMAKE_SYSTEM_NAME=Windows \
-              -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
-              -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
+            # Configure with CMake toolchain for clang -> mingw
+            cmake -S /workspace -B "${BUILD_DIR}" -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE=/tmp/mingw-clang-toolchain.cmake \
               -DCMAKE_BUILD_TYPE=Release \
-              -DBUILD_TESTS=ON \
-              ..
-            ninja -v
+              -DBUILD_TESTS=ON
+            cmake --build "${BUILD_DIR}" -- -v
           '
 
       - name: Collect windows-binaries artifact
         run: |
           set -euo pipefail
           mkdir -p /workspace/windows-binaries
-          cd /workspace/build || exit 0
-          cp instrument-server.exe /workspace/windows-binaries/ 2>/dev/null || true
-          cp instrument-worker.exe /workspace/windows-binaries/ 2>/dev/null || true
-          cp libinstrument-server-core.dll /workspace/windows-binaries/ 2>/dev/null || true
-          cp ../LICENSE /workspace/windows-binaries/ 2>/dev/null || true
-          cp tests/unit_tests.exe /workspace/windows-binaries/ 2>/dev/null || true
-          cp tests/integration_tests.exe /workspace/windows-binaries/ 2>/dev/null || true
+          cd /workspace || exit 0
+          # Copy likely outputs from build dir
+          find "${BUILD_DIR}" -maxdepth 6 -type f \( -iname '*.exe' -o -iname '*.dll' \) -exec cp -t /workspace/windows-binaries {} + || true
+          cp LICENSE /workspace/windows-binaries/ 2>/dev/null || true
           ls -la /workspace/windows-binaries || true
 
       - name: Upload windows binaries artifact
@@ -201,10 +209,7 @@ jobs:
         if: ${{ failure() }}
         run: |
           set -euo pipefail
-          # tmate is installed earlier via pacman. Ensure it's available.
-          if ! command -v tmate >/dev/null 2>&1; then
-            pacman -S --noconfirm tmate || true
-          fi
+          if ! command -v tmate >/dev/null 2>&1; then pacman -S --noconfirm tmate || true; fi
           TMATE_SOCK=/tmp/tmate.sock
           tmate -S "${TMATE_SOCK}" new-session -d
           tmate -S "${TMATE_SOCK}" wait tmate-ready
@@ -212,7 +217,6 @@ jobs:
           tmate -S "${TMATE_SOCK}" display -p '#{tmate_ssh}'
           tmate -S "${TMATE_SOCK}" display -p '#{tmate_web}'
           echo "================================="
-          # Keep session alive so you can connect; job will time out per workflow/job timeout
           while true; do sleep 60; done
 
   test-on-windows:
