@@ -1,5 +1,6 @@
 #include <instrument-server/ipc/DataBufferManager_c_api.h>
 #include <instrument-server/plugin/PluginInterface.h>
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

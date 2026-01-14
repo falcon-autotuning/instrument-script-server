@@ -90,6 +90,11 @@ add_library(
 set_target_properties(instrument-server-core
                       PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
+# CRITICAL FOR WINDOWS: Define export symbol for DLL This matches the symbol
+# checked in include/instrument-server/export.h
+target_compile_definitions(instrument-server-core
+                           PRIVATE instrument_server_core_EXPORTS)
+
 target_link_libraries(
   instrument-server-core
   PUBLIC spdlog::spdlog nlohmann_json::nlohmann_json yaml-cpp::yaml-cpp

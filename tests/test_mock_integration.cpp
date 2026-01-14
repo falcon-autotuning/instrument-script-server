@@ -1,6 +1,7 @@
 #include "instrument-server/Logger.hpp"
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include "instrument-server/server/RuntimeContext.hpp"
+
 #include <fstream>
 #include <gtest/gtest.h>
 #include <sol/sol.hpp>

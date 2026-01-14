@@ -1,4 +1,5 @@
 #include "instrument-server/server/ServerDaemon.hpp"
+
 #include <gtest/gtest.h>
 #include <thread>
 

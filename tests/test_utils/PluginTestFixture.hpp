@@ -1,5 +1,6 @@
 #pragma once
 #include "instrument-server/plugin/PluginRegistry.hpp"
+
 #include <gtest/gtest.h>
 namespace instserver {
 namespace test {

@@ -1,6 +1,7 @@
 #include "PluginTestFixture.hpp"
 #include "instrument-server/Logger.hpp"
 #include "instrument-server/server/InstrumentRegistry.hpp"
+
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <spdlog/common.h>

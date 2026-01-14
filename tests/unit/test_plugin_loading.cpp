@@ -1,5 +1,6 @@
 #include "instrument-server/Logger.hpp"
 #include "instrument-server/plugin/PluginRegistry.hpp"
+
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <spdlog/common.h>

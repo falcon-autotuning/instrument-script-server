@@ -1,4 +1,5 @@
 #include "instrument-server/server/SyncCoordinator.hpp"
+
 #include <chrono>
 #include <gtest/gtest.h>
 

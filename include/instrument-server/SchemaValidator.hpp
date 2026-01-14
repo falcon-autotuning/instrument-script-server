@@ -1,10 +1,12 @@
 #pragma once
 
+#include "instrument-server/export.h"
+
 #include "types.hpp"
 
 namespace instserver {
 
-class SchemaValidator {
+class INSTRUMENT_SERVER_API SchemaValidator {
 public:
   // Validate YAML against schemas
   static ValidationResult validate_instrument_api(const std::string &yaml_path);

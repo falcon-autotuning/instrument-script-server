@@ -1,5 +1,7 @@
 #pragma once
 
+#include "instrument-server/export.h"
+
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -14,7 +16,7 @@ namespace instserver {
 namespace ipc {
 
 /// Type of data stored in buffer
-enum class DataType : uint8_t {
+enum class INSTRUMENT_SERVER_API DataType : uint8_t {
   FLOAT32 = 0,
   FLOAT64 = 1,
   INT32 = 2,
@@ -67,7 +69,7 @@ inline size_t data_type_size(DataType type) {
 }
 
 /// Metadata about a data buffer
-struct DataBufferMetadata {
+struct INSTRUMENT_SERVER_API DataBufferMetadata {
   std::string buffer_id;       // Unique identifier
   std::string instrument_name; // Source instrument
   std::string command_id;      // Command that generated this data
@@ -82,7 +84,7 @@ struct DataBufferMetadata {
 };
 
 /// Handle to shared memory data buffer
-class DataBuffer {
+class INSTRUMENT_SERVER_API DataBuffer {
 public:
   DataBuffer(const std::string &buffer_id, void *data, size_t byte_size,
              DataType data_type, size_t element_count);
@@ -129,7 +131,7 @@ private:
 };
 
 /// Manages shared memory buffers for large data transfers
-class DataBufferManager {
+class INSTRUMENT_SERVER_API DataBufferManager {
 public:
   static DataBufferManager &instance();
 

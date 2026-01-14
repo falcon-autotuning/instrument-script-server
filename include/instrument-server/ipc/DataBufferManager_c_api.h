@@ -2,6 +2,7 @@
 #define INSTRUMENT_SERVER_DATA_BUFFER_MANAGER_C_H
 
 #include "instrument-server/export.h"
+
 #include <stddef.h>
 #include <stdint.h>
 

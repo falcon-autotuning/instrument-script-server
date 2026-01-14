@@ -1,5 +1,6 @@
 #include "TestFixtures.hpp"
 #include "instrument-server/Logger.hpp"
+
 #include <filesystem>
 
 namespace instserver {
@@ -21,7 +22,12 @@ void IntegrationTest::SetUp() {
                                     spdlog::level::debug);
 
   // Find test data directory
-  test_data_dir_ = std::filesystem::current_path() / "tests" / "data";
+  test_data_dir_ =
+      (std::filesystem::current_path() / "tests" / "data").string();
+
+  // Find mock plugin
+  mock_plugin_path_ =
+      (std::filesystem::current_path() / "tests" / "mock_plugin. so").string();
 
   // Find mock plugin
   mock_plugin_path_ =

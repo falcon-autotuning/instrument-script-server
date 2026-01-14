@@ -1,8 +1,11 @@
 #pragma once
+#include "instrument-server/export.h"
+
 #include "instrument-server/SerializedCommand.hpp"
 #include "instrument-server/ipc/ProcessManager.hpp"
 #include "instrument-server/ipc/SharedQueue.hpp"
 #include "instrument-server/server/SyncCoordinator.hpp"
+
 #include <atomic>
 #include <future>
 #include <mutex>
@@ -13,7 +16,7 @@ namespace instserver {
 
 /// Proxy for communicating with a worker process via IPC
 /// This runs in the main server process
-class InstrumentWorkerProxy {
+class INSTRUMENT_SERVER_API InstrumentWorkerProxy {
 public:
   InstrumentWorkerProxy(const std::string &instrument_name,
                         const std::string &plugin_path,

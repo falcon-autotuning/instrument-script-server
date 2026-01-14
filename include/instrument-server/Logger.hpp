@@ -1,4 +1,6 @@
 #pragma once
+#include "instrument-server/export.h"
+
 #include <fmt/format.h>
 #include <memory>
 #include <spdlog/async.h>
@@ -10,7 +12,7 @@
 namespace instserver {
 
 /// Centralized logging with instruction ID and instrument name context
-class InstrumentLogger {
+class INSTRUMENT_SERVER_API InstrumentLogger {
 public:
   static InstrumentLogger &instance() {
     static InstrumentLogger logger;

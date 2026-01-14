@@ -1,4 +1,5 @@
 #include "instrument-server/ipc/SharedQueue.hpp"
+
 #include <atomic>
 #include <chrono>
 #include <gtest/gtest.h>

@@ -1,5 +1,7 @@
 #pragma once
+#include "instrument-server/export.h"
 #include "instrument-server/ipc/PlatformTypes.hpp"
+
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -14,7 +16,7 @@ namespace instserver {
 namespace ipc {
 
 /// Manages worker process lifecycle
-class ProcessManager {
+class INSTRUMENT_SERVER_API ProcessManager {
 public:
   struct ProcessInfo {
     ProcessId pid;

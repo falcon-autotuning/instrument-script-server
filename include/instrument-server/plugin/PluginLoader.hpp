@@ -1,5 +1,8 @@
 #pragma once
+#include "instrument-server/export.h"
+
 #include "PluginInterface.h"
+
 #include <string>
 
 #ifdef _WIN32
@@ -14,7 +17,7 @@ namespace instserver {
 namespace plugin {
 
 /// RAII wrapper for dynamically loaded plugin
-class PluginLoader {
+class INSTRUMENT_SERVER_API PluginLoader {
 public:
   /// Load plugin from shared library path
   explicit PluginLoader(const std::string &plugin_path);

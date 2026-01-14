@@ -1,12 +1,15 @@
 #pragma once
+#include "instrument-server/export.h"
+
 #include "SerializedCommand.hpp"
+
 #include <memory>
 
 namespace instserver {
 
 /// CommandProcessor:  converts SerializedCommand -> transport-level operations
 /// This is the unified interface for VISA and native APIs
-class CommandProcessor {
+class INSTRUMENT_SERVER_API CommandProcessor {
 public:
   virtual ~CommandProcessor() = default;
 

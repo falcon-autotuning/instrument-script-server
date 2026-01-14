@@ -1,6 +1,9 @@
 #pragma once
+#include "instrument-server/export.h"
+
 #include "instrument-server/server/InstrumentWorkerProxy.hpp"
 #include "instrument-server/server/SyncCoordinator.hpp"
+
 #include <map>
 #include <memory>
 #include <mutex>
@@ -12,13 +15,13 @@
 namespace instserver {
 
 // Instrument metadata stored by registry
-struct InstrumentMetadata {
+struct INSTRUMENT_SERVER_API InstrumentMetadata {
   std::string name;
   nlohmann::json config;  // Full instrument config
   nlohmann::json api_def; // Full API definition
 };
 
-class InstrumentRegistry {
+class INSTRUMENT_SERVER_API InstrumentRegistry {
 public:
   static InstrumentRegistry &instance() {
     static InstrumentRegistry registry;

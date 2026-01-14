@@ -1,6 +1,7 @@
 #pragma once
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include "instrument-server/server/SyncCoordinator.hpp"
+
 #include <gtest/gtest.h>
 
 namespace instserver {

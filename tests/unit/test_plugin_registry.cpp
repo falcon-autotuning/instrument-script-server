@@ -1,4 +1,5 @@
 #include "instrument-server/plugin/PluginRegistry.hpp"
+
 #include <gtest/gtest.h>
 
 using namespace instserver::plugin;

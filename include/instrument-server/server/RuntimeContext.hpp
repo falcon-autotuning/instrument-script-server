@@ -1,7 +1,10 @@
 #pragma once
+#include "instrument-server/export.h"
+
 #include "instrument-server/SerializedCommand.hpp"
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include "instrument-server/server/SyncCoordinator.hpp"
+
 #include <sol/sol.hpp>
 #include <unordered_map>
 #include <vector>
@@ -9,7 +12,7 @@
 namespace instserver {
 
 /// Result of a single context:call() operation
-struct CallResult {
+struct INSTRUMENT_SERVER_API CallResult {
   std::string command_id;
   std::string instrument_name;
   std::string verb;
@@ -32,7 +35,7 @@ struct CallResult {
 /// - call(): Execute instrument commands
 /// - parallel(): Synchronized parallel execution
 /// - log(): Logging from scripts
-class RuntimeContext {
+class INSTRUMENT_SERVER_API RuntimeContext {
 public:
   explicit RuntimeContext(InstrumentRegistry &registry,
                           SyncCoordinator &sync_coordinator);
@@ -83,7 +86,8 @@ protected:
 };
 
 /// Bind runtime context to Lua
-void bind_runtime_context(sol::state &lua, InstrumentRegistry &registry,
-                          SyncCoordinator &sync_coordinator);
+INSTRUMENT_SERVER_API void
+bind_runtime_context(sol::state &lua, InstrumentRegistry &registry,
+                     SyncCoordinator &sync_coordinator);
 
 } // namespace instserver

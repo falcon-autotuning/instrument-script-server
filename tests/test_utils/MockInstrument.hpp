@@ -1,5 +1,6 @@
 #pragma once
 #include "instrument-server/plugin/PluginInterface.h"
+
 #include <atomic>
 #include <chrono>
 #include <map>

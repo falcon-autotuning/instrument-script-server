@@ -1,6 +1,9 @@
 #pragma once
+#include "instrument-server/export.h"
+
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include "instrument-server/server/SyncCoordinator.hpp"
+
 #include <atomic>
 #include <mutex>
 #include <string>
@@ -9,7 +12,7 @@
 namespace instserver {
 
 /// Server daemon that manages instrument registry and accepts commands
-class ServerDaemon {
+class INSTRUMENT_SERVER_API ServerDaemon {
 public:
   static ServerDaemon &instance();
 

@@ -1,4 +1,6 @@
 #pragma once
+#include "instrument-server/export.h"
+
 #include <map>
 #include <mutex>
 #include <set>
@@ -9,7 +11,7 @@ namespace instserver {
 
 /// Coordinates synchronization barriers across multiple instruments
 /// for parallel execution blocks
-class SyncCoordinator {
+class INSTRUMENT_SERVER_API SyncCoordinator {
 public:
   /// Register a new sync barrier with the instruments that must participate
   void register_barrier(uint64_t sync_token,

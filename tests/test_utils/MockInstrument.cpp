@@ -1,4 +1,5 @@
 #include "MockInstrument.hpp"
+
 #include <cstring>
 #include <memory>
 #include <thread>

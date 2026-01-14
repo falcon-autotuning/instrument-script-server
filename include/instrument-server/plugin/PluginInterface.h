@@ -2,6 +2,7 @@
 #define INSTRUMENT_SCRIPT_PLUGIN_INTERFACE_H
 
 #include "instrument-server/export.h"
+
 #include <stddef.h>
 
 #ifdef __cplusplus

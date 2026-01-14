@@ -1,4 +1,5 @@
 #include "instrument-server/plugin/PluginInterface.h"
+
 #include <atomic>
 #include <cstring>
 #include <map>

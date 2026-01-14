@@ -1,4 +1,5 @@
 #include "instrument-server/ipc/DataBufferManager.hpp"
+
 #include <algorithm>
 #include <fstream>
 #include <gtest/gtest.h>

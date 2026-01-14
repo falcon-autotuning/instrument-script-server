@@ -1,5 +1,8 @@
 #pragma once
+#include "instrument-server/export.h"
+
 #include "PluginLoader.hpp"
+
 #include <memory>
 #include <mutex>
 #include <nlohmann/json.hpp>
@@ -10,7 +13,7 @@ namespace instserver {
 namespace plugin {
 
 /// Registry for managing loaded plugins
-class PluginRegistry {
+class INSTRUMENT_SERVER_API PluginRegistry {
 public:
   static PluginRegistry &instance() {
     static PluginRegistry registry;

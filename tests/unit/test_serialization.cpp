@@ -1,4 +1,5 @@
 #include "instrument-server/SerializedCommand.hpp"
+
 #include <gtest/gtest.h>
 
 using namespace instserver;

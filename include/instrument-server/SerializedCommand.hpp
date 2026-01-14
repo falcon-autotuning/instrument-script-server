@@ -1,4 +1,6 @@
 #pragma once
+#include "instrument-server/export.h"
+
 #include <chrono>
 #include <optional>
 #include <string>
@@ -11,7 +13,7 @@ namespace instserver {
 using ParamValue =
     std::variant<double, int64_t, std::string, bool, std::vector<double>>;
 
-struct SerializedCommand {
+struct INSTRUMENT_SERVER_API SerializedCommand {
   std::string id;
   std::string instrument_name;
   std::string verb;
@@ -25,7 +27,7 @@ struct SerializedCommand {
   bool is_sync_barrier{false};        // Marks end of sync group
 };
 
-struct CommandResponse {
+struct INSTRUMENT_SERVER_API CommandResponse {
   std::string command_id;
   std::string instrument_name;
   bool success{false};
@@ -33,7 +35,7 @@ struct CommandResponse {
   std::string error_message;
   std::string text_response;
   std::optional<ParamValue> return_value;
-  
+
   // Large data buffer fields
   bool has_large_data{false};
   std::string buffer_id;
@@ -48,16 +50,20 @@ namespace instserver {
 namespace ipc {
 
 /// Serialize command to JSON string
-std::string serialize_command(const SerializedCommand &cmd);
+INSTRUMENT_SERVER_API std::string
+serialize_command(const SerializedCommand &cmd);
 
 /// Deserialize command from JSON string
-SerializedCommand deserialize_command(const std::string &json);
+INSTRUMENT_SERVER_API SerializedCommand
+deserialize_command(const std::string &json);
 
 /// Serialize response to JSON string
-std::string serialize_response(const CommandResponse &resp);
+INSTRUMENT_SERVER_API std::string
+serialize_response(const CommandResponse &resp);
 
 /// Deserialize response from JSON string
-CommandResponse deserialize_response(const std::string &json);
+INSTRUMENT_SERVER_API CommandResponse
+deserialize_response(const std::string &json);
 
 } // namespace ipc
 } // namespace instserver

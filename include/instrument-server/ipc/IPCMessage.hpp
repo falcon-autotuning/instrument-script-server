@@ -1,4 +1,6 @@
 #pragma once
+#include "instrument-server/export.h"
+
 #include <cstdint>
 #include <cstring>
 
@@ -8,7 +10,7 @@ namespace ipc {
 constexpr size_t IPC_MAX_PAYLOAD = 4096;
 
 /// IPC message types
-struct IPCMessage {
+struct INSTRUMENT_SERVER_API IPCMessage {
   enum class Type : uint32_t {
     COMMAND = 1,
     RESPONSE = 2,

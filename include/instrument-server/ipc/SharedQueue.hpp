@@ -1,7 +1,11 @@
 #pragma once
-#include "instrument-server/ipc/IPCMessage.hpp"
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
+
+#include "instrument-server/export.h"
+
+#include "instrument-server/ipc/IPCMessage.hpp"
+
 #include <chrono>
 #include <optional>
 #include <string>
@@ -10,7 +14,7 @@ namespace instserver {
 namespace ipc {
 
 /// Bidirectional IPC queue pair (request + response queues)
-class SharedQueue {
+class INSTRUMENT_SERVER_API SharedQueue {
 public:
   SharedQueue(std::unique_ptr<boost::interprocess::message_queue> req_queue,
               std::unique_ptr<boost::interprocess::message_queue> resp_queue,

@@ -1,4 +1,5 @@
 #include "instrument-server/plugin/PluginLoader.hpp"
+
 #include <filesystem>
 #include <gtest/gtest.h>
 
