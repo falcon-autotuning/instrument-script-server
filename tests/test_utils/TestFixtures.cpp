@@ -7,7 +7,7 @@ namespace instserver {
 namespace test {
 
 void InstrumentServerTest::SetUp() {
-  InstrumentLogger::instance().init("test. log", spdlog::level::debug);
+  InstrumentLogger::instance().init("test.log", spdlog::level::debug);
   registry_ = &InstrumentRegistry::instance();
   sync_coordinator_ = new SyncCoordinator();
 }
@@ -27,11 +27,7 @@ void IntegrationTest::SetUp() {
 
   // Find mock plugin
   mock_plugin_path_ =
-      (std::filesystem::current_path() / "tests" / "mock_plugin. so").string();
-
-  // Find mock plugin
-  mock_plugin_path_ =
-      std::filesystem::current_path() / "tests" / "mock_plugin.so";
+      (std::filesystem::current_path() / "tests" / "mock_plugin.so").string();
 
   if (!std::filesystem::exists(mock_plugin_path_)) {
     // Try alternate location

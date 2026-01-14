@@ -16,7 +16,7 @@ namespace instserver {
 namespace ipc {
 
 /// Type of data stored in buffer
-enum class INSTRUMENT_SERVER_API DataType : uint8_t {
+enum class DataType : uint8_t {
   FLOAT32 = 0,
   FLOAT64 = 1,
   INT32 = 2,

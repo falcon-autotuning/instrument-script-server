@@ -14,13 +14,11 @@ namespace instserver {
 /// Centralized logging with instruction ID and instrument name context
 class INSTRUMENT_SERVER_API InstrumentLogger {
 public:
-  static InstrumentLogger &instance() {
-    static InstrumentLogger logger;
-    return logger;
-  }
+  // DLL-safe singleton:  declaration only
+  static InstrumentLogger &instance();
 
   // Initialize with file and console sinks
-  void init(const std::string &log_file = "instrument_server. log",
+  void init(const std::string &log_file = "instrument_server.  log",
             spdlog::level::level_enum level = spdlog::level::debug) {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -65,7 +63,7 @@ public:
     }
   }
 
-  // Shutdown the logger: drop from spdlog registry and clear internal pointer.
+  // Shutdown the logger:  drop from spdlog registry and clear internal pointer.
   // This allows subsequent init() calls to recreate sinks (useful for tests).
   void shutdown() {
     std::lock_guard<std::mutex> lock(mutex_);
