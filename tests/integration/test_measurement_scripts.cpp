@@ -29,7 +29,7 @@ bool validate_measurement_results_json(const json &j, std::string &error) {
     error = "Missing 'results' field";
     return false;
   }
-  
+
   // Validate status
   if (!j["status"].is_string()) {
     error = "'status' must be a string";
@@ -40,24 +40,24 @@ bool validate_measurement_results_json(const json &j, std::string &error) {
     error = "'status' must be 'success' or 'error'";
     return false;
   }
-  
+
   // Validate script
   if (!j["script"].is_string()) {
     error = "'script' must be a string";
     return false;
   }
-  
+
   // Validate results array
   if (!j["results"].is_array()) {
     error = "'results' must be an array";
     return false;
   }
-  
+
   // Validate each result in the array
   int idx = 0;
   for (const auto &result : j["results"]) {
     std::string prefix = "results[" + std::to_string(idx) + "]: ";
-    
+
     // Check required fields
     if (!result.contains("index")) {
       error = prefix + "Missing 'index' field";
@@ -83,7 +83,7 @@ bool validate_measurement_results_json(const json &j, std::string &error) {
       error = prefix + "Missing 'return' field";
       return false;
     }
-    
+
     // Validate types
     if (!result["index"].is_number_integer()) {
       error = prefix + "'index' must be an integer";
@@ -105,7 +105,7 @@ bool validate_measurement_results_json(const json &j, std::string &error) {
       error = prefix + "'executed_at_ms' must be an integer";
       return false;
     }
-    
+
     // Validate return object
     const auto &ret = result["return"];
     if (!ret.is_object()) {
@@ -120,16 +120,17 @@ bool validate_measurement_results_json(const json &j, std::string &error) {
       error = prefix + "'return.type' must be a string";
       return false;
     }
-    
+
     std::string ret_type = ret["type"];
-    
+
     // For buffer type, check required buffer fields
     if (ret_type == "buffer") {
       if (!ret.contains("buffer_id") || !ret["buffer_id"].is_string()) {
         error = prefix + "buffer return must have 'buffer_id' (string)";
         return false;
       }
-      if (!ret.contains("element_count") || !ret["element_count"].is_number_integer()) {
+      if (!ret.contains("element_count") ||
+          !ret["element_count"].is_number_integer()) {
         error = prefix + "buffer return must have 'element_count' (integer)";
         return false;
       }
@@ -144,10 +145,10 @@ bool validate_measurement_results_json(const json &j, std::string &error) {
         return false;
       }
     }
-    
+
     idx++;
   }
-  
+
   return true;
 }
 
@@ -173,9 +174,12 @@ protected:
     // Start mock instruments
     auto &registry = InstrumentRegistry::instance();
 
-    std::string config1 = test_configs_dir_ / "mock_instrument1.yaml";
-    std::string config2 = test_configs_dir_ / "mock_instrument2.yaml";
-    std::string config3 = test_configs_dir_ / "mock_instrument3.yaml";
+    std::string config1 =
+        (test_configs_dir_ / "mock_instrument1.yaml").string();
+    std::string config2 =
+        (test_configs_dir_ / "mock_instrument2.yaml").string();
+    std::string config3 =
+        (test_configs_dir_ / "mock_instrument3.yaml").string();
 
     if (std::filesystem::exists(config1))
       registry.create_instrument(config1);
@@ -227,7 +231,7 @@ protected:
     }
   }
 
-  RuntimeContext* run_script_with_context(const std::string &script_name) {
+  RuntimeContext *run_script_with_context(const std::string &script_name) {
     auto script_path = test_scripts_dir_ / script_name;
 
     if (!std::filesystem::exists(script_path)) {
@@ -246,7 +250,8 @@ protected:
       bind_runtime_context(lua, registry, sync_coordinator);
 
       // Use member context
-      test_context_ = std::make_unique<RuntimeContext>(registry, sync_coordinator);
+      test_context_ =
+          std::make_unique<RuntimeContext>(registry, sync_coordinator);
       lua["context"] = test_context_.get();
 
       auto result = lua.safe_script_file(script_path.string());
@@ -326,20 +331,21 @@ TEST_F(MeasurementScriptTest, ScriptWithOutput) {
 TEST_F(MeasurementScriptTest, MultipleReturns) {
   auto ctx = run_script_with_context("multiple_returns.lua");
   ASSERT_NE(ctx, nullptr);
-  
+
   const auto &results = ctx->get_results();
-  
+
   // Should have collected multiple results (8 calls in the script)
   EXPECT_GT(results.size(), 0);
-  EXPECT_EQ(results.size(), 8); // 4 GET calls + 2 SET calls + 2 GET calls with channels
-  
+  EXPECT_EQ(results.size(),
+            8); // 4 GET calls + 2 SET calls + 2 GET calls with channels
+
   // Verify all results have basic metadata
   for (const auto &result : results) {
     EXPECT_FALSE(result.instrument_name.empty());
     EXPECT_FALSE(result.verb.empty());
     EXPECT_FALSE(result.return_type.empty());
   }
-  
+
   // Verify we captured returns in order - first should be GET_DOUBLE
   EXPECT_EQ(results[0].verb, "GET_DOUBLE");
 }
@@ -347,16 +353,16 @@ TEST_F(MeasurementScriptTest, MultipleReturns) {
 TEST_F(MeasurementScriptTest, ChannelAddressingWithReturns) {
   auto ctx = run_script_with_context("channel_addressing.lua");
   ASSERT_NE(ctx, nullptr);
-  
+
   const auto &results = ctx->get_results();
-  
+
   // Should have 4 results: 2 SETs and 2 GETs
   EXPECT_EQ(results.size(), 4);
-  
+
   // Verify channel addressing in instrument names
   bool has_channel1 = false;
   bool has_channel2 = false;
-  
+
   for (const auto &result : results) {
     if (result.instrument_name.find(":1") != std::string::npos) {
       has_channel1 = true;
@@ -365,21 +371,23 @@ TEST_F(MeasurementScriptTest, ChannelAddressingWithReturns) {
       has_channel2 = true;
     }
   }
-  
+
   EXPECT_TRUE(has_channel1);
   EXPECT_TRUE(has_channel2);
 }
 
 TEST_F(MeasurementScriptTest, LargeBufferReturns) {
   // This test requires mock_visa_large_data_plugin
-  // Register the large data plugin with a different protocol name to avoid conflicts
+  // Register the large data plugin with a different protocol name to avoid
+  // conflicts
   auto &plugin_reg = plugin::PluginRegistry::instance();
   try {
-    plugin_reg.load_plugin("VISA_LARGE", "./build/tests/mock_visa_large_data_plugin.so");
+    plugin_reg.load_plugin("VISA_LARGE",
+                           "./build/tests/mock_visa_large_data_plugin.so");
   } catch (const std::exception &e) {
     GTEST_SKIP() << "Large data plugin not available: " << e.what();
   }
-  
+
   // Create a modified API file with VISA_LARGE protocol
   std::string api_content = R"(
 api_version: "1.0.0"
@@ -416,17 +424,18 @@ commands:
     parameters: []
     outputs: [current]
 )";
-  
+
   std::string api_path = "/tmp/mock_api_large.yaml";
   std::ofstream api_file(api_path);
   api_file << api_content;
   api_file.close();
-  
+
   // Load the special test scope configuration
   auto &registry = InstrumentRegistry::instance();
-  
+
   // Create a test configuration for TestScope that uses the large data plugin
-  // Use a pseudo-protocol name so it doesn't conflict with the VISA plugin already loaded
+  // Use a pseudo-protocol name so it doesn't conflict with the VISA plugin
+  // already loaded
   std::string test_scope_config = R"(
 name: TestScope
 api_ref: /tmp/mock_api_large.yaml
@@ -434,13 +443,13 @@ connection:
   type: VISA_LARGE
   address: "mock://testscope"
 )";
-  
+
   // Write config to temporary file
   std::string config_path = "/tmp/test_scope_large_data.yaml";
   std::ofstream config_file(config_path);
   config_file << test_scope_config;
   config_file.close();
-  
+
   // Start the TestScope instrument
   try {
     registry.create_instrument(config_path);
@@ -448,37 +457,37 @@ connection:
     // Plugin might not be available
     GTEST_SKIP() << "Failed to create instrument: " << e.what();
   }
-  
+
   auto ctx = run_script_with_context("large_buffer_returns.lua");
   ASSERT_NE(ctx, nullptr);
-  
+
   const auto &results = ctx->get_results();
-  
+
   // Should have 3 results: 2 large buffer calls + 1 small data call
   EXPECT_EQ(results.size(), 3);
-  
+
   // First two results should be buffer references
   if (results.size() >= 2) {
     EXPECT_TRUE(results[0].has_large_data);
     EXPECT_FALSE(results[0].buffer_id.empty());
     EXPECT_GT(results[0].element_count, 0);
     EXPECT_EQ(results[0].return_type, "buffer");
-    
+
     EXPECT_TRUE(results[1].has_large_data);
     EXPECT_FALSE(results[1].buffer_id.empty());
     EXPECT_GT(results[1].element_count, 0);
     EXPECT_EQ(results[1].return_type, "buffer");
-    
+
     // Buffer IDs should be different
     EXPECT_NE(results[0].buffer_id, results[1].buffer_id);
   }
-  
+
   // Third result should be regular return value
   if (results.size() >= 3) {
     EXPECT_FALSE(results[2].has_large_data);
     EXPECT_TRUE(results[2].return_value.has_value());
   }
-  
+
   // Clean up
   registry.remove_instrument("TestScope");
   std::remove(config_path.c_str());
@@ -488,24 +497,25 @@ TEST_F(MeasurementScriptTest, JSONOutputValidation) {
   // Test that JSON output conforms to the expected schema structure
   auto ctx = run_script_with_context("multiple_returns.lua");
   ASSERT_NE(ctx, nullptr);
-  
+
   const auto &results = ctx->get_results();
   ASSERT_GT(results.size(), 0);
-  
-  // Build JSON output manually (simulating what instrument_server_main.cpp does)
+
+  // Build JSON output manually (simulating what instrument_server_main.cpp
+  // does)
   json output;
   output["status"] = "success";
   output["script"] = "multiple_returns.lua";
   output["results"] = json::array();
-  
+
   for (size_t i = 0; i < results.size(); ++i) {
     const auto &r = results[i];
     json result_json;
-    
+
     result_json["index"] = i;
     result_json["instrument"] = r.instrument_name;
     result_json["verb"] = r.verb;
-    
+
     // Add params
     json params_json = json::object();
     for (const auto &[key, value] : r.params) {
@@ -520,10 +530,10 @@ TEST_F(MeasurementScriptTest, JSONOutputValidation) {
       }
     }
     result_json["params"] = params_json;
-    
+
     // Add timestamp (using a placeholder for this test)
     result_json["executed_at_ms"] = 1704720615123 + i;
-    
+
     // Add return value
     json return_json;
     if (r.has_large_data) {
@@ -533,7 +543,7 @@ TEST_F(MeasurementScriptTest, JSONOutputValidation) {
       return_json["data_type"] = r.data_type;
     } else if (r.return_value) {
       return_json["type"] = r.return_type;
-      
+
       if (std::holds_alternative<double>(*r.return_value)) {
         return_json["value"] = std::get<double>(*r.return_value);
       } else if (std::holds_alternative<int64_t>(*r.return_value)) {
@@ -549,29 +559,28 @@ TEST_F(MeasurementScriptTest, JSONOutputValidation) {
       return_json["type"] = r.return_type;
       return_json["value"] = nullptr;
     }
-    
+
     result_json["return"] = return_json;
     output["results"].push_back(result_json);
   }
-  
+
   // Validate the JSON structure
   std::string error;
   bool is_valid = validate_measurement_results_json(output, error);
-  
+
   EXPECT_TRUE(is_valid) << "JSON validation failed: " << error;
-  
+
   // Additional checks
   EXPECT_EQ(output["status"], "success");
   EXPECT_EQ(output["script"], "multiple_returns.lua");
   EXPECT_TRUE(output["results"].is_array());
   EXPECT_EQ(output["results"].size(), results.size());
-  
+
   // Verify JSON can be serialized
   std::string json_str = output.dump(2);
   EXPECT_FALSE(json_str.empty());
-  
+
   // Verify JSON can be parsed back
   json parsed = json::parse(json_str);
   EXPECT_EQ(parsed, output);
 }
-

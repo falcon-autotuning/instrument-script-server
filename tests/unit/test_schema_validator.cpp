@@ -3,12 +3,18 @@
 #include <gtest/gtest.h>
 #include <string>
 
+// Platform-specific includes for popen/pclose
+#ifdef _WIN32
+#include <io.h>
+#define popen _popen
+#define pclose _pclose
+#endif
 namespace fs = std::filesystem;
 
 // Helper to expand template using the template_expander tool
 std::string expand_template(const std::string &tmpl_path) {
   // Create a temp file for the expanded output
-  std::string tmp_dir = fs::temp_directory_path();
+  std::string tmp_dir = fs::temp_directory_path().string();
   std::string expanded_path = tmp_dir + "/dso9254a_expanded.yaml";
   std::string cmd = "template-expander " + tmpl_path + " " + expanded_path;
   int ret = std::system(cmd.c_str());
@@ -21,7 +27,7 @@ std::string expand_template(const std::string &tmpl_path) {
 // Helper to expand template using the template_expander tool
 std::string generate_configuration(const std::string &tmpl_path) {
   namespace fs = std::filesystem;
-  std::string tmp_dir = fs::temp_directory_path();
+  std::string tmp_dir = fs::temp_directory_path().string();
   std::string expanded_path = tmp_dir + "/dso9254a_config.yaml";
   std::string cmd =
       "generate-instrument-config " + tmpl_path + " " + expanded_path + " 2>&1";
@@ -42,7 +48,13 @@ std::string generate_configuration(const std::string &tmpl_path) {
 
 // Helper to run a CLI validator tool
 int run_validator(const std::string &tool, const std::string &yaml_path) {
+#ifdef _WIN32
+  // Windows:  redirect to NUL
+  std::string cmd = tool + " " + yaml_path + " > NUL 2>&1";
+#else
+  // Linux/Unix: redirect to /dev/null
   std::string cmd = tool + " " + yaml_path + " > /dev/null 2>&1";
+#endif
   return std::system(cmd.c_str());
 }
 
