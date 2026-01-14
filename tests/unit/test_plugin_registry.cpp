@@ -53,7 +53,7 @@ TEST_F(PluginRegistryTest, GetNonexistentPlugin) {
 }
 
 TEST_F(PluginRegistryTest, ListProtocols) {
-  size_t initial_count = registry_->list_protocols().size();
+  [[maybe_unused]] size_t initial_count = registry_->list_protocols().size();
 
   registry_->load_plugin("MockPlugin", "./build/tests/mock_plugin.so");
 

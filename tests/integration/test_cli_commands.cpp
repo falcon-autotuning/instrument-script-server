@@ -21,7 +21,7 @@ TEST_F(CLITest, DaemonStatusWhenNotRunning) {
   // Stop any running daemon first
   run_command("instrument-server daemon stop");
 
-  int result = run_command("instrument-server daemon status");
+  [[maybe_unused]] int result = run_command("instrument-server daemon status");
   // Should return non-zero when daemon not running
   // But may not be installed, so don't assert
 }

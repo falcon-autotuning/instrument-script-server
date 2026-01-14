@@ -1,7 +1,16 @@
 #include "instrument-server/ipc/DataBufferManager.hpp"
 #include "instrument-server/plugin/PluginInterface.h"
 #include "instrument-server/plugin/PluginLoader.hpp"
+
+// CRITICAL: Define this BEFORE including <cmath> to get M_PI on Windows
+#define _USE_MATH_DEFINES
 #include <cmath>
+
+// Fallback for systems that don't define M_PI even with _USE_MATH_DEFINES
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 #include <filesystem>
 #include <gtest/gtest.h>
 
@@ -35,8 +44,7 @@ TEST_F(VISALargeDataTest, SmallDataInResponse) {
   ASSERT_TRUE(loader.is_loaded());
 
   // Use a more complete configuration
-  PluginConfig config;
-  memset(&config, 0, sizeof(PluginConfig));
+  PluginConfig config{};
   strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(config.connection_json, "{\"address\":\"mock://test\"}",
           PLUGIN_MAX_PAYLOAD - 1);
@@ -46,14 +54,14 @@ TEST_F(VISALargeDataTest, SmallDataInResponse) {
   ASSERT_EQ(loader.initialize(config), 0);
 
   // Request small data (should fit in response)
-  PluginCommand cmd = {0};
+  PluginCommand cmd{};
   strncpy(cmd.id, "cmd_001", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(cmd.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(cmd.verb, "GET_SMALL_DATA", PLUGIN_MAX_STRING_LEN - 1);
   cmd.expects_response = true;
   cmd.param_count = 0;
 
-  PluginResponse resp = {0};
+  PluginResponse resp{};
   ASSERT_EQ(loader.execute_command(cmd, resp), 0);
 
   EXPECT_TRUE(resp.success);
@@ -65,7 +73,7 @@ TEST_F(VISALargeDataTest, LargeDataInBuffer) {
   plugin::PluginLoader loader(plugin_path_);
   ASSERT_TRUE(loader.is_loaded());
 
-  PluginConfig config = {0};
+  PluginConfig config{};
   strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(config.connection_json, "{\"address\":\"mock://test\"}",
           PLUGIN_MAX_PAYLOAD - 1);
@@ -73,14 +81,14 @@ TEST_F(VISALargeDataTest, LargeDataInBuffer) {
   ASSERT_EQ(loader.initialize(config), 0);
 
   // Request large data (should use buffer)
-  PluginCommand cmd = {0};
+  PluginCommand cmd{};
   strncpy(cmd.id, "cmd_002", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(cmd.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(cmd.verb, "GET_LARGE_DATA", PLUGIN_MAX_STRING_LEN - 1);
   cmd.expects_response = true;
   cmd.param_count = 0;
 
-  PluginResponse resp = {0};
+  PluginResponse resp{};
   ASSERT_EQ(loader.execute_command(cmd, resp), 0);
 
   EXPECT_TRUE(resp.success);
@@ -101,7 +109,6 @@ TEST_F(VISALargeDataTest, LargeDataInBuffer) {
   float *data = buffer->as_float32();
   ASSERT_NE(data, nullptr);
 
-  // Check some values (mock plugin should generate sin wave)
   for (size_t i = 0; i < 100; i++) {
     float expected = std::sin(2.0f * M_PI * i / 100.0f);
     EXPECT_NEAR(data[i], expected, 0.01f);
@@ -112,20 +119,20 @@ TEST_F(VISALargeDataTest, BufferMetadata) {
   plugin::PluginLoader loader(plugin_path_);
   ASSERT_TRUE(loader.is_loaded());
 
-  PluginConfig config = {0};
+  PluginConfig config{};
   strncpy(config.instrument_name, "Oscilloscope", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(config.connection_json, "{\"address\": \"mock://test\"}",
           PLUGIN_MAX_PAYLOAD - 1);
 
   ASSERT_EQ(loader.initialize(config), 0);
 
-  PluginCommand cmd = {0};
+  PluginCommand cmd{};
   strncpy(cmd.id, "waveform_capture_001", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(cmd.instrument_name, "Oscilloscope", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(cmd.verb, "GET_LARGE_DATA", PLUGIN_MAX_STRING_LEN - 1);
   cmd.expects_response = true;
 
-  PluginResponse resp = {0};
+  PluginResponse resp{};
   ASSERT_EQ(loader.execute_command(cmd, resp), 0);
   ASSERT_TRUE(resp.has_large_data);
 
@@ -144,20 +151,20 @@ TEST_F(VISALargeDataTest, ExportLargeData) {
   plugin::PluginLoader loader(plugin_path_);
   ASSERT_TRUE(loader.is_loaded());
 
-  PluginConfig config = {0};
+  PluginConfig config{};
   strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(config.connection_json, "{\"address\":\"mock://test\"}",
           PLUGIN_MAX_PAYLOAD - 1);
 
   ASSERT_EQ(loader.initialize(config), 0);
 
-  PluginCommand cmd = {0};
+  PluginCommand cmd{};
   strncpy(cmd.id, "export_test", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(cmd.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(cmd.verb, "GET_LARGE_DATA", PLUGIN_MAX_STRING_LEN - 1);
   cmd.expects_response = true;
 
-  PluginResponse resp = {0};
+  PluginResponse resp{};
   ASSERT_EQ(loader.execute_command(cmd, resp), 0);
   ASSERT_TRUE(resp.has_large_data);
 
@@ -184,7 +191,7 @@ TEST_F(VISALargeDataTest, MultipleBuffers) {
   plugin::PluginLoader loader(plugin_path_);
   ASSERT_TRUE(loader.is_loaded());
 
-  PluginConfig config = {0};
+  PluginConfig config{};
   strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(config.connection_json, "{\"address\":\"mock://test\"}",
           PLUGIN_MAX_PAYLOAD - 1);
@@ -197,13 +204,13 @@ TEST_F(VISALargeDataTest, MultipleBuffers) {
 
   // Create multiple buffers
   for (int i = 0; i < 5; i++) {
-    PluginCommand cmd = {0};
+    PluginCommand cmd{};
     snprintf(cmd.id, PLUGIN_MAX_STRING_LEN, "cmd_%03d", i);
     strncpy(cmd.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
     strncpy(cmd.verb, "GET_LARGE_DATA", PLUGIN_MAX_STRING_LEN - 1);
     cmd.expects_response = true;
 
-    PluginResponse resp = {0};
+    PluginResponse resp{};
     ASSERT_EQ(loader.execute_command(cmd, resp), 0);
     ASSERT_TRUE(resp.has_large_data);
 
