@@ -5,31 +5,47 @@
 #include <fstream>
 #include <gtest/gtest.h>
 
+// Platform-specific includes
+#ifdef _WIN32
+#include <process.h>
+#include <windows.h>
+#define getpid _getpid
+#else
+#include <signal.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
+
 using namespace instserver;
 
 class MeasureCommandTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    InstrumentLogger::instance().init("measure_cmd_test.log",
+    InstrumentLogger::instance().init("measure_cmd_test. log",
                                       spdlog::level::debug);
     if (ServerDaemon::is_already_running()) {
       int pid = ServerDaemon::get_daemon_pid();
 
       // Don't kill if PID is ourself or our parent
       int self_pid = getpid();
-      int parent_pid = getppid();
-      if (pid != self_pid && pid != parent_pid && pid > 1) {
 #ifdef _WIN32
+      // Windows doesn't have getppid, just check if it's our own PID
+      if (pid != self_pid && pid > 0) {
         HANDLE process = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
         if (process) {
           TerminateProcess(process, 0);
           CloseHandle(process);
         }
-#else
-        int kill_result = kill(pid, SIGTERM);
-#endif
         std::this_thread::sleep_for(std::chrono::seconds(1));
       }
+#else
+      int parent_pid = getppid();
+      if (pid != self_pid && pid != parent_pid && pid > 1) {
+        kill(pid, SIGTERM);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+      }
+#endif
     }
     test_dir_ =
         std::filesystem::temp_directory_path() / "instrument_server_test";
@@ -43,8 +59,84 @@ protected:
 
   void TearDown() override { std::filesystem::remove_all(test_dir_); }
 
-  // Helper function to run command with timeout using fork/exec and maximal
-  // debug info
+#ifdef _WIN32
+  // Windows implementation using CreateProcess
+  int run_command_with_timeout(const std::string &cmd,
+                               int timeout_seconds = 5) {
+    STARTUPINFOA si{};
+    PROCESS_INFORMATION pi{};
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE; // Hide console window
+
+    // CreateProcess needs a mutable command line
+    std::string mutable_cmd = "cmd.exe /C " + cmd;
+
+    fprintf(stderr, "[DEBUG] Windows parent PID: %d, launching:  %s\n",
+            getpid(), cmd.c_str());
+
+    if (!CreateProcessA(nullptr,                  // Application name
+                        mutable_cmd.data(),       // Command line (mutable)
+                        nullptr,                  // Process attributes
+                        nullptr,                  // Thread attributes
+                        FALSE,                    // Inherit handles
+                        CREATE_NEW_PROCESS_GROUP, // Creation flags (new process
+                                                  // group for killing)
+                        nullptr,                  // Environment
+                        nullptr,                  // Current directory
+                        &si,                      // Startup info
+                        &pi                       // Process info
+                        )) {
+      fprintf(stderr, "[DEBUG] CreateProcess failed: %lu\n", GetLastError());
+      return -1;
+    }
+
+    fprintf(stderr, "[DEBUG] Created process with PID: %lu\n", pi.dwProcessId);
+
+    // Wait for process with timeout
+    DWORD timeout_ms = timeout_seconds * 1000;
+    DWORD wait_result = WaitForSingleObject(pi.hProcess, timeout_ms);
+
+    int status = -1;
+    if (wait_result == WAIT_OBJECT_0) {
+      // Process exited normally
+      DWORD exit_code;
+      if (GetExitCodeProcess(pi.hProcess, &exit_code)) {
+        fprintf(stderr, "[DEBUG] Process PID: %lu exited with code: %lu\n",
+                pi.dwProcessId, exit_code);
+        status = static_cast<int>(exit_code);
+      } else {
+        fprintf(stderr, "[DEBUG] GetExitCodeProcess failed:  %lu\n",
+                GetLastError());
+        status = -1;
+      }
+    } else if (wait_result == WAIT_TIMEOUT) {
+      // Timeout - kill the process
+      fprintf(stderr, "[DEBUG] Process PID: %lu timed out, terminating.. .\n",
+              pi.dwProcessId);
+
+      // Try to terminate gracefully first, then force kill
+      TerminateProcess(pi.hProcess, 1);
+      WaitForSingleObject(pi.hProcess, 1000); // Wait up to 1s for termination
+
+      LOG_ERROR("TEST", "TIMEOUT", "Command timed out:  {}", cmd);
+      status = -1;
+    } else {
+      fprintf(stderr, "[DEBUG] WaitForSingleObject failed: %lu\n",
+              GetLastError());
+      status = -1;
+    }
+
+    // Cleanup handles
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
+    fprintf(stderr, "[DEBUG] Returning status: %d\n", status);
+    return status;
+  }
+
+#else
+  // POSIX implementation using fork/exec (original code)
   int run_command_with_timeout(const std::string &cmd,
                                int timeout_seconds = 5) {
     int status = -1;
@@ -69,7 +161,7 @@ protected:
         int ret = waitpid(pid, &status, WNOHANG);
         if (ret == pid) {
           fprintf(stderr,
-                  "[DEBUG] Parent PID: %d, child PID: %d exited, status: %d\n",
+                  "[DEBUG] Parent PID: %d, child PID:  %d exited, status: %d\n",
                   getpid(), pid, status);
           child_exited = true;
           break;
@@ -78,10 +170,10 @@ protected:
       }
       if (!child_exited) {
         fprintf(stderr,
-                "[DEBUG] Parent PID: %d, child PID: %d did not exit in time, "
+                "[DEBUG] Parent PID: %d, child PID:  %d did not exit in time, "
                 "sending SIGTERM to group -%d\n",
                 getpid(), pid, pid);
-        // Timeout: kill the whole process group of the child
+        // Timeout:  kill the whole process group of the child
         int term_result = kill(-pid, SIGTERM);
         if (term_result != 0)
           perror("[DEBUG] kill(SIGTERM) failed");
@@ -94,7 +186,7 @@ protected:
         status = -1;
       } else if (WIFEXITED(status)) {
         fprintf(stderr,
-                "[DEBUG] Parent PID: %d, child PID: %d exited normally, exit "
+                "[DEBUG] Parent PID: %d, child PID:  %d exited normally, exit "
                 "code: %d\n",
                 getpid(), pid, WEXITSTATUS(status));
         status = WEXITSTATUS(status);
@@ -113,10 +205,12 @@ protected:
     } else {
       perror("[DEBUG] fork failed");
     }
-    fprintf(stderr, "[DEBUG] Parent PID: %d, returning status: %d\n", getpid(),
+    fprintf(stderr, "[DEBUG] Parent PID: %d, returning status:  %d\n", getpid(),
             status);
     return status;
   }
+#endif
+
   std::filesystem::path test_dir_;
 };
 
@@ -125,8 +219,15 @@ TEST_F(MeasureCommandTest, MeasureWithoutDaemon) {
   auto script_path = test_dir_ / "test.lua";
 
   // Use timeout wrapper to prevent hanging
+#ifdef _WIN32
+  // Windows: redirect to NUL
+  std::string cmd =
+      "instrument-server measure " + script_path.string() + " > NUL 2>&1";
+#else
+  // Unix: redirect to /dev/null
   std::string cmd =
       "instrument-server measure " + script_path.string() + " > /dev/null 2>&1";
+#endif
 
   int result = run_command_with_timeout(cmd, 5);
 
@@ -144,8 +245,13 @@ TEST_F(MeasureCommandTest, MeasureWithDaemon) {
   // Should still fail with no instruments, but shouldn't crash
   auto script_path = test_dir_ / "test.lua";
 
+#ifdef _WIN32
+  std::string cmd =
+      "instrument-server measure " + script_path.string() + " > NUL 2>&1";
+#else
   std::string cmd =
       "instrument-server measure " + script_path.string() + " > /dev/null 2>&1";
+#endif
 
   int result = run_command_with_timeout(cmd, 5);
 
