@@ -68,32 +68,53 @@ jobs:
           cmake --build build --config Release --verbose
         shell: pwsh
 
+      - name: List test executables (debug)
+        run: |
+          Write-Host "=== Listing test directory contents ==="
+          if (Test-Path "build/tests") {
+            Get-ChildItem -Path "build/tests" -Recurse -Include *.exe | ForEach-Object { Write-Host $_.FullName }
+          } else {
+            Write-Host "build/tests directory does not exist"
+          }
+        shell: pwsh
+
       - name: Run unit tests
         run: |
-          if (Test-Path "build/tests/unit_tests.exe") {
-            Write-Host "Running unit tests..."
-            & build/tests/unit_tests.exe
+          # Visual Studio generator puts executables in Release/ subdirectory
+          $testPath = "build/tests/Release/unit_tests.exe"
+          if (Test-Path $testPath) {
+            Write-Host "Running unit tests from: $testPath"
+            & $testPath
             if ($LASTEXITCODE -ne 0) {
               Write-Error "Unit tests failed with exit code $LASTEXITCODE"
               exit $LASTEXITCODE
             }
             Write-Host "✓ Unit tests passed successfully"
           } else {
-            Write-Host "No unit_tests.exe found, skipping..."
+            Write-Host "ERROR: unit_tests.exe not found at: $testPath"
+            Write-Host "Directory contents:"
+            Get-ChildItem -Path "build/tests" -Recurse
+            exit 1
           }
         shell: pwsh
+
       - name: Run integration tests
         run: |
-          if (Test-Path "build/tests/integration_tests.exe") {
-            Write-Host "Running integration tests..."
-            & build/tests/integration_tests.exe
+          # Visual Studio generator puts executables in Release/ subdirectory
+          $testPath = "build/tests/Release/integration_tests.exe"
+          if (Test-Path $testPath) {
+            Write-Host "Running integration tests from: $testPath"
+            & $testPath
             if ($LASTEXITCODE -ne 0) {
               Write-Error "Integration tests failed with exit code $LASTEXITCODE"
               exit $LASTEXITCODE
             }
             Write-Host "✓ Integration tests passed successfully"
           } else {
-            Write-Host "No integration_tests.exe found, skipping..."
+            Write-Host "ERROR:  integration_tests.exe not found at: $testPath"
+            Write-Host "Directory contents:"
+            Get-ChildItem -Path "build/tests" -Recurse
+            exit 1
           }
         shell: pwsh
 
