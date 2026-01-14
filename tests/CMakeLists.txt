@@ -81,32 +81,35 @@ target_link_libraries(
 gtest_discover_tests(integration_tests)
 
 # Performance tests
-add_executable(perf_tests performance/test_ipc_throughput.cpp
-                          performance/test_sync_overhead.cpp
-                          performance/test_end_to_end_overhead.cpp)
+add_executable(
+  perf_tests
+  performance/test_ipc_throughput.cpp performance/test_sync_overhead.cpp
+  performance/test_end_to_end_overhead.cpp)
 
 target_link_libraries(perf_tests PRIVATE instrument-server-core test-utils
                                          GTest::gtest GTest::gtest_main)
 
 # Don't auto-run performance tests Run manually with: ./perf_tests
 
-# Mock plugin for testing
-add_library(mock_plugin MODULE mocks/mock_plugin.cpp)
-
+# For mock_plugin
+add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
+target_compile_definitions(mock_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
 target_link_libraries(mock_plugin PRIVATE instrument-server-core)
-
 set_target_properties(mock_plugin PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE
                                                        ON)
 
-# Build mock VISA plugin for testing
-add_library(mock_visa_plugin MODULE mocks/mock_visa_plugin.c)
+# For mock_visa_plugin
+add_library(mock_visa_plugin SHARED mocks/mock_visa_plugin.c)
+target_compile_definitions(mock_visa_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
 target_link_libraries(mock_visa_plugin PRIVATE instrument-server-core)
 set_target_properties(mock_visa_plugin PROPERTIES PREFIX ""
                                                   POSITION_INDEPENDENT_CODE ON)
 
-# Build mock VISA large data plugin for testing
-add_library(mock_visa_large_data_plugin MODULE
+# For mock_visa_large_data_plugin
+add_library(mock_visa_large_data_plugin SHARED
             mocks/mock_visa_large_data_plugin.c)
+target_compile_definitions(mock_visa_large_data_plugin
+                           PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
 target_link_libraries(mock_visa_large_data_plugin
                       PRIVATE instrument-server-core)
 set_target_properties(mock_visa_large_data_plugin

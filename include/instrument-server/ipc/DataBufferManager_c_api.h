@@ -1,6 +1,7 @@
 #ifndef INSTRUMENT_SERVER_DATA_BUFFER_MANAGER_C_H
 #define INSTRUMENT_SERVER_DATA_BUFFER_MANAGER_C_H
 
+#include "instrument-server/export.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -23,14 +24,15 @@ extern "C" {
  * least 128 bytes)
  * @return 0 on success, -1 on failure
  */
-int data_buffer_create(const char *instrument_name, const char *command_id,
-                       uint8_t data_type, size_t element_count,
-                       const void *data, char *buffer_id_out);
+INSTRUMENT_SERVER_API int
+data_buffer_create(const char *instrument_name, const char *command_id,
+                   uint8_t data_type, size_t element_count, const void *data,
+                   char *buffer_id_out);
 
 /**
  * Get total memory usage of all buffers
  */
-size_t data_buffer_total_memory(void);
+INSTRUMENT_SERVER_API size_t data_buffer_total_memory(void);
 
 #ifdef __cplusplus
 }

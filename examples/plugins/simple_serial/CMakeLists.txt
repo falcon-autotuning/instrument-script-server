@@ -12,14 +12,14 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
   # Use the helper function
   add_instrument_plugin(simple_serial_plugin SOURCES simple_serial.c)
 else()
-  # Building as part of main project - use local headers
-  add_library(simple_serial_plugin MODULE simple_serial.c)
-
-  set_target_properties(simple_serial_plugin
-                        PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE ON)
-
+  add_library(simple_serial_plugin SHARED simple_serial.c)
+  target_compile_definitions(simple_serial_plugin
+                             PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
   target_include_directories(simple_serial_plugin
                              PRIVATE ${CMAKE_SOURCE_DIR}/include)
+  # Add other target properties as needed
+  set_target_properties(simple_serial_plugin
+                        PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE ON)
 
   # Don't link to core library - plugins should be standalone They only need the
   # header for the interface

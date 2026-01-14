@@ -1,7 +1,9 @@
 #ifndef INSTRUMENT_SCRIPT_PLUGIN_INTERFACE_H
 #define INSTRUMENT_SCRIPT_PLUGIN_INTERFACE_H
 
+#include "instrument-server/export.h"
 #include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -112,31 +114,31 @@ typedef struct {
 } PluginMetadata;
 
 // Plugin interface functions (must be implemented by plugin)
+// Note:  Plugins export these functions, so they use INSTRUMENT_PLUGIN_API
 
 /**
  * Get plugin metadata
  * Called before initialization to verify compatibility
  */
-PluginMetadata plugin_get_metadata(void);
+INSTRUMENT_PLUGIN_API PluginMetadata plugin_get_metadata(void);
 
 /**
  * Initialize plugin with configuration
  * Returns 0 on success, non-zero error code on failure
  */
-int32_t plugin_initialize(const PluginConfig *config);
+INSTRUMENT_PLUGIN_API int32_t plugin_initialize(const PluginConfig *config);
 
 /**
  * Execute a command
  * Returns 0 on success, non-zero error code on failure
- * Response is written to the provided response pointer
  */
-int32_t plugin_execute_command(const PluginCommand *command,
-                               PluginResponse *response);
+INSTRUMENT_PLUGIN_API int32_t plugin_execute_command(const PluginCommand *cmd,
+                                                     PluginResponse *resp);
 
 /**
- * Shutdown and cleanup plugin resources
+ * Shutdown and cleanup plugin
  */
-void plugin_shutdown(void);
+INSTRUMENT_PLUGIN_API void plugin_shutdown(void);
 
 #ifdef __cplusplus
 }

@@ -63,8 +63,10 @@ message(STATUS "Found cJSON library: ${CJSON_LIBRARIES}")
 message(STATUS "Found cJSON headers: ${CJSON_INCLUDE_DIRS}")
 
 # Create the plugin
-add_library(visa_plugin MODULE visa_plugin.c)
-
+add_library(visa_plugin SHARED visa_plugin.c)
+target_compile_definitions(visa_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
+target_link_libraries(visa_plugin PRIVATE instrument-server-core
+                                          ${VISA_LIBRARY})
 set_target_properties(
   visa_plugin
   PROPERTIES PREFIX ""
@@ -74,12 +76,6 @@ set_target_properties(
 target_include_directories(
   visa_plugin PRIVATE ${CMAKE_SOURCE_DIR}/include ${VISA_INCLUDE_DIR}
                       ${CJSON_INCLUDE_DIRS})
-
-target_link_libraries(
-  visa_plugin
-  PRIVATE ${VISA_LIBRARY} ${CJSON_LIBRARIES}
-          InstrumentServerCore # Link to core library for DataBufferManager
-)
 
 # Install to standard plugin directory
 install(TARGETS visa_plugin LIBRARY DESTINATION lib/instrument-plugins)
