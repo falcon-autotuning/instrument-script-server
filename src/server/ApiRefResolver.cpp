@@ -40,27 +40,37 @@ std::string resolve_api_ref(const std::string &api_ref,
     throw std::runtime_error("Invalid api_ref: '" + api_ref + "'");
   }
 
-  // If relative, resolve relative to the instrument configuration file's parent
-  // dir
-  if (p.is_relative()) {
-    std::filesystem::path cfg_parent =
-        std::filesystem::path(config_path).parent_path();
-    if (cfg_parent.empty()) {
-      // If config_path had no parent (unlikely), use current path as fallback
-      cfg_parent = std::filesystem::current_path();
+  // If absolute, use directly (must exist)
+  if (p.is_absolute()) {
+    if (!std::filesystem::exists(p)) {
+      throw std::runtime_error("API definition file not found: " + p.string());
     }
-    p = cfg_parent / p;
+    return std::filesystem::canonical(p).string();
   }
 
-  // Make absolute (does not require existence)
-  p = std::filesystem::absolute(p);
-
-  // Existence check
-  if (!std::filesystem::exists(p)) {
-    throw std::runtime_error("API definition file not found: " + p.string());
+  // p is relative. Try resolution rules (backwards-compatible):
+  // 1) Prefer config parent directory (so colocated api files work)
+  // 2) Fallback to current working directory (preserves previous behavior)
+  std::filesystem::path cfg_parent =
+      std::filesystem::path(config_path).parent_path();
+  if (cfg_parent.empty()) {
+    cfg_parent = std::filesystem::current_path();
   }
 
-  return p.string();
+  std::filesystem::path attempt1 = cfg_parent / p;
+  if (std::filesystem::exists(attempt1)) {
+    return std::filesystem::canonical(attempt1).string();
+  }
+
+  std::filesystem::path attempt2 = std::filesystem::current_path() / p;
+  if (std::filesystem::exists(attempt2)) {
+    return std::filesystem::canonical(attempt2).string();
+  }
+
+  // Neither candidate exists — produce an informative error referencing the
+  // preferred (config-relative) path to help debugging.
+  throw std::runtime_error("API definition file not found: " +
+                           attempt1.string());
 }
 
 } // namespace server

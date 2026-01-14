@@ -58,25 +58,45 @@ This is how you'll reference the instrument in measurement scripts.
 
 **Type**: String (file path or file:// URI)
 
-**Description**: Path to the instrument API definition file. Can be:
+**Description**: Path or URI that points to the instrument API definition file (the API describes the commands, IO and protocol for the instrument type). The server supports several forms and resolves them according to the rules below.
 
-- An absolute file-system path, e.g. `/usr/local/share/instrument-apis/dmm.yaml`
-- A path relative to the instrument configuration file location (recommended for co-located configurations), e.g. `../apis/agi_34401a.yaml`
-- A `file://` URI (the `file://` scheme is supported). Examples:
-  - `file:///usr/local/share/instrument-apis/dmm.yaml`
-  - `file://./apis/agi_34401a.yaml`
+Supported forms
 
-Resolution rules (current behavior):
+- Absolute file-system path
+  - Example: `/usr/local/share/instrument-apis/keithley_2400.yaml`
+- Relative path (recommended when your API file is co-located with the instrument configuration)
+  - Example: `../apis/agi_34401a.yaml`
+- `file://` URI (supported; treated as a file-system path)
+  - Examples:
+    - `file:///usr/local/share/instrument-apis/dmm.yaml`
+    - `file://./apis/agi_34401a.yaml`
 
-- If `api_ref` is a `file://` URI, the scheme is stripped and the remainder is treated as a file-system path.
-- If `api_ref` is an absolute path, it is used as-is.
-- If `api_ref` is a relative path, it is resolved relative to the instrument configuration file's directory (i.e., the parent directory of the configuration file you passed to `instrument-server start ...`).
-- The server will check that the resolved file exists and will fail instrument creation with a descriptive error if it does not.
+Resolution rules
 
-Examples:
+1. If `api_ref` is a `file://` URI, the `file://` scheme is stripped and the remainder is treated as a file-system path (special handling exists for typical Windows `file:///C:/...` forms).
+2. If the resulting path is absolute, it is used as-is. The server requires that the file exists.
+3. If the resulting path is relative, the server attempts to resolve it in two places (in this order):
+   a. The directory containing the instrument configuration file (i.e., the parent directory of the configuration file you passed to `instrument-server start ...`). This is the preferred/primary location and lets you keep the API file next to its configuration.
+   b. If (a) does not exist, the server falls back to resolving the relative path against the server process current working directory (cwd). This preserves backward compatibility with existing workflows and test expectations that used repo-root/cwd-relative paths.
+4. If the file cannot be found in either location, instrument creation fails with a clear error indicating the preferred (config-relative) path that was checked, e.g.:
+
+   ```
+   API definition file not found: /path/to/configs/../apis/myapi.yaml
+   ```
+
+5. If the file is found, the resolved path is normalized (canonicalized) before being used, so `../` and `./` fragments are collapsed and the server uses the canonical absolute path.
+
+Notes & best practices
+
+- For reproducibility, prefer placing the API definition in the same repo/directory tree as the instrument configuration and use a relative path (this makes configurations portable between machines).
+- If you distribute API definitions as part of a system installation, use absolute paths (or file:// URIs) to the installed location.
+- The `instrument-server validate api <file>` command is available to validate an API definition YAML independently; use this before starting instruments to catch schema errors early.
+- Error messages from the server are intentionally informative; when a referenced API cannot be found the server will log the attempted config-relative path to aid debugging.
+
+Examples
 
 ```yaml
-# API in repo next to configuration, relative path
+# co-located API (preferred)
 name: DMM1
 api_ref: ../apis/agi_34401a.yaml
 connection:

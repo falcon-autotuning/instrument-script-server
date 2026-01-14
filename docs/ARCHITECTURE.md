@@ -472,21 +472,33 @@ private:
 
 ```yaml
 name: DMM1                    # Instrument instance name
-api_ref: apis/keithley. yaml   # API definition file
-connection: 
+api_ref: apis/keithley.yaml    # API definition file
+connection:
   type:  VISA                  # Protocol type (maps to plugin)
-  address: "TCPIP::192.168.1.100:: INSTR"
-  timeout:  5000
+  address: "TCPIP::192.168.1.100::INSTR"
+  timeout: 5000
 ```
 
 **Loading**: `InstrumentRegistry::create_instrument()`
 
-1. Load YAML → JSON
-2. Resolve `api_ref` (supports absolute paths, relative paths resolved relative to the instrument configuration file directory, and `file://` URIs) and load referenced API definition
-3. Extract protocol type
-4. Lookup plugin via PluginRegistry
-5. Create InstrumentWorkerProxy
+1. Load instrument configuration YAML → JSON
+2. Resolve the `api_ref` and load the referenced API definition
+   - Resolution behavior:
+     - `file://` URIs are supported and treated as filesystem paths.
+     - Absolute paths are used directly.
+     - Relative paths are resolved preferentially relative to the instrument configuration file directory (the config file's parent directory). This allows a config and its API to be co-located and portable.
+     - If the config-relative candidate does not exist, the server falls back to resolving the relative path against the server process current working directory (cwd) for backward compatibility with existing server and test usage.
+     - The resolved path is canonicalized (normalized) before use; if the file is not found, instrument creation fails with a descriptive error showing the attempted config-relative path.
+3. Extract protocol type from the API definition
+4. Lookup plugin for that protocol via PluginRegistry
+5. Create InstrumentWorkerProxy and pass the configuration and API definition
 6. Spawn worker with plugin path
+
+Example loading sequence:
+
+- instrument-server processes `configs/dmm1.yaml`
+- `dmm1.yaml` contains `api_ref: ../apis/keithley_2400.yaml`
+- The server resolves `../apis/keithley_2400.yaml` relative to `configs/` → `apis/keithley_2400.yaml` and loads that file
 
 ### API Definition
 

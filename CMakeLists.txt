@@ -85,6 +85,7 @@ add_library(
   src/server/InstrumentWorkerProxy.cpp
   src/server/RuntimeContext.cpp
   src/server/SyncCoordinator.cpp
+  src/server/ApiRefResolver.cpp
   src/server/ServerDaemon.cpp
   ${CMAKE_BINARY_DIR}/embedded_schemas.cpp)
 
