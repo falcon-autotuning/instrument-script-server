@@ -17,7 +17,7 @@ jobs:
 
   # Trigger Windows build (grant packages: read so the called workflow can access GHCR)
   windows-build:
-    uses: ./.github/workflows/windows.yml
+    uses: ./.github/workflows/windows-direct.yml
     permissions:
       contents: read
       packages: read
