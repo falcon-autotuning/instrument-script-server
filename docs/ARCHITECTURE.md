@@ -479,10 +479,10 @@ connection:
   timeout:  5000
 ```
 
-**Loading**: `InstrumentRegistry:: create_instrument()`
+**Loading**: `InstrumentRegistry::create_instrument()`
 
 1. Load YAML → JSON
-2. Load referenced API definition
+2. Resolve `api_ref` (supports absolute paths, relative paths resolved relative to the instrument configuration file directory, and `file://` URIs) and load referenced API definition
 3. Extract protocol type
 4. Lookup plugin via PluginRegistry
 5. Create InstrumentWorkerProxy

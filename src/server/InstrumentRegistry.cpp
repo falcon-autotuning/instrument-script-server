@@ -1,6 +1,7 @@
 #include "instrument-server/server/InstrumentRegistry.hpp"
 #include "instrument-server/Logger.hpp"
 #include "instrument-server/plugin/PluginRegistry.hpp"
+#include "instrument-server/server/ApiRefResolver.hpp"
 #include "instrument-server/server/InstrumentWorkerProxy.hpp"
 #include <nlohmann/json.hpp>
 #include <yaml-cpp/yaml.h>
@@ -49,7 +50,17 @@ bool InstrumentRegistry::create_instrument(const std::string &config_path) {
 
     std::string api_ref = config["api_ref"];
 
-    YAML::Node api_yaml = YAML::LoadFile(api_ref);
+    std::string resolved_api_path;
+    try {
+      resolved_api_path = server::resolve_api_ref(api_ref, config_path);
+    } catch (const std::exception &e) {
+      LOG_ERROR("REGISTRY", "CREATE",
+                "Failed to resolve api_ref '{}' (from config '{}'): {}",
+                api_ref, config_path, e.what());
+      return false;
+    }
+
+    YAML::Node api_yaml = YAML::LoadFile(resolved_api_path);
     nlohmann::json api_def = yaml_to_json(api_yaml);
 
     std::string name = config["name"];

@@ -19,6 +19,7 @@ add_executable(
   unit/test_api_lookup.cpp
   unit/test_data_buffer_manager.cpp
   unit/test_plugin_loading.cpp
+  unit/test_api_ref_resolution.cpp
   unit/test_plugin_registry.cpp)
 target_link_libraries(unit_tests PRIVATE instrument-server-core test-utils
                                          GTest::gtest GTest::gtest_main)

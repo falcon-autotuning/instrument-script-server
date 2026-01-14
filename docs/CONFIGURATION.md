@@ -54,18 +54,51 @@ This is how you'll reference the instrument in measurement scripts.
 - `SCOPE_LEFT`, `SCOPE_RIGHT` - Descriptive names
 - `DAC_GATE1`, `DAC_BIAS` - Function-based names
 
-#### `api_ref` (required)
+##### `api_ref` (required)
 
-**Type**: String (file path)
+**Type**: String (file path or file:// URI)
 
-**Description**: Path to the instrument API definition file.
-Can be absolute or relative to the configuration file location.
+**Description**: Path to the instrument API definition file. Can be:
 
-**Examples**:
+- An absolute file-system path, e.g. `/usr/local/share/instrument-apis/dmm.yaml`
+- A path relative to the instrument configuration file location (recommended for co-located configurations), e.g. `../apis/agi_34401a.yaml`
+- A `file://` URI (the `file://` scheme is supported). Examples:
+  - `file:///usr/local/share/instrument-apis/dmm.yaml`
+  - `file://./apis/agi_34401a.yaml`
 
-- `examples/instrument-apis/agi_34401a. yaml`
-- `apis/keysight_scope.yaml`
-- `/usr/local/share/instrument-apis/dmm. yaml`
+Resolution rules (current behavior):
+
+- If `api_ref` is a `file://` URI, the scheme is stripped and the remainder is treated as a file-system path.
+- If `api_ref` is an absolute path, it is used as-is.
+- If `api_ref` is a relative path, it is resolved relative to the instrument configuration file's directory (i.e., the parent directory of the configuration file you passed to `instrument-server start ...`).
+- The server will check that the resolved file exists and will fail instrument creation with a descriptive error if it does not.
+
+Examples:
+
+```yaml
+# API in repo next to configuration, relative path
+name: DMM1
+api_ref: ../apis/agi_34401a.yaml
+connection:
+  type: VISA
+  address: "TCPIP::192.168.0.100::INSTR"
+```
+
+```yaml
+# absolute path
+name: DMM2
+api_ref: /usr/local/share/instrument-apis/keithley_2400.yaml
+connection:
+  type: VISA
+```
+
+```yaml
+# file:// URI
+name: DMM3
+api_ref: file:///etc/instrument-apis/dmm.yaml
+connection:
+  type: VISA
+```
 
 #### `connection` (required)
 
