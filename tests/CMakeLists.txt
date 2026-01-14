@@ -23,7 +23,9 @@ add_executable(
 target_link_libraries(unit_tests PRIVATE instrument-server-core test-utils
                                          GTest::gtest GTest::gtest_main)
 if(WIN32)
-  add_test(NAME unit_tests COMMAND unit_tests)
+  add_test(NAME unit_tests COMMAND $<TARGET_FILE:unit_tests>)
+  gtest_discover_tests(unit_tests DISCOVERY_TIMEOUT 10
+                       WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 else()
   gtest_discover_tests(unit_tests)
 endif()
@@ -49,7 +51,9 @@ if(UNIX)
 endif()
 
 if(WIN32)
-  add_test(NAME integration_tests COMMAND integration_tests)
+  add_test(NAME integration_tests COMMAND $<TARGET_FILE:integration_tests>)
+  gtest_discover_tests(integration_tests DISCOVERY_TIMEOUT 10
+                       WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 else()
   gtest_discover_tests(integration_tests)
 endif()
@@ -60,6 +64,14 @@ add_executable(
   performance/test_end_to_end_overhead.cpp)
 target_link_libraries(perf_tests PRIVATE instrument-server-core test-utils
                                          GTest::gtest GTest::gtest_main)
+
+if(WIN32)
+  add_test(NAME perf_tests COMMAND $<TARGET_FILE:perf_tests>)
+  gtest_discover_tests(perf_tests DISCOVERY_TIMEOUT 10
+                       WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+else()
+  gtest_discover_tests(perf_tests)
+endif()
 
 add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
 target_compile_definitions(mock_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
