@@ -129,7 +129,7 @@ jobs:
       - name: Run integration tests
         run: |
           # CRITICAL: Add DLL directories to PATH
-          $env: PATH = "$PWD/build/vcpkg_installed/x64-windows/bin;$PWD/build/Release;$env:PATH"
+          $env:PATH = "$PWD/build/vcpkg_installed/x64-windows/bin;$PWD/build/Release;$env:PATH"
 
           $testPath = "build/tests/Release/integration_tests.exe"
 
