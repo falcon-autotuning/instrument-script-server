@@ -190,7 +190,7 @@ install(
   DIRECTORY docs/
   DESTINATION share/doc/instrument-server
   FILES_MATCHING
-  PATTERN "*. md")
+  PATTERN "*.md")
 
 # Export targets for use by external plugins
 install(
