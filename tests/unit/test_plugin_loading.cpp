@@ -1,27 +1,32 @@
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/plugin/PluginRegistry.hpp"
-
+#include "PlatformPaths.hpp"
 #include <filesystem>
 #include <gtest/gtest.h>
-#include <spdlog/common.h>
 
-using namespace instserver::plugin;
+using namespace instserver::test;
 
 TEST(PluginLoadingTest, MockVISAPluginExists) {
-  std::vector<std::filesystem::path> search_paths = {
-      std::filesystem::current_path() / "tests" / "mock_visa_plugin.so",
-      std::filesystem::current_path() / "build" / "tests" /
-          "mock_visa_plugin.so",
-      std::filesystem::current_path() / "mock_visa_plugin.so"};
+  // Check multiple possible locations
+  auto search_paths = get_plugin_search_paths();
 
   bool found = false;
-  for (const auto &path : search_paths) {
-    if (std::filesystem::exists(path)) {
+  std::filesystem::path found_path;
+
+  for (const auto &base_path : search_paths) {
+    auto plugin_path =
+        base_path / ("mock_visa_plugin" + get_plugin_extension());
+    if (std::filesystem::exists(plugin_path)) {
       found = true;
-      std::cout << "Found mock plugin at: " << path << std::endl;
+      found_path = plugin_path;
       break;
     }
   }
 
-  EXPECT_TRUE(found) << "Mock VISA plugin not found in any expected location";
+  EXPECT_TRUE(found) << "Mock VISA plugin not found.  Extension: "
+                     << get_plugin_extension() << ", Searched "
+                     << search_paths.size() << " paths";
+
+  if (found) {
+    EXPECT_TRUE(std::filesystem::is_regular_file(found_path));
+    EXPECT_GT(std::filesystem::file_size(found_path), 0);
+  }
 }
