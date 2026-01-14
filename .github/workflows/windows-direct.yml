@@ -24,19 +24,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install LLVM (clang/clang-cl) via Chocolatey
-        # This installs LLVM into "C:\Program Files\LLVM" and adds it to PATH for the job
-        run: |
-          choco install llvm -y --no-progress
-          RefreshEnv
-        shell: pwsh
-
-      - name: Show clang versions (verify installation)
-        run: |
-          & "C:\Program Files\LLVM\bin\clang" --version || clang --version
-          & "C:\Program Files\LLVM\bin\clang-cl" --version || clang-cl --version
-        shell: pwsh
-
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
