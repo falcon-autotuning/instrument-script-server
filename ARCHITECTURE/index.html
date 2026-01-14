@@ -2340,21 +2340,35 @@ registry.remove_instrument() ← cleanup ← shutdown ← SIGTERM
 <h3 id="instrument-configuration">Instrument Configuration<a class="headerlink" href="#instrument-configuration" title="Permanent link">&para;</a></h3>
 <p><strong>Format</strong>:  YAML</p>
 <div class="language-yaml highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DMM1</span><span class="w">                    </span><span class="c1"># Instrument instance name</span>
-<span class="nt">api_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apis/keithley. yaml</span><span class="w">   </span><span class="c1"># API definition file</span>
-<span class="nt">connection</span><span class="p">:</span><span class="w"> </span>
+<span class="nt">api_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apis/keithley.yaml</span><span class="w">    </span><span class="c1"># API definition file</span>
+<span class="nt">connection</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">VISA</span><span class="w">                  </span><span class="c1"># Protocol type (maps to plugin)</span>
-<span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TCPIP::192.168.1.100::</span><span class="nv"> </span><span class="s">INSTR&quot;</span>
-<span class="w">  </span><span class="nt">timeout</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+<span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TCPIP::192.168.1.100::INSTR&quot;</span>
+<span class="w">  </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
 </code></pre></div>
-<p><strong>Loading</strong>: <code>InstrumentRegistry:: create_instrument()</code></p>
+<p><strong>Loading</strong>: <code>InstrumentRegistry::create_instrument()</code></p>
 <ol>
-<li>Load YAML → JSON</li>
-<li>Load referenced API definition</li>
-<li>Extract protocol type</li>
-<li>Lookup plugin via PluginRegistry</li>
-<li>Create InstrumentWorkerProxy</li>
+<li>Load instrument configuration YAML → JSON</li>
+<li>Resolve the <code>api_ref</code> and load the referenced API definition</li>
+<li>Resolution behavior:<ul>
+<li><code>file://</code> URIs are supported and treated as filesystem paths.</li>
+<li>Absolute paths are used directly.</li>
+<li>Relative paths are resolved preferentially relative to the instrument configuration file directory (the config file's parent directory). This allows a config and its API to be co-located and portable.</li>
+<li>If the config-relative candidate does not exist, the server falls back to resolving the relative path against the server process current working directory (cwd) for backward compatibility with existing server and test usage.</li>
+<li>The resolved path is canonicalized (normalized) before use; if the file is not found, instrument creation fails with a descriptive error showing the attempted config-relative path.</li>
+</ul>
+</li>
+<li>Extract protocol type from the API definition</li>
+<li>Lookup plugin for that protocol via PluginRegistry</li>
+<li>Create InstrumentWorkerProxy and pass the configuration and API definition</li>
 <li>Spawn worker with plugin path</li>
 </ol>
+<p>Example loading sequence:</p>
+<ul>
+<li>instrument-server processes <code>configs/dmm1.yaml</code></li>
+<li><code>dmm1.yaml</code> contains <code>api_ref: ../apis/keithley_2400.yaml</code></li>
+<li>The server resolves <code>../apis/keithley_2400.yaml</code> relative to <code>configs/</code> → <code>apis/keithley_2400.yaml</code> and loads that file</li>
+</ul>
 <h3 id="api-definition">API Definition<a class="headerlink" href="#api-definition" title="Permanent link">&para;</a></h3>
 <p><strong>Format</strong>:  YAML</p>
 <div class="language-yaml highlight"><pre><span></span><code><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span>

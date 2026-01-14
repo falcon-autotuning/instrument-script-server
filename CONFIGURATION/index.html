@@ -625,7 +625,8 @@
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="name (required)">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#api_ref-required" class="md-nav__link">
@@ -635,6 +636,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1723,7 +1729,8 @@
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="name (required)">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#api_ref-required" class="md-nav__link">
@@ -1733,6 +1740,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -2592,16 +2604,63 @@ This is how you'll reference the instrument in measurement scripts.</p>
 <li><code>SCOPE_LEFT</code>, <code>SCOPE_RIGHT</code> - Descriptive names</li>
 <li><code>DAC_GATE1</code>, <code>DAC_BIAS</code> - Function-based names</li>
 </ul>
-<h4 id="api_ref-required"><code>api_ref</code> (required)<a class="headerlink" href="#api_ref-required" title="Permanent link">&para;</a></h4>
-<p><strong>Type</strong>: String (file path)</p>
-<p><strong>Description</strong>: Path to the instrument API definition file.
-Can be absolute or relative to the configuration file location.</p>
-<p><strong>Examples</strong>:</p>
+<h5 id="api_ref-required"><code>api_ref</code> (required)<a class="headerlink" href="#api_ref-required" title="Permanent link">&para;</a></h5>
+<p><strong>Type</strong>: String (file path or file:// URI)</p>
+<p><strong>Description</strong>: Path or URI that points to the instrument API definition file (the API describes the commands, IO and protocol for the instrument type). The server supports several forms and resolves them according to the rules below.</p>
+<p>Supported forms</p>
 <ul>
-<li><code>examples/instrument-apis/agi_34401a. yaml</code></li>
-<li><code>apis/keysight_scope.yaml</code></li>
-<li><code>/usr/local/share/instrument-apis/dmm. yaml</code></li>
+<li>Absolute file-system path</li>
+<li>Example: <code>/usr/local/share/instrument-apis/keithley_2400.yaml</code></li>
+<li>Relative path (recommended when your API file is co-located with the instrument configuration)</li>
+<li>Example: <code>../apis/agi_34401a.yaml</code></li>
+<li><code>file://</code> URI (supported; treated as a file-system path)</li>
+<li>Examples:<ul>
+<li><code>file:///usr/local/share/instrument-apis/dmm.yaml</code></li>
+<li><code>file://./apis/agi_34401a.yaml</code></li>
 </ul>
+</li>
+</ul>
+<p>Resolution rules</p>
+<ol>
+<li>If <code>api_ref</code> is a <code>file://</code> URI, the <code>file://</code> scheme is stripped and the remainder is treated as a file-system path (special handling exists for typical Windows <code>file:///C:/...</code> forms).</li>
+<li>If the resulting path is absolute, it is used as-is. The server requires that the file exists.</li>
+<li>If the resulting path is relative, the server attempts to resolve it in two places (in this order):
+   a. The directory containing the instrument configuration file (i.e., the parent directory of the configuration file you passed to <code>instrument-server start ...</code>). This is the preferred/primary location and lets you keep the API file next to its configuration.
+   b. If (a) does not exist, the server falls back to resolving the relative path against the server process current working directory (cwd). This preserves backward compatibility with existing workflows and test expectations that used repo-root/cwd-relative paths.</li>
+<li>If the file cannot be found in either location, instrument creation fails with a clear error indicating the preferred (config-relative) path that was checked, e.g.:</li>
+</ol>
+<div class="language-text highlight"><pre><span></span><code>API definition file not found: /path/to/configs/../apis/myapi.yaml
+</code></pre></div>
+<ol>
+<li>If the file is found, the resolved path is normalized (canonicalized) before being used, so <code>../</code> and <code>./</code> fragments are collapsed and the server uses the canonical absolute path.</li>
+</ol>
+<p>Notes &amp; best practices</p>
+<ul>
+<li>For reproducibility, prefer placing the API definition in the same repo/directory tree as the instrument configuration and use a relative path (this makes configurations portable between machines).</li>
+<li>If you distribute API definitions as part of a system installation, use absolute paths (or file:// URIs) to the installed location.</li>
+<li>The <code>instrument-server validate api &lt;file&gt;</code> command is available to validate an API definition YAML independently; use this before starting instruments to catch schema errors early.</li>
+<li>Error messages from the server are intentionally informative; when a referenced API cannot be found the server will log the attempted config-relative path to aid debugging.</li>
+</ul>
+<p>Examples</p>
+<div class="language-yaml highlight"><pre><span></span><code><span class="c1"># co-located API (preferred)</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DMM1</span>
+<span class="nt">api_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">../apis/agi_34401a.yaml</span>
+<span class="nt">connection</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VISA</span>
+<span class="w">  </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TCPIP::192.168.0.100::INSTR&quot;</span>
+</code></pre></div>
+<div class="language-yaml highlight"><pre><span></span><code><span class="c1"># absolute path</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DMM2</span>
+<span class="nt">api_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/local/share/instrument-apis/keithley_2400.yaml</span>
+<span class="nt">connection</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VISA</span>
+</code></pre></div>
+<div class="language-yaml highlight"><pre><span></span><code><span class="c1"># file:// URI</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DMM3</span>
+<span class="nt">api_ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file:///etc/instrument-apis/dmm.yaml</span>
+<span class="nt">connection</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VISA</span>
+</code></pre></div>
 <h4 id="connection-required"><code>connection</code> (required)<a class="headerlink" href="#connection-required" title="Permanent link">&para;</a></h4>
 <p><strong>Type</strong>: Object</p>
 <p><strong>Description</strong>:  Specifies how to physically connect to the instrument.</p>
