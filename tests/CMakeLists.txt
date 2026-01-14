@@ -40,8 +40,8 @@ add_executable(
   integration/test_measure_command.cpp)
 
 target_link_libraries(
-  integration_tests PRIVATE instrument-server-core test-utils GTest:: gtest
-                            GTest:: gtest_main)
+  integration_tests PRIVATE instrument-server-core test-utils GTest::gtest
+                            GTest::gtest_main)
 
 # Link math library only on Unix (Linux/macOS) - Windows has math in CRT
 if(UNIX)
