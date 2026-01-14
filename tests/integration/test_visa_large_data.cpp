@@ -1,3 +1,4 @@
+#include "PlatformPaths.hpp"
 #include "instrument-server/ipc/DataBufferManager.hpp"
 #include "instrument-server/plugin/PluginInterface.h"
 #include "instrument-server/plugin/PluginLoader.hpp"
@@ -15,6 +16,7 @@
 #include <gtest/gtest.h>
 
 using namespace instserver;
+using namespace instserver::test;
 
 class VISALargeDataTest : public ::testing::Test {
 protected:
@@ -23,11 +25,11 @@ protected:
     auto &manager = ipc::DataBufferManager::instance();
     manager.clear_all();
 
-    // This test requires a mock VISA plugin
-    plugin_path_ = "./build/tests/mock_visa_large_data_plugin.so";
+    // FIXED: Use cross-platform plugin path helper
+    plugin_path_ = get_test_plugin_path("mock_visa_large_data_plugin");
 
     if (!std::filesystem::exists(plugin_path_)) {
-      GTEST_SKIP() << "Mock VISA plugin not found at: " << plugin_path_;
+      GTEST_SKIP() << "Mock VISA plugin not found at:  " << plugin_path_;
     }
   }
 
@@ -36,11 +38,11 @@ protected:
     manager.clear_all();
   }
 
-  std::string plugin_path_;
+  std::filesystem::path plugin_path_;
 };
 
 TEST_F(VISALargeDataTest, SmallDataInResponse) {
-  plugin::PluginLoader loader(plugin_path_);
+  plugin::PluginLoader loader(plugin_path_.string());
   ASSERT_TRUE(loader.is_loaded());
 
   // Use a more complete configuration
@@ -48,7 +50,6 @@ TEST_F(VISALargeDataTest, SmallDataInResponse) {
   strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(config.connection_json, "{\"address\":\"mock://test\"}",
           PLUGIN_MAX_PAYLOAD - 1);
-  // Add a default empty API definition if none is provided
   strncpy(config.api_definition_json, "{}", PLUGIN_MAX_PAYLOAD - 1);
 
   ASSERT_EQ(loader.initialize(config), 0);
@@ -70,7 +71,7 @@ TEST_F(VISALargeDataTest, SmallDataInResponse) {
 }
 
 TEST_F(VISALargeDataTest, LargeDataInBuffer) {
-  plugin::PluginLoader loader(plugin_path_);
+  plugin::PluginLoader loader(plugin_path_.string());
   ASSERT_TRUE(loader.is_loaded());
 
   PluginConfig config{};
@@ -109,6 +110,7 @@ TEST_F(VISALargeDataTest, LargeDataInBuffer) {
   float *data = buffer->as_float32();
   ASSERT_NE(data, nullptr);
 
+  // Check some values (mock plugin should generate sin wave)
   for (size_t i = 0; i < 100; i++) {
     float expected = std::sin(2.0f * M_PI * i / 100.0f);
     EXPECT_NEAR(data[i], expected, 0.01f);
@@ -116,7 +118,7 @@ TEST_F(VISALargeDataTest, LargeDataInBuffer) {
 }
 
 TEST_F(VISALargeDataTest, BufferMetadata) {
-  plugin::PluginLoader loader(plugin_path_);
+  plugin::PluginLoader loader(plugin_path_.string());
   ASSERT_TRUE(loader.is_loaded());
 
   PluginConfig config{};
@@ -148,12 +150,12 @@ TEST_F(VISALargeDataTest, BufferMetadata) {
 }
 
 TEST_F(VISALargeDataTest, ExportLargeData) {
-  plugin::PluginLoader loader(plugin_path_);
+  plugin::PluginLoader loader(plugin_path_.string());
   ASSERT_TRUE(loader.is_loaded());
 
   PluginConfig config{};
   strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(config.connection_json, "{\"address\":\"mock://test\"}",
+  strncpy(config.connection_json, "{\"address\": \"mock://test\"}",
           PLUGIN_MAX_PAYLOAD - 1);
 
   ASSERT_EQ(loader.initialize(config), 0);
@@ -172,13 +174,16 @@ TEST_F(VISALargeDataTest, ExportLargeData) {
   auto buffer = manager.get_buffer(resp.data_buffer_id);
   ASSERT_NE(buffer, nullptr);
 
+  // FIXED: Use cross-platform temp directory
+  auto temp_dir = std::filesystem::temp_directory_path();
+
   // Export to CSV
-  std::string csv_path = "/tmp/visa_large_data_test.csv";
+  std::string csv_path = (temp_dir / "visa_large_data_test.csv").string();
   EXPECT_TRUE(buffer->export_to_csv(csv_path));
   EXPECT_TRUE(std::filesystem::exists(csv_path));
 
   // Export to binary
-  std::string bin_path = "/tmp/visa_large_data_test.bin";
+  std::string bin_path = (temp_dir / "visa_large_data_test.bin").string();
   EXPECT_TRUE(buffer->export_to_file(bin_path));
   EXPECT_TRUE(std::filesystem::exists(bin_path));
 
@@ -188,12 +193,12 @@ TEST_F(VISALargeDataTest, ExportLargeData) {
 }
 
 TEST_F(VISALargeDataTest, MultipleBuffers) {
-  plugin::PluginLoader loader(plugin_path_);
+  plugin::PluginLoader loader(plugin_path_.string());
   ASSERT_TRUE(loader.is_loaded());
 
   PluginConfig config{};
   strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(config.connection_json, "{\"address\":\"mock://test\"}",
+  strncpy(config.connection_json, "{\"address\": \"mock://test\"}",
           PLUGIN_MAX_PAYLOAD - 1);
 
   ASSERT_EQ(loader.initialize(config), 0);
