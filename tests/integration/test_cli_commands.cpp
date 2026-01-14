@@ -1,8 +1,10 @@
+#include <chrono>
 #include <cstdlib>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <sstream>
 #include <string>
+#include <thread>
 
 class CLITest : public ::testing::Test {
 protected:
@@ -176,12 +178,8 @@ TEST_F(CLITest, DaemonStatusWhenNotRunning) {
   // Stop any running daemon first
   run_command("daemon stop");
 
-  // Give it time to stop
-#ifdef _WIN32
-  Sleep(500); // milliseconds
-#else
-  usleep(500000); // microseconds
-#endif
+  // Sleep for 500 milliseconds
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
   auto [exit_code, output] = run_command_with_output("daemon status");
 
