@@ -23,9 +23,7 @@ add_executable(
 target_link_libraries(unit_tests PRIVATE instrument-server-core test-utils
                                          GTest::gtest GTest::gtest_main)
 if(WIN32)
-  add_test(NAME unit_tests COMMAND $<TARGET_FILE:unit_tests>)
-  gtest_discover_tests(unit_tests DISCOVERY_TIMEOUT 10
-                       WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+  add_test(NAME unit_tests COMMAND unit_tests)
 else()
   gtest_discover_tests(unit_tests)
 endif()
@@ -51,9 +49,7 @@ if(UNIX)
 endif()
 
 if(WIN32)
-  add_test(NAME integration_tests COMMAND $<TARGET_FILE:integration_tests>)
-  gtest_discover_tests(integration_tests DISCOVERY_TIMEOUT 10
-                       WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+  add_test(NAME integration_tests COMMAND integration_tests)
 else()
   gtest_discover_tests(integration_tests)
 endif()
@@ -66,9 +62,7 @@ target_link_libraries(perf_tests PRIVATE instrument-server-core test-utils
                                          GTest::gtest GTest::gtest_main)
 
 if(WIN32)
-  add_test(NAME perf_tests COMMAND $<TARGET_FILE:perf_tests>)
-  gtest_discover_tests(perf_tests DISCOVERY_TIMEOUT 10
-                       WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+  add_test(NAME perf_tests COMMAND perf_tests)
 else()
   gtest_discover_tests(perf_tests)
 endif()
