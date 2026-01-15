@@ -132,17 +132,21 @@ protected:
 
     // Start daemon directly in-process instead of via CLI
     auto &daemon = instserver::ServerDaemon::instance();
-    if (!daemon.is_running()) {
-      daemon.set_rpc_port(rpc_port_);
-      if (!daemon.start()) {
-        GTEST_SKIP() << "Failed to start daemon";
-        return;
-      }
-      started_daemon_ = true;
+    
+    // Always stop any existing daemon to ensure clean state
+    if (daemon.is_running()) {
+      daemon.stop();
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    } else {
-      started_daemon_ = false;
     }
+    
+    // Now start fresh with RPC port configured
+    daemon.set_rpc_port(rpc_port_);
+    if (!daemon.start()) {
+      GTEST_SKIP() << "Failed to start daemon";
+      return;
+    }
+    started_daemon_ = true;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     // Poll the RPC /rpc endpoint until we receive a parseable JSON response
     // or time out. This avoids races where the test sends requests before the
