@@ -2,8 +2,26 @@
 #include "instrument-server/Logger.hpp"
 #include <fmt/format.h>
 #include <set>
+#include <variant>
 
 using namespace instserver;
+
+// Helper to map stored ParamValue to the external return_type string tests
+// expect
+static std::string param_value_type_name(const ParamValue &val) {
+  if (auto d = std::get_if<double>(&val)) {
+    return "float";
+  } else if (auto i = std::get_if<int64_t>(&val)) {
+    return "integer";
+  } else if (auto s = std::get_if<std::string>(&val)) {
+    return "string";
+  } else if (auto b = std::get_if<bool>(&val)) {
+    return "boolean";
+  } else if (auto arr = std::get_if<std::vector<double>>(&val)) {
+    return "array";
+  }
+  return "unknown";
+}
 
 namespace instserver {
 
@@ -25,17 +43,31 @@ static void populate_callresult_from_response(CallResult &cr,
     cr.data_type = resp.data_type;
     cr.return_type = "buffer";
   } else if (resp.return_value) {
+    // Copy value and map variant type to a textual type name the rest of the
+    // code/tests expect.
     cr.return_value = resp.return_value;
-    if (std::get_if<double>(&*resp.return_value))
-      cr.return_type = "double";
-    else if (std::get_if<int64_t>(&*resp.return_value))
-      cr.return_type = "int64";
-    else if (std::get_if<std::string>(&*resp.return_value))
+    if (std::get_if<double>(&*resp.return_value)) {
+      cr.return_type = "float";
+    } else if (std::get_if<int64_t>(&*resp.return_value)) {
+      cr.return_type = "integer";
+    } else if (std::get_if<std::string>(&*resp.return_value)) {
       cr.return_type = "string";
-    else if (std::get_if<bool>(&*resp.return_value))
-      cr.return_type = "bool";
+    } else if (std::get_if<bool>(&*resp.return_value)) {
+      cr.return_type = "boolean";
+    } else if (std::get_if<std::vector<double>>(&*resp.return_value)) {
+      cr.return_type = "array";
+      // Provide small array metadata in the CallResult for consumers/tests
+      if (auto arr = std::get_if<std::vector<double>>(&*resp.return_value)) {
+        cr.element_count = static_cast<uint64_t>(arr->size());
+        cr.data_type = "float";
+      }
+    } else {
+      cr.return_type = "unknown";
+    }
   } else {
-    // No return value; keep return_type possibly as set earlier
+    // No return value and not a large-data buffer: set a default to avoid
+    // empty return_type in collected results (tests check non-empty).
+    cr.return_type = "void";
   }
 }
 
@@ -506,13 +538,15 @@ nlohmann::json RuntimeContext::collect_results_json() const {
                      {"data_type", cr.data_type}};
     } else if (cr.return_value) {
       if (auto d = std::get_if<double>(&*cr.return_value)) {
-        j["return"] = {{"type", "double"}, {"value", *d}};
+        j["return"] = {{"type", "float"}, {"value", *d}};
       } else if (auto i = std::get_if<int64_t>(&*cr.return_value)) {
-        j["return"] = {{"type", "int64"}, {"value", *i}};
+        j["return"] = {{"type", "integer"}, {"value", *i}};
       } else if (auto s = std::get_if<std::string>(&*cr.return_value)) {
         j["return"] = {{"type", "string"}, {"value", *s}};
       } else if (auto b = std::get_if<bool>(&*cr.return_value)) {
-        j["return"] = {{"type", "bool"}, {"value", *b}};
+        j["return"] = {{"type", "boolean"}, {"value", *b}};
+      } else {
+        j["return"] = {{"type", "void"}};
       }
     } else {
       j["return"] = {{"type", "void"}};

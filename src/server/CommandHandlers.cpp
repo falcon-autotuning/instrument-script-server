@@ -55,8 +55,13 @@ int handle_daemon(const json &params, json &out) {
     bool running = ServerDaemon::is_already_running();
     out["ok"] = true;
     out["running"] = running;
-    if (running)
+    if (running) {
       out["pid"] = ServerDaemon::get_daemon_pid();
+      out["message"] =
+          fmt::format("daemon running (pid={})", out["pid"].get<int>());
+    } else {
+      out["message"] = "daemon not running";
+    }
     return 0;
   }
 
@@ -175,6 +180,7 @@ int handle_list(const json &params, json &out) {
   out = json::object();
   auto &registry = InstrumentRegistry::instance();
   auto instruments = registry.list_instruments();
+  // RPC handler reutrn success even if the list is empty
   out["ok"] = true;
   out["instruments"] = instruments;
   return 0;
@@ -434,6 +440,16 @@ int handle_discover(const json &params, json &out) {
   }
 
   auto &plugin_registry = plugin::PluginRegistry::instance();
+  // Ensure built-in plugins are loaded and standard discovery is performed.
+  // Use call_once to avoid repeated loads across multiple handler calls.
+  static std::once_flag g_plugins_init_flag;
+  std::call_once(g_plugins_init_flag, [&]() {
+    plugin_registry.load_builtin_plugins();
+    plugin_registry.discover_plugins(search_paths);
+  });
+
+  // If we haven't discovered via call_once (e.g. because paths differ), still
+  // run discover for the requested paths (idempotent).
   plugin_registry.discover_plugins(search_paths);
 
   auto protocols = plugin_registry.list_protocols();
@@ -451,6 +467,11 @@ int handle_plugins(const json &params, json &out) {
   std::vector<std::string> plugin_paths = {"/usr/local/lib/instrument-plugins",
                                            "/usr/lib/instrument-plugins",
                                            "./plugins", "."};
+  // Ensure built-in plugins are present before listing; idempotent.
+  static std::once_flag g_plugins_init_flag2;
+  std::call_once(g_plugins_init_flag2,
+                 [&]() { plugin_registry.load_builtin_plugins(); });
+  // Also run discover for the current invocation in case tests override paths.
   plugin_registry.discover_plugins(plugin_paths);
 
   auto protocols = plugin_registry.list_protocols();

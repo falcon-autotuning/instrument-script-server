@@ -210,10 +210,12 @@ int main(int argc, char **argv) {
       auto arr = out["instruments"];
       if (arr.empty()) {
         std::cout << "No instruments running\n";
+        return 1;
       } else {
         std::cout << "Running instruments:\n";
         for (auto &name : arr)
           std::cout << "  " << name.get<std::string>() << "\n";
+        return 0;
       }
     }
     return rc;
