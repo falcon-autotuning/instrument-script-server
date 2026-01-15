@@ -57,9 +57,10 @@ bool read_n(int fd, char *buf, size_t n) {
 }
 
 // Read until "\r\n\r\n" or until limit. Returns true and fills out header
-// string.
-bool read_http_headers(int fd, std::string &out_headers) {
+// string. Also returns any extra bytes read after the headers in extra_data.
+bool read_http_headers(int fd, std::string &out_headers, std::string &extra_data) {
   out_headers.clear();
+  extra_data.clear();
   char buf[1024];
   size_t total = 0;
   while (total < MAX_HEADER_READ) {
@@ -68,7 +69,14 @@ bool read_http_headers(int fd, std::string &out_headers) {
       return false;
     out_headers.append(buf, buf + r);
     total += static_cast<size_t>(r);
-    if (out_headers.find("\r\n\r\n") != std::string::npos) {
+    auto pos = out_headers.find("\r\n\r\n");
+    if (pos != std::string::npos) {
+      // Found end of headers. Extract any extra data after headers.
+      size_t headers_end = pos + 4; // After "\r\n\r\n"
+      if (headers_end < out_headers.size()) {
+        extra_data = out_headers.substr(headers_end);
+        out_headers = out_headers.substr(0, headers_end);
+      }
       return true;
     }
   }
@@ -291,10 +299,14 @@ void HttpRpcServer::run_loop(uint16_t port) {
 
     // Handle client in a short-lived handler (single-threaded for simplicity)
     std::string headers;
-    if (!read_http_headers(client_socket, headers)) {
+    std::string extra_data;
+    if (!read_http_headers(client_socket, headers, extra_data)) {
+      LOG_WARN("RPC", "REQUEST", "Failed to read HTTP headers");
       close_socket(client_socket);
       continue;
     }
+
+    LOG_DEBUG("RPC", "REQUEST", "Received request headers");
 
     // Determine request line (first line)
     std::istringstream hs(headers);
@@ -309,14 +321,25 @@ void HttpRpcServer::run_loop(uint16_t port) {
       rl >> method >> path >> proto;
     }
 
+    LOG_DEBUG("RPC", "REQUEST", "Method: {}, Path: {}", method, path);
+
     int content_len = parse_content_length(headers);
 
     std::string body;
     if (content_len > 0) {
-      body.resize(static_cast<size_t>(content_len));
-      if (!read_n(client_socket, &body[0], static_cast<size_t>(content_len))) {
-        close_socket(client_socket);
-        continue;
+      // Start with any extra data read after headers
+      body = extra_data;
+      
+      // Read remaining body if needed
+      size_t remaining = static_cast<size_t>(content_len) - body.size();
+      if (remaining > 0) {
+        size_t old_size = body.size();
+        body.resize(static_cast<size_t>(content_len));
+        if (!read_n(client_socket, &body[old_size], remaining)) {
+          LOG_WARN("RPC", "REQUEST", "Failed to read request body");
+          close_socket(client_socket);
+          continue;
+        }
       }
     } else {
       body.clear();

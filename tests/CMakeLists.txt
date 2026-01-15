@@ -39,7 +39,8 @@ add_executable(
   integration/test_measurement_scripts.cpp
   integration/test_visa_large_data.cpp
   integration/test_rpc_server.cpp
-  integration/test_measure_command.cpp)
+  integration/test_measure_command.cpp
+  integration/test_http_rpc_basic.cpp)
 
 target_link_libraries(
   integration_tests PRIVATE instrument-server-core test-utils GTest::gtest
