@@ -190,7 +190,7 @@ sol::object RuntimeContext::call(const std::string &func_name,
     // record placeholder result index
     CallResult cr;
     cr.command_id = "";
-    cr.instrument_name = instrument_id;
+    cr.instrument_name = instrument_spec; // Preserve channel addressing like "MockInstrument1:1"
     cr.verb = verb;
     cr.params = params;
     cr.executed_at = std::chrono::steady_clock::now();
@@ -210,7 +210,7 @@ sol::object RuntimeContext::call(const std::string &func_name,
 
   CallResult cr;
   populate_callresult_from_response(cr, resp);
-  cr.instrument_name = instrument_id;
+  cr.instrument_name = instrument_spec; // Preserve channel addressing like "MockInstrument1:1"
   cr.verb = verb;
   cr.params = params;
   cr.executed_at = std::chrono::steady_clock::now();
@@ -331,7 +331,15 @@ void RuntimeContext::parallel(sol::function block) {
 
           CallResult cr;
           cr.command_id = "";
-          cr.instrument_name = cmd.instrument_name;
+          // Reconstruct display name with channel if present
+          std::string display_name = cmd.instrument_name;
+          auto channel_it = cmd.params.find("channel");
+          if (channel_it != cmd.params.end()) {
+            if (auto ch = std::get_if<int64_t>(&channel_it->second)) {
+              display_name += ":" + std::to_string(*ch);
+            }
+          }
+          cr.instrument_name = display_name;
           cr.verb = cmd.verb;
           cr.params = cmd.params;
           cr.executed_at = std::chrono::steady_clock::now();
