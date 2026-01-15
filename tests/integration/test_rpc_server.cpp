@@ -15,6 +15,7 @@ using socklen_t = int;
 #endif
 
 #include <chrono>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <sstream>
@@ -125,54 +126,22 @@ static bool send_http_post(const std::string &host, int port,
 class RpcServerTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    // Try to find external instrument-server binary (preferred) via env var
-    // or common local build locations. If not present, skip these tests.
-    auto find_server_binary = []() -> std::string {
-      const char *env = std::getenv("INSTRUMENT_SERVER_BIN");
-      if (env && env[0])
-        return std::string(env);
-
-      std::vector<std::string> candidates = {
-          "./instrument-server",
-          "./build/instrument-server",
-          "./build/src/instrument-server",
-          "./build/src/server/instrument-server",
-          "/usr/local/bin/instrument-server",
-          "/usr/bin/instrument-server"};
-      for (const auto &p : candidates) {
-        if (std::filesystem::exists(p) && std::filesystem::is_regular_file(p))
-          return p;
-      }
-      return {};
-    };
-
-    server_bin_ = find_server_binary();
-    if (server_bin_.empty()) {
-      // No external binary found; skip RPC integration tests to avoid hangs.
-      GTEST_SKIP() << "instrument-server binary not found; set "
-                      "INSTRUMENT_SERVER_BIN to run RPC integration tests";
-      return;
-    }
-
     // RPC address tests expect loopback:8555 by default (keeps test stable).
     rpc_host_ = "127.0.0.1";
     rpc_port_ = 8555;
 
-    // If a daemon is already running, do not start a new one. Just poll the RPC
-    // endpoint until it's responsive. Otherwise start the daemon via CLI.
-    started_daemon_ = false;
-
-    if (instserver::ServerDaemon::is_already_running()) {
-      // Another instance is running already; assume it's the server we should
-      // use.
-      started_daemon_ = false;
-    } else {
-      // Start external daemon via CLI. We don't strictly require success here;
-      // we'll poll the RPC endpoint for readiness.
-      std::string cmd = server_bin_ + " daemon start";
-      int rc = std::system(cmd.c_str());
-      (void)rc; // ignore immediate return code; server may have printed failure
+    // Start daemon directly in-process instead of via CLI
+    auto &daemon = instserver::ServerDaemon::instance();
+    if (!daemon.is_running()) {
+      daemon.set_rpc_port(rpc_port_);
+      if (!daemon.start()) {
+        GTEST_SKIP() << "Failed to start daemon";
+        return;
+      }
       started_daemon_ = true;
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    } else {
+      started_daemon_ = false;
     }
 
     // Poll the RPC /rpc endpoint until we receive a parseable JSON response
@@ -208,26 +177,23 @@ protected:
       // If we started the daemon but the RPC endpoint didn't come up, try to
       // stop the daemon we started to avoid leaving processes running.
       if (started_daemon_) {
-        std::string stop_cmd = server_bin_ + " daemon stop";
-        std::system(stop_cmd.c_str());
+        daemon.stop();
       }
       FAIL()
           << "RPC server not responding on " << rpc_host_ << ":" << rpc_port_
           << " after " << timeout_ms
-          << "ms. Ensure instrument-server daemon "
-             "can start and listen on that port, or set INSTRUMENT_SERVER_BIN.";
+          << "ms. Ensure RPC server can start and listen on that port.";
     }
   }
 
   void TearDown() override {
     // If we started the daemon ourselves, stop it now.
-    if (!server_bin_.empty() && started_daemon_) {
-      std::string stop_cmd = server_bin_ + " daemon stop";
-      std::system(stop_cmd.c_str());
+    if (started_daemon_) {
+      auto &daemon = instserver::ServerDaemon::instance();
+      daemon.stop();
     }
   }
 
-  std::string server_bin_;
   std::string rpc_host_;
   int rpc_port_{0};
   bool started_daemon_{false};

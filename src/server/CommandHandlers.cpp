@@ -26,6 +26,7 @@ int handle_daemon(const json &params, json &out) {
   out = json::object();
   std::string action = params.value("action", "");
   std::string log_level = params.value("log_level", "info");
+  bool block = params.value("block", true); // block by default for CLI usage
 
   auto &daemon = ServerDaemon::instance();
 
@@ -34,6 +35,19 @@ int handle_daemon(const json &params, json &out) {
     InstrumentLogger::instance().init("instrument_server.log",
                                       spdlog::level::from_str(log_level));
 
+    // Check for RPC port configuration from environment variable
+    const char *rpc_port_env = std::getenv("INSTRUMENT_SERVER_RPC_PORT");
+    if (rpc_port_env && rpc_port_env[0]) {
+      try {
+        int port = std::stoi(rpc_port_env);
+        if (port > 0 && port <= 65535) {
+          daemon.set_rpc_port(static_cast<uint16_t>(port));
+        }
+      } catch (...) {
+        // Invalid port number, ignore
+      }
+    }
+
     if (!daemon.start()) {
       out["ok"] = false;
       out["error"] = "Failed to start daemon";
@@ -41,6 +55,15 @@ int handle_daemon(const json &params, json &out) {
     }
     out["ok"] = true;
     out["pid"] = ServerDaemon::get_daemon_pid();
+    
+    // Block and wait for daemon to stop (keeps process alive)
+    // This is necessary for CLI usage to keep the daemon process running
+    if (block) {
+      while (daemon.is_running()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
+    }
+    
     return 0;
   } else if (action == "stop") {
     if (!ServerDaemon::is_already_running()) {
