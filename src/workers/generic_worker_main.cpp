@@ -84,7 +84,7 @@ static CommandResponse from_plugin_response(const PluginResponse &presp) {
   if (presp.has_large_data) {
     resp.buffer_id = presp.data_buffer_id;
     resp.element_count = presp.data_element_count;
-    
+
     // Convert data type enum to string
     switch (presp.data_type) {
     case 0:
@@ -255,8 +255,24 @@ private:
               cmd.verb, cmd.sync_token.value_or(0));
 
     PluginResponse plugin_resp = {};
-    int32_t exec_result =
-        plugin_.execute_command(to_plugin_command(cmd), plugin_resp);
+    int32_t exec_result = 0;
+
+    if (cmd.verb == "__BARRIER_NOP__") {
+      // Synthetic no-op barrier command used to include unused workers in a
+      // sync barrier. Do not call plugin; return success immediately.
+      plugin_resp.success = true;
+      std::strncpy(plugin_resp.command_id, cmd.id.c_str(),
+                   PLUGIN_MAX_STRING_LEN - 1);
+      std::strncpy(plugin_resp.instrument_name, cmd.instrument_name.c_str(),
+                   PLUGIN_MAX_STRING_LEN - 1);
+      // Optionally set text_response
+      std::strncpy(plugin_resp.text_response, "BARRIER_NOP",
+                   PLUGIN_MAX_PAYLOAD - 1);
+    } else {
+      // Normal plugin execution
+      exec_result =
+          plugin_.execute_command(to_plugin_command(cmd), plugin_resp);
+    }
 
     LOG_DEBUG(instrument_name_, cmd.id,
               "Command executed:  result={} success={}", exec_result,
@@ -266,9 +282,18 @@ private:
 
     if (cmd.sync_token) {
       send_sync_ack(msg, *cmd.sync_token);
-      waiting_sync_token_ = cmd.sync_token;
-      LOG_DEBUG(instrument_name_, cmd.id,
-                "Now waiting for SYNC_CONTINUE token={}", *waiting_sync_token_);
+      // Only block the worker after the final command for this token
+      // (is_sync_barrier).
+      if (cmd.is_sync_barrier) {
+        waiting_sync_token_ = cmd.sync_token;
+        LOG_DEBUG(instrument_name_, cmd.id,
+                  "Now waiting for SYNC_CONTINUE token={}",
+                  *waiting_sync_token_);
+      } else {
+        LOG_DEBUG(instrument_name_, cmd.id,
+                  "Received sync command (token={}), not final; continuing",
+                  *cmd.sync_token);
+      }
     }
   }
 

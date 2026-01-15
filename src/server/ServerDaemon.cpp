@@ -1,5 +1,7 @@
 #include "instrument-server/server/ServerDaemon.hpp"
 #include "instrument-server/Logger.hpp"
+#include "instrument-server/server/HttpRpcServer.hpp"
+
 #include <filesystem>
 #include <fstream>
 #include <signal.h>
@@ -142,6 +144,19 @@ void ServerDaemon::remove_pid_file() {
   }
 }
 
+bool ServerDaemon::is_running() const { return running_.load(); }
+
+void ServerDaemon::daemon_loop() {
+  LOG_INFO("DAEMON", "LOOP", "Daemon loop started");
+
+  while (running_.load()) {
+    // Heartbeat - keep process alive
+    // In future, this could handle IPC commands from clients
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+
+  LOG_INFO("DAEMON", "LOOP", "Daemon loop exited");
+}
 bool ServerDaemon::start() {
   std::lock_guard<std::mutex> lock(mutex_);
 
@@ -169,6 +184,38 @@ bool ServerDaemon::start() {
   registry_ = &InstrumentRegistry::instance();
   sync_coordinator_ = new SyncCoordinator();
 
+  // If an RPC port is configured, start RPC server and wait briefly for it to
+  // bind.
+  if (rpc_port_ > 0) {
+    rpc_server_ = new server::HttpRpcServer();
+    if (!rpc_server_->start(rpc_port_)) {
+      LOG_ERROR("DAEMON", "RPC", "Failed to start RPC server on port {}",
+                rpc_port_);
+      delete rpc_server_;
+      rpc_server_ = nullptr;
+      // continue without rpc or fail - choose to fail here so tests relying on
+      // RPC get predictable behavior
+      remove_pid_file();
+      delete sync_coordinator_;
+      sync_coordinator_ = nullptr;
+      registry_ = nullptr;
+      return false;
+    }
+
+    // Wait until rpc_server_->port() reports a non-zero bound port or timeout
+    auto start_ts = std::chrono::steady_clock::now();
+    while (rpc_server_ && rpc_server_->port() == 0) {
+      if (std::chrono::steady_clock::now() - start_ts >
+          std::chrono::milliseconds(500)) {
+        LOG_WARN("DAEMON", "RPC", "RPC server did not bind within timeout");
+        break;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    LOG_INFO("DAEMON", "RPC", "RPC server listening on port {}",
+             rpc_server_ ? rpc_server_->port() : 0);
+  }
+
   // Mark running and start daemon thread
   running_.store(true);
   daemon_thread_ = std::thread([this]() { daemon_loop(); });
@@ -194,6 +241,13 @@ void ServerDaemon::stop() {
     registry_->stop_all();
   }
 
+  // Stop RPC server if running
+  if (rpc_server_) {
+    rpc_server_->stop();
+    delete rpc_server_;
+    rpc_server_ = nullptr;
+  }
+
   // Join the daemon thread outside the mutex to avoid blocking other callers.
   if (daemon_thread_.joinable()) {
     daemon_thread_.join();
@@ -211,19 +265,4 @@ void ServerDaemon::stop() {
 
   LOG_INFO("DAEMON", "STOP", "Server daemon stopped");
 }
-
-bool ServerDaemon::is_running() const { return running_.load(); }
-
-void ServerDaemon::daemon_loop() {
-  LOG_INFO("DAEMON", "LOOP", "Daemon loop started");
-
-  while (running_.load()) {
-    // Heartbeat - keep process alive
-    // In future, this could handle IPC commands from clients
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
-
-  LOG_INFO("DAEMON", "LOOP", "Daemon loop exited");
-}
-
 } // namespace instserver

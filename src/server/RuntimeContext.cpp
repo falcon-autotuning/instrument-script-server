@@ -1,12 +1,43 @@
 #include "instrument-server/server/RuntimeContext.hpp"
 #include "instrument-server/Logger.hpp"
-#include <future>
+#include <fmt/format.h>
+#include <set>
+
+using namespace instserver;
 
 namespace instserver {
 
 RuntimeContext::RuntimeContext(InstrumentRegistry &registry,
-                               SyncCoordinator &sync_coordinator)
-    : registry_(registry), sync_coordinator_(sync_coordinator) {}
+                               SyncCoordinator &sync_coordinator,
+                               bool enqueue_mode)
+    : registry_(registry), sync_coordinator_(sync_coordinator),
+      enqueue_mode_(enqueue_mode) {}
+
+static void populate_callresult_from_response(CallResult &cr,
+                                              const CommandResponse &resp) {
+  cr.command_id = resp.command_id;
+  cr.success = resp.success;
+  cr.error_message = resp.error_message;
+  if (resp.has_large_data) {
+    cr.has_large_data = true;
+    cr.buffer_id = resp.buffer_id;
+    cr.element_count = resp.element_count;
+    cr.data_type = resp.data_type;
+    cr.return_type = "buffer";
+  } else if (resp.return_value) {
+    cr.return_value = resp.return_value;
+    if (std::get_if<double>(&*resp.return_value))
+      cr.return_type = "double";
+    else if (std::get_if<int64_t>(&*resp.return_value))
+      cr.return_type = "int64";
+    else if (std::get_if<std::string>(&*resp.return_value))
+      cr.return_type = "string";
+    else if (std::get_if<bool>(&*resp.return_value))
+      cr.return_type = "bool";
+  } else {
+    // No return value; keep return_type possibly as set earlier
+  }
+}
 
 sol::object RuntimeContext::call(const std::string &func_name,
                                  sol::variadic_args args, sol::this_state s) {
@@ -14,8 +45,6 @@ sol::object RuntimeContext::call(const std::string &func_name,
 
   LOG_DEBUG("LUA_CONTEXT", "CALL", "Calling function: {}", func_name);
 
-  // Parse func_name:  format is "InstrumentID.CommandVerb" or
-  // "InstrumentID:Channel.CommandVerb"
   size_t dot_pos = func_name.find('.');
   if (dot_pos == std::string::npos) {
     LOG_ERROR("LUA_CONTEXT", "CALL", "Invalid function name format: {}",
@@ -26,7 +55,6 @@ sol::object RuntimeContext::call(const std::string &func_name,
   std::string instrument_spec = func_name.substr(0, dot_pos);
   std::string verb = func_name.substr(dot_pos + 1);
 
-  // Parse instrument ID and optional channel
   std::string instrument_id = instrument_spec;
   std::optional<int> channel;
   size_t colon_pos = instrument_spec.find(':');
@@ -41,12 +69,9 @@ sol::object RuntimeContext::call(const std::string &func_name,
     }
   }
 
-  // Build params from variadic args
   std::unordered_map<std::string, ParamValue> params;
 
-  // Handle both positional args and named parameter table
   if (args.size() == 1 && args[0].is<sol::table>()) {
-    // Named parameters as table
     sol::table tbl = args[0].as<sol::table>();
     for (auto &[k, v] : tbl) {
       std::string param_name = k.as<std::string>();
@@ -61,7 +86,6 @@ sol::object RuntimeContext::call(const std::string &func_name,
       }
     }
   } else {
-    // Positional arguments
     for (size_t i = 0; i < args.size(); ++i) {
       auto arg = args[i];
       std::string key = "arg" + std::to_string(i);
@@ -82,114 +106,122 @@ sol::object RuntimeContext::call(const std::string &func_name,
     params["channel"] = static_cast<int64_t>(*channel);
   }
 
-  // Check if command expects response using API definition
   bool expects_response =
       registry_.command_expects_response(instrument_id, verb);
 
-  // If in parallel block, buffer the command instead of executing
+  // Buffer when inside parallel block
   if (in_parallel_block_) {
     SerializedCommand cmd;
-    cmd.id =
-        fmt::format("{}-buffered-{}", instrument_id, parallel_buffer_.size());
     cmd.instrument_name = instrument_id;
     cmd.verb = verb;
     cmd.params = params;
-    cmd.created_at = std::chrono::steady_clock::now();
     cmd.expects_response = expects_response;
+    cmd.created_at = std::chrono::steady_clock::now();
 
     parallel_buffer_.push_back(std::move(cmd));
-    LOG_DEBUG("LUA_CONTEXT", "CALL",
-              "Buffered parallel command: {}. {} (expects_response={})",
-              instrument_id, verb, expects_response);
-    return sol::nil; // Don't execute yet
+    LOG_DEBUG("LUA_CONTEXT", "PARALLEL", "Buffered parallel command: {}.{}",
+              instrument_id, verb);
+    return sol::nil;
   }
 
-  // Execute immediately for non-parallel calls
+  // Enqueue-mode per-call behavior (single-call tokens)
+  if (enqueue_mode_ && !in_parallel_block_) {
+    auto worker = registry_.get_instrument(instrument_id);
+    if (!worker) {
+      LOG_ERROR("LUA_CONTEXT", "CALL", "Instrument not found: {}",
+                instrument_id);
+      return sol::nil;
+    }
+
+    SerializedCommand cmd;
+    cmd.instrument_name = instrument_id;
+    cmd.verb = verb;
+    cmd.params = params;
+    cmd.expects_response = expects_response;
+    cmd.created_at = std::chrono::steady_clock::now();
+
+    // Single-call token
+    uint64_t token = next_sync_token_.fetch_add(1);
+
+    // Register barrier across all instruments (global participation)
+    auto all_instruments = registry_.list_instruments();
+    sync_coordinator_.register_barrier(token, all_instruments);
+
+    token_order_.push_back(token);
+    for (auto &inst : all_instruments)
+      token_instruments_[token].insert(inst);
+
+    // tag command with sync token and mark as sync barrier for this instrument
+    cmd.sync_token = token;
+    cmd.is_sync_barrier = true; // single call -> barrier on this cmd
+
+    // record placeholder result index
+    CallResult cr;
+    cr.command_id = "";
+    cr.instrument_name = instrument_id;
+    cr.verb = verb;
+    cr.params = params;
+    cr.executed_at = std::chrono::steady_clock::now();
+    size_t result_index = collected_results_.size();
+    collected_results_.push_back(cr);
+    token_result_indices_[token].push_back(result_index);
+
+    auto fut = worker->execute(std::move(cmd));
+    token_futures_[token].push_back(std::move(fut));
+
+    return sol::nil;
+  }
+
+  // Synchronous path
   CommandResponse resp =
       send_command(instrument_id, verb, params, expects_response);
+
+  CallResult cr;
+  populate_callresult_from_response(cr, resp);
+  cr.instrument_name = instrument_id;
+  cr.verb = verb;
+  cr.params = params;
+  cr.executed_at = std::chrono::steady_clock::now();
+
+  collected_results_.push_back(cr);
 
   if (!resp.success) {
     LOG_ERROR("LUA_CONTEXT", "CALL", "Command failed: {}", resp.error_message);
     return sol::nil;
   }
 
-  // Collect the result
-  CallResult result;
-  result.command_id = resp.command_id;
-  result.instrument_name = instrument_spec; // Use full spec with channel if present
-  result.verb = verb;
-  result.params = params;
-  result.executed_at = std::chrono::steady_clock::now();
-  
-  // Handle large data buffer
+  if (!resp.return_value && !resp.has_large_data)
+    return sol::nil;
+
   if (resp.has_large_data) {
-    result.has_large_data = true;
-    result.buffer_id = resp.buffer_id;
-    result.element_count = resp.element_count;
-    result.data_type = resp.data_type;
-    result.return_type = "buffer";
-  } else if (resp.return_value) {
-    // Handle direct return value
-    result.return_value = resp.return_value;
-    
-    // Determine type string
-    if (std::holds_alternative<double>(*resp.return_value)) {
-      result.return_type = "double";
-    } else if (std::holds_alternative<int64_t>(*resp.return_value)) {
-      result.return_type = "int64";
-    } else if (std::holds_alternative<std::string>(*resp.return_value)) {
-      result.return_type = "string";
-    } else if (std::holds_alternative<bool>(*resp.return_value)) {
-      result.return_type = "bool";
-    } else if (std::holds_alternative<std::vector<double>>(*resp.return_value)) {
-      result.return_type = "array";
-    }
-  } else if (expects_response) {
-    // Command expected response but didn't return a value - indicates success
-    result.return_value = true;
-    result.return_type = "bool";
-  } else {
-    // Command doesn't expect response - mark as void
-    result.return_type = "void";
-  }
-  
-  collected_results_.push_back(std::move(result));
-
-  // Return result
-  if (resp.return_value) {
-    if (auto d = std::get_if<double>(&*resp.return_value)) {
-      return sol::make_object(lua, *d);
-    } else if (auto i = std::get_if<int64_t>(&*resp.return_value)) {
-      return sol::make_object(lua, *i);
-    } else if (auto s = std::get_if<std::string>(&*resp.return_value)) {
-      return sol::make_object(lua, *s);
-    } else if (auto b = std::get_if<bool>(&*resp.return_value)) {
-      return sol::make_object(lua, *b);
-    } else if (auto arr =
-                   std::get_if<std::vector<double>>(&*resp.return_value)) {
-      sol::table lua_arr = lua.create_table();
-      for (size_t i = 0; i < arr->size(); ++i) {
-        lua_arr[i + 1] = (*arr)[i];
-      }
-      return lua_arr;
-    }
+    // No direct Lua return for large buffers
+    return sol::nil;
   }
 
-  // If expects response but no return value, return success indicator
-  if (expects_response) {
-    return sol::make_object(lua, true);
+  // Map return types into Lua
+  if (auto d = std::get_if<double>(&*resp.return_value)) {
+    return sol::make_object(lua, *d);
+  } else if (auto i = std::get_if<int64_t>(&*resp.return_value)) {
+    return sol::make_object(lua, *i);
+  } else if (auto s = std::get_if<std::string>(&*resp.return_value)) {
+    return sol::make_object(lua, *s);
+  } else if (auto b = std::get_if<bool>(&*resp.return_value)) {
+    return sol::make_object(lua, *b);
   }
 
-  return sol::nil; // Commands that don't expect response return nil
+  return sol::nil;
 }
 
 void RuntimeContext::parallel(sol::function block) {
-  LOG_DEBUG("LUA_CONTEXT", "PARALLEL", "Starting parallel block");
+  if (in_parallel_block_) {
+    LOG_ERROR("LUA_CONTEXT", "PARALLEL",
+              "Nested parallel blocks are not supported");
+    return;
+  }
 
   in_parallel_block_ = true;
   parallel_buffer_.clear();
 
-  // Execute the Lua block, which will buffer commands via call()
   try {
     block();
   } catch (const std::exception &e) {
@@ -202,13 +234,93 @@ void RuntimeContext::parallel(sol::function block) {
 
   in_parallel_block_ = false;
 
-  LOG_INFO("LUA_CONTEXT", "PARALLEL", "Executing {} buffered commands",
-           parallel_buffer_.size());
+  if (parallel_buffer_.empty()) {
+    LOG_INFO("LUA_CONTEXT", "PARALLEL", "Executing 0 buffered commands");
+    return;
+  }
 
-  // Execute all buffered commands with synchronization
+  if (enqueue_mode_) {
+    // Create token
+    uint64_t token = next_sync_token_.fetch_add(1);
+
+    // Determine instruments participating in this token:
+    // - include all registered instruments (global participation)
+    auto all_instruments = registry_.list_instruments();
+    sync_coordinator_.register_barrier(token, all_instruments);
+    token_order_.push_back(token);
+    for (auto &inst : all_instruments)
+      token_instruments_[token].insert(inst);
+
+    // Group buffered commands by instrument
+    std::unordered_map<std::string, std::vector<SerializedCommand>> per_inst;
+    for (auto &cmd : parallel_buffer_) {
+      per_inst[cmd.instrument_name].push_back(cmd);
+    }
+
+    // For each registered instrument:
+    for (const auto &inst : all_instruments) {
+      auto it = per_inst.find(inst);
+      if (it == per_inst.end()) {
+        // No real command for this instrument -> send NOP barrier command
+        SerializedCommand nop;
+        nop.instrument_name = inst;
+        nop.verb = "__BARRIER_NOP__";
+        nop.params = {};
+        nop.expects_response = true;
+        nop.created_at = std::chrono::steady_clock::now();
+        nop.sync_token = token;
+        nop.is_sync_barrier = true;
+
+        // placeholder result
+        CallResult cr;
+        cr.command_id = "";
+        cr.instrument_name = inst;
+        cr.verb = nop.verb;
+        cr.executed_at = std::chrono::steady_clock::now();
+        size_t result_index = collected_results_.size();
+        collected_results_.push_back(cr);
+        token_result_indices_[token].push_back(result_index);
+
+        auto worker = registry_.get_instrument(inst);
+        if (worker) {
+          token_futures_[token].push_back(worker->execute(std::move(nop)));
+        }
+      } else {
+        // Send each command for this instrument in order; mark last as barrier
+        auto &vec = it->second;
+        for (size_t i = 0; i < vec.size(); ++i) {
+          SerializedCommand cmd = vec[i];
+          cmd.sync_token = token;
+          if (i + 1 == vec.size()) {
+            cmd.is_sync_barrier = true;
+          } else {
+            cmd.is_sync_barrier = false;
+          }
+
+          CallResult cr;
+          cr.command_id = "";
+          cr.instrument_name = cmd.instrument_name;
+          cr.verb = cmd.verb;
+          cr.params = cmd.params;
+          cr.executed_at = std::chrono::steady_clock::now();
+          size_t result_index = collected_results_.size();
+          collected_results_.push_back(cr);
+          token_result_indices_[token].push_back(result_index);
+
+          auto worker = registry_.get_instrument(cmd.instrument_name);
+          if (worker) {
+            token_futures_[token].push_back(worker->execute(std::move(cmd)));
+          }
+        }
+      }
+    }
+
+    // Done dispatching token commands across all instruments
+    return;
+  }
+
+  // Non-enqueue fallback: execute & wait
   execute_parallel_buffer();
-
-  parallel_buffer_.clear();
 }
 
 void RuntimeContext::execute_parallel_buffer() {
@@ -216,10 +328,8 @@ void RuntimeContext::execute_parallel_buffer() {
     return;
   }
 
-  // Assign sync token to all commands
   uint64_t sync_token = next_sync_token_++;
 
-  // Collect unique instruments
   std::vector<std::string> instruments;
   std::set<std::string> unique_instruments;
   for (const auto &cmd : parallel_buffer_) {
@@ -228,10 +338,8 @@ void RuntimeContext::execute_parallel_buffer() {
     }
   }
 
-  // Register barrier with sync coordinator
   sync_coordinator_.register_barrier(sync_token, instruments);
 
-  // Tag all commands with sync token and dispatch
   std::vector<std::future<CommandResponse>> futures;
   for (auto &cmd : parallel_buffer_) {
     cmd.sync_token = sync_token;
@@ -255,13 +363,17 @@ void RuntimeContext::execute_parallel_buffer() {
     futures.push_back(worker->execute(std::move(cmd)));
   }
 
-  // Wait for all commands to complete
   LOG_DEBUG("LUA_CONTEXT", "PARALLEL", "Waiting for {} futures",
             futures.size());
 
-  for (auto &future : futures) {
+  // Wait for futures first, populate results
+  for (size_t i = 0; i < futures.size(); ++i) {
     try {
-      auto resp = future.get();
+      auto resp = futures[i].get();
+      CallResult cr;
+      populate_callresult_from_response(cr, resp);
+      cr.executed_at = std::chrono::steady_clock::now();
+      collected_results_.push_back(cr);
       if (!resp.success) {
         LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Parallel command failed: {}",
                   resp.error_message);
@@ -271,7 +383,7 @@ void RuntimeContext::execute_parallel_buffer() {
     }
   }
 
-  // No need to query SyncCoordinator again
+  // After responses are in, send SYNC_CONTINUE to all instruments
   for (const auto &inst_name : instruments) {
     auto worker = registry_.get_instrument(inst_name);
     if (worker) {
@@ -281,7 +393,6 @@ void RuntimeContext::execute_parallel_buffer() {
     }
   }
 
-  // Now clear the barrier
   sync_coordinator_.clear_barrier(sync_token);
 
   LOG_INFO("LUA_CONTEXT", "PARALLEL", "Parallel block complete (token={})",
@@ -321,17 +432,110 @@ CommandResponse RuntimeContext::send_command(
   return worker->execute_sync(std::move(cmd), std::chrono::milliseconds(5000));
 }
 
-void bind_runtime_context(sol::state &lua, InstrumentRegistry &registry,
-                          SyncCoordinator &sync_coordinator) {
-  // Register methods but prevent Lua from constructing directly
+void RuntimeContext::process_tokens_and_wait() {
+  for (auto token : token_order_) {
+    auto it_futs = token_futures_.find(token);
+    auto it_inds = token_result_indices_.find(token);
+
+    if (it_futs != token_futures_.end()) {
+      auto &futs = it_futs->second;
+      for (size_t i = 0; i < futs.size(); ++i) {
+        try {
+          auto resp = futs[i].get();
+          size_t result_index = 0;
+          if (it_inds != token_result_indices_.end() &&
+              i < it_inds->second.size()) {
+            result_index = it_inds->second[i];
+          } else {
+            result_index = collected_results_.size();
+            collected_results_.push_back(CallResult());
+          }
+
+          auto &cr = collected_results_[result_index];
+          populate_callresult_from_response(cr, resp);
+          cr.executed_at = std::chrono::steady_clock::now();
+        } catch (const std::exception &e) {
+          LOG_ERROR("LUA_CONTEXT", "TOKEN",
+                    "Exception waiting future for token {}: {}", token,
+                    e.what());
+        }
+      }
+    }
+
+    // Now send SYNC_CONTINUE to all instruments in the token
+    auto it_inst = token_instruments_.find(token);
+    if (it_inst != token_instruments_.end()) {
+      for (const auto &inst : it_inst->second) {
+        auto worker = registry_.get_instrument(inst);
+        if (worker) {
+          worker->send_sync_continue(token);
+          LOG_DEBUG("LUA_CONTEXT", "TOKEN",
+                    "Sent SYNC_CONTINUE for token {} to {}", token, inst);
+        }
+      }
+    }
+
+    try {
+      sync_coordinator_.clear_barrier(token);
+    } catch (...) {
+      LOG_WARN("LUA_CONTEXT", "TOKEN",
+               "Exception clearing barrier for token {}", token);
+    }
+  }
+
+  token_order_.clear();
+  token_instruments_.clear();
+  token_futures_.clear();
+  token_result_indices_.clear();
+}
+
+nlohmann::json RuntimeContext::collect_results_json() const {
+  nlohmann::json out = nlohmann::json::array();
+  for (const auto &cr : collected_results_) {
+    nlohmann::json j;
+    j["command_id"] = cr.command_id;
+    j["instrument"] = cr.instrument_name;
+    j["verb"] = cr.verb;
+    j["executed_at_ms"] = std::chrono::duration_cast<std::chrono::milliseconds>(
+                              cr.executed_at.time_since_epoch())
+                              .count();
+    if (cr.has_large_data) {
+      j["return"] = {{"type", "buffer"},
+                     {"buffer_id", cr.buffer_id},
+                     {"element_count", cr.element_count},
+                     {"data_type", cr.data_type}};
+    } else if (cr.return_value) {
+      if (auto d = std::get_if<double>(&*cr.return_value)) {
+        j["return"] = {{"type", "double"}, {"value", *d}};
+      } else if (auto i = std::get_if<int64_t>(&*cr.return_value)) {
+        j["return"] = {{"type", "int64"}, {"value", *i}};
+      } else if (auto s = std::get_if<std::string>(&*cr.return_value)) {
+        j["return"] = {{"type", "string"}, {"value", *s}};
+      } else if (auto b = std::get_if<bool>(&*cr.return_value)) {
+        j["return"] = {{"type", "bool"}, {"value", *b}};
+      }
+    } else {
+      j["return"] = {{"type", "void"}};
+    }
+    if (!cr.success) {
+      j["error"] = cr.error_message;
+    }
+    out.push_back(j);
+  }
+  return out;
+}
+
+std::shared_ptr<RuntimeContext>
+bind_runtime_context(sol::state &lua, InstrumentRegistry &registry,
+                     SyncCoordinator &sync_coordinator, bool enqueue_mode) {
   lua.new_usertype<RuntimeContext>(
       "RuntimeContext", sol::no_constructor, "call", &RuntimeContext::call,
       "parallel", &RuntimeContext::parallel, "log", &RuntimeContext::log);
 
-  // Create and inject a ready-to-use context object into Lua as `context`
-  // so scripts can do context:call(...) and context:log(...)
-  auto ctx = std::make_shared<RuntimeContext>(registry, sync_coordinator);
+  auto ctx = std::make_shared<RuntimeContext>(registry, sync_coordinator,
+                                              enqueue_mode);
   lua["context"] = ctx;
+  return ctx;
 }
 
 } // namespace instserver

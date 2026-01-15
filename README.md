@@ -10,6 +10,7 @@ A modular, process-isolated system for controlling scientific instruments for la
 - **Automatic Result Collection**: All command return values are automatically captured with full traceability
 - **Synchronization**:  Parallel execution with precise timing coordination across instruments
 - **Cross-Platform**: Works on Linux and Windows
+- **HTTP/JSON RPC (optional)**: A lightweight HTTP/JSON RPC interface exposed by the server daemon
 
 ## Performance
 

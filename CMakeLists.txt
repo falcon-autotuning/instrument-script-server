@@ -87,6 +87,9 @@ add_library(
   src/server/SyncCoordinator.cpp
   src/server/ApiRefResolver.cpp
   src/server/ServerDaemon.cpp
+  src/server/HttpRpcServer.cpp
+  src/server/CommandHandlers.cpp
+  src/server/JobManager.cpp
   ${CMAKE_BINARY_DIR}/embedded_schemas.cpp)
 
 set_target_properties(instrument-server-core

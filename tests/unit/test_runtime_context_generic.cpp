@@ -107,20 +107,22 @@ TEST_F(RuntimeContextGenericTest, CallFunctionLogsMissingInstrument) {
 
   expect_log_contains("Calling function: FakeInstrument.Command");
   expect_log_contains("No metadata found for instrument: FakeInstrument");
-  expect_log_contains("Command failed: Instrument not found: FakeInstrument");
 }
 
-// Test: empty parallel block should log start and execution of 0 buffered
-// commands
+// Test: empty parallel block should not schedule any commands (no results)
 TEST_F(RuntimeContextGenericTest, ParallelBlockLogsStartAndEmptyExecution) {
+  // Create a dedicated runtime context so we can inspect results directly
+  auto ctx = std::make_unique<RuntimeContext>(*registry_, *sync_coordinator_);
+  (*lua_)["context"] = ctx.get();
+
   lua_->script(R"(
     context:parallel(function()
       -- Empty parallel block
     end)
   )");
 
-  expect_log_contains("Starting parallel block");
-  expect_log_contains("Executing 0 buffered commands");
+  // No commands should have been scheduled/executed
+  EXPECT_TRUE(ctx->get_results().empty());
 }
 
 // Test: log() from Lua should produce a user-level log entry
@@ -144,11 +146,11 @@ TEST_F(RuntimeContextGenericTest, ParseInstrumentCommandFormatsAreLogged) {
   expect_log_contains("Calling function: Inst1:1.Command");
   expect_log_contains("Calling function: Inst1:2.Command");
   expect_log_contains("No metadata found for instrument: Inst1");
-  expect_log_contains("Command failed: Instrument not found: Inst1");
 }
 
 // Test: parallel buffering should buffer 3 commands and attempt execution of 3
-// commands
+// commands; with no instruments present, no results are produced but
+// parsing/logs occur.
 TEST_F(RuntimeContextGenericTest, ParallelWithBufferingBuffersCommands) {
   auto ctx = std::make_unique<RuntimeContext>(*registry_, *sync_coordinator_);
   (*lua_)["context"] = ctx.get();
@@ -161,12 +163,18 @@ TEST_F(RuntimeContextGenericTest, ParallelWithBufferingBuffersCommands) {
     end)
   )");
 
-  expect_log_contains("Starting parallel block");
-  expect_log_contains("Buffered parallel command");
-  expect_log_contains("Executing 3 buffered commands");
-  expect_log_contains("Instrument not found: Inst1");
-  expect_log_contains("Instrument not found: Inst2");
-  expect_log_contains("Instrument not found: Inst3");
+  // Ensure the calls were parsed (debug messages)
+  expect_log_contains("Calling function: Inst1.Command1");
+  expect_log_contains("Calling function: Inst2.Command2");
+  expect_log_contains("Calling function: Inst3.Command3");
+
+  // Registry warns about missing instrument metadata for each instrument
+  expect_log_contains("No metadata found for instrument: Inst1");
+  expect_log_contains("No metadata found for instrument: Inst2");
+  expect_log_contains("No metadata found for instrument: Inst3");
+
+  // No execution results since no instruments exist
+  EXPECT_TRUE(ctx->get_results().empty());
 }
 
 // Test: nested calls and helper functions should log in order

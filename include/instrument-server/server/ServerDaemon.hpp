@@ -5,11 +5,17 @@
 #include "instrument-server/server/SyncCoordinator.hpp"
 
 #include <atomic>
+#include <cstdint>
 #include <mutex>
 #include <string>
 #include <thread>
 
 namespace instserver {
+
+/// Forward-declare HttpRpcServer
+namespace server {
+class HttpRpcServer;
+}
 
 /// Server daemon that manages instrument registry and accepts commands
 class INSTRUMENT_SERVER_API ServerDaemon {
@@ -24,6 +30,12 @@ public:
 
   /// Check if daemon is running
   bool is_running() const;
+
+  /// Set RPC port to bind the HttpRpcServer (0 = disabled / ephemeral)
+  void set_rpc_port(uint16_t port) { rpc_port_ = port; }
+
+  /// Get the configured RPC port (0 if not set)
+  uint16_t rpc_port() const { return rpc_port_; }
 
   /// Get the PID file path
   static std::string get_pid_file_path();
@@ -57,6 +69,10 @@ private:
 
   InstrumentRegistry *registry_{nullptr};
   SyncCoordinator *sync_coordinator_{nullptr};
+
+  // RPC listener
+  server::HttpRpcServer *rpc_server_{nullptr};
+  uint16_t rpc_port_{0};
 };
 
 } // namespace instserver
