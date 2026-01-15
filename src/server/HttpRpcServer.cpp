@@ -155,6 +155,19 @@ void HttpRpcServer::stop() {
     return;
   }
 
+  // Close the listening socket to unblock accept() call
+  // Use shutdown first to interrupt any blocking operations
+  if (listen_fd_ >= 0) {
+#ifdef _WIN32
+    shutdown(listen_fd_, SD_BOTH);
+    closesocket(listen_fd_);
+#else
+    shutdown(listen_fd_, SHUT_RDWR);
+    close(listen_fd_);
+#endif
+    listen_fd_ = -1;
+  }
+
   // If server thread is joinable, join it.
   if (server_thread_.joinable()) {
     server_thread_.join();
@@ -168,20 +181,20 @@ void HttpRpcServer::stop() {
 uint16_t HttpRpcServer::port() const { return bound_port_; }
 
 void HttpRpcServer::run_loop(uint16_t port) {
-  int listen_fd = -1;
+  listen_fd_ = -1;
   bound_port_ = 0;
 
 #ifdef _WIN32
-  listen_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  if (listen_fd == INVALID_SOCKET) {
+  listen_fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (listen_fd_ == INVALID_SOCKET) {
     LOG_ERROR("RPC", "SOCKET", "Failed to create socket: {}",
               WSAGetLastError());
     running_ = false;
     return;
   }
 #else
-  listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (listen_fd < 0) {
+  listen_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+  if (listen_fd_ < 0) {
     LOG_ERROR("RPC", "SOCKET", "Failed to create socket: {}", strerror(errno));
     running_ = false;
     return;
@@ -191,10 +204,10 @@ void HttpRpcServer::run_loop(uint16_t port) {
   // Allow immediate reuse
   int opt = 1;
 #ifdef _WIN32
-  setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (const char *)&opt,
+  setsockopt(listen_fd_, SOL_SOCKET, SO_REUSEADDR, (const char *)&opt,
              sizeof(opt));
 #else
-  setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+  setsockopt(listen_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 #endif
 
   struct sockaddr_in addr;
@@ -203,40 +216,43 @@ void HttpRpcServer::run_loop(uint16_t port) {
   addr.sin_addr.s_addr = inet_addr("127.0.0.1");
   addr.sin_port = htons(port);
 
-  if (bind(listen_fd, reinterpret_cast<struct sockaddr *>(&addr),
+  if (bind(listen_fd_, reinterpret_cast<struct sockaddr *>(&addr),
            sizeof(addr)) < 0) {
 #ifdef _WIN32
     LOG_ERROR("RPC", "BIND", "bind failed: {}", WSAGetLastError());
-    closesocket(listen_fd);
+    closesocket(listen_fd_);
 #else
     LOG_ERROR("RPC", "BIND", "bind failed: {}", strerror(errno));
-    close(listen_fd);
+    close(listen_fd_);
 #endif
+    listen_fd_ = -1;
     running_ = false;
     return;
   }
 
+  if (listen(listen_fd_, BACKLOG) < 0) {
+    LOG_ERROR("RPC", "LISTEN", "listen failed");
+#ifdef _WIN32
+    closesocket(listen_fd_);
+#else
+    close(listen_fd_);
+#endif
+    listen_fd_ = -1;
+    running_ = false;
+    return;
+  }
+
+  // Set bound_port_ AFTER listen succeeds so daemon knows server is ready
   // If port was 0, query assigned port
   if (port == 0) {
     struct sockaddr_in sin;
     socklen_t len = sizeof(sin);
-    if (getsockname(listen_fd, reinterpret_cast<struct sockaddr *>(&sin),
+    if (getsockname(listen_fd_, reinterpret_cast<struct sockaddr *>(&sin),
                     &len) == 0) {
       bound_port_ = ntohs(sin.sin_port);
     }
   } else {
     bound_port_ = port;
-  }
-
-  if (listen(listen_fd, BACKLOG) < 0) {
-    LOG_ERROR("RPC", "LISTEN", "listen failed");
-#ifdef _WIN32
-    closesocket(listen_fd);
-#else
-    close(listen_fd);
-#endif
-    running_ = false;
-    return;
   }
 
   LOG_INFO("RPC", "START", "HTTP RPC server listening on 127.0.0.1:{}",
@@ -248,7 +264,7 @@ void HttpRpcServer::run_loop(uint16_t port) {
     socklen_t client_len = sizeof(client_addr);
 #ifdef _WIN32
     SOCKET client_fd =
-        accept(listen_fd, reinterpret_cast<struct sockaddr *>(&client_addr),
+        accept(listen_fd_, reinterpret_cast<struct sockaddr *>(&client_addr),
                &client_len);
     if (client_fd == INVALID_SOCKET) {
       // If we were asked to stop, break
@@ -262,7 +278,7 @@ void HttpRpcServer::run_loop(uint16_t port) {
     int client_socket = static_cast<int>(client_fd);
 #else
     int client_socket =
-        accept(listen_fd, reinterpret_cast<struct sockaddr *>(&client_addr),
+        accept(listen_fd_, reinterpret_cast<struct sockaddr *>(&client_addr),
                &client_len);
     if (client_socket < 0) {
       if (!running_)
@@ -375,7 +391,7 @@ void HttpRpcServer::run_loop(uint16_t port) {
     close_socket(client_socket);
   } // accept loop
 
-  close_socket(listen_fd);
+  close_socket(listen_fd_);
   LOG_INFO("RPC", "STOP", "HTTP RPC server stopped");
   running_ = false;
 }

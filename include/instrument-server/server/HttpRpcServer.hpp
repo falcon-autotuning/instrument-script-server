@@ -27,6 +27,7 @@ private:
   std::atomic<bool> running_;
   std::thread server_thread_;
   uint16_t bound_port_;
+  int listen_fd_{-1};  // Listening socket FD for proper cleanup
 };
 
 } // namespace server
