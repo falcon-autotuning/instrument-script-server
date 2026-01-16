@@ -129,7 +129,9 @@ target_link_libraries(
 target_include_directories(
   instrument-server-core
   PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-         $<INSTALL_INTERFACE:include> ${LUA_INCLUDE_DIR} ${SOL2_INCLUDE_DIR})
+         $<INSTALL_INTERFACE:include>
+         $<$<BOOL:${LUA_INCLUDE_DIR}>:$<BUILD_INTERFACE:${LUA_INCLUDE_DIR}>>
+         $<$<BOOL:${SOL2_INCLUDE_DIR}>:$<BUILD_INTERFACE:${SOL2_INCLUDE_DIR}>>)
 
 # Optional precompiled headers
 if(ENABLE_PCH)
