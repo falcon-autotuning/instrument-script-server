@@ -42,8 +42,8 @@ TEST(ApiRefResolverTest, ResolvesRelativeToConfigParent) {
 
   std::string resolved =
       resolve_api_ref("../apis/myapi.yaml", cfg_file.string());
-  EXPECT_EQ(std::filesystem::absolute(api_file).string(),
-            std::filesystem::absolute(resolved).string());
+  EXPECT_EQ(std::filesystem::canonical(api_file),
+            std::filesystem::canonical(resolved));
 
   // cleanup
   std::filesystem::remove_all(tmp);
@@ -75,8 +75,8 @@ TEST(ApiRefResolverTest, HandlesFileScheme) {
                                 "\nconnection:\n  type: VISA\nio_config: {}\n");
 
   std::string resolved = resolve_api_ref(file_uri, cfg_file.string());
-  EXPECT_EQ(std::filesystem::absolute(api_file).string(),
-            std::filesystem::absolute(resolved).string());
+  EXPECT_EQ(std::filesystem::canonical(api_file),
+            std::filesystem::canonical(resolved));
 
   std::filesystem::remove_all(tmp);
 }
