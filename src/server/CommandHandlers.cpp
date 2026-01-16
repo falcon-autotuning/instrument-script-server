@@ -8,6 +8,8 @@
 #include "instrument-server/server/RuntimeContext.hpp"
 #include "instrument-server/server/ServerDaemon.hpp"
 #include "instrument-server/server/SyncCoordinator.hpp"
+
+#include <fstream>
 #include <sol/sol.hpp>
 #include <string>
 #include <vector>
@@ -55,9 +57,113 @@ static sol::object json_to_lua(sol::state_view lua, const json &j) {
     return sol::make_object(lua, j.dump());
   }
 }
+
+// read entire file into a string for use with LUA library loading
+static std::string read_file_to_string(const std::filesystem::path &p) {
+  std::ifstream ifs(p, std::ios::in | std::ios::binary);
+  if (!ifs)
+    return "";
+  return std::string((std::istreambuf_iterator<char>(ifs)),
+                     std::istreambuf_iterator<char>());
+}
+void preload_lua_modules_from_dir(sol::state &lua, const std::string &libroot) {
+  namespace fs = std::filesystem;
+
+  sol::table package = lua["package"];
+  // optionally append libroot/?.lua to package.path so require still works on
+  // disk
+  std::string current_path = package["path"];
+  std::string append = ";" + libroot + "/?.lua;" + libroot + "/?/init.lua";
+  package["path"] = current_path + append;
+
+  sol::table preload = package["preload"];
+
+  // Walk libroot and preload .lua files. Convert e.g. lib/foo/bar.lua ->
+  // "foo.bar"
+  for (auto const &entry : fs::recursive_directory_iterator(libroot)) {
+    if (!entry.is_regular_file())
+      continue;
+    auto path = entry.path();
+    if (path.extension() != ".lua")
+      continue;
+    // compute module name relative to libroot
+    fs::path rel = fs::relative(path, libroot);
+    // strip extension
+    rel = rel.replace_extension("");
+    // convert path separators to dots
+    std::string module = rel.generic_string(); // uses '/' separators
+    for (auto &c : module)
+      if (c == '/')
+        c = '.';
+    // read file
+    std::string code = read_file_to_string(path);
+    if (code.empty())
+      continue;
+    // load the module code as a chunk with module filename for meaningful
+    // errors
+    sol::load_result loader = lua.load(code, path.string());
+    if (!loader.valid()) {
+      sol::error err = loader;
+      // log and skip problematic helper file
+      LOG_ERROR("SERVER", "MEASURE", "Failed to load helper {}: {}",
+                path.string(), err.what());
+      continue;
+    }
+    // register loader in package.preload[module] so require(module) returns
+    // module table
+    preload[module] = loader;
+    LOG_INFO("SERVER", "MEASURE", "Preloaded Lua module '{}'", module);
+  }
+}
+void load_bundle_file(sol::state &lua, const std::string &bundle_path) {
+  std::string code = read_file_to_string(bundle_path);
+  if (code.empty()) {
+    LOG_ERROR("SERVER", "MEASURE", "bundle file empty: {}", bundle_path);
+    return;
+  }
+  sol::load_result loader = lua.load(code, bundle_path);
+  if (!loader.valid()) {
+    sol::error err = loader;
+    LOG_ERROR("SERVER", "MEASURE", "failed to load bundle {}: {}", bundle_path,
+              err.what());
+    return;
+  }
+  sol::protected_function_result pres = loader();
+  if (!pres.valid()) {
+    sol::error err = pres;
+    LOG_ERROR("SERVER", "MEASURE", "bundle execution error {}: {}", bundle_path,
+              err.what());
+    return;
+  }
+  LOG_INFO("SERVER", "MEASURE", "Loaded bundle {}", bundle_path);
+}
+void load_optional_lua_libs(sol::state &lua) {
+  const char *envp = std::getenv("INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB");
+  if (!envp) {
+    LOG_INFO("SERVER", "MEASURE",
+             "No external Lua helpers path set "
+             "(INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB)");
+    return;
+  }
+  std::filesystem::path p(envp);
+  if (!std::filesystem::exists(p)) {
+    LOG_WARN("SERVER", "MEASURE", "Specified helpers path does not exist: {}",
+             envp);
+    return;
+  }
+  if (std::filesystem::is_directory(p)) {
+    preload_lua_modules_from_dir(lua, p.string());
+  } else if (std::filesystem::is_regular_file(p)) {
+    // treat as bundle file
+    load_bundle_file(lua, p.string());
+  } else {
+    LOG_WARN("SERVER", "MEASURE", "Helpers path not dir or file: {}", envp);
+  }
+}
 /*
   Each handler expects a params JSON object with keys as described below
-  and fills `out` with a JSON response containing at minimum {"ok": true|false}
+  and fills `out` with a JSON response containing at minimum {"ok":
+  true|false}
 */
 
 int handle_daemon(const json &params, json &out) {
@@ -277,6 +383,7 @@ int handle_measure(const json &params, json &out) {
     sol::state lua;
     lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::table,
                        sol::lib::string, sol::lib::io, sol::lib::os);
+    load_optional_lua_libs(lua);
 
     SyncCoordinator sync_coordinator;
     bind_runtime_context(lua, registry, sync_coordinator);
@@ -287,8 +394,8 @@ int handle_measure(const json &params, json &out) {
     lua["context"] =
         ctx_shared; // keep the existing behavior to bind the userdata
 
-    // If the RPC payload included a context_spec, inject it (in-memory) before
-    // running the script
+    // If the RPC payload included a context_spec, inject it (in-memory)
+    // before running the script
     if (params.contains("globals")) {
       // convert JSON to a Lua table
       sol::object spec_obj = json_to_lua(lua, params["globals"]);
@@ -610,7 +717,8 @@ int handle_plugins(const json &params, json &out) {
   static std::once_flag g_plugins_init_flag2;
   std::call_once(g_plugins_init_flag2,
                  [&]() { plugin_registry.load_builtin_plugins(); });
-  // Also run discover for the current invocation in case tests override paths.
+  // Also run discover for the current invocation in case tests override
+  // paths.
   plugin_registry.discover_plugins(plugin_paths);
 
   auto protocols = plugin_registry.list_protocols();

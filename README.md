@@ -106,13 +106,11 @@ The server supports configuration via environment variables:
 - **Default**: `8555`
 - **Description**: Sets the HTTP RPC server port on localhost for API access
 
-**Usage:**
+### External Lua Measurement Library Path
 
-```bash
-# Start daemon with custom RPC port
-export INSTRUMENT_SCRIPT_SERVER_RPC_PORT=9000
-instrument-server daemon start
-```
+- **Variable**: `INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB`
+- **Default**: ``
+- **Description**: Sets the path for an optional lua library to load for interpreting measurement scripts. This supports either the directory of a larger package or just a file.
 
 ## Installation
 

@@ -999,15 +999,13 @@ exit $result
 
 The RPC server provides programmatic API access for embedding and automation.
 
-**Example:**
+### `INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB`
 
-```bash
-# Start daemon with custom RPC port
-export INSTRUMENT_SCRIPT_SERVER_RPC_PORT=9000
-instrument-server daemon start
-```
+**Type**: Path  
+**Default**: ``  
+**Description**: Sets the path for an optional lua library to load for interpreting measurement scripts
 
-# RPC endpoint now available at <http://127.0.0.1:9000/rpc>
+This supports either the directory of a larger package or just a file with registering modules.
 
 ## See Also
 
