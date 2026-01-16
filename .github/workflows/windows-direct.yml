@@ -55,12 +55,12 @@ jobs:
       - name: List build outputs (debug)
         run: |
           Write-Host "=== Test Executables ==="
-          Get-ChildItem -Path "build/tests/Release" -Filter *.exe | ForEach-Object { 
+          Get-ChildItem -Path "build/tests" -Filter *.exe | ForEach-Object { 
             Write-Host "$($_.FullName) - $($_.Length) bytes"
           }
 
           Write-Host "`n=== Core DLLs ==="
-          Get-ChildItem -Path "build/Release" -Filter *.dll | ForEach-Object { 
+          Get-ChildItem -Path "build" -Filter *.dll | ForEach-Object { 
             Write-Host "$($_.Name)"
           }
 
