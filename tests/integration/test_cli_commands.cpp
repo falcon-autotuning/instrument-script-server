@@ -23,14 +23,13 @@ protected:
     std::vector<std::filesystem::path> search_paths;
 
 #ifdef _WIN32
-    // Windows:  Check Release and Debug build directories
     search_paths.push_back(std::filesystem::current_path() / "build" /
-                           "Release" / "instrument-server.exe");
-    search_paths.push_back(std::filesystem::current_path() / "build" / "Debug" /
-                           "instrument-server. exe");
-    search_paths.push_back(std::filesystem::current_path() / "Release" /
                            "instrument-server.exe");
-    search_paths.push_back(std::filesystem::current_path() / "Debug" /
+    search_paths.push_back(std::filesystem::current_path() / "build" /
+                           "instrument-server. exe");
+    search_paths.push_back(std::filesystem::current_path() /
+                           "instrument-server.exe");
+    search_paths.push_back(std::filesystem::current_path() /
                            "instrument-server.exe");
 #else
     // Linux: Check build directory
