@@ -17,11 +17,6 @@ jobs:
   build-and-test-windows:
     name: Build and Test on Windows (vcpkg + clang-cl + sccache + Ninja)
     runs-on: windows-latest
-    env:
-      # optional: customize sccache cache directory
-      SCCACHE_DIR: ${{ runner.temp }}\.sccache
-      # optional: increase sccache cache size (example)
-      SCCACHE_CACHE_SIZE: 5G
 
     steps:
       - name: Checkout repository
