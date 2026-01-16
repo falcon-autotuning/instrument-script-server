@@ -24,8 +24,11 @@ void print_usage() {
   std::cout
       << "  list                               List running instruments\n";
   std::cout << "\nMeasurement:\n";
-  std::cout
-      << "  measure <script>                   Run Lua measurement script\n";
+  std::cout << "  measure <script>  [--globals <string>]"
+               "[--block_inject_globals]"
+               "[--context_schema_version <x.y.z>]"
+               "[--json]\n";
+  std::cout << "                               Run Lua measurement script\n";
   std::cout << "\nUtilities:\n";
   std::cout << "  test <config> <verb> [params]      Test command\n";
   std::cout << "  discover [paths...]                Discover plugins\n";
@@ -191,7 +194,12 @@ int main(int argc, char **argv) {
   } else if (command == "measure") {
     if (argc < 3) {
       std::cerr << "Error: measure requires script path\n";
-      std::cerr << "Usage: instrument-server measure <script> [--json] "
+      std::cerr << "Usage: instrument-server measure <script> [--json] ";
+      std::cerr << "Usage instrument-server measure <script>"
+                   "[--globals <string>]"
+                   "[--block_inject_globals]"
+                   "[--context_schema_version <x.y.z>]"
+                   "[--json]"
                    "[--log-level <level>]\n";
       return 1;
     }
@@ -203,6 +211,12 @@ int main(int argc, char **argv) {
         params["log_level"] = argv[++i];
       } else if (arg == "--json") {
         params["json"] = true;
+      } else if (arg == "--globals" && i + 1 < argc) {
+        params["globals"] = argv[++i];
+      } else if (arg == "--block_inject_globals" && i + 1 < argc) {
+        params["block_inject_globals"] = true;
+      } else if (arg == "--context_schema_version" && i + 1 < argc) {
+        params["context_schema_version"] = argv[++i];
       }
     }
     nlohmann::json out;

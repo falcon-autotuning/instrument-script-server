@@ -21,6 +21,40 @@ namespace server {
 // this port from outside.
 constexpr int DEFAULT_PORT = 8555;
 
+static sol::object json_to_lua(sol::state_view lua, const json &j) {
+  switch (j.type()) {
+  case json::value_t::null:
+    return sol::make_object(lua, sol::nil);
+  case json::value_t::boolean:
+    return sol::make_object(lua, j.get<bool>());
+  case json::value_t::number_integer:
+    return sol::make_object(lua, j.get<int64_t>());
+  case json::value_t::number_unsigned:
+    return sol::make_object(lua, j.get<uint64_t>());
+  case json::value_t::number_float:
+    return sol::make_object(lua, j.get<double>());
+  case json::value_t::string:
+    return sol::make_object(lua, j.get<std::string>());
+  case json::value_t::array: {
+    sol::table t = lua.create_table();
+    std::size_t idx = 1;
+    for (const auto &elem : j) {
+      t[idx++] = json_to_lua(lua, elem);
+    }
+    return sol::make_object(lua, t);
+  }
+  case json::value_t::object: {
+    sol::table t = lua.create_table();
+    for (auto it = j.begin(); it != j.end(); ++it) {
+      t[it.key()] = json_to_lua(lua, it.value());
+    }
+    return sol::make_object(lua, t);
+  }
+  default:
+    // fallback: stringify
+    return sol::make_object(lua, j.dump());
+  }
+}
 /*
   Each handler expects a params JSON object with keys as described below
   and fills `out` with a JSON response containing at minimum {"ok": true|false}
@@ -247,9 +281,87 @@ int handle_measure(const json &params, json &out) {
     SyncCoordinator sync_coordinator;
     bind_runtime_context(lua, registry, sync_coordinator);
 
-    // Create default context
-    RuntimeContext ctx(registry, sync_coordinator);
-    lua["context"] = &ctx;
+    // Create default context (host-side C++ runtime object)
+    auto ctx_shared =
+        std::make_shared<RuntimeContext>(registry, sync_coordinator);
+    lua["context"] =
+        ctx_shared; // keep the existing behavior to bind the userdata
+
+    // If the RPC payload included a context_spec, inject it (in-memory) before
+    // running the script
+    if (params.contains("globals")) {
+      // convert JSON to a Lua table
+      sol::object spec_obj = json_to_lua(lua, params["globals"]);
+      lua["__spec"] = spec_obj; // place it in the Lua state temporarily
+
+      // pass block_inject_globals flag (default false)
+      bool block_inject_globals = params.value("block_inject_globals", false);
+      lua["__block_inject_globals"] = block_inject_globals;
+
+      // Optional: pass schema version for server-side logic if needed
+      if (params.contains("context_schema_version")) {
+        lua["__context_schema_version"] =
+            params["context_schema_version"].get<std::string>();
+      } else {
+        lua["__context_schema_version"] = sol::nil;
+      }
+
+      // Merge snippet executed inside the Lua VM (keeps host methods and
+      // creates instrument target wrappers)
+      const char *merge_snippet = R"lua(
+-- Merge injected __spec into host-provided context (do not overwrite host methods).
+-- __spec is a Lua table created from JSON by the C++ host.
+local function is_primitive(v)
+  local t = type(v)
+  return t == "number" or t == "string" or t == "boolean" or t == "nil" or t == "function" or t == "userdata"
+end
+
+local function make_readonly(val, seen)
+  if is_primitive(val) then return val end
+  if type(val) ~= "table" then return val end
+  seen = seen or setmetatable({}, { __mode = "k" })
+  if seen[val] then return seen[val] end
+  local proxy = {}
+  seen[val] = proxy
+  local mt = {
+    __index = function(_, k) return make_readonly(val[k], seen) end,
+    __newindex = function(_, k, v) error(("attempt to modify read-only context field '%s'"):format(tostring(k)), 2) end,
+    __pairs = function(_) local function iter(t, k) local nk, nv = next(t, k) if nk==nil then return nil end return nk, make_readonly(nv, seen) end return iter, val, nil end,
+    __ipairs = function(_) local i=0 local function iter() i=i+1 local vv=val[i] if vv==nil then return nil end return i, make_readonly(vv, seen) end return iter end,
+    __metatable = "read-only-context-proxy",
+  }
+  setmetatable(proxy, mt)
+  return proxy
+end
+if !__block_inject_globals then
+  for k, v in pairs(__spec or {}) do
+    if k ~= "call" and k ~= "parallel" and k ~= "log" then
+      if type(v) == "table" then
+        _G[k] = make_readonly(v)
+      else
+        _G[k] = v
+      end
+    end
+  end
+end
+
+-- Clean up temporary globals to avoid leaking
+__spec = nil
+__block_inject_globals = nil
+__context_schema_version = nil
+)lua";
+
+      // run the merge snippet
+      sol::protected_function_result merge_result =
+          lua.safe_script(merge_snippet, &sol::script_pass_on_error);
+      if (!merge_result.valid()) {
+        sol::error err = merge_result;
+        out["ok"] = false;
+        out["error"] =
+            std::string("context_spec injection error: ") + err.what();
+        return 1;
+      }
+    } // end if contains context_spec
 
     if (!json_output) {
       // If RPC caller requested non-json, we still return structured JSON
@@ -266,7 +378,7 @@ int handle_measure(const json &params, json &out) {
     }
 
     // Get collected results
-    const auto &results = ctx.get_results();
+    const auto &results = ctx_shared->get_results();
     out["ok"] = true;
     out["script"] = std::filesystem::path(script_path).filename().string();
     out["results"] = json::array();

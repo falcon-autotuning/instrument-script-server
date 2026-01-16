@@ -300,12 +300,16 @@ Run Lua measurement scripts that control running instruments.
 ### Measure Command
 
 ```bash
-instrument-server measure <script> [--json] [--log-level <level>]
+instrument-server measure <script> [--globals <string>] [--block_inject_globals] [--context_schema_version <x.y.z>] [--json] [--log-level <level>] 
 ```
 
 **Arguments:**
 
 - `<script>`: Path to Lua measurement script
+- `--globals <string>`: Optional json containing global variables for the measurement script.
+  Keys are the names in the global namespace, Values are the values.
+- `--block_inject_globals`: Optional block of the globals entering the lua namespace.
+- `--context_schema_version <x.y.z>`: Optional allows validating versions of json globals for compatibility.
 - `--json`: Output results in JSON format (default: text format)
 - `--log-level <level>`: Logging level (default: info)
 
@@ -704,7 +708,7 @@ Discovering plugins in:
 Found 2 plugin(s):
 
 Protocol:  CustomDAQ
-  Path: /opt/custom-plugins/custom_daq. so
+  Path: /opt/custom-plugins/custom_daq.so
   Name: Custom DAQ Plugin
   Version: 2.1.0
   Description: High-speed data acquisition plugin
