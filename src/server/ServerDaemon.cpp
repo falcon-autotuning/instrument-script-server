@@ -7,6 +7,7 @@
 #include <signal.h>
 
 #ifdef _WIN32
+#include "instrument-server/compat/WinSock.hpp"
 #include <process.h>
 #include <windows.h>
 #define getpid _getpid

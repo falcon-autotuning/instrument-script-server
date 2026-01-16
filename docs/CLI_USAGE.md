@@ -334,6 +334,7 @@ instrument-server measure scripts/sweep.lua --json > results.json
 #### Automatic Result Collection
 
 All `context:call()` operations are automatically collected with full metadata, including:
+
 - Command ID and execution timestamp
 - Instrument name and verb (command)
 - Parameters passed to the command
@@ -360,12 +361,14 @@ Measurement complete
 ```
 
 Each line shows:
+
 - **Index**: Sequential number of the call
 - **Instrument and Command**: Full command with channel if applicable
 - **Parameters**: Values passed to the command
 - **Return Value**: Type in brackets, followed by the value
 
 For large data buffers (waveforms, large arrays), the output shows a reference with:
+
 - **buffer_id**: Unique identifier for accessing the data
 - **element_count**: Number of data points
 - **data_type**: Type of data (float32, float64, int32, etc.)
@@ -416,6 +419,7 @@ Output structure:
 **JSON Schema**: The output conforms to the JSON schema at `schemas/measurement_results.schema.json` for validation and automated parsing.
 
 **Return Types**:
+
 - `double`: Floating-point number
 - `int64`: Integer value
 - `string`: Text value
@@ -983,11 +987,23 @@ exit $result
 
 ## Environment Variables
 
-Currently no environment variables are used.  Configuration is via:
+### `INSTRUMENT_SCRIPT_SERVER_RPC_PORT`
 
-- Command-line arguments
-- Configuration files (YAML)
-- Runtime directory determined by platform
+**Type**: Integer (1-65535)  
+**Default**: `8555`  
+**Description**: Port number for the HTTP RPC server on localhost
+
+The RPC server provides programmatic API access for embedding and automation.
+
+**Example:**
+
+```bash
+# Start daemon with custom RPC port
+export INSTRUMENT_SCRIPT_SERVER_RPC_PORT=9000
+instrument-server daemon start
+```
+
+# RPC endpoint now available at <http://127.0.0.1:9000/rpc>
 
 ## See Also
 

@@ -7,6 +7,7 @@
 // HANDLE.
 
 #if defined(_WIN32) || defined(_WIN64)
+#include "instrument-server/compat/WinSock.hpp"
 #include <windows.h>
 using ProcessId = DWORD;
 using ProcessHandle = HANDLE;

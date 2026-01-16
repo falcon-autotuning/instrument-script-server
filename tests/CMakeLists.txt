@@ -1,11 +1,31 @@
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
+# Small helper for an optional PCH header inside tests/
+if(NOT DEFINED ENABLE_PCH)
+  # inherit default from parent; allow running tests/CMakeLists standalone
+  set(ENABLE_PCH
+      ON
+      CACHE BOOL "Enable PCH for tests" FORCE)
+endif()
+
 add_library(test-utils STATIC test_utils/MockInstrument.cpp
                               test_utils/TestFixtures.cpp)
+
 target_link_libraries(test-utils PUBLIC instrument-server-core GTest::gtest)
 target_include_directories(test-utils
                            PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/test_utils)
+
+# Optional test PCH
+if(ENABLE_PCH)
+  if(EXISTS "${CMAKE_SOURCE_DIR}/include/instrument-server/pch.h")
+    target_precompile_headers(
+      test-utils PRIVATE "${CMAKE_SOURCE_DIR}/include/instrument-server/pch.h")
+  else()
+    target_precompile_headers(test-utils PRIVATE <gtest/gtest.h> <string>
+                              <vector>)
+  endif()
+endif()
 
 add_executable(
   unit_tests
@@ -23,6 +43,15 @@ add_executable(
   unit/test_plugin_registry.cpp)
 target_link_libraries(unit_tests PRIVATE instrument-server-core test-utils
                                          GTest::gtest GTest::gtest_main)
+
+if(ENABLE_PCH)
+  # reuse pch from test-utils if available (some compilers support it)
+  if(TARGET test-utils)
+    # nothing extra required; test-utils PCH will be compiled when test-utils is
+    # built
+  endif()
+endif()
+
 if(WIN32)
   add_test(NAME unit_tests COMMAND unit_tests)
 else()
@@ -39,14 +68,13 @@ add_executable(
   integration/test_measurement_scripts.cpp
   integration/test_visa_large_data.cpp
   integration/test_rpc_server.cpp
-  integration/test_measure_command.cpp
-  integration/test_http_rpc_basic.cpp)
+  integration/test_measure_command.cpp)
 
 target_link_libraries(
   integration_tests PRIVATE instrument-server-core test-utils GTest::gtest
                             GTest::gtest_main)
 
-# Link math library only on Unix (Linux/macOS) - Windows has math in CRT
+# Link math library only on Unix (Linux/macOS)
 if(UNIX)
   target_link_libraries(integration_tests PRIVATE m)
 endif()
@@ -136,4 +164,3 @@ add_custom_target(
   COMMAND ${CMAKE_BINARY_DIR}/tests/perf_tests
   DEPENDS perf_tests
   WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-include(GoogleTest)

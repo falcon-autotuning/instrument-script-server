@@ -1,22 +1,47 @@
 cmake_minimum_required(VERSION 3.20)
 project(
   instrument-server
-  VERSION 0.1.0
+  VERSION 1.1.0
   LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Options
+# Build Options
 option(BUILD_TESTS "Build tests" ON)
 option(BUILD_EXAMPLES "Build example plugins" ON)
 option(BUILD_TOOLS "Build command-line tools" ON)
+
+# Performance options
+option(USE_CCACHE "Enable ccache or sccache if available" ON)
+option(ENABLE_PCH
+       "Enable target_precompile_headers to speed up builds (opt-in)" ON)
 
 # Windows-specific definitions
 if(WIN32)
   add_compile_definitions(NOMINMAX)
   add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+endif()
+
+# Try to auto-detect a compiler launcher (prefer sccache if present)
+if(USE_CCACHE)
+  find_program(SCCACHE_PROGRAM sccache)
+  if(SCCACHE_PROGRAM)
+    message(STATUS "Using sccache: ${SCCACHE_PROGRAM}")
+    set(CMAKE_C_COMPILER_LAUNCHER ${SCCACHE_PROGRAM})
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${SCCACHE_PROGRAM})
+  else()
+    find_program(CCACHE_PROGRAM ccache)
+    if(CCACHE_PROGRAM)
+      message(STATUS "Using ccache: ${CCACHE_PROGRAM}")
+      set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+      set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+    else()
+      message(
+        STATUS "No ccache/sccache found (fine, builds will just be normal).")
+    endif()
+  endif()
 endif()
 
 # Find dependencies
@@ -36,9 +61,7 @@ endif()
 
 # sol2 (header-only)
 find_path(SOL2_INCLUDE_DIR sol/sol.hpp REQUIRED)
-
 message(STATUS "Using sol2 includes: ${SOL2_INCLUDE_DIR}")
-include_directories(${SOL2_INCLUDE_DIR})
 
 # VISA (optional)
 find_library(
@@ -59,12 +82,9 @@ if(UNIX AND NOT APPLE)
 elseif(APPLE)
   set(PLATFORM_LIBS pthread dl)
 elseif(WIN32)
-  set(PLATFORM_LIBS "")
+  # Link Winsock on Windows
+  set(PLATFORM_LIBS Ws2_32)
 endif()
-
-# Include directories
-include_directories(${CMAKE_SOURCE_DIR}/include ${LUA_INCLUDE_DIR}
-                    ${SOL2_INCLUDE_DIR})
 
 configure_file(${CMAKE_SOURCE_DIR}/src/embedded_schemas.cpp.in
                ${CMAKE_BINARY_DIR}/embedded_schemas.cpp @ONLY)
@@ -103,16 +123,38 @@ target_compile_definitions(instrument-server-core
 target_link_libraries(
   instrument-server-core
   PUBLIC spdlog::spdlog nlohmann_json::nlohmann_json yaml-cpp::yaml-cpp
-         ${LUA_LIBRARIES} ${PLATFORM_LIBS})
+         ${PLATFORM_LIBS} ${LUA_LIBRARIES})
 
+# Per-target include directories (avoid global include_directories)
 target_include_directories(
-  instrument-server-core PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-                                $<INSTALL_INTERFACE:include>)
+  instrument-server-core
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+         $<INSTALL_INTERFACE:include> ${LUA_INCLUDE_DIR} ${SOL2_INCLUDE_DIR})
+
+# Optional precompiled headers
+if(ENABLE_PCH)
+  # Prefer a project-provided PCH header, fallback to common std headers.
+  if(EXISTS "${CMAKE_SOURCE_DIR}/include/instrument-server/pch.h")
+    message(STATUS "Using project PCH: include/instrument-server/pch.h")
+    target_precompile_headers(
+      instrument-server-core PRIVATE
+      "${CMAKE_SOURCE_DIR}/include/instrument-server/pch.h")
+  else()
+    message(STATUS "No project PCH found; using common system headers as PCH")
+    target_precompile_headers(
+      instrument-server-core
+      PRIVATE
+      <vector>
+      <string>
+      <memory>
+      <map>
+      <set>)
+  endif()
+endif()
 
 add_executable(instrument-server src/server/instrument_server_main.cpp)
 target_link_libraries(instrument-server PRIVATE instrument-server-core)
 
-# Worker executable
 add_executable(instrument-worker src/workers/generic_worker_main.cpp)
 target_link_libraries(instrument-worker PRIVATE instrument-server-core)
 
@@ -215,16 +257,17 @@ install(
 include(CMakePackageConfigHelpers)
 
 write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfigVersion.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/InstrumentScriptServerConfigVersion.cmake"
   VERSION ${PROJECT_VERSION}
   COMPATIBILITY AnyNewerVersion)
 
 configure_package_config_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/InstrumentServerConfig.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfig.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/InstrumentScriptServerConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/InstrumentScriptServerConfig.cmake"
   INSTALL_DESTINATION lib/cmake/InstrumentServer
   PATH_VARS CMAKE_INSTALL_PREFIX)
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfig.cmake"
-              "${CMAKE_CURRENT_BINARY_DIR}/InstrumentServerConfigVersion.cmake"
-        DESTINATION lib/cmake/InstrumentServer)
+install(
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/InstrumentScriptServerConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/InstrumentScriptServerConfigVersion.cmake"
+  DESTINATION lib/cmake/InstrumentServer)

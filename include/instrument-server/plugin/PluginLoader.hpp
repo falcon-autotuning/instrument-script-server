@@ -6,6 +6,7 @@
 #include <string>
 
 #ifdef _WIN32
+#include "instrument-server/compat/WinSock.hpp"
 #include <windows.h>
 using LibraryHandle = HMODULE;
 #else

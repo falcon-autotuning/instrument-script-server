@@ -96,21 +96,23 @@ The server now supports a job-based measurement lifecycle and staging area for m
 
 See docs/JOB_SCHEDULING.md for full details on the job lifecycle, states, CLI and embedding API usage, and semantics of the new NOP commands.
 
-## Environment variable: change server listening port
+## Environment Variables
 
-To support embedding and flexible deployments, the server's control/listener port can be changed using an environment variable:
+The server supports configuration via environment variables:
 
-- Variable: `INSTRUMENT_SERVER_PORT`
-- Default: `8765`
-- To use a different port, export the variable before starting the server:
+### RPC Port Configuration
+
+- **Variable**: `INSTRUMENT_SCRIPT_SERVER_RPC_PORT`
+- **Default**: `8555`
+- **Description**: Sets the HTTP RPC server port on localhost for API access
+
+**Usage:**
 
 ```bash
-# Run daemon on port 9000
-export INSTRUMENT_SERVER_PORT=9000
+# Start daemon with custom RPC port
+export INSTRUMENT_SCRIPT_SERVER_RPC_PORT=9000
 instrument-server daemon start
 ```
-
-When embedding, the same environment variable is respected by the embedded server instance. See docs/EMBEDDING_API.md for programmatic port configuration.
 
 ## Installation
 
