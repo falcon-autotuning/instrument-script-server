@@ -41,10 +41,9 @@ jobs:
           cmake -B build `
             -S . `
             -G "Ninja" `
-            -A x64 `
             -T ClangCL `
-            -DCMAKE_C_COMPILER="$clang" `
-            -DCMAKE_CXX_COMPILER="$clang" `
+            -DCMAKE_C_COMPILER=clang `
+            -DCMAKE_CXX_COMPILER=clang++ `
             -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}\scripts\buildsystems\vcpkg.cmake" `
             -DCMAKE_BUILD_TYPE=Release `
             -DBUILD_TESTS=ON
@@ -52,7 +51,7 @@ jobs:
       - name: Build project (Ninja via CMake)
         shell: pwsh
         run: |
-          cmake --build build --config Release --parallel --verbose
+          ninja -C build -v
 
       - name: List build outputs (debug)
         run: |
