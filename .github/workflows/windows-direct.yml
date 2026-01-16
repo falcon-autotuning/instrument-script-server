@@ -35,29 +35,6 @@ jobs:
           vcpkg install --triplet x64-windows
         shell: pwsh
 
-      # -------------------------
-      # Install sccache (via cargo). If you already have sccache in PATH,
-      # replace/remove these steps.
-      - name: Install Rust (for cargo) (required to install sccache)
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
-      - name: Install sccache with cargo
-        run: |
-          cargo install sccache --locked
-        shell: pwsh
-
-      - name: Ensure cargo bin is on PATH
-        run: |
-          $cargoBin = "$env:USERPROFILE\.cargo\bin"
-          Write-Host "Adding $cargoBin to PATH for this job"
-          $env:PATH = "$cargoBin;$env:PATH"
-          Write-Host "PATH now: $env:PATH"
-        shell: pwsh
-
       - name: Configure CMake with clang-cl + Ninja + sccache
         shell: pwsh
         run: |
@@ -68,8 +45,6 @@ jobs:
             -T ClangCL `
             -DCMAKE_C_COMPILER="$clang" `
             -DCMAKE_CXX_COMPILER="$clang" `
-            -DCMAKE_C_COMPILER_LAUNCHER="sccache" `
-            -DCMAKE_CXX_COMPILER_LAUNCHER="sccache" `
             -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}\scripts\buildsystems\vcpkg.cmake" `
             -DCMAKE_BUILD_TYPE=Release `
             -DBUILD_TESTS=ON
