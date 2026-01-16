@@ -515,6 +515,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#new-important-embedding-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New / Important: Embedding API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#new-important-job-scheduling-staging-and-nops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New / Important: Job scheduling, staging, and NOPs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variable-change-server-listening-port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment variable: change server listening port
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1044,6 +1077,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#new-important-embedding-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New / Important: Embedding API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#new-important-job-scheduling-staging-and-nops" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New / Important: Job scheduling, staging, and NOPs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variable-change-server-listening-port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment variable: change server listening port
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#installation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1192,7 +1258,6 @@
 <li><strong>Automatic Result Collection</strong>: All command return values are automatically captured with full traceability</li>
 <li><strong>Synchronization</strong>:  Parallel execution with precise timing coordination across instruments</li>
 <li><strong>Cross-Platform</strong>: Works on Linux and Windows</li>
-<li><strong>HTTP/JSON RPC (optional)</strong>: A lightweight HTTP/JSON RPC interface exposed by the server daemon</li>
 </ul>
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
 <p>The Instrument Script Server is designed for high-performance laboratory automation with minimal overhead:</p>
@@ -1244,12 +1309,42 @@ instrument-server<span class="w"> </span>daemon<span class="w"> </span>stop
 <h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
 <p>Find it <a href="https://falcon-autotuning.github.io/instrument-script-server/">here</a>.</p>
 <ul>
-<li><strong><a href="CONFIGURATION/">Configuration Guide</a></strong> - How to write instrument configurations and API definitions</li>
-<li><strong><a href="CLI_USAGE/">CLI Usage</a></strong> - Complete command-line interface reference</li>
-<li><strong><a href="PLUGIN_DEVELOPMENT/">Plugin Development</a></strong> - Creating custom instrument drivers</li>
-<li><strong><a href="ARCHITECTURE/">Architecture</a></strong> - System design and components</li>
-<li><strong><a href="SYNCHRONIZATION/">Synchronization</a></strong> - Parallel execution protocol</li>
+<li><strong><a href="docs/CONFIGURATION.md">Configuration Guide</a></strong> - How to write instrument configurations and API definitions</li>
+<li><strong><a href="docs/CLI_USAGE.md">CLI Usage</a></strong> - Complete command-line interface reference</li>
+<li><strong><a href="docs/PLUGIN_DEVELOPMENT.md">Plugin Development</a></strong> - Creating custom instrument drivers</li>
+<li><strong><a href="docs/ARCHITECTURE.md">Architecture</a></strong> - System design and components</li>
+<li><strong><a href="docs/SYNCHRONIZATION.md">Synchronization</a></strong> - Parallel execution protocol</li>
+<li><strong><a href="docs/EMBEDDING_API.md">Embedding API</a></strong> - How to embed the server inside other processes/servers (new)</li>
+<li><strong><a href="docs/JOB_SCHEDULING.md">Job Scheduling &amp; Staging</a></strong> - New job handling, staging and NOPs (new)</li>
 </ul>
+<h2 id="new-important-embedding-api">New / Important: Embedding API<a class="headerlink" href="#new-important-embedding-api" title="Permanent link">&para;</a></h2>
+<p>A programmatic API is now available to embed the Instrument Script Server within other servers/processes (for example, a higher-level orchestration server that wants to directly control instruments without launching a separate daemon process). See docs/EMBEDDING_API.md for API surface, patterns, and examples (C++ and Lua).</p>
+<p>Key points:</p>
+<ul>
+<li>You can create an in-process server instance, register instruments or instrument factories, and submit measurement jobs programmatically.</li>
+<li>Embedding supports the same IPC, worker-process model and Lua runtime, but runs the ServerDaemon API inside your process.</li>
+<li>Embedding is designed to be non-blocking: the host process receives callbacks or futures for job completion.</li>
+</ul>
+<h2 id="new-important-job-scheduling-staging-and-nops">New / Important: Job scheduling, staging, and NOPs<a class="headerlink" href="#new-important-job-scheduling-staging-and-nops" title="Permanent link">&para;</a></h2>
+<p>The server now supports a job-based measurement lifecycle and staging area for measurement artifacts prior to deployment:</p>
+<ul>
+<li>Jobs represent a complete measurement run (script, parameters, artifacts).</li>
+<li>Jobs can be scheduled, staged (prepared), deployed (pushed to workers), and run.</li>
+<li>A lightweight NOP (no-op) command family was added to the command language to support dry-run, timing placeholders, and synchronization-only markers.</li>
+</ul>
+<p>See docs/JOB_SCHEDULING.md for full details on the job lifecycle, states, CLI and embedding API usage, and semantics of the new NOP commands.</p>
+<h2 id="environment-variable-change-server-listening-port">Environment variable: change server listening port<a class="headerlink" href="#environment-variable-change-server-listening-port" title="Permanent link">&para;</a></h2>
+<p>To support embedding and flexible deployments, the server's control/listener port can be changed using an environment variable:</p>
+<ul>
+<li>Variable: <code>INSTRUMENT_SERVER_PORT</code></li>
+<li>Default: <code>8765</code></li>
+<li>To use a different port, export the variable before starting the server:</li>
+</ul>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Run daemon on port 9000</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">INSTRUMENT_SERVER_PORT</span><span class="o">=</span><span class="m">9000</span>
+instrument-server<span class="w"> </span>daemon<span class="w"> </span>start
+</code></pre></div>
+<p>When embedding, the same environment variable is respected by the embedded server instance. See docs/EMBEDDING_API.md for programmatic port configuration.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <h3 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h3>
 <p>Required:</p>
