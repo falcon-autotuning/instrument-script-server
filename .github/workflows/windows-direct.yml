@@ -35,7 +35,7 @@ jobs:
           vcpkg install --triplet x64-windows
         shell: pwsh
 
-      - name: Configure CMake with clang-cl + Ninja + sccache
+      - name: Configure CMake with clang-cl + Ninja
         shell: pwsh
         run: |
           cmake -B build `
@@ -48,9 +48,6 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}\scripts\buildsystems\vcpkg.cmake" `
             -DCMAKE_BUILD_TYPE=Release `
             -DBUILD_TESTS=ON
-        env:
-          # ensure sccache is found by CMake
-          PATH: ${{ env.USERPROFILE }}\.cargo\bin;${{ env.PATH }}
 
       - name: Build project (Ninja via CMake)
         shell: pwsh
@@ -61,7 +58,7 @@ jobs:
         run: |
           Write-Host "=== Test Executables ==="
           Get-ChildItem -Path "build/tests/Release" -Filter *.exe | ForEach-Object { 
-            Write-Host "$($_. FullName) - $($_.Length) bytes"
+            Write-Host "$($_.FullName) - $($_.Length) bytes"
           }
 
           Write-Host "`n=== Core DLLs ==="
