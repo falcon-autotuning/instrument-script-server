@@ -41,7 +41,6 @@ jobs:
           cmake -B build `
             -S . `
             -G "Ninja" `
-            -T ClangCL `
             -DCMAKE_C_COMPILER=clang `
             -DCMAKE_CXX_COMPILER=clang++ `
             -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}\scripts\buildsystems\vcpkg.cmake" `
