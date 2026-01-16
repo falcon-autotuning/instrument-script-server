@@ -21,7 +21,7 @@
     
     
       
-        <title>RPC - Instrument Script Server</title>
+        <title>HTTP RPC Interface - Instrument Script Server</title>
       
     
     
@@ -71,6 +71,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#http-rpc-interface" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -100,7 +105,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              RPC
+              HTTP RPC Interface
             
           </span>
         </div>
@@ -689,6 +694,360 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#port-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Port Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#request-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request Format
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#response-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Response Format
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Command Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#daemon-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Daemon Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Daemon Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#daemon-control-daemon-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        daemon - Control daemon lifecycle
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#instrument-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Instrument Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Instrument Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start-start-an-instrument" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        start - Start an instrument
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-stop-an-instrument" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        stop - Stop an instrument
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-query-instrument-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        status - Query instrument status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-list-all-instruments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        list - List all instruments
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#measurement-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measurement Jobs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Measurement Jobs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#submit_measure-submit-measurement-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        submit_measure - Submit measurement script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#job_status-query-job-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        job_status - Query job status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#job_result-fetch-job-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        job_result - Fetch job result
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#job_list-list-all-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        job_list - List all jobs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#job_cancel-cancel-a-job" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        job_cancel - Cancel a job
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing &amp; Discovery
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing &amp; Discovery">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#test-test-instrument-command" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test - Test instrument command
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#discover-discover-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        discover - Discover plugins
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plugins-list-available-plugins" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        plugins - List available plugins
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-example-curl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Example (curl)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python-client-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python Client Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -711,58 +1070,383 @@
 
 
 
-  <h1>RPC</h1>
-
-<div class="language-markdown highlight"><pre><span></span><code><span class="gh"># HTTP RPC for instrument-server</span>
-
-A lightweight HTTP/JSON RPC interface is available on the ServerDaemon to avoid repeated process creation when issuing many commands.
-
-By default the daemon will listen on loopback port 8555 when RPC is configured. You can configure the port by:
-
-<span class="k">-</span><span class="w"> </span>Setting environment variable INSTRUMENT_SERVER_RPC_PORT before starting the daemon, or
-<span class="k">-</span><span class="w"> </span>Calling ServerDaemon::set_rpc_port(...) before starting the daemon (for programmatic usage).
-
-Example (start daemon with RPC enabled):
-
-```bash
-export INSTRUMENT_SERVER_RPC_PORT=8555
-instrument-server daemon start
+<h1 id="http-rpc-interface">HTTP RPC Interface<a class="headerlink" href="#http-rpc-interface" title="Permanent link">&para;</a></h1>
+<p>Complete reference for the Instrument Script Server HTTP RPC API.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The HTTP RPC interface provides programmatic access to all server operations without spawning CLI processes. This is the recommended interface for:</p>
+<ul>
+<li>Embedding the server in other applications</li>
+<li>High-throughput automation</li>
+<li>Custom control systems</li>
+<li>Web-based interfaces</li>
+</ul>
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
+<h3 id="port-setup">Port Setup<a class="headerlink" href="#port-setup" title="Permanent link">&para;</a></h3>
+<p><strong>Default Port</strong>: <code>8555</code><br />
+<strong>Binding</strong>: <code>127.0.0.1</code> (localhost only)</p>
+<p><strong>Set via environment variable:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">INSTRUMENT_SCRIPT_SERVER_RPC_PORT</span><span class="o">=</span><span class="m">8555</span>
+instrument-server<span class="w"> </span>daemon<span class="w"> </span>start
 </code></pre></div>
-<p>Basic RPC request format (POST /rpc, JSON body):</p>
+<p><strong>Set programmatically (C++):</strong></p>
+<div class="language-cpp highlight"><pre><span></span><code><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">daemon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">instserver</span><span class="o">::</span><span class="n">ServerDaemon</span><span class="o">::</span><span class="n">instance</span><span class="p">();</span>
+<span class="n">daemon</span><span class="p">.</span><span class="n">set_rpc_port</span><span class="p">(</span><span class="mi">8555</span><span class="p">);</span>
+<span class="n">daemon</span><span class="p">.</span><span class="n">start</span><span class="p">();</span>
+</code></pre></div>
+<h2 id="request-format">Request Format<a class="headerlink" href="#request-format" title="Permanent link">&para;</a></h2>
+<p>All requests use <code>POST /rpc</code> with JSON body:</p>
 <div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;list&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">  </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&lt;command_name&gt;&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="cm">/* command-specific parameters */</span><span class="w"> </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>Response format:</p>
+<p><strong>Headers:</strong></p>
+<ul>
+<li><code>Content-Type: application/json</code></li>
+</ul>
+<h2 id="response-format">Response Format<a class="headerlink" href="#response-format" title="Permanent link">&para;</a></h2>
+<p>All responses are JSON:</p>
 <div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;instruments&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="s2">&quot;DAC1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;DMM1&quot;</span><span class="w"> </span><span class="p">]</span>
+<span class="w">  </span><span class="cm">/* command-specific response fields */</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>Supported commands (initial set)
-- list
-  - params: {}
-  - returns: instruments array
-- status
-  - params: { "name": "<instrument-name>" }
-  - returns: { "ok": true, "name": "...", "alive": true|false, "stats": { ... } }
-- start
-  - params: { "config_path": "/path/to/config.yaml" }
-  - returns: ok true/false
-- stop
-  - params: { "name": "<instrument-name>" }
-  - returns: ok true/false</p>
-<p>Example using curl:</p>
+<p>On error:</p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;Error message&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="command-reference">Command Reference<a class="headerlink" href="#command-reference" title="Permanent link">&para;</a></h2>
+<h3 id="daemon-management">Daemon Management<a class="headerlink" href="#daemon-management" title="Permanent link">&para;</a></h3>
+<h4 id="daemon-control-daemon-lifecycle"><code>daemon</code> - Control daemon lifecycle<a class="headerlink" href="#daemon-control-daemon-lifecycle" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;start|stop|status&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;log_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;debug|info|warn|error&quot;</span><span class="p">,</span><span class="w">  </span><span class="c1">// optional, for &quot;start&quot;</span>
+<span class="w">  </span><span class="nt">&quot;block&quot;</span><span class="p">:</span><span class="w">  </span><span class="kc">true</span><span class="err">|</span><span class="kc">false</span><span class="w">                     </span><span class="c1">// optional, default true</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;pid&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span><span class="w">  </span><span class="c1">// for &quot;start&quot; action</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Example:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8555/rpc<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;command&quot;:&quot;list&quot;,&quot;params&quot;:{}}&#39;</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;command&quot;:&quot;daemon&quot;,&quot;params&quot;:{&quot;action&quot;:&quot;status&quot;}}&#39;</span>
 </code></pre></div>
-<p>Notes
-- The server binds to loopback only (127.0.0.1) by default.
-- This is intended for local control and automation; consider adding authentication when exposing RPC to untrusted environments.
-- The initial implementation focuses on a small set of commands. If you need more commands (measure, test, discover, plugins, etc.) we can safely extend the dispatch mapping to call existing code paths.
-```</p>
+<hr />
+<h3 id="instrument-management">Instrument Management<a class="headerlink" href="#instrument-management" title="Permanent link">&para;</a></h3>
+<h4 id="start-start-an-instrument"><code>start</code> - Start an instrument<a class="headerlink" href="#start-start-an-instrument" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;config_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/config.yaml&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;plugin_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/plugin. so&quot;</span><span class="p">,</span><span class="w">  </span><span class="c1">// optional</span>
+<span class="w">  </span><span class="nt">&quot;log_level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="w">                    </span><span class="c1">// optional</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;InstrumentName&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h4 id="stop-stop-an-instrument"><code>stop</code> - Stop an instrument<a class="headerlink" href="#stop-stop-an-instrument" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;InstrumentName&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="p">}</span>
+</code></pre></div>
+<h4 id="status-query-instrument-status"><code>status</code> - Query instrument status<a class="headerlink" href="#status-query-instrument-status" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;InstrumentName&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;InstrumentName&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;alive&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;stats&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;commands_sent&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">150</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;commands_completed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">148</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;commands_failed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;commands_timeout&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Note:</strong> Status queries execute immediately without waiting for queued measure jobs.</p>
+<h4 id="list-list-all-instruments"><code>list</code> - List all instruments<a class="headerlink" href="#list-list-all-instruments" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;instruments&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;DMM1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;DAC1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;Scope1&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Note:</strong> List queries execute immediately without waiting for queued measure jobs.</p>
+<hr />
+<h3 id="measurement-jobs">Measurement Jobs<a class="headerlink" href="#measurement-jobs" title="Permanent link">&para;</a></h3>
+<h4 id="submit_measure-submit-measurement-script"><code>submit_measure</code> - Submit measurement script<a class="headerlink" href="#submit_measure-submit-measurement-script" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;script_path&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;/path/to/script. lua&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;job_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;job_20260116_123456_a1b2c3&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Job is queued and executed asynchronously</li>
+<li>Script is parsed immediately to queue instrument commands</li>
+<li>Multiple measure jobs can have overlapping execution</li>
+</ul>
+<h4 id="job_status-query-job-status"><code>job_status</code> - Query job status<a class="headerlink" href="#job_status-query-job-status" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;job_id&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;job_20260116_123456_a1b2c3&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;job_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;job_20260116_123456_a1b2c3&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w">  </span><span class="mi">1705401234567</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Status values:</strong></p>
+<ul>
+<li><code>queued</code> - Waiting in queue</li>
+<li><code>running</code> - Currently executing</li>
+<li><code>completed</code> - Finished successfully</li>
+<li><code>failed</code> - Encountered error</li>
+<li><code>canceled</code> - Was canceled</li>
+</ul>
+<h4 id="job_result-fetch-job-result"><code>job_result</code> - Fetch job result<a class="headerlink" href="#job_result-fetch-job-result" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;job_id&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;job_20260116_123456_a1b2c3&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;job_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;job_20260116_123456_a1b2c3&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;success&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;script&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;script.lua&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;results&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;index&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;instrument&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DMM1&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;verb&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MEASURE&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">        </span><span class="nt">&quot;executed_at_ms&quot;</span><span class="p">:</span><span class="w">  </span><span class="mi">1705401234789</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;return&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;double&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">&quot;value&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">3.14159</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Note:</strong> Only available after job completes.</p>
+<h4 id="job_list-list-all-jobs"><code>job_list</code> - List all jobs<a class="headerlink" href="#job_list-list-all-jobs" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;jobs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;job_id&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;job_20260116_123456_a1b2c3&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;measure&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;completed&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w">  </span><span class="mi">1705401234567</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<h4 id="job_cancel-cancel-a-job"><code>job_cancel</code> - Cancel a job<a class="headerlink" href="#job_cancel-cancel-a-job" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;job_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;job_20260116_123456_a1b2c3&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Job canceled&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Only queued or running jobs can be canceled</li>
+<li>Cancellation is cooperative</li>
+<li>Commands already sent to instruments cannot be interrupted</li>
+</ul>
+<hr />
+<h3 id="testing-discovery">Testing &amp; Discovery<a class="headerlink" href="#testing-discovery" title="Permanent link">&para;</a></h3>
+<h4 id="test-test-instrument-command"><code>test</code> - Test instrument command<a class="headerlink" href="#test-test-instrument-command" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;config_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/config.yaml&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;verb&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CommandVerb&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span><span class="w">                          </span><span class="c1">// command parameters</span>
+<span class="w">  </span><span class="nt">&quot;plugin_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/plugin.so&quot;</span><span class="w">  </span><span class="c1">// optional</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w">  </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;command_return_value&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h4 id="discover-discover-plugins"><code>discover</code> - Discover plugins<a class="headerlink" href="#discover-discover-plugins" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;paths&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;/path/to/plugins&quot;</span><span class="p">]</span><span class="w">  </span><span class="c1">// optional</span>
+<span class="p">}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;plugins&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;protocol&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;VISA&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/usr/local/lib/instrument-plugins/visa_builtin.so&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;VISA Plugin&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0.0&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<h4 id="plugins-list-available-plugins"><code>plugins</code> - List available plugins<a class="headerlink" href="#plugins-list-available-plugins" title="Permanent link">&para;</a></h4>
+<p><strong>Parameters:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{}</span>
+</code></pre></div>
+<p><strong>Response:</strong></p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;ok&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;plugins&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;VISA&quot;</span><span class="p">:</span><span class="w">  </span><span class="s2">&quot;/usr/local/lib/instrument-plugins/visa_builtin. so&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;SimpleSerial&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/usr/local/lib/instrument-plugins/simple_serial_plugin.so&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<hr />
+<h2 id="complete-example-curl">Complete Example (curl)<a class="headerlink" href="#complete-example-curl" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Start daemon</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8555/rpc<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;command&quot;:&quot;daemon&quot;,&quot;params&quot;:{&quot;action&quot;:&quot;start&quot;}}&#39;</span>
+
+<span class="c1"># Start an instrument</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8555/rpc<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;command&quot;:&quot;start&quot;,&quot;params&quot;: {&quot;config_path&quot;:&quot;configs/dmm1.yaml&quot;}}&#39;</span>
+
+<span class="c1"># Submit measurement</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8555/rpc<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type:  application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;command&quot;:&quot;submit_measure&quot;,&quot;params&quot;:{&quot;script_path&quot;:&quot;scripts/measure.lua&quot;}}&#39;</span>
+
+<span class="c1"># Response:  {&quot;ok&quot;:true,&quot;job_id&quot;:&quot;job_20260116_123456_a1b2c3&quot;}</span>
+
+<span class="c1"># Poll job status</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8555/rpc<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;command&quot;:&quot;job_status&quot;,&quot;params&quot;:{&quot;job_id&quot;:&quot;job_20260116_123456_a1b2c3&quot;}}&#39;</span>
+
+<span class="c1"># Fetch results</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8555/rpc<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type:  application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;command&quot;:&quot;job_result&quot;,&quot;params&quot;:{&quot;job_id&quot;:&quot;job_20260116_123456_a1b2c3&quot;}}&#39;</span>
+</code></pre></div>
+<h2 id="python-client-example">Python Client Example<a class="headerlink" href="#python-client-example" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">InstrumentServerRPC</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8555</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;http://</span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">port</span><span class="si">}</span><span class="s2">/rpc&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;command&quot;</span><span class="p">:</span> <span class="n">command</span><span class="p">,</span> <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="n">params</span> <span class="ow">or</span> <span class="p">{}}</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span> <span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">submit_measure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_path</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s2">&quot;submit_measure&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;script_path&quot;</span><span class="p">:</span>  <span class="n">script_path</span><span class="p">})</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span> <span class="n">call</span><span class="p">(</span><span class="s2">&quot;job_status&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span>  <span class="n">job_id</span><span class="p">})</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">wait_for_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">,</span> <span class="n">poll_interval</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span> <span class="n">job_status</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">status</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;completed&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">,</span> <span class="s2">&quot;canceled&quot;</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="n">status</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">poll_interval</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">job_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s2">&quot;job_result&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;job_id&quot;</span><span class="p">:</span> <span class="n">job_id</span><span class="p">})</span>
+
+<span class="c1"># Usage</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">InstrumentServerRPC</span><span class="p">()</span>
+
+<span class="c1"># Submit measurement</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">submit_measure</span><span class="p">(</span><span class="s2">&quot;scripts/measure.lua&quot;</span><span class="p">)</span>
+<span class="n">job_id</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;job_id&quot;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Job submitted: </span><span class="si">{</span><span class="n">job_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Wait for completion</span>
+<span class="n">client</span><span class="o">.</span><span class="n">wait_for_job</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
+
+<span class="c1"># Get results</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">job_result</span><span class="p">(</span><span class="n">job_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Results: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="security-notes">Security Notes<a class="headerlink" href="#security-notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li>RPC server binds to <code>127.0.0.1</code> only (localhost)</li>
+<li>No authentication by default</li>
+<li>Designed for local control and automation</li>
+<li><strong>Do not expose to untrusted networks</strong></li>
+<li>Consider firewall rules if running on shared systems</li>
+</ul>
+<h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Request Latency</strong>: ~200 µs per RPC call</li>
+<li><strong>Job Submission</strong>: Non-blocking, returns immediately</li>
+<li><strong>Status Queries</strong>:  Fast-tracked, no queue blocking</li>
+<li><strong>Throughput</strong>: Thousands of requests per second</li>
+</ul>
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../EMBEDDING_API/">EMBEDDING_API</a> - Embedding the server in C++</li>
+<li><a href="../JOB_SCHEDULING/">JOB_SCHEDULING</a> - Job queue behavior</li>
+<li><a href="../CLI_USAGE/">CLI</a> - Command-line interface</li>
+<li><a href="../ARCHITECTURE/">ARCHITECTURE</a> - System architecture</li>
+</ul>
 
 
 

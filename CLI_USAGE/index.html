@@ -970,16 +970,22 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
+    <nav class="md-nav" aria-label="Environment Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#instrument_script_server_rpc_port" class="md-nav__link">
     <span class="md-ellipsis">
       
-        See Also
+        INSTRUMENT_SCRIPT_SERVER_RPC_PORT
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1794,16 +1800,22 @@
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
+    <nav class="md-nav" aria-label="Environment Variables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#instrument_script_server_rpc_port" class="md-nav__link">
     <span class="md-ellipsis">
       
-        See Also
+        INSTRUMENT_SCRIPT_SERVER_RPC_PORT
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -2128,12 +2140,14 @@ instrument-server<span class="w"> </span>measure<span class="w"> </span>scripts/
 instrument-server<span class="w"> </span>measure<span class="w"> </span>scripts/sweep.lua<span class="w"> </span>--json<span class="w"> </span>&gt;<span class="w"> </span>results.json
 </code></pre></div>
 <h4 id="automatic-result-collection">Automatic Result Collection<a class="headerlink" href="#automatic-result-collection" title="Permanent link">&para;</a></h4>
-<p>All <code>context:call()</code> operations are automatically collected with full metadata, including:
-- Command ID and execution timestamp
-- Instrument name and verb (command)
-- Parameters passed to the command
-- Return value and type
-- Large data buffer references (for waveforms, arrays, etc.)</p>
+<p>All <code>context:call()</code> operations are automatically collected with full metadata, including:</p>
+<ul>
+<li>Command ID and execution timestamp</li>
+<li>Instrument name and verb (command)</li>
+<li>Parameters passed to the command</li>
+<li>Return value and type</li>
+<li>Large data buffer references (for waveforms, arrays, etc.)</li>
+</ul>
 <p>Results are displayed after script execution in execution order, providing complete traceability of all measurements.</p>
 <h4 id="text-output-format">Text Output Format<a class="headerlink" href="#text-output-format" title="Permanent link">&para;</a></h4>
 <p>By default, results are displayed in a human-readable format:</p>
@@ -2148,15 +2162,19 @@ Measurement complete
 [4] Scope1.CAPTURE() -&gt; [buffer] buf_abc123 (10000 elements, float32)
 ======================
 </code></pre></div>
-<p>Each line shows:
-- <strong>Index</strong>: Sequential number of the call
-- <strong>Instrument and Command</strong>: Full command with channel if applicable
-- <strong>Parameters</strong>: Values passed to the command
-- <strong>Return Value</strong>: Type in brackets, followed by the value</p>
-<p>For large data buffers (waveforms, large arrays), the output shows a reference with:
-- <strong>buffer_id</strong>: Unique identifier for accessing the data
-- <strong>element_count</strong>: Number of data points
-- <strong>data_type</strong>: Type of data (float32, float64, int32, etc.)</p>
+<p>Each line shows:</p>
+<ul>
+<li><strong>Index</strong>: Sequential number of the call</li>
+<li><strong>Instrument and Command</strong>: Full command with channel if applicable</li>
+<li><strong>Parameters</strong>: Values passed to the command</li>
+<li><strong>Return Value</strong>: Type in brackets, followed by the value</li>
+</ul>
+<p>For large data buffers (waveforms, large arrays), the output shows a reference with:</p>
+<ul>
+<li><strong>buffer_id</strong>: Unique identifier for accessing the data</li>
+<li><strong>element_count</strong>: Number of data points</li>
+<li><strong>data_type</strong>: Type of data (float32, float64, int32, etc.)</li>
+</ul>
 <h4 id="json-output-format">JSON Output Format<a class="headerlink" href="#json-output-format" title="Permanent link">&para;</a></h4>
 <p>Use <code>--json</code> flag to get structured output for automation and data processing:</p>
 <div class="language-bash highlight"><pre><span></span><code>instrument-server<span class="w"> </span>measure<span class="w"> </span>script.lua<span class="w"> </span>--json
@@ -2194,14 +2212,16 @@ Measurement complete
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>JSON Schema</strong>: The output conforms to the JSON schema at <code>schemas/measurement_results.schema.json</code> for validation and automated parsing.</p>
-<p><strong>Return Types</strong>:
-- <code>double</code>: Floating-point number
-- <code>int64</code>: Integer value
-- <code>string</code>: Text value
-- <code>bool</code>: Boolean (true/false)
-- <code>array</code>: Array of numbers
-- <code>buffer</code>: Reference to large data buffer
-- <code>void</code>: Command with no return value</p>
+<p><strong>Return Types</strong>:</p>
+<ul>
+<li><code>double</code>: Floating-point number</li>
+<li><code>int64</code>: Integer value</li>
+<li><code>string</code>: Text value</li>
+<li><code>bool</code>: Boolean (true/false)</li>
+<li><code>array</code>: Array of numbers</li>
+<li><code>buffer</code>: Reference to large data buffer</li>
+<li><code>void</code>: Command with no return value</li>
+</ul>
 <h3 id="script-structure">Script Structure<a class="headerlink" href="#script-structure" title="Permanent link">&para;</a></h3>
 <p>All scripts have access to a global <code>context</code> object:</p>
 <div class="language-lua highlight"><pre><span></span><code><span class="c1">-- context: call(command, args...)     - Execute instrument command</span>
@@ -2696,12 +2716,17 @@ instrument-server<span class="w"> </span>daemon<span class="w"> </span>stop
 <span class="nb">exit</span><span class="w"> </span><span class="nv">$result</span>
 </code></pre></div>
 <h2 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
-<p>Currently no environment variables are used.  Configuration is via:</p>
-<ul>
-<li>Command-line arguments</li>
-<li>Configuration files (YAML)</li>
-<li>Runtime directory determined by platform</li>
-</ul>
+<h3 id="instrument_script_server_rpc_port"><code>INSTRUMENT_SCRIPT_SERVER_RPC_PORT</code><a class="headerlink" href="#instrument_script_server_rpc_port" title="Permanent link">&para;</a></h3>
+<p><strong>Type</strong>: Integer (1-65535)<br />
+<strong>Default</strong>: <code>8555</code><br />
+<strong>Description</strong>: Port number for the HTTP RPC server on localhost</p>
+<p>The RPC server provides programmatic API access for embedding and automation.</p>
+<p><strong>Example:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Start daemon with custom RPC port</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">INSTRUMENT_SCRIPT_SERVER_RPC_PORT</span><span class="o">=</span><span class="m">9000</span>
+instrument-server<span class="w"> </span>daemon<span class="w"> </span>start
+</code></pre></div>
+<h1 id="rpc-endpoint-now-available-at-http1270019000rpc">RPC endpoint now available at <a href="http://127.0.0.1:9000/rpc">http://127.0.0.1:9000/rpc</a><a class="headerlink" href="#rpc-endpoint-now-available-at-http1270019000rpc" title="Permanent link">&para;</a></h1>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../README.md">Main README</a> - Getting started and overview</li>
