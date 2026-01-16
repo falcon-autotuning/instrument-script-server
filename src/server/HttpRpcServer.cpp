@@ -32,7 +32,6 @@ namespace server {
 namespace {
 constexpr int BACKLOG = 8;
 constexpr size_t MAX_HEADER_READ = 64 * 1024; // 64 KB
-constexpr int DEFAULT_PORT = 8555;
 
 // Cross-platform close
 inline void close_socket(int fd) {
@@ -58,7 +57,8 @@ bool read_n(int fd, char *buf, size_t n) {
 
 // Read until "\r\n\r\n" or until limit. Returns true and fills out header
 // string. Also returns any extra bytes read after the headers in extra_data.
-bool read_http_headers(int fd, std::string &out_headers, std::string &extra_data) {
+bool read_http_headers(int fd, std::string &out_headers,
+                       std::string &extra_data) {
   out_headers.clear();
   extra_data.clear();
   char buf[1024];
@@ -221,8 +221,23 @@ void HttpRpcServer::run_loop(uint16_t port) {
   struct sockaddr_in addr;
   std::memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = inet_addr("127.0.0.1");
   addr.sin_port = htons(port);
+
+#ifdef _WIN32
+  if (InetPton(AF_INET, "127.0.0.1", &addr.sin_addr) != 1) {
+    LOG_ERROR("RPC", "ADDR", "InetPton failed");
+    // handle error
+    running_ = false;
+    return;
+  }
+#else
+  if (inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr) != 1) {
+    LOG_ERROR("RPC", "ADDR", "inet_pton failed: {}", strerror(errno));
+    // handle error
+    running_ = false;
+    return;
+  }
+#endif
 
   if (bind(listen_fd_, reinterpret_cast<struct sockaddr *>(&addr),
            sizeof(addr)) < 0) {
@@ -329,7 +344,7 @@ void HttpRpcServer::run_loop(uint16_t port) {
     if (content_len > 0) {
       // Start with any extra data read after headers
       body = extra_data;
-      
+
       // Read remaining body if needed
       size_t remaining = static_cast<size_t>(content_len) - body.size();
       if (remaining > 0) {

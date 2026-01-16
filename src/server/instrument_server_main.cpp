@@ -71,37 +71,6 @@ int main(int argc, char **argv) {
 
   std::string command = argv[1];
 
-  // Helper to convert argv style CLI into params JSON
-  auto argv_to_params = [&](int argc_rem, char **argv_rem) -> nlohmann::json {
-    nlohmann::json params = nlohmann::json::object();
-    // Minimal parsing: positional and --key value pairs
-    if (argc_rem <= 0)
-      return params;
-    // For commands that expect positional args, callers will read them
-    // directly in handlers by the named fields we set here.
-    // Populate a "positional" array for general use.
-    nlohmann::json pos = nlohmann::json::array();
-    for (int i = 0; i < argc_rem; ++i) {
-      pos.push_back(std::string(argv_rem[i]));
-    }
-    params["positional"] = pos;
-
-    // Also parse simple --key value pairs
-    for (int i = 0; i < argc_rem; ++i) {
-      std::string a = argv_rem[i];
-      if (a.rfind("--", 0) == 0) {
-        std::string key = a.substr(2);
-        if (i + 1 < argc_rem) {
-          params[key] = std::string(argv_rem[i + 1]);
-          i++;
-        } else {
-          params[key] = true;
-        }
-      }
-    }
-    return params;
-  };
-
   // Dispatch mapping CLI commands to handlers
   if (command == "daemon") {
     // subcommand is positional 0

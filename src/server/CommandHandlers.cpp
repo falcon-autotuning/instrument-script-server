@@ -17,6 +17,10 @@ using json = nlohmann::json;
 namespace instserver {
 namespace server {
 
+// The environment variable INSTRUMENT_SCRIPT_SERVER_RPC_PORT can be used to set
+// this port from outside.
+constexpr int DEFAULT_PORT = 8555;
+
 /*
   Each handler expects a params JSON object with keys as described below
   and fills `out` with a JSON response containing at minimum {"ok": true|false}
@@ -36,7 +40,7 @@ int handle_daemon(const json &params, json &out) {
                                       spdlog::level::from_str(log_level));
 
     // Check for RPC port configuration from environment variable
-    const char *rpc_port_env = std::getenv("INSTRUMENT_SERVER_RPC_PORT");
+    const char *rpc_port_env = std::getenv("INSTRUMENT_SCRIPT_SERVER_RPC_PORT");
     if (rpc_port_env && rpc_port_env[0]) {
       try {
         int port = std::stoi(rpc_port_env);
@@ -44,7 +48,7 @@ int handle_daemon(const json &params, json &out) {
           daemon.set_rpc_port(static_cast<uint16_t>(port));
         }
       } catch (...) {
-        // Invalid port number, ignore
+        daemon.set_rpc_port(DEFAULT_PORT);
       }
     }
 
@@ -55,7 +59,7 @@ int handle_daemon(const json &params, json &out) {
     }
     out["ok"] = true;
     out["pid"] = ServerDaemon::get_daemon_pid();
-    
+
     // Block and wait for daemon to stop (keeps process alive)
     // This is necessary for CLI usage to keep the daemon process running
     if (block) {
@@ -63,7 +67,7 @@ int handle_daemon(const json &params, json &out) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }
     }
-    
+
     return 0;
   } else if (action == "stop") {
     if (!ServerDaemon::is_already_running()) {

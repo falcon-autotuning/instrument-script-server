@@ -132,13 +132,13 @@ protected:
 
     // Start daemon directly in-process instead of via CLI
     auto &daemon = instserver::ServerDaemon::instance();
-    
+
     // Always stop any existing daemon to ensure clean state
     if (daemon.is_running()) {
       daemon.stop();
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    
+
     // Now start fresh with RPC port configured
     daemon.set_rpc_port(rpc_port_);
     if (!daemon.start()) {
@@ -183,10 +183,9 @@ protected:
       if (started_daemon_) {
         daemon.stop();
       }
-      FAIL()
-          << "RPC server not responding on " << rpc_host_ << ":" << rpc_port_
-          << " after " << timeout_ms
-          << "ms. Ensure RPC server can start and listen on that port.";
+      FAIL() << "RPC server not responding on " << rpc_host_ << ":" << rpc_port_
+             << " after " << timeout_ms
+             << "ms. Ensure RPC server can start and listen on that port.";
     }
   }
 

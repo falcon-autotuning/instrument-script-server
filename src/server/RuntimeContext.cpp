@@ -9,15 +9,15 @@ using namespace instserver;
 // Helper to map stored ParamValue to the external return_type string tests
 // expect
 static std::string param_value_type_name(const ParamValue &val) {
-  if (auto d = std::get_if<double>(&val)) {
+  if (std::get_if<double>(&val)) {
     return "float";
-  } else if (auto i = std::get_if<int64_t>(&val)) {
+  } else if (std::get_if<int64_t>(&val)) {
     return "integer";
-  } else if (auto s = std::get_if<std::string>(&val)) {
+  } else if (std::get_if<std::string>(&val)) {
     return "string";
-  } else if (auto b = std::get_if<bool>(&val)) {
+  } else if (std::get_if<bool>(&val)) {
     return "boolean";
-  } else if (auto arr = std::get_if<std::vector<double>>(&val)) {
+  } else if (std::get_if<std::vector<double>>(&val)) {
     return "array";
   }
   return "unknown";
@@ -190,7 +190,8 @@ sol::object RuntimeContext::call(const std::string &func_name,
     // record placeholder result index
     CallResult cr;
     cr.command_id = "";
-    cr.instrument_name = instrument_spec; // Preserve channel addressing like "MockInstrument1:1"
+    cr.instrument_name =
+        instrument_spec; // Preserve channel addressing like "MockInstrument1:1"
     cr.verb = verb;
     cr.params = params;
     cr.executed_at = std::chrono::steady_clock::now();
@@ -210,7 +211,8 @@ sol::object RuntimeContext::call(const std::string &func_name,
 
   CallResult cr;
   populate_callresult_from_response(cr, resp);
-  cr.instrument_name = instrument_spec; // Preserve channel addressing like "MockInstrument1:1"
+  cr.instrument_name =
+      instrument_spec; // Preserve channel addressing like "MockInstrument1:1"
   cr.verb = verb;
   cr.params = params;
   cr.executed_at = std::chrono::steady_clock::now();

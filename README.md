@@ -10,7 +10,6 @@ A modular, process-isolated system for controlling scientific instruments for la
 - **Automatic Result Collection**: All command return values are automatically captured with full traceability
 - **Synchronization**:  Parallel execution with precise timing coordination across instruments
 - **Cross-Platform**: Works on Linux and Windows
-- **HTTP/JSON RPC (optional)**: A lightweight HTTP/JSON RPC interface exposed by the server daemon
 
 ## Performance
 
@@ -69,11 +68,49 @@ instrument-server daemon stop
 
 Find it [here](https://falcon-autotuning.github.io/instrument-script-server/).
 
-- **[Configuration Guide](CONFIGURATION.md)** - How to write instrument configurations and API definitions
-- **[CLI Usage](CLI_USAGE.md)** - Complete command-line interface reference
-- **[Plugin Development](PLUGIN_DEVELOPMENT.md)** - Creating custom instrument drivers
-- **[Architecture](ARCHITECTURE.md)** - System design and components
-- **[Synchronization](SYNCHRONIZATION.md)** - Parallel execution protocol
+- **[Configuration Guide](docs/CONFIGURATION.md)** - How to write instrument configurations and API definitions
+- **[CLI Usage](docs/CLI_USAGE.md)** - Complete command-line interface reference
+- **[Plugin Development](docs/PLUGIN_DEVELOPMENT.md)** - Creating custom instrument drivers
+- **[Architecture](docs/ARCHITECTURE.md)** - System design and components
+- **[Synchronization](docs/SYNCHRONIZATION.md)** - Parallel execution protocol
+- **[Embedding API](docs/EMBEDDING_API.md)** - How to embed the server inside other processes/servers (new)
+- **[Job Scheduling & Staging](docs/JOB_SCHEDULING.md)** - New job handling, staging and NOPs (new)
+
+## New / Important: Embedding API
+
+A programmatic API is now available to embed the Instrument Script Server within other servers/processes (for example, a higher-level orchestration server that wants to directly control instruments without launching a separate daemon process). See docs/EMBEDDING_API.md for API surface, patterns, and examples (C++ and Lua).
+
+Key points:
+
+- You can create an in-process server instance, register instruments or instrument factories, and submit measurement jobs programmatically.
+- Embedding supports the same IPC, worker-process model and Lua runtime, but runs the ServerDaemon API inside your process.
+- Embedding is designed to be non-blocking: the host process receives callbacks or futures for job completion.
+
+## New / Important: Job scheduling, staging, and NOPs
+
+The server now supports a job-based measurement lifecycle and staging area for measurement artifacts prior to deployment:
+
+- Jobs represent a complete measurement run (script, parameters, artifacts).
+- Jobs can be scheduled, staged (prepared), deployed (pushed to workers), and run.
+- A lightweight NOP (no-op) command family was added to the command language to support dry-run, timing placeholders, and synchronization-only markers.
+
+See docs/JOB_SCHEDULING.md for full details on the job lifecycle, states, CLI and embedding API usage, and semantics of the new NOP commands.
+
+## Environment variable: change server listening port
+
+To support embedding and flexible deployments, the server's control/listener port can be changed using an environment variable:
+
+- Variable: `INSTRUMENT_SERVER_PORT`
+- Default: `8765`
+- To use a different port, export the variable before starting the server:
+
+```bash
+# Run daemon on port 9000
+export INSTRUMENT_SERVER_PORT=9000
+instrument-server daemon start
+```
+
+When embedding, the same environment variable is respected by the embedded server instance. See docs/EMBEDDING_API.md for programmatic port configuration.
 
 ## Installation
 
