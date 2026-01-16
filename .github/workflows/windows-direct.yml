@@ -58,69 +58,14 @@ jobs:
           Write-Host "PATH now: $env:PATH"
         shell: pwsh
 
-      # optional: cache the sccache on-disk cache between runs (improves warm-start)
-      - name: Cache sccache disk cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.SCCACHE_DIR }}
-          # key can be tuned; using OS + repo head short hash keeps it specific
-          key: sccache-${{ runner.os }}-${{ hashFiles('**/*') }}
-          restore-keys: |
-            sccache-${{ runner.os }}-
-
-      # -------------------------
-      # Prepare Visual Studio environment so clang-cl can find link.exe, SDK headers, etc.
-      # This runs VsDevCmd.bat (found via vswhere) to set up environment variables.
-      - name: Initialize Visual Studio build environment
-        shell: pwsh
-        run: |
-          $vswhere = "${{ envProgramFiles(x86) }}\Microsoft Visual Studio\Installer\vswhere.exe"
-          if (-not (Test-Path $vswhere)) {
-            Write-Host "vswhere not at expected path, searching common location..."
-            $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
-          }
-
-          if (-not (Test-Path $vswhere)) {
-            throw "vswhere.exe not found; cannot initialize VS environment"
-          }
-
-          $installationPath = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
-          if (-not $installationPath) { throw "Could not find Visual Studio installation path via vswhere" }
-
-          Write-Host "Found Visual Studio at: $installationPath"
-
-          # Call VsDevCmd.bat to set environment for x64 builds.
-          # The batch sets environment variables for the current cmd/powershell session when invoked via cmd /c and captured then re-exported.
-          $vsDevCmd = Join-Path $installationPath 'Common7\Tools\VsDevCmd.bat'
-          Write-Host "Calling: $vsDevCmd -arch=amd64"
-          # We capture the environment set by VsDevCmd and import into PowerShell session
-          $envoutput = cmd /c "`"$vsDevCmd`" -arch=amd64 && set"
-          foreach ($line in $envoutput -split "`r?`n") {
-            if ($line -match "^(.*?)=(.*)$") {
-              $name = $matches[1]
-              $value = $matches[2]
-              # update PowerShell environment for later steps in the same job
-              $env:$name = $value
-            }
-          }
-
-          Write-Host "Visual Studio environment initialized."
-
-      # -------------------------
-      # Configure CMake: use Ninja and sccache as compiler launcher
       - name: Configure CMake with clang-cl + Ninja + sccache
         shell: pwsh
         run: |
-          # Ensure clang-cl is the chosen compiler
-          $clang = "C:\Program Files\LLVM\bin\clang-cl.exe"
-          if (-not (Test-Path $clang)) {
-            Write-Host "Warning: clang-cl not found at $clang. Adjust path if needed."
-          }
-
           cmake -B build `
             -S . `
             -G "Ninja" `
             -A x64 `
+            -T ClangCL `
             -DCMAKE_C_COMPILER="$clang" `
             -DCMAKE_CXX_COMPILER="$clang" `
             -DCMAKE_C_COMPILER_LAUNCHER="sccache" `
@@ -132,30 +77,10 @@ jobs:
           # ensure sccache is found by CMake
           PATH: ${{ env.USERPROFILE }}\.cargo\bin;${{ env.PATH }}
 
-      - name: Show sccache stats (before build)
-        shell: pwsh
-        run: |
-          if (Get-Command sccache -ErrorAction SilentlyContinue) {
-            sccache --show-stats || true
-            sccache --show-config || true
-          } else {
-            Write-Host "sccache not available in PATH"
-          }
-
-      # -------------------------
-      # Build project (Ninja via CMake) - Ninja will call sccache which will cache compilations
       - name: Build project (Ninja via CMake)
         shell: pwsh
         run: |
-          # --parallel lets cmake choose reasonable parallelism (or you can pass a number)
-          cmake --build build --config Release --parallel
-
-      - name: Show sccache stats (after build)
-        shell: pwsh
-        run: |
-          if (Get-Command sccache -ErrorAction SilentlyContinue) {
-            sccache --show-stats || true
-          }
+          cmake --build build --config Release --parallel --verbose
 
       - name: List build outputs (debug)
         run: |
