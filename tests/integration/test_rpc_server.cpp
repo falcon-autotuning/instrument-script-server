@@ -47,7 +47,17 @@ static bool send_http_post(const std::string &host, int port,
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(static_cast<uint16_t>(port));
-    serv_addr.sin_addr.s_addr = inet_addr(host.c_str());
+#ifdef _WIN32
+    if (InetPton(AF_INET, host.c_str(), &serv_addr.sin_addr) != 1) {
+      WSACleanup();
+      return false;
+    }
+#else
+    if (inet_pton(AF_INET, host.c_str(), &serv_addr.sin_addr) != 1) {
+      close(sockfd);
+      return false;
+    }
+#endif
 
     // connect
     if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
