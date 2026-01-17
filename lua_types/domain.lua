@@ -1,5 +1,0 @@
----@meta
----
----@class Domain
----@field min number Minimum value of the domain.
----@field max number Maximum value of the domain.
