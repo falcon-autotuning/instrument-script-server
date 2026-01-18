@@ -166,26 +166,73 @@ local result = context:call("INSTRUMENT.COMMAND", {param = value})
 Required:
 
 - CMake 3.20+
-- C++17 compiler
+- C++17 compiler (Clang or GCC recommended)
 - Lua 5.3+ or LuaJIT
-- sol2 (Lua C++ bindings)
+- sol2 (Lua C++ bindings) - v3.5.0+
 - spdlog (logging)
 - nlohmann_json (JSON parsing)
 - yaml-cpp (YAML parsing)
 - Google Test (for testing)
+- Boost (boost-interprocess, boost-date-time)
 
 Optional:
 
 - NI-VISA (for VISA instruments)
+
+### Installing Dependencies
+
+**Arch Linux:**
+```bash
+sudo pacman -S base-devel git cmake ninja clang lld llvm lua luajit spdlog nlohmann-json yaml-cpp gtest boost
+
+# Install sol2 (header-only)
+git clone --depth 1 --branch v3.5.0 https://github.com/ThePhD/sol2.git /tmp/sol2
+sudo mkdir -p /usr/local/include/sol
+sudo cp -r /tmp/sol2/include/sol/* /usr/local/include/sol/
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install build-essential git cmake ninja-build clang liblua5.3-dev \
+    libspdlog-dev nlohmann-json3-dev libyaml-cpp-dev libgtest-dev \
+    libboost-date-time-dev libboost-interprocess-dev
+
+# Install sol2 (header-only)
+git clone --depth 1 --branch v3.5.0 https://github.com/ThePhD/sol2.git /tmp/sol2
+sudo mkdir -p /usr/local/include/sol
+sudo cp -r /tmp/sol2/include/sol/* /usr/local/include/sol/
+```
+
+**Windows:**
+Dependencies are managed via vcpkg (see `vcpkg.json`). The CI pipeline handles Windows builds automatically.
 
 ### Build
 
 ```bash
 git clone https://github.com/falcon-autotuning/instrument-script-server.git
 cd instrument-script-server
-make build
+make clean  # Clean any previous builds
+make build  # Build the project
 sudo cmake --install .
 ```
+
+### Running Tests
+
+```bash
+cd build
+
+# Run unit tests
+make test_unit
+
+# Run integration tests
+make test_integration
+
+# Run performance benchmarks
+make test_perf
+```
+
+**Note:** All tests must pass before committing changes. Both unit and integration tests validate the new main function format, deprecation warnings, and error handling.
 
 ### Verify Installation
 
