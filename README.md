@@ -73,8 +73,9 @@ Find it [here](https://falcon-autotuning.github.io/instrument-script-server/).
 - **[Plugin Development](docs/PLUGIN_DEVELOPMENT.md)** - Creating custom instrument drivers
 - **[Architecture](docs/ARCHITECTURE.md)** - System design and components
 - **[Synchronization](docs/SYNCHRONIZATION.md)** - Parallel execution protocol
-- **[Embedding API](docs/EMBEDDING_API.md)** - How to embed the server inside other processes/servers (new)
-- **[Job Scheduling & Staging](docs/JOB_SCHEDULING.md)** - New job handling, staging and NOPs (new)
+- **[Embedding API](docs/EMBEDDING_API.md)** - How to embed the server inside other processes/servers
+- **[Job Scheduling & Staging](docs/JOB_SCHEDULING.md)** - Job handling, staging and NOPs
+- **[Teal Migration Guide](docs/TEAL_MIGRATION.md)** - New script format for Teal static typing (new)
 
 ## New / Important: Embedding API
 
