@@ -2,9 +2,9 @@
 -- This demonstrates the Teal-compatible script structure
 
 function main(ctx)
-	-- Validate context parameter
+	-- Validate context parameter (use Lua error for this critical check)
 	if not ctx then
-		error("No context provided")
+		error("No context provided - this is a critical error")
 	end
 	
 	ctx:log("Starting simple call test (new format)")
@@ -15,7 +15,8 @@ function main(ctx)
 	if result then
 		ctx:log("Test passed")
 	else
-		ctx:log("Test failed")
+		-- Use ctx:error() for measurement-level errors
+		ctx:error("Test failed - no result from ECHO command")
 	end
 	
 	-- Explicit return (required for new format)

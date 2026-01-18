@@ -437,6 +437,15 @@ int handle_measure(const json &params, json &out) {
       const char *merge_snippet = R"lua(
 -- Merge injected __spec into host-provided context (do not overwrite host methods).
 -- __spec is a Lua table created from JSON by the C++ host.
+
+-- Reserved context method names (must match RuntimeContext usertype definition)
+local RESERVED_CONTEXT_METHODS = {
+  call = true,
+  parallel = true,
+  log = true,
+  error = true
+}
+
 local function is_primitive(v)
   local t = type(v)
   return t == "number" or t == "string" or t == "boolean" or t == "nil" or t == "function" or t == "userdata"
@@ -465,7 +474,7 @@ __injected_vars = {}
 
 if not __block_inject_globals then
   for k, v in pairs(__spec or {}) do
-    if k ~= "call" and k ~= "parallel" and k ~= "log" and k ~= "error" then
+    if not RESERVED_CONTEXT_METHODS[k] then
       if type(v) == "table" then
         _G[k] = make_readonly(v)
       else

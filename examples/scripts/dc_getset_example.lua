@@ -11,9 +11,9 @@ end
 ---@param ctx RuntimeContext The runtime context for instrument control
 ---@return table|nil results Returns measurement results or nil on success
 function main(ctx)
-	-- Validate we have the required context
+	-- Critical errors use Lua error() (infrastructure failures)
 	if not ctx then
-		error("No context available")
+		error("No context available - critical error")
 	end
 	
 	ctx:log("Starting DC GetSet measurement")

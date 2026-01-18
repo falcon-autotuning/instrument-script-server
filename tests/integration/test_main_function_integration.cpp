@@ -62,7 +62,8 @@ protected:
     if (auto l = spdlog::get("instrument")) {
       l->flush();
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    // Increased wait time for slower systems
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     std::ifstream ifs(log_path_, std::ios::in | std::ios::binary);
     if (!ifs)
