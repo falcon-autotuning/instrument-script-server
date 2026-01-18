@@ -1,6 +1,8 @@
 #include "instrument-server/server/JobManager.hpp"
 #include "instrument-server/Logger.hpp"
 #include "instrument-server/server/RuntimeContext.hpp"
+#include "instrument-server/server/CommandHandlers.hpp"
+#include "instrument-server/server/InstrumentRegistry.hpp"
 #include <algorithm>
 #include <chrono>
 #include <sol/sol.hpp>
@@ -220,16 +222,51 @@ void JobManager::worker_loop() {
         lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::table,
                            sol::lib::string, sol::lib::io, sol::lib::os);
 
+        // Load optional Lua libraries (was missing before)
+        load_optional_lua_libs(lua);
+
         SyncCoordinator sync_coordinator;
         auto ctx = bind_runtime_context(lua, InstrumentRegistry::instance(),
                                         sync_coordinator, true);
 
-        // Run script to parse and enqueue commands (this may block on parallel
-        // blocks)
+        // Load the script file
         auto load_result = lua.safe_script_file(script_path);
         if (!load_result.valid()) {
           sol::error err = load_result;
-          throw std::runtime_error(std::string("Script error: ") + err.what());
+          throw std::runtime_error(std::string("Script load error: ") + err.what());
+        }
+
+        // Check if the script defined a main function (new format)
+        sol::optional<sol::function> main_func = lua["main"];
+        
+        if (main_func) {
+          // New format: call main function with injected globals as parameter
+          LOG_INFO("JOB", "MEASURE", "Executing script with main function (new format)");
+          
+          sol::object globals_arg = sol::nil;
+          if (run_info.params.contains("globals")) {
+            globals_arg = json_to_lua(lua, run_info.params["globals"]);
+          }
+          
+          sol::protected_function_result main_result = (*main_func)(globals_arg);
+          
+          if (!main_result.valid()) {
+            sol::error err = main_result;
+            std::string error_msg = std::string("Script execution error: ") + err.what();
+            // Check if context:error() was called
+            if (ctx->has_error()) {
+              error_msg = ctx->get_error();
+            }
+            throw std::runtime_error(error_msg);
+          }
+        } else {
+          // Old format: script executed at load time (backward compatibility)
+          LOG_INFO("JOB", "MEASURE", "Script executed at load time (old format)");
+        }
+
+        // Check for explicit errors from context:error()
+        if (ctx->has_error()) {
+          throw std::runtime_error(ctx->get_error());
         }
 
         // Mark this measure job active
@@ -253,8 +290,15 @@ void JobManager::worker_loop() {
             std::lock_guard<std::mutex> lk(mgr.mutex_);
             auto it = mgr.jobs_.find(jid);
             if (it != mgr.jobs_.end()) {
-              it->second.result = r;
-              it->second.status = "completed";
+              // Check for errors from context:error() after execution
+              if (ctx->has_error()) {
+                it->second.status = "failed";
+                it->second.error = ctx->get_error();
+                it->second.result = r; // Still include partial results
+              } else {
+                it->second.result = r;
+                it->second.status = "completed";
+              }
               it->second.finished_at = std::chrono::system_clock::now();
               LOG_INFO("JOB", "MON", "Job {} completed (monitor)", jid);
             }

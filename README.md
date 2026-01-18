@@ -110,7 +110,54 @@ The server supports configuration via environment variables:
 
 - **Variable**: `INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB`
 - **Default**: ``
-- **Description**: Sets the path for an optional lua library to load for interpreting measurement scripts. This supports either the directory of a larger package or just a file.
+- **Description**: Sets the path(s) for optional Lua libraries to load for interpreting measurement scripts. Supports:
+  - A single directory containing Lua modules
+  - A single Lua bundle file
+  - Multiple paths separated by semicolons (`;`)
+  - Example: `export INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB="/path/to/lib1;/path/to/lib2;/path/to/bundle.lua"`
+
+## Measurement Script Structure
+
+### New Format (Teal-Compatible)
+
+The server now supports a new script format designed for Teal static typing and compilation:
+
+```lua
+-- Define a main function that receives typed parameters
+function main(globals)
+    -- Access context and parameters from globals
+    local ctx = globals or context
+    
+    ctx.log("Starting measurement")
+    
+    -- Use context:call() for instrument commands
+    local result = ctx:call("INSTRUMENT.COMMAND", {param = value})
+    
+    -- Use context:error() to report failures
+    if not result then
+        ctx:error("Measurement failed: no result")
+        return nil
+    end
+    
+    -- Results are automatically collected from context:call()
+    return nil  -- Optional return value
+end
+```
+
+**Key features:**
+- **Typed parameters**: The `main(globals)` function signature enables Teal type checking
+- **Explicit error handling**: Use `context:error(message)` to report script errors
+- **Automatic result collection**: All `context:call()` operations are automatically captured
+- **Return statement**: Main function must have a return statement (can be `nil`)
+
+### Backward Compatibility
+
+Scripts without a `main` function continue to work using the old format:
+```lua
+-- Old format: executes at script load time
+context:log("Starting measurement")
+local result = context:call("INSTRUMENT.COMMAND", {param = value})
+```
 
 ## Installation
 

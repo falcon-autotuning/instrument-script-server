@@ -23,7 +23,7 @@ namespace server {
 // this port from outside.
 constexpr int DEFAULT_PORT = 8555;
 
-static sol::object json_to_lua(sol::state_view lua, const json &j) {
+sol::object json_to_lua(sol::state_view lua, const json &j) {
   switch (j.type()) {
   case json::value_t::null:
     return sol::make_object(lua, sol::nil);
@@ -145,19 +145,38 @@ void load_optional_lua_libs(sol::state &lua) {
              "(INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB)");
     return;
   }
-  std::filesystem::path p(envp);
-  if (!std::filesystem::exists(p)) {
-    LOG_WARN("SERVER", "MEASURE", "Specified helpers path does not exist: {}",
-             envp);
-    return;
+  
+  // Support multiple paths separated by semicolons
+  std::string paths_str(envp);
+  std::vector<std::string> paths;
+  size_t start = 0;
+  size_t end = paths_str.find(';');
+  
+  while (end != std::string::npos) {
+    paths.push_back(paths_str.substr(start, end - start));
+    start = end + 1;
+    end = paths_str.find(';', start);
   }
-  if (std::filesystem::is_directory(p)) {
-    preload_lua_modules_from_dir(lua, p.string());
-  } else if (std::filesystem::is_regular_file(p)) {
-    // treat as bundle file
-    load_bundle_file(lua, p.string());
-  } else {
-    LOG_WARN("SERVER", "MEASURE", "Helpers path not dir or file: {}", envp);
+  paths.push_back(paths_str.substr(start));
+  
+  // Load each path
+  for (const auto &path_str : paths) {
+    if (path_str.empty()) continue;
+    
+    std::filesystem::path p(path_str);
+    if (!std::filesystem::exists(p)) {
+      LOG_WARN("SERVER", "MEASURE", "Specified helpers path does not exist: {}",
+               path_str);
+      continue;
+    }
+    if (std::filesystem::is_directory(p)) {
+      preload_lua_modules_from_dir(lua, p.string());
+    } else if (std::filesystem::is_regular_file(p)) {
+      // treat as bundle file
+      load_bundle_file(lua, p.string());
+    } else {
+      LOG_WARN("SERVER", "MEASURE", "Helpers path not dir or file: {}", path_str);
+    }
   }
 }
 /*
@@ -475,12 +494,114 @@ __context_schema_version = nil
       LOG_INFO("SERVER", "MEASURE", "Running measurement (text mode)");
     }
 
-    auto result = lua.safe_script_file(script_path);
+    // Load the script file
+    auto load_result = lua.safe_script_file(script_path);
 
-    if (!result.valid()) {
-      sol::error err = result;
+    if (!load_result.valid()) {
+      sol::error err = load_result;
       out["ok"] = false;
-      out["error"] = err.what();
+      out["error"] = std::string("Script load error: ") + err.what();
+      return 1;
+    }
+
+    // Check if the script defined a main function (new format)
+    sol::optional<sol::function> main_func = lua["main"];
+    
+    if (main_func) {
+      // New format: call main function with injected globals as parameter
+      LOG_INFO("SERVER", "MEASURE", "Executing script with main function (new format)");
+      
+      sol::object globals_arg = sol::nil;
+      if (params.contains("globals")) {
+        globals_arg = json_to_lua(lua, params["globals"]);
+      }
+      
+      sol::protected_function_result main_result = (*main_func)(globals_arg);
+      
+      if (!main_result.valid()) {
+        sol::error err = main_result;
+        out["ok"] = false;
+        out["error"] = std::string("Script execution error: ") + err.what();
+        // Check if context:error() was called
+        if (ctx_shared->has_error()) {
+          out["error"] = ctx_shared->get_error();
+        }
+        return 1;
+      }
+      
+      // The main function should return results (optional)
+      // We still collect results from context:call() operations
+    } else {
+      // Old format: script executed at load time (backward compatibility)
+      LOG_INFO("SERVER", "MEASURE", "Script executed at load time (old format)");
+      // Result was already executed during safe_script_file
+    }
+
+    // Check for explicit errors
+    if (ctx_shared->has_error()) {
+      out["ok"] = false;
+      out["error"] = ctx_shared->get_error();
+      // Still include results collected so far
+      const auto &results = ctx_shared->get_results();
+      out["script"] = std::filesystem::path(script_path).filename().string();
+      out["results"] = json::array();
+      
+      for (size_t i = 0; i < results.size(); ++i) {
+        const auto &r = results[i];
+        json result_json;
+        result_json["index"] = i;
+        result_json["instrument"] = r.instrument_name;
+        result_json["verb"] = r.verb;
+
+        // Convert params to JSON
+        json params_json;
+        for (const auto &kv : r.params) {
+          const auto &key = kv.first;
+          const auto &value = kv.second;
+          params_json[key] = [&value]() -> json {
+            if (auto d = std::get_if<double>(&value))
+              return *d;
+            if (auto i = std::get_if<int64_t>(&value))
+              return *i;
+            if (auto s = std::get_if<std::string>(&value))
+              return *s;
+            if (auto b = std::get_if<bool>(&value))
+              return *b;
+            if (auto arr = std::get_if<std::vector<double>>(&value))
+              return *arr;
+            return nullptr;
+          }();
+        }
+        result_json["params"] = params_json;
+
+        auto ms_since_epoch =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                r.executed_at.time_since_epoch())
+                .count();
+        result_json["executed_at_ms"] = ms_since_epoch;
+
+        json return_json;
+        if (r.has_large_data) {
+          return_json["type"] = "buffer";
+          return_json["buffer_id"] = r.buffer_id;
+          return_json["element_count"] = r.element_count;
+          return_json["data_type"] = r.data_type;
+        } else if (r.return_value) {
+          return_json["type"] = r.return_type;
+          if (auto d = std::get_if<double>(&*r.return_value))
+            return_json["value"] = *d;
+          else if (auto i = std::get_if<int64_t>(&*r.return_value))
+            return_json["value"] = *i;
+          else if (auto s = std::get_if<std::string>(&*r.return_value))
+            return_json["value"] = *s;
+          else if (auto b = std::get_if<bool>(&*r.return_value))
+            return_json["value"] = *b;
+        }
+        result_json["return"] = return_json;
+
+        out["results"].push_back(result_json);
+      }
+      
       return 1;
     }
 

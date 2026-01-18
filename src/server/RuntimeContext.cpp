@@ -445,6 +445,12 @@ void RuntimeContext::log(const std::string &msg) {
   LOG_INFO("LUA_SCRIPT", "USER", "{}", msg);
 }
 
+void RuntimeContext::error(const std::string &msg) {
+  has_error_ = true;
+  error_message_ = msg;
+  LOG_ERROR("LUA_SCRIPT", "USER_ERROR", "{}", msg);
+}
+
 CommandResponse RuntimeContext::send_command(
     const std::string &instrument_id, const std::string &verb,
     const std::unordered_map<std::string, ParamValue> &params,
@@ -574,7 +580,8 @@ bind_runtime_context(sol::state &lua, InstrumentRegistry &registry,
                      SyncCoordinator &sync_coordinator, bool enqueue_mode) {
   lua.new_usertype<RuntimeContext>(
       "RuntimeContext", sol::no_constructor, "call", &RuntimeContext::call,
-      "parallel", &RuntimeContext::parallel, "log", &RuntimeContext::log);
+      "parallel", &RuntimeContext::parallel, "log", &RuntimeContext::log,
+      "error", &RuntimeContext::error);
 
   auto ctx = std::make_shared<RuntimeContext>(registry, sync_coordinator,
                                               enqueue_mode);

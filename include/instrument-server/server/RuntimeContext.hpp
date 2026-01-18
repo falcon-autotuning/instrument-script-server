@@ -67,6 +67,17 @@ public:
   /// Usage: context:log("message")
   void log(const std::string &msg);
 
+  /// Report an error from the script
+  /// Usage: context:error("error message")
+  /// This sets the error state and can be used to signal measurement failures
+  void error(const std::string &msg);
+
+  /// Check if an error has been set
+  bool has_error() const { return has_error_; }
+
+  /// Get the error message if one has been set
+  const std::string &get_error() const { return error_message_; }
+
   /// Get collected results (filled after process_tokens_and_wait)
   const std::vector<CallResult> &get_results() const {
     return collected_results_;
@@ -97,6 +108,10 @@ protected:
 
   // Collected results from all call() operations
   std::vector<CallResult> collected_results_;
+
+  // Error state tracking (for context:error())
+  bool has_error_{false};
+  std::string error_message_;
 
   // enqueue mode: if true, call() enqueues (worker->execute) and returns
   // immediately (collecting futures to wait on later). If false, call()
