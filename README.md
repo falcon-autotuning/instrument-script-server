@@ -121,7 +121,7 @@ The server supports configuration via environment variables:
 
 ### New Format (Teal-Compatible)
 
-The server now supports a new script format designed for Teal static typing and compilation:
+The server supports a new script format designed for Teal static typing and compilation:
 
 ```lua
 -- Define a main function that receives the runtime context
@@ -143,9 +143,53 @@ function main(ctx)
 end
 ```
 
+### Teal Static Typing with Type Manifest
+
+For Teal scripts with typed parameters, use a **type manifest** to declare parameter types:
+
+```teal
+-- Teal script with typed parameters
+record RuntimeContext
+    log: function(RuntimeContext, string)
+    call: function(RuntimeContext, string, {any:any}): any
+end
+
+function main(ctx: RuntimeContext, voltage: number, sampleRate: number): nil
+    ctx:log("Voltage: " .. tostring(voltage))
+    ctx:log("Sample rate: " .. tostring(sampleRate))
+    return nil
+end
+```
+
+Generate a type manifest from your Teal file:
+
+```bash
+lua scripts/teal_manifest_generator.lua measurement.tl > manifest.json
+```
+
+Pass the manifest when running the measurement:
+
+```bash
+instrument-server measure measurement.lua \
+    --json \
+    --globals '{"voltage": 5.0, "sampleRate": 1000}' \
+    --type-manifest-file manifest.json
+```
+
+**Benefits:**
+- ✓ Compile-time type checking with Teal
+- ✓ Runtime parameter validation
+- ✓ Clear parameter contracts
+- ✓ Better error messages
+- ✓ Missing parameter detection
+- ✓ Unused global warnings
+
+See [TEAL_TYPE_MANIFEST.md](docs/TEAL_TYPE_MANIFEST.md) for complete documentation.
+
 **Key features:**
 - **Context parameter**: The `main(ctx)` function signature receives the runtime context
-- **Global variables**: Spec variables are injected as globals and accessible in main
+- **Typed parameters**: Additional parameters can be passed with type validation
+- **Global variables**: Spec variables are injected as globals (with warnings)
 - **Explicit error handling**: Use `context:error(message)` to report script errors
 - **Automatic result collection**: All `context:call()` operations are automatically captured
 - **Return statement**: Main function must have a return statement (can be `nil`)

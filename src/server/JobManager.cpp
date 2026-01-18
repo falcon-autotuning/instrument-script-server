@@ -243,16 +243,96 @@ void JobManager::worker_loop() {
           // New format: call main function with context
           LOG_INFO("JOB", "MEASURE", "Executing script with main function (new format)");
           
-          sol::protected_function_result main_result = (*main_func)(ctx.get());
-          
-          if (!main_result.valid()) {
-            sol::error err = main_result;
-            std::string error_msg = std::string("Script execution error: ") + err.what();
-            // If context:error() was also called, include both messages
-            if (ctx->has_error()) {
-              error_msg = ctx->get_error() + " (Runtime: " + err.what() + ")";
+          // Check if type_manifest is provided (Teal static typing support)
+          if (run_info.params.contains("type_manifest")) {
+            const auto &manifest = run_info.params["type_manifest"];
+            
+            // Validate manifest structure
+            if (!manifest.contains("parameters") || !manifest["parameters"].is_array()) {
+              throw std::runtime_error("Invalid type_manifest: missing or invalid 'parameters' array");
             }
-            throw std::runtime_error(error_msg);
+            
+            // Build arguments based on manifest
+            std::vector<sol::object> args;
+            args.push_back(sol::make_object(lua, ctx.get())); // First arg is always context
+            
+            const auto &param_defs = manifest["parameters"];
+            for (size_t i = 1; i < param_defs.size(); ++i) { // Skip first (context)
+              const auto &param = param_defs[i];
+              
+              if (!param.contains("name") || !param["name"].is_string()) {
+                throw std::runtime_error(fmt::format("Invalid type_manifest: parameter {} missing 'name'", i));
+              }
+              
+              std::string param_name = param["name"];
+              
+              // Check if this parameter exists in globals
+              if (!run_info.params.contains("globals") || !run_info.params["globals"].contains(param_name)) {
+                std::string error_msg = fmt::format(
+                    "Missing required parameter '{}' (declared in type_manifest but not provided in globals)", 
+                    param_name);
+                LOG_ERROR("JOB", "MEASURE", 
+                          "Missing required parameter '{}' for typed main function", param_name);
+                throw std::runtime_error(error_msg);
+              }
+              
+              // Convert JSON value to Lua object
+              sol::object arg = json_to_lua(lua, run_info.params["globals"][param_name]);
+              args.push_back(arg);
+              
+              LOG_INFO("JOB", "MEASURE", 
+                       "Passing parameter '{}' to main function (type: {})", 
+                       param_name, 
+                       param.value("type", "unknown"));
+            }
+            
+            // Check for unused globals (warnings)
+            if (run_info.params.contains("globals")) {
+              for (auto it = run_info.params["globals"].begin(); it != run_info.params["globals"].end(); ++it) {
+                std::string global_name = it.key();
+                bool found = false;
+                
+                for (size_t i = 1; i < param_defs.size(); ++i) {
+                  if (param_defs[i]["name"] == global_name) {
+                    found = true;
+                    break;
+                  }
+                }
+                
+                if (!found) {
+                  LOG_WARN("JOB", "MEASURE",
+                           "Global variable '{}' provided but not used by typed main function (injecting as global)", 
+                           global_name);
+                  // Still inject it as global for backward compatibility
+                  lua[global_name] = json_to_lua(lua, it.value());
+                }
+              }
+            }
+            
+            // Call main with unpacked arguments
+            sol::protected_function_result main_result = (*main_func)(sol::as_args(args));
+            
+            if (!main_result.valid()) {
+              sol::error err = main_result;
+              std::string error_msg = std::string("Script execution error: ") + err.what();
+              if (ctx->has_error()) {
+                error_msg = ctx->get_error() + " (Runtime: " + err.what() + ")";
+              }
+              throw std::runtime_error(error_msg);
+            }
+          } else {
+            // Legacy: call main with just context parameter
+            sol::protected_function_result main_result = (*main_func)(ctx.get());
+            
+            if (!main_result.valid()) {
+              sol::error err = main_result;
+              std::string error_msg = std::string("Script execution error: ") + err.what();
+              // If context:error() was also called, include both messages
+              if (ctx->has_error()) {
+                error_msg = ctx->get_error() + " (Runtime: " + err.what() + ")";
+              }
+              throw std::runtime_error(error_msg);
+            }
           }
         } else {
           // Old format: script executed at load time (backward compatibility)

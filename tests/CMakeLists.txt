@@ -41,7 +41,8 @@ add_executable(
   unit/test_plugin_loading.cpp
   unit/test_api_ref_resolution.cpp
   unit/test_plugin_registry.cpp
-  unit/test_main_function.cpp)
+  unit/test_main_function.cpp
+  unit/test_type_manifest.cpp)
 target_link_libraries(unit_tests PRIVATE instrument-server-core test-utils
                                          GTest::gtest GTest::gtest_main)
 
