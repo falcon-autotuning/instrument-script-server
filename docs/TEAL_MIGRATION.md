@@ -8,18 +8,21 @@ The instrument-script-server now supports a new script format designed for Teal 
 
 ### Main Function Structure
 
-Scripts should now define a `main` function that receives typed parameters:
+Scripts should now define a `main` function that receives the runtime context:
 
 ```lua
 -- Example: New Teal-compatible format
-function main(globals)
-    -- Access context from globals parameter
-    local ctx = globals or context
+function main(ctx)
+    -- Context is passed as parameter
+    -- Spec variables are available as globals
     
-    -- Your measurement code here
     ctx:log("Starting measurement")
     
-    local result = ctx:call("INSTRUMENT.COMMAND", {param = value})
+    -- Access spec variables from global scope
+    local voltage = setVoltage or 0.0
+    local rate = sampleRate or 1000
+    
+    local result = ctx:call("INSTRUMENT.COMMAND", {param = voltage})
     
     if not result then
         ctx:error("Measurement failed")
@@ -33,10 +36,11 @@ end
 
 ### Key Features
 
-1. **Typed Parameters**: The `main(globals)` signature enables Teal type annotations
-2. **Explicit Returns**: Main function must have a return statement
-3. **Error Handling**: Use `context:error(message)` to report failures
-4. **Result Collection**: All `context:call()` operations are automatically captured
+1. **Context Parameter**: The `main(ctx)` signature receives the runtime context
+2. **Global Variables**: Spec variables are injected as globals (logged as warnings)
+3. **Explicit Returns**: Main function must have a return statement
+4. **Error Handling**: Use `context:error(message)` to report failures
+5. **Result Collection**: All `context:call()` operations are automatically captured
 
 ## API Changes
 
@@ -46,9 +50,7 @@ end
 Reports an error from the measurement script. This sets an error state that will be included in the measurement response.
 
 ```lua
-function main(globals)
-    local ctx = globals or context
-    
+function main(ctx)
     if some_condition then
         ctx:error("Invalid configuration")
         return nil
@@ -72,13 +74,15 @@ export INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB="/path/to/lib1;/path/to/lib2;/path/t
 
 ## Backward Compatibility
 
-Scripts without a `main` function continue to work:
+Scripts without a `main` function continue to work but emit deprecation warnings:
 
 ```lua
--- Old format: still supported
+-- Old format: still supported (deprecated)
 context:log("Starting measurement")
 local result = context:call("INSTRUMENT.COMMAND")
 ```
+
+**Warning**: Compatibility mode is deprecated and will be removed in a future version.
 
 The system automatically detects whether a script uses the old or new format.
 
@@ -92,8 +96,7 @@ context:log("Test")
 local result = context:call("INSTRUMENT.GET_VALUE")
 
 -- After
-function main(globals)
-    local ctx = globals or context
+function main(ctx)
     ctx:log("Test")
     local result = ctx:call("INSTRUMENT.GET_VALUE")
     return nil
@@ -103,24 +106,22 @@ end
 ### 2. Update Global Variable Access
 
 ```lua
--- Before (globals injected directly)
-local voltage = setVoltage
-local rate = sampleRate
+-- Globals are injected automatically from spec
+-- Access them directly in main function
 
--- After (access from parameter)
-function main(globals)
-    local ctx = globals or context
-    local voltage = globals.setVoltage or ctx.setVoltage
-    local rate = globals.sampleRate or ctx.sampleRate
+function main(ctx)
+    -- Access globals directly (injected from spec)
+    local voltage = setVoltage or 0.0
+    local rate = sampleRate or 1000
+    
+    ctx:log("Using voltage: " .. voltage)
 end
 ```
 
 ### 3. Add Error Handling
 
 ```lua
-function main(globals)
-    local ctx = globals or context
-    
+function main(ctx)
     local result = ctx:call("INSTRUMENT.MEASURE")
     
     if not result then
@@ -135,8 +136,7 @@ end
 ### 4. Add Explicit Returns
 
 ```lua
-function main(globals)
-    local ctx = globals or context
+function main(ctx)
     -- measurement code
     return nil  -- Always include return statement
 end
@@ -144,21 +144,24 @@ end
 
 ## Teal Type Definitions
 
-When using Teal, you can define strict types for your measurement parameters:
+When using Teal, you can define strict types for the context parameter:
 
 ```teal
--- Example Teal type definition
-type MeasurementGlobals = record
-    setVoltages: {number}
-    sampleRate: number
-    getters: {{string, number}}
-    setters: {{string, number}}
+-- Example Teal type definition for context
+record RuntimeContext
+    log: function(RuntimeContext, string)
+    call: function(RuntimeContext, string, table): any
+    error: function(RuntimeContext, string)
+    parallel: function(RuntimeContext, function())
 end
 
 -- Typed main function
-function main(globals: MeasurementGlobals): nil
-    local ctx = context
+function main(ctx: RuntimeContext): nil
     ctx:log("Starting typed measurement")
+    
+    -- Globals are still available (injected from spec)
+    local voltage: number = setVoltage or 0.0
+    
     -- Type-safe measurement code
     return nil
 end
@@ -171,10 +174,8 @@ end
 Use `context:error()` for expected error conditions:
 
 ```lua
-function main(globals)
-    local ctx = globals or context
-    
-    if not globals.voltage then
+function main(ctx)
+    if not setVoltage then
         ctx:error("Required parameter 'voltage' not provided")
         return nil
     end
@@ -186,9 +187,7 @@ end
 Lua runtime errors (exceptions) are automatically captured and included in the response:
 
 ```lua
-function main(globals)
-    local ctx = globals or context
-    
+function main(ctx)
     -- This will be caught and reported
     error("Unexpected error")
 end

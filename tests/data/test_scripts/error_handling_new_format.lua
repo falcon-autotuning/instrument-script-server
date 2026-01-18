@@ -1,8 +1,10 @@
 -- Test error handling using new main function format
 -- This demonstrates context:error() usage
 
-function main(globals)
-	local ctx = globals or context
+function main(ctx)
+	if not ctx then
+		error("No context provided")
+	end
 	
 	ctx:log("Starting error handling test (new format)")
 	

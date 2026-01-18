@@ -240,15 +240,10 @@ void JobManager::worker_loop() {
         sol::optional<sol::function> main_func = lua["main"];
         
         if (main_func) {
-          // New format: call main function with injected globals as parameter
+          // New format: call main function with context
           LOG_INFO("JOB", "MEASURE", "Executing script with main function (new format)");
           
-          sol::object globals_arg = sol::nil;
-          if (run_info.params.contains("globals")) {
-            globals_arg = json_to_lua(lua, run_info.params["globals"]);
-          }
-          
-          sol::protected_function_result main_result = (*main_func)(globals_arg);
+          sol::protected_function_result main_result = (*main_func)(ctx.get());
           
           if (!main_result.valid()) {
             sol::error err = main_result;
@@ -261,7 +256,9 @@ void JobManager::worker_loop() {
           }
         } else {
           // Old format: script executed at load time (backward compatibility)
-          LOG_INFO("JOB", "MEASURE", "Script executed at load time (old format)");
+          LOG_WARN("JOB", "MEASURE",
+                   "DEPRECATED: Script uses compatibility mode (no main function). "
+                   "Please migrate to new format with main(ctx) function.");
         }
 
         // Check for explicit errors from context:error()

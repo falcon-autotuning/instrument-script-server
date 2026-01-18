@@ -459,14 +459,19 @@ local function make_readonly(val, seen)
   setmetatable(proxy, mt)
   return proxy
 end
-if !__block_inject_globals then
+
+-- Store injected variable names for logging
+__injected_vars = {}
+
+if not __block_inject_globals then
   for k, v in pairs(__spec or {}) do
-    if k ~= "call" and k ~= "parallel" and k ~= "log" then
+    if k ~= "call" and k ~= "parallel" and k ~= "log" and k ~= "error" then
       if type(v) == "table" then
         _G[k] = make_readonly(v)
       else
         _G[k] = v
       end
+      table.insert(__injected_vars, k)
     end
   end
 end
@@ -487,6 +492,19 @@ __context_schema_version = nil
             std::string("context_spec injection error: ") + err.what();
         return 1;
       }
+      
+      // Log warnings for each injected global variable
+      sol::optional<sol::table> injected_vars = lua["__injected_vars"];
+      if (injected_vars) {
+        for (size_t i = 1; i <= injected_vars->size(); ++i) {
+          sol::optional<std::string> var_name = (*injected_vars)[i];
+          if (var_name) {
+            LOG_WARN("SERVER", "MEASURE", 
+                     "Injecting global variable '{}' from spec", *var_name);
+          }
+        }
+      }
+      lua["__injected_vars"] = sol::nil; // Clean up
     } // end if contains context_spec
 
     if (!json_output) {
@@ -508,15 +526,10 @@ __context_schema_version = nil
     sol::optional<sol::function> main_func = lua["main"];
     
     if (main_func) {
-      // New format: call main function with injected globals as parameter
+      // New format: call main function with context
       LOG_INFO("SERVER", "MEASURE", "Executing script with main function (new format)");
       
-      sol::object globals_arg = sol::nil;
-      if (params.contains("globals")) {
-        globals_arg = json_to_lua(lua, params["globals"]);
-      }
-      
-      sol::protected_function_result main_result = (*main_func)(globals_arg);
+      sol::protected_function_result main_result = (*main_func)(ctx_shared.get());
       
       if (!main_result.valid()) {
         sol::error err = main_result;
@@ -534,7 +547,10 @@ __context_schema_version = nil
       // We still collect results from context:call() operations
     } else {
       // Old format: script executed at load time (backward compatibility)
-      LOG_INFO("SERVER", "MEASURE", "Script executed at load time (old format)");
+      LOG_WARN("SERVER", "MEASURE", 
+               "DEPRECATED: Script uses compatibility mode (no main function). "
+               "Please migrate to new format with main(ctx) function.");
+      out["error"] = "DEPRECATED: Compatibility mode will be removed in a future version";
       // Result was already executed during safe_script_file
     }
 

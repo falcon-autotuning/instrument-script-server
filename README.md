@@ -124,12 +124,10 @@ The server supports configuration via environment variables:
 The server now supports a new script format designed for Teal static typing and compilation:
 
 ```lua
--- Define a main function that receives typed parameters
-function main(globals)
-    -- Access context and parameters from globals
-    local ctx = globals or context
-    
-    ctx.log("Starting measurement")
+-- Define a main function that receives the runtime context
+function main(ctx)
+    -- Access context parameter
+    ctx:log("Starting measurement")
     
     -- Use context:call() for instrument commands
     local result = ctx:call("INSTRUMENT.COMMAND", {param = value})
@@ -146,7 +144,8 @@ end
 ```
 
 **Key features:**
-- **Typed parameters**: The `main(globals)` function signature enables Teal type checking
+- **Context parameter**: The `main(ctx)` function signature receives the runtime context
+- **Global variables**: Spec variables are injected as globals and accessible in main
 - **Explicit error handling**: Use `context:error(message)` to report script errors
 - **Automatic result collection**: All `context:call()` operations are automatically captured
 - **Return statement**: Main function must have a return statement (can be `nil`)

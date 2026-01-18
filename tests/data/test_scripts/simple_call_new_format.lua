@@ -1,9 +1,11 @@
 -- Simple single call test using new main function format
 -- This demonstrates the Teal-compatible script structure
 
-function main(globals)
-	-- Access context from globals or fallback to global context
-	local ctx = globals or context
+function main(ctx)
+	-- Validate context parameter
+	if not ctx then
+		error("No context provided")
+	end
 	
 	ctx:log("Starting simple call test (new format)")
 	
