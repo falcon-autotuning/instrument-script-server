@@ -253,9 +253,9 @@ void JobManager::worker_loop() {
           if (!main_result.valid()) {
             sol::error err = main_result;
             std::string error_msg = std::string("Script execution error: ") + err.what();
-            // Check if context:error() was called
+            // If context:error() was also called, include both messages
             if (ctx->has_error()) {
-              error_msg = ctx->get_error();
+              error_msg = ctx->get_error() + " (Runtime: " + err.what() + ")";
             }
             throw std::runtime_error(error_msg);
           }

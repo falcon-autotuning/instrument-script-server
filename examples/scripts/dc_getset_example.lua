@@ -2,6 +2,12 @@
 -- This script demonstrates the new main function format for Teal compatibility
 -- The main function receives injected globals as a parameter
 
+-- Helper function for safe table access with defaults
+local function safe_get(tbl, key, default)
+	if not tbl then return default end
+	return tbl[key] or default
+end
+
 ---@param globals table Injected runtime context with measurement parameters
 ---@return table|nil results Returns measurement results or nil on success
 function main(globals)
@@ -25,7 +31,7 @@ function main(globals)
 			local instrument_id, channel = setter[1], setter[2]
 
 			if instrument_id == "API1" then
-				local voltage = (ctx.setVoltages or {})[channel] or 0.0
+				local voltage = safe_get(ctx.setVoltages, channel, 0.0)
 				SET_VOLTAGE(voltage)
 			end
 		end

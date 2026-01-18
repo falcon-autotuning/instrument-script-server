@@ -23,38 +23,38 @@ namespace server {
 // this port from outside.
 constexpr int DEFAULT_PORT = 8555;
 
-sol::object json_to_lua(sol::state_view lua, const json &j) {
-  switch (j.type()) {
+sol::object json_to_lua(sol::state_view lua, const json &json_value) {
+  switch (json_value.type()) {
   case json::value_t::null:
     return sol::make_object(lua, sol::nil);
   case json::value_t::boolean:
-    return sol::make_object(lua, j.get<bool>());
+    return sol::make_object(lua, json_value.get<bool>());
   case json::value_t::number_integer:
-    return sol::make_object(lua, j.get<int64_t>());
+    return sol::make_object(lua, json_value.get<int64_t>());
   case json::value_t::number_unsigned:
-    return sol::make_object(lua, j.get<uint64_t>());
+    return sol::make_object(lua, json_value.get<uint64_t>());
   case json::value_t::number_float:
-    return sol::make_object(lua, j.get<double>());
+    return sol::make_object(lua, json_value.get<double>());
   case json::value_t::string:
-    return sol::make_object(lua, j.get<std::string>());
+    return sol::make_object(lua, json_value.get<std::string>());
   case json::value_t::array: {
     sol::table t = lua.create_table();
     std::size_t idx = 1;
-    for (const auto &elem : j) {
+    for (const auto &elem : json_value) {
       t[idx++] = json_to_lua(lua, elem);
     }
     return sol::make_object(lua, t);
   }
   case json::value_t::object: {
     sol::table t = lua.create_table();
-    for (auto it = j.begin(); it != j.end(); ++it) {
+    for (auto it = json_value.begin(); it != json_value.end(); ++it) {
       t[it.key()] = json_to_lua(lua, it.value());
     }
     return sol::make_object(lua, t);
   }
   default:
     // fallback: stringify
-    return sol::make_object(lua, j.dump());
+    return sol::make_object(lua, json_value.dump());
   }
 }
 
@@ -520,12 +520,13 @@ __context_schema_version = nil
       
       if (!main_result.valid()) {
         sol::error err = main_result;
-        out["ok"] = false;
-        out["error"] = std::string("Script execution error: ") + err.what();
-        // Check if context:error() was called
+        std::string error_msg = std::string("Script execution error: ") + err.what();
+        // If context:error() was also called, include both messages
         if (ctx_shared->has_error()) {
-          out["error"] = ctx_shared->get_error();
+          error_msg = ctx_shared->get_error() + " (Runtime: " + err.what() + ")";
         }
+        out["ok"] = false;
+        out["error"] = error_msg;
         return 1;
       }
       
