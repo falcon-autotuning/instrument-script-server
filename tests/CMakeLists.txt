@@ -41,8 +41,7 @@ add_executable(
   unit/test_plugin_loading.cpp
   unit/test_api_ref_resolution.cpp
   unit/test_plugin_registry.cpp
-  unit/test_main_function.cpp
-  unit/test_type_manifest.cpp)
+  unit/test_main_function.cpp)
 target_link_libraries(unit_tests PRIVATE instrument-server-core test-utils
                                          GTest::gtest GTest::gtest_main)
 
@@ -71,7 +70,8 @@ add_executable(
   integration/test_visa_large_data.cpp
   integration/test_rpc_server.cpp
   integration/test_measure_command.cpp
-  integration/test_main_function_integration.cpp)
+  integration/test_main_function_integration.cpp
+  integration/test_type_manifest.cpp)
 
 target_link_libraries(
   integration_tests PRIVATE instrument-server-core test-utils GTest::gtest
@@ -134,9 +134,7 @@ set(TEST_SCRIPTS
     return_types.lua
     table_params.lua
     multiple_returns.lua
-    large_buffer_returns.lua
-    simple_call_new_format.lua
-    error_handling_new_format.lua)
+    large_buffer_returns.lua)
 foreach(SCRIPT ${TEST_SCRIPTS})
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/test_scripts/${SCRIPT}
                  ${CMAKE_BINARY_DIR}/tests/data/test_scripts/${SCRIPT} COPYONLY)

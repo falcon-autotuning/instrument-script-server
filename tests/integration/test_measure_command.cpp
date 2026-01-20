@@ -23,7 +23,7 @@ using namespace instserver;
 class MeasureCommandTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    InstrumentLogger::instance().init("measure_cmd_test. log",
+    InstrumentLogger::instance().init("measure_cmd_test.log",
                                       spdlog::level::debug);
     if (ServerDaemon::is_already_running()) {
       int pid = ServerDaemon::get_daemon_pid();

@@ -18,7 +18,7 @@ public:
   static InstrumentLogger &instance();
 
   // Initialize with file and console sinks
-  void init(const std::string &log_file = "instrument_server.  log",
+  void init(const std::string &log_file = "instrument_server.log",
             spdlog::level::level_enum level = spdlog::level::debug) {
     std::lock_guard<std::mutex> lock(mutex_);
 

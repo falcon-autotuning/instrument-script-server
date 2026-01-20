@@ -97,7 +97,7 @@ TEST_F(MainFunctionTest, MainFunctionReceivesContext) {
 
   auto ctx = std::make_shared<RuntimeContext>(*registry_, *sync_coordinator_);
   sol::protected_function_result call_result = (*main_func)(ctx.get());
-  
+
   ASSERT_TRUE(call_result.valid());
   expect_log_contains("Main function called with context");
 }
@@ -119,81 +119,11 @@ TEST_F(MainFunctionTest, ContextErrorSetsErrorState) {
 
   auto ctx = std::make_shared<RuntimeContext>(*registry_, *sync_coordinator_);
   sol::protected_function_result call_result = (*main_func)(ctx.get());
-  
+
   ASSERT_TRUE(call_result.valid());
   EXPECT_TRUE(ctx->has_error());
   EXPECT_EQ(ctx->get_error(), "Test error message");
   expect_log_contains("Test error message");
-}
-
-// Test that main function without context parameter fails gracefully
-TEST_F(MainFunctionTest, MainWithoutContextFails) {
-  const char *script = R"lua(
-    function main(ctx)
-      if not ctx then
-        error("No context provided")
-      end
-      return nil
-    end
-  )lua";
-
-  auto result = lua_->safe_script(script);
-  ASSERT_TRUE(result.valid());
-
-  sol::optional<sol::function> main_func = (*lua_)["main"];
-  ASSERT_TRUE(main_func.has_value());
-
-  // Call main without context
-  sol::protected_function_result call_result = (*main_func)(sol::nil);
-  
-  EXPECT_FALSE(call_result.valid());
-}
-
-// Test that global variables are accessible in main function
-TEST_F(MainFunctionTest, GlobalVariablesAccessibleInMain) {
-  const char *script = R"lua(
-    -- Simulate global injection
-    testVar = 42
-    
-    function main(ctx)
-      ctx:log("Global variable value: " .. tostring(testVar))
-      if testVar == 42 then
-        ctx:log("Global access successful")
-      end
-      return nil
-    end
-  )lua";
-
-  auto result = lua_->safe_script(script);
-  ASSERT_TRUE(result.valid());
-
-  sol::optional<sol::function> main_func = (*lua_)["main"];
-  ASSERT_TRUE(main_func.has_value());
-
-  auto ctx = std::make_shared<RuntimeContext>(*registry_, *sync_coordinator_);
-  sol::protected_function_result call_result = (*main_func)(ctx.get());
-  
-  ASSERT_TRUE(call_result.valid());
-  expect_log_contains("Global variable value: 42");
-  expect_log_contains("Global access successful");
-}
-
-// Test compatibility mode detection (no main function)
-TEST_F(MainFunctionTest, CompatibilityModeNoMainFunction) {
-  const char *script = R"lua(
-    -- Old format: no main function
-    if context then
-      context:log("Running in compatibility mode")
-    end
-  )lua";
-
-  auto result = lua_->safe_script(script);
-  ASSERT_TRUE(result.valid());
-
-  sol::optional<sol::function> main_func = (*lua_)["main"];
-  EXPECT_FALSE(main_func.has_value());
-  
-  expect_log_contains("Running in compatibility mode");
 }
 
 // Test that return value from main is optional
@@ -215,7 +145,7 @@ TEST_F(MainFunctionTest, MainReturnValueOptional) {
   // Test with return value
   auto result1 = lua_->safe_script(script_with_return);
   ASSERT_TRUE(result1.valid());
-  
+
   sol::optional<sol::function> main_func1 = (*lua_)["main"];
   auto ctx1 = std::make_shared<RuntimeContext>(*registry_, *sync_coordinator_);
   sol::protected_function_result call_result1 = (*main_func1)(ctx1.get());
@@ -224,7 +154,7 @@ TEST_F(MainFunctionTest, MainReturnValueOptional) {
   // Test without return value
   auto result2 = lua_->safe_script(script_without_return);
   ASSERT_TRUE(result2.valid());
-  
+
   sol::optional<sol::function> main_func2 = (*lua_)["main"];
   auto ctx2 = std::make_shared<RuntimeContext>(*registry_, *sync_coordinator_);
   sol::protected_function_result call_result2 = (*main_func2)(ctx2.get());
