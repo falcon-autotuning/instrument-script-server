@@ -52,7 +52,6 @@ nav:
       - Overview: ARCHITECTURE.md
       - Server Communications: IPC_PROTOCOL.md
       - Synchronizing Instruments: SYNCHRONIZATION.md
-  - Advanced Topics:
       - HTTP RPC Interface: RPC.md
       - Embedding API: EMBEDDING_API.md
       - Job Scheduling & Staging: JOB_SCHEDULING.md

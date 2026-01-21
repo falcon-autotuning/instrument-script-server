@@ -9,7 +9,7 @@ using namespace instserver;
 class DaemonLifecycleTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    InstrumentLogger::instance().init("test_daemon. log", spdlog::level::debug);
+    InstrumentLogger::instance().init("test_daemon.log", spdlog::level::debug);
 
     // Clean up any existing daemon
     if (ServerDaemon::is_already_running()) {
