@@ -11,32 +11,6 @@ A modular, process-isolated system for controlling scientific instruments for la
 - **Synchronization**:  Parallel execution with precise timing coordination across instruments
 - **Cross-Platform**: Works on Linux and Windows
 
-## Performance
-
-The Instrument Script Server is designed for high-performance laboratory automation with minimal overhead:
-
-### End-to-End Performance (Best Case)
-
-- **Average Command Latency**: ~200 µs per command
-- **Throughput**: ~5,000 commands/second
-- **IPC Throughput**: 400,000+ messages/second
-- **Sync Barrier Overhead**: <4 µs per synchronization point
-
-### Scalability
-
-- **Concurrent Instruments**: Supports 10+ instruments simultaneously
-- **Multi-instrument Commands**: 200 µs average latency with 10 concurrent instruments
-- **Setup Time**: ~500 ms per additional instrument
-
-### Use Cases
-
-- Single instrument control: ~200 µs overhead per command
-- Complex measurements with parameters: ~220 µs overhead
-- Array/large data transfers: ~220 µs overhead
-- Multi-instrument parallel execution: Linear scaling up to 10+ instruments
-
-These benchmarks were measured on a standard development machine and represent typical performance. Actual performance may vary based on hardware, instrument drivers, and measurement complexity.
-
 ## Quick Start
 
 ```bash
@@ -64,30 +38,40 @@ instrument-server list
 instrument-server daemon stop
 ```
 
-## Documentation
+## Documentation Guide
 
-Find it [here](https://falcon-autotuning.github.io/instrument-script-server/).
+### Getting Started
+Start here if you're new to the Instrument Script Server:
 
-- **[Configuration Guide](docs/CONFIGURATION.md)** - How to write instrument configurations and API definitions
-- **[CLI Usage](docs/CLI_USAGE.md)** - Complete command-line interface reference
-- **[Plugin Development](docs/PLUGIN_DEVELOPMENT.md)** - Creating custom instrument drivers
-- **[Architecture](docs/ARCHITECTURE.md)** - System design and components
-- **[Synchronization](docs/SYNCHRONIZATION.md)** - Parallel execution protocol
-- **[Embedding API](docs/EMBEDDING_API.md)** - How to embed the server inside other processes/servers
-- **[Job Scheduling & Staging](docs/JOB_SCHEDULING.md)** - Job handling, staging and NOPs
-- **[Teal Migration Guide](docs/TEAL_MIGRATION.md)** - New script format for Teal static typing (new)
+- **[CLI Usage](CLI_USAGE.md)** - Complete command-line interface reference
+- **[Configuration Guide](CONFIGURATION.md)** - How to write instrument configurations and API definitions
 
-## New / Important: Embedding API
+### Core Concepts
 
-A programmatic API is now available to embed the Instrument Script Server within other servers/processes (for example, a higher-level orchestration server that wants to directly control instruments without launching a separate daemon process). See docs/EMBEDDING_API.md for API surface, patterns, and examples (C++ and Lua).
+- **[Architecture](ARCHITECTURE.md)** - System design and components
+- **[IPC Protocol](IPC_PROTOCOL.md)** - Inter-process communication details
+- **[Synchronization](SYNCHRONIZATION.md)** - Parallel execution protocol
 
-Key points:
+### Extension & Integration
 
-- You can create an in-process server instance, register instruments or instrument factories, and submit measurement jobs programmatically.
-- Embedding supports the same IPC, worker-process model and Lua runtime, but runs the ServerDaemon API inside your process.
-- Embedding is designed to be non-blocking: the host process receives callbacks or futures for job completion.
+- **[Plugin Development](PLUGIN_DEVELOPMENT.md)** - Creating custom instrument drivers
+- **[Embedding API](EMBEDDING_API.md)** - Embed the server inside other processes/servers
+- **[HTTP RPC Interface](RPC.md)** - Remote procedure call interface for external integrations
+- **[Job Scheduling & Staging](JOB_SCHEDULING.md)** - Job handling, staging and NOPs
 
-## New / Important: Job scheduling, staging, and NOPs
+### Teal/TypeScript Support
+
+The server now supports statically-typed measurement scripts using Teal (TypeScript for Lua):
+
+- **[Teal Migration Guide](TEAL_MIGRATION.md)** - New script format for Teal static typing
+- **[Type Manifest](TEAL_TYPE_MANIFEST.md)** - Type checking and validation for measurement scripts
+
+## Important: Measurement Script Requirements
+
+!!! warning "Return Statement Required"
+    Measurement scripts using the `main()` function format **must** include a return statement (can be `nil`). This is mandatory for proper error handling and result collection.
+
+See the [Teal Migration Guide](TEAL_MIGRATION.md) for complete script format requirements.
 
 The server now supports a job-based measurement lifecycle and staging area for measurement artifacts prior to deployment:
 
