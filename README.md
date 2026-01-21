@@ -105,19 +105,45 @@ The server supports configuration via environment variables:
 
 ### New Format (Teal-Compatible)
 
-The server supports a new script format designed for Teal static typing and compilation:
+The server uses blocking execution with structured return types for type safety:
 
 ```lua
 -- Define a main function that receives the runtime context
-function main(ctx)
-    -- Access context parameter
+function main(ctx, voltage)
     ctx:log("Starting measurement")
     
-    -- Use context:call() for instrument commands
-    local result = ctx:call("INSTRUMENT.COMMAND", {param = value})
+    -- ctx:call() returns MeasurementResponse objects with metadata
+    local current_resp = ctx:call("DMM.MEASURE")
+    local current = current_resp:value()  -- Extract actual value
     
-    -- Use context:error() to report failures
-    if not result then
+    -- Perform math operations
+    local power = current * voltage
+    
+    -- Or use built-in operations on measurements
+    local adjusted = current_resp:add_offset(-0.5):multiply_gain(2.0)
+    
+    return adjusted:value()
+end
+```
+
+**MeasurementResponse Structure:**
+- `instrument()` - Returns instrument name
+- `verb()` - Returns command name
+- `type()` - Returns value type ("float", "integer", "string", "boolean", "buffer")
+- `value()` - Returns the actual value
+- `add_offset(offset)` - Adds offset to numeric values
+- `multiply_gain(gain)` - Multiplies numeric values by gain
+
+See [Teal Migration Guide](docs/TEAL_MIGRATION.md) for complete details.
+
+### Legacy Format (Deprecated)
+
+Scripts without a `main` function continue to work but emit deprecation warnings:
+
+```lua
+-- Old format: still supported (deprecated)
+context:log("Starting measurement")
+local result = context:call("INSTRUMENT.COMMAND")
         ctx:error("Measurement failed: no result")
         return nil
     end

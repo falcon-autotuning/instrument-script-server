@@ -2,7 +2,7 @@
 
 ## Overview
 
-The instrument-script-server now supports a new script format designed for Teal static type checking and compilation. This guide explains the changes and how to migrate existing scripts.
+The instrument-script-server now uses blocking execution with structured return types for type safety and Teal static typing support. All measurement commands return `MeasurementResponse` objects with metadata.
 
 ## New Script Format
 
@@ -11,43 +11,140 @@ The instrument-script-server now supports a new script format designed for Teal 
 Scripts should now define a `main` function that receives the runtime context:
 
 ```lua
--- Example: New Teal-compatible format
-function main(ctx)
-    -- Context is passed as parameter
-    -- Spec variables are available as globals
-    
+-- Example: New Teal-compatible format with MeasurementResponse
+function main(ctx, voltage)
     ctx:log("Starting measurement")
     
-    -- Access spec variables from global scope
-    local voltage = setVoltage or 0.0
-    local rate = sampleRate or 1000
+    -- ctx:call returns MeasurementResponse objects
+    local current_resp = ctx:call("DMM.MEASURE")
     
-    local result = ctx:call("INSTRUMENT.COMMAND", {param = voltage})
+    -- Extract the actual value
+    local current = current_resp:value()
     
-    if not result then
-        ctx:error("Measurement failed")
-        return nil
-    end
+    -- Perform calculations
+    local power = current * voltage
     
-    ctx:log("Measurement complete")
-    return nil  -- Explicit return required
+    -- Or use built-in math operations
+    local adjusted = current_resp:add_offset(-0.001):multiply_gain(1.05)
+    
+    ctx:log(string.format("Power: %.6f W", power))
+    return adjusted:value()
 end
 ```
 
 ### Key Features
 
 1. **Context Parameter**: The `main(ctx)` signature receives the runtime context
-2. **Global Variables**: Spec variables are injected as globals (logged as warnings)
-3. **Explicit Returns**: Main function must have a return statement
-4. **Error Handling**: Use `context:error(message)` to report failures
-5. **Result Collection**: All `context:call()` operations are automatically captured
+2. **MeasurementResponse**: All `ctx:call()` operations return structured objects with metadata
+3. **Blocking Execution**: Commands execute synchronously and return actual values
+4. **Math Operations**: Built-in `add_offset()` and `multiply_gain()` for signal processing
+5. **Explicit Returns**: Main function must have a return statement
+6. **Error Handling**: Use `ctx:error(message)` to report failures
+
+## MeasurementResponse API
+
+### Return Type Structure
+
+```lua
+-- MeasurementResponse object returned by ctx:call()
+local response = ctx:call("INSTRUMENT.COMMAND")
+
+-- Access metadata
+response:instrument()  -- string: Instrument name
+response:verb()        -- string: Command/verb name  
+response:type()        -- string: "float"|"integer"|"string"|"boolean"|"buffer"
+
+-- Extract value
+response:value()       -- any: The actual measurement value
+
+-- Math operations (for numeric types)
+response:add_offset(offset)    -- MeasurementResponse: Add offset
+response:multiply_gain(gain)   -- MeasurementResponse: Multiply by gain
+
+-- For array types
+response:buffer()      -- BufferHandle: Get buffer for array data
+```
+
+### Example Usage
+
+**Scalar values:**
+
+```lua
+function main(ctx)
+    -- Get measurement response
+    local voltage_resp = ctx:call("DMM.MEASURE_VOLTAGE")
+    
+    -- Extract value for calculations
+    local voltage = voltage_resp:value()
+    
+    -- Use in expressions
+    if voltage > 5.0 then
+        ctx:error("Voltage too high")
+        return nil
+    end
+    
+    -- Apply corrections using built-in methods
+    local corrected = voltage_resp:add_offset(-0.01):multiply_gain(1.02)
+    
+    return corrected:value()
+end
+```
+
+**Array buffers:**
+
+```lua
+function main(ctx)
+    -- Get array measurement
+    local waveform_resp = ctx:call("Scope.GET_WAVEFORM")
+    
+    -- Get buffer handle
+    local buffer = waveform_resp:buffer()
+    
+    -- Apply signal processing
+    buffer:add_offset(-0.5)      -- DC offset correction
+    buffer:multiply_gain(10.0)   -- Amplification
+    
+    -- Buffer metadata
+    ctx:log(string.format("Buffer has %d elements", buffer:size()))
+    
+    return waveform_resp
+end
+```
 
 ## API Changes
 
 ### New Methods
 
-#### `context:error(message)`
-Reports an error from the measurement script. This sets an error state that will be included in the measurement response.
+#### `ctx:call(command, args...)` → MeasurementResponse
+
+Executes an instrument command and returns a structured response object:
+
+```lua
+local response = ctx:call("INSTRUMENT.COMMAND", param1, param2)
+local value = response:value()
+```
+
+#### `MeasurementResponse:add_offset(offset)` → MeasurementResponse
+
+Adds an offset to numeric measurement values:
+
+```lua
+local corrected = response:add_offset(-0.001)
+local value = corrected:value()
+```
+
+#### `MeasurementResponse:multiply_gain(gain)` → MeasurementResponse
+
+Multiplies numeric measurement values by a gain factor:
+
+```lua
+local scaled = response:multiply_gain(1.05)
+local value = scaled:value()
+```
+
+#### `ctx:error(message)`
+
+Reports an error from the measurement script:
 
 ```lua
 function main(ctx)
@@ -58,20 +155,6 @@ function main(ctx)
 end
 ```
 
-### Environment Variables
-
-#### `INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB`
-
-Now supports multiple library paths separated by semicolons:
-
-```bash
-# Single path (directory or file)
-export INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB="/path/to/lua/libs"
-
-# Multiple paths
-export INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB="/path/to/lib1;/path/to/lib2;/path/to/bundle.lua"
-```
-
 ## Backward Compatibility
 
 Scripts without a `main` function continue to work but emit deprecation warnings:
@@ -80,11 +163,10 @@ Scripts without a `main` function continue to work but emit deprecation warnings
 -- Old format: still supported (deprecated)
 context:log("Starting measurement")
 local result = context:call("INSTRUMENT.COMMAND")
+-- Warning: Returns raw values, not MeasurementResponse objects
 ```
 
 **Warning**: Compatibility mode is deprecated and will be removed in a future version.
-
-The system automatically detects whether a script uses the old or new format.
 
 ## Migration Steps
 
@@ -98,72 +180,111 @@ local result = context:call("INSTRUMENT.GET_VALUE")
 -- After
 function main(ctx)
     ctx:log("Test")
-    local result = ctx:call("INSTRUMENT.GET_VALUE")
-    return nil
+    local result_resp = ctx:call("INSTRUMENT.GET_VALUE")
+    local result = result_resp:value()
+    return result
 end
 ```
 
-### 2. Update Global Variable Access
+### 2. Update Value Extraction
 
 ```lua
--- Globals are injected automatically from spec
--- Access them directly in main function
+-- Before (old format - raw values)
+local voltage = context:call("DMM.MEASURE")
+local current = context:call("DMM.MEASURE_CURRENT")
+local power = voltage * current
 
+-- After (new format - MeasurementResponse)
 function main(ctx)
-    -- Access globals directly (injected from spec)
-    local voltage = setVoltage or 0.0
-    local rate = sampleRate or 1000
+    local voltage_resp = ctx:call("DMM.MEASURE")
+    local current_resp = ctx:call("DMM.MEASURE_CURRENT")
     
-    ctx:log("Using voltage: " .. voltage)
+    local voltage = voltage_resp:value()
+    local current = current_resp:value()
+    local power = voltage * current
+    
+    return power
 end
 ```
 
-### 3. Add Error Handling
+### 3. Use Built-in Math Operations
 
 ```lua
 function main(ctx)
-    local result = ctx:call("INSTRUMENT.MEASURE")
+    local raw_resp = ctx:call("INSTRUMENT.MEASURE")
     
-    if not result then
+    -- Chain operations
+    local processed = raw_resp
+        :add_offset(-0.5)     -- Remove DC offset
+        :multiply_gain(10.0)  -- Apply gain
+    
+    return processed:value()
+end
+```
+
+### 4. Add Error Handling
+
+```lua
+function main(ctx)
+    local result_resp = ctx:call("INSTRUMENT.MEASURE")
+    
+    if result_resp:type() == "void" then
         ctx:error("Measurement returned no data")
         return nil
     end
     
-    return nil
-end
-```
-
-### 4. Add Explicit Returns
-
-```lua
-function main(ctx)
-    -- measurement code
-    return nil  -- Always include return statement
+    return result_resp:value()
 end
 ```
 
 ## Teal Type Definitions
 
-When using Teal, you can define strict types for the context parameter:
+When using Teal, you can define strict types for the MeasurementResponse:
 
 ```teal
--- Example Teal type definition for context
+-- Type definitions for instrument-script-server
+
+record MeasurementResponse
+    instrument: function(MeasurementResponse): string
+    verb: function(MeasurementResponse): string
+    type: function(MeasurementResponse): string
+    value: function(MeasurementResponse): any
+    add_offset: function(MeasurementResponse, number): MeasurementResponse
+    multiply_gain: function(MeasurementResponse, number): MeasurementResponse
+    buffer: function(MeasurementResponse): BufferHandle
+end
+
+record BufferHandle
+    id: function(BufferHandle): string
+    size: function(BufferHandle): integer
+    type: function(BufferHandle): string
+    add_offset: function(BufferHandle, number): boolean
+    multiply_gain: function(BufferHandle, number): boolean
+end
+
 record RuntimeContext
     log: function(RuntimeContext, string)
-    call: function(RuntimeContext, string, table): any
+    call: function(RuntimeContext, string, ...any): MeasurementResponse
     error: function(RuntimeContext, string)
     parallel: function(RuntimeContext, function())
 end
 
 -- Typed main function
-function main(ctx: RuntimeContext): nil
+function main(ctx: RuntimeContext, voltage: number): number
     ctx:log("Starting typed measurement")
     
-    -- Globals are still available (injected from spec)
-    local voltage: number = setVoltage or 0.0
+    -- Type-safe measurement with MeasurementResponse
+    local current_resp: MeasurementResponse = ctx:call("DMM.MEASURE")
+    local current: number = current_resp:value() as number
     
-    -- Type-safe measurement code
-    return nil
+    -- Apply corrections
+    local corrected: MeasurementResponse = current_resp
+        :add_offset(-0.001)
+        :multiply_gain(1.05)
+    
+    local power: number = (corrected:value() as number) * voltage
+    
+    return power
 end
 ```
 
@@ -171,14 +292,18 @@ end
 
 ### Script-Level Errors
 
-Use `context:error()` for expected error conditions:
+Use `ctx:error()` for expected error conditions:
 
 ```lua
 function main(ctx)
-    if not setVoltage then
-        ctx:error("Required parameter 'voltage' not provided")
+    local resp = ctx:call("INSTRUMENT.MEASURE")
+    
+    if resp:type() == "void" then
+        ctx:error("Measurement returned no data")
         return nil
     end
+    
+    return resp:value()
 end
 ```
 

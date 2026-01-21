@@ -437,18 +437,62 @@ Output structure:
 All scripts have access to a global `context` object:
 
 ```lua
--- context: call(command, args...)     - Execute instrument command
+-- context:call(command, args...)     - Execute instrument command (returns MeasurementResponse)
 -- context:parallel(function)         - Synchronized parallel execution
 -- context:log(message)               - Log message
 
 context:log("Script starting")
 
 -- Your measurement logic here
-local value = context:call("DMM1.Measure")
+local resp = context:call("DMM1.Measure")
+local value = resp:value()  -- Extract actual value
 print(value)
 
 context:log("Script complete")
 ```
+
+### MeasurementResponse Return Type
+
+All `context:call()` operations return `MeasurementResponse` objects that wrap the measurement value with metadata:
+
+```lua
+local response = context:call("DMM.MEASURE")
+
+-- Access metadata
+print(response:instrument())  -- "DMM"
+print(response:verb())        -- "MEASURE"
+print(response:type())        -- "float"|"integer"|"string"|"boolean"|"buffer"
+
+-- Extract the actual value
+local value = response:value()
+
+-- Perform math operations (returns new MeasurementResponse)
+local adjusted = response:add_offset(-0.5)        -- Add offset
+local scaled = adjusted:multiply_gain(2.0)        -- Multiply by gain
+local final_value = scaled:value()                -- Extract result
+
+-- For arrays/buffers:
+local array_resp = context:call("Scope.GET_WAVEFORM")
+local buffer = array_resp:buffer()  -- Get BufferHandle
+buffer:add_offset(-0.5)             -- Offset all elements
+buffer:multiply_gain(10.0)          -- Gain all elements
+```
+
+**MeasurementResponse Methods:**
+- `instrument()` → string - Returns instrument name
+- `verb()` → string - Returns command/verb name
+- `type()` → string - Returns value type
+- `value()` → any - Returns actual value (number, string, boolean, or BufferHandle)
+- `add_offset(offset)` → MeasurementResponse - Adds offset to numeric values
+- `multiply_gain(gain)` → MeasurementResponse - Multiplies numeric values by gain
+- `buffer()` → BufferHandle - For array types, returns buffer handle
+
+**BufferHandle Methods (for arrays):**
+- `id()` → string - Buffer ID
+- `size()` → integer - Number of elements
+- `type()` → string - Data type
+- `add_offset(offset)` → boolean - Apply offset to all elements
+- `multiply_gain(gain)` → boolean - Apply gain to all elements
 
 ### Command Format
 
@@ -456,22 +500,36 @@ context:log("Script complete")
 -- Basic:  InstrumentName.CommandVerb
 context:call("DAC1.SetVoltage", 5.0)
 
--- With channel:  InstrumentName: Channel.CommandVerb
+-- With channel:  InstrumentName:Channel.CommandVerb
 context:call("DAC1:1.SetVoltage", 3.3)
 
--- Return value
-local voltage = context:call("DMM1.MeasureVoltage")
+-- Return value extraction
+local voltage_resp = context:call("DMM1.MeasureVoltage")
+local voltage = voltage_resp:value()
 ```
 
 ### Example Scripts
 
-**Simple sweep:**
+**Simple sweep with value extraction:**
 
 ```lua
 for v = 0, 5, 0.1 do
     context:call("DAC1.Set", v)
-    local i = context:call("DMM1.Measure")
-    print(string.format("%. 3f,%. 6e", v, i))
+    local i_resp = context:call("DMM1.Measure")
+    local i = i_resp:value()
+    print(string.format("%.3f,%.6e", v, i))
+end
+```
+
+**Using built-in math operations:**
+
+```lua
+for v = 0, 5, 0.1 do
+    context:call("DAC1.Set", v)
+    local i_resp = context:call("DMM1.Measure")
+    -- Apply offset and gain corrections
+    local corrected = i_resp:add_offset(-0.001):multiply_gain(1.05)
+    print(string.format("%.3f,%.6e", v, corrected:value()))
 end
 ```
 
@@ -496,7 +554,8 @@ for x = 0, 10 do
             context:call("DAC_Y.Set", y * 0.05)
         end)
         
-        local z = context:call("DMM1.Measure")
+        local z_resp = context:call("DMM1.Measure")
+        local z = z_resp:value()
         print(string.format("%d,%d,%.6e", x, y, z))
     end
 end
@@ -525,7 +584,8 @@ function M.sweep(setter, getter, v_start, v_stop, v_step)
     while v <= v_stop do
         context:call(setter, v)
         os.execute("sleep 0.01")
-        local measured = context:call(getter)
+        local measured_resp = context:call(getter)
+        local measured = measured_resp:value()
         table.insert(data, {v, measured})
         v = v + v_step
     end
