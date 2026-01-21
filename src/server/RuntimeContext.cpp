@@ -1,4 +1,5 @@
 #include "instrument-server/server/RuntimeContext.hpp"
+#include "instrument-server/ipc/DataBufferManager.hpp"
 #include "instrument-server/Logger.hpp"
 #include <fmt/format.h>
 #include <set>
@@ -24,6 +25,22 @@ static std::string param_value_type_name(const ParamValue &val) {
 }
 
 namespace instserver {
+
+// BufferHandle implementation
+
+BufferHandle::BufferHandle(const std::string &buffer_id, uint64_t element_count,
+                           const std::string &data_type)
+    : buffer_id_(buffer_id), element_count_(element_count), data_type_(data_type) {}
+
+bool BufferHandle::add_offset(double offset) {
+  return ipc::DataBufferManager::instance().add_offset(buffer_id_, offset);
+}
+
+bool BufferHandle::multiply_gain(double gain) {
+  return ipc::DataBufferManager::instance().multiply_gain(buffer_id_, gain);
+}
+
+// RuntimeContext implementation
 
 RuntimeContext::RuntimeContext(InstrumentRegistry &registry,
                                SyncCoordinator &sync_coordinator,
@@ -179,8 +196,10 @@ sol::object RuntimeContext::call(const std::string &func_name,
     return sol::nil;
 
   if (resp.has_large_data) {
-    // No direct Lua return for large buffers
-    return sol::nil;
+    // Return a BufferHandle for array data
+    auto handle = std::make_shared<BufferHandle>(
+        resp.buffer_id, resp.element_count, resp.data_type);
+    return sol::make_object(lua, handle);
   }
 
   // Map return types into Lua
@@ -192,6 +211,17 @@ sol::object RuntimeContext::call(const std::string &func_name,
     return sol::make_object(lua, *s);
   } else if (auto b = std::get_if<bool>(&*resp.return_value)) {
     return sol::make_object(lua, *b);
+  } else if (auto arr = std::get_if<std::vector<double>>(&*resp.return_value)) {
+    // Always use buffers for arrays (new behavior)
+    // Create a buffer and return a handle
+    auto &buf_mgr = ipc::DataBufferManager::instance();
+    std::string buffer_id = buf_mgr.create_buffer(
+        instrument_id, cr.command_id, ipc::DataType::FLOAT64, 
+        arr->size(), arr->data());
+    
+    auto handle = std::make_shared<BufferHandle>(
+        buffer_id, arr->size(), "float64");
+    return sol::make_object(lua, handle);
   }
 
   return sol::nil;
@@ -443,6 +473,16 @@ nlohmann::json RuntimeContext::collect_results_json() const {
 std::shared_ptr<RuntimeContext>
 bind_runtime_context(sol::state &lua, InstrumentRegistry &registry,
                      SyncCoordinator &sync_coordinator, bool enqueue_mode) {
+  // Bind BufferHandle for array operations
+  lua.new_usertype<BufferHandle>(
+      "BufferHandle", sol::no_constructor,
+      "id", &BufferHandle::id,
+      "size", &BufferHandle::size,
+      "type", &BufferHandle::type,
+      "add_offset", &BufferHandle::add_offset,
+      "multiply_gain", &BufferHandle::multiply_gain);
+
+  // Bind RuntimeContext
   lua.new_usertype<RuntimeContext>(
       "RuntimeContext", sol::no_constructor, "call", &RuntimeContext::call,
       "parallel", &RuntimeContext::parallel, "log", &RuntimeContext::log,

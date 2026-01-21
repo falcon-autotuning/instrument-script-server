@@ -347,5 +347,83 @@ void DataBufferManager::clear_all() {
   buffers_.clear();
 }
 
+bool DataBufferManager::add_offset(const std::string &buffer_id, double offset) {
+  std::lock_guard lock(mutex_);
+  
+  auto it = buffers_.find(buffer_id);
+  if (it == buffers_.end()) {
+    LOG_ERROR("DATA_BUFFER", "MATH", "Buffer not found: {}", buffer_id);
+    return false;
+  }
+
+  auto &buffer = it->second.buffer;
+  size_t count = buffer->element_count();
+  
+  // Apply offset based on data type
+  switch (buffer->data_type()) {
+    case DataType::FLOAT32: {
+      float *data = buffer->as_float32();
+      for (size_t i = 0; i < count; ++i) {
+        data[i] += static_cast<float>(offset);
+      }
+      LOG_DEBUG("DATA_BUFFER", "MATH", "Added offset {} to {} FLOAT32 elements in buffer {}", 
+               offset, count, buffer_id);
+      return true;
+    }
+    case DataType::FLOAT64: {
+      double *data = buffer->as_float64();
+      for (size_t i = 0; i < count; ++i) {
+        data[i] += offset;
+      }
+      LOG_DEBUG("DATA_BUFFER", "MATH", "Added offset {} to {} FLOAT64 elements in buffer {}", 
+               offset, count, buffer_id);
+      return true;
+    }
+    default:
+      LOG_ERROR("DATA_BUFFER", "MATH", "add_offset only supports float/double buffers, buffer {} has type {}", 
+               buffer_id, static_cast<int>(buffer->data_type()));
+      return false;
+  }
+}
+
+bool DataBufferManager::multiply_gain(const std::string &buffer_id, double gain) {
+  std::lock_guard lock(mutex_);
+  
+  auto it = buffers_.find(buffer_id);
+  if (it == buffers_.end()) {
+    LOG_ERROR("DATA_BUFFER", "MATH", "Buffer not found: {}", buffer_id);
+    return false;
+  }
+
+  auto &buffer = it->second.buffer;
+  size_t count = buffer->element_count();
+  
+  // Apply gain based on data type
+  switch (buffer->data_type()) {
+    case DataType::FLOAT32: {
+      float *data = buffer->as_float32();
+      for (size_t i = 0; i < count; ++i) {
+        data[i] *= static_cast<float>(gain);
+      }
+      LOG_DEBUG("DATA_BUFFER", "MATH", "Multiplied {} FLOAT32 elements by gain {} in buffer {}", 
+               count, gain, buffer_id);
+      return true;
+    }
+    case DataType::FLOAT64: {
+      double *data = buffer->as_float64();
+      for (size_t i = 0; i < count; ++i) {
+        data[i] *= gain;
+      }
+      LOG_DEBUG("DATA_BUFFER", "MATH", "Multiplied {} FLOAT64 elements by gain {} in buffer {}", 
+               count, gain, buffer_id);
+      return true;
+    }
+    default:
+      LOG_ERROR("DATA_BUFFER", "MATH", "multiply_gain only supports float/double buffers, buffer {} has type {}", 
+               buffer_id, static_cast<int>(buffer->data_type()));
+      return false;
+  }
+}
+
 } // namespace ipc
 } // namespace instserver

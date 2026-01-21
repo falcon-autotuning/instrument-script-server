@@ -163,6 +163,14 @@ public:
   /// Clear all buffers (for cleanup)
   void clear_all();
 
+  /// Apply offset to all elements in a buffer (array math operation)
+  /// Returns true if successful, false if buffer not found or wrong type
+  bool add_offset(const std::string &buffer_id, double offset);
+
+  /// Apply gain (multiply) to all elements in a buffer (array math operation)
+  /// Returns true if successful, false if buffer not found or wrong type
+  bool multiply_gain(const std::string &buffer_id, double gain);
+
 private:
   DataBufferManager() = default;
 

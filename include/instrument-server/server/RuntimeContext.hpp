@@ -14,6 +14,34 @@
 
 namespace instserver {
 
+/// Lua-accessible handle for array data buffers
+/// Provides methods for array math operations
+class INSTRUMENT_SERVER_API BufferHandle {
+public:
+  explicit BufferHandle(const std::string &buffer_id, uint64_t element_count,
+                        const std::string &data_type);
+
+  /// Get the buffer ID
+  const std::string &id() const { return buffer_id_; }
+
+  /// Get number of elements
+  uint64_t size() const { return element_count_; }
+
+  /// Get data type
+  const std::string &type() const { return data_type_; }
+
+  /// Add offset to all elements (array + scalar)
+  bool add_offset(double offset);
+
+  /// Multiply all elements by gain (array * scalar)
+  bool multiply_gain(double gain);
+
+private:
+  std::string buffer_id_;
+  uint64_t element_count_;
+  std::string data_type_;
+};
+
 /// Result of a single context:call() operation
 struct INSTRUMENT_SERVER_API CallResult {
   std::string command_id;
