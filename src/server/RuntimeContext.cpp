@@ -156,56 +156,7 @@ sol::object RuntimeContext::call(const std::string &func_name,
     return sol::nil;
   }
 
-  // Enqueue-mode per-call behavior (single-call tokens)
-  if (enqueue_mode_ && !in_parallel_block_) {
-    auto worker = registry_.get_instrument(instrument_id);
-    if (!worker) {
-      LOG_ERROR("LUA_CONTEXT", "CALL", "Instrument not found: {}",
-                instrument_id);
-      return sol::nil;
-    }
-
-    SerializedCommand cmd;
-    cmd.instrument_name = instrument_id;
-    cmd.verb = verb;
-    cmd.params = params;
-    cmd.expects_response = expects_response;
-    cmd.created_at = std::chrono::steady_clock::now();
-
-    // Single-call token
-    uint64_t token = next_sync_token_.fetch_add(1);
-
-    // Register barrier across all instruments (global participation)
-    auto all_instruments = registry_.list_instruments();
-    sync_coordinator_.register_barrier(token, all_instruments);
-
-    token_order_.push_back(token);
-    for (auto &inst : all_instruments)
-      token_instruments_[token].insert(inst);
-
-    // tag command with sync token and mark as sync barrier for this instrument
-    cmd.sync_token = token;
-    cmd.is_sync_barrier = true; // single call -> barrier on this cmd
-
-    // record placeholder result index
-    CallResult cr;
-    cr.command_id = "";
-    cr.instrument_name =
-        instrument_spec; // Preserve channel addressing like "MockInstrument1:1"
-    cr.verb = verb;
-    cr.params = params;
-    cr.executed_at = std::chrono::steady_clock::now();
-    size_t result_index = collected_results_.size();
-    collected_results_.push_back(cr);
-    token_result_indices_[token].push_back(result_index);
-
-    auto fut = worker->execute(std::move(cmd));
-    token_futures_[token].push_back(std::move(fut));
-
-    return sol::nil;
-  }
-
-  // Synchronous path
+  // Synchronous (blocking) path - execute and return result to Lua
   CommandResponse resp =
       send_command(instrument_id, verb, params, expects_response);
 
@@ -248,8 +199,10 @@ sol::object RuntimeContext::call(const std::string &func_name,
 
 void RuntimeContext::parallel(sol::function block) {
   if (in_parallel_block_) {
-    LOG_ERROR("LUA_CONTEXT", "PARALLEL",
-              "Nested parallel blocks are not supported");
+    // Nested parallel blocks: ignore inner parallel, treat as sequential
+    LOG_WARN("LUA_CONTEXT", "PARALLEL",
+              "Nested parallel block detected - executing sequentially");
+    block();  // Execute the block directly without buffering
     return;
   }
 
@@ -273,95 +226,7 @@ void RuntimeContext::parallel(sol::function block) {
     return;
   }
 
-  if (enqueue_mode_) {
-    // Create token
-    uint64_t token = next_sync_token_.fetch_add(1);
-
-    // Determine instruments participating in this token:
-    // - include all registered instruments (global participation)
-    auto all_instruments = registry_.list_instruments();
-    sync_coordinator_.register_barrier(token, all_instruments);
-    token_order_.push_back(token);
-    for (auto &inst : all_instruments)
-      token_instruments_[token].insert(inst);
-
-    // Group buffered commands by instrument
-    std::unordered_map<std::string, std::vector<SerializedCommand>> per_inst;
-    for (auto &cmd : parallel_buffer_) {
-      per_inst[cmd.instrument_name].push_back(cmd);
-    }
-
-    // For each registered instrument:
-    for (const auto &inst : all_instruments) {
-      auto it = per_inst.find(inst);
-      if (it == per_inst.end()) {
-        // No real command for this instrument -> send NOP barrier command
-        SerializedCommand nop;
-        nop.instrument_name = inst;
-        nop.verb = "__BARRIER_NOP__";
-        nop.params = {};
-        nop.expects_response = true;
-        nop.created_at = std::chrono::steady_clock::now();
-        nop.sync_token = token;
-        nop.is_sync_barrier = true;
-
-        // placeholder result
-        CallResult cr;
-        cr.command_id = "";
-        cr.instrument_name = inst;
-        cr.verb = nop.verb;
-        cr.executed_at = std::chrono::steady_clock::now();
-        size_t result_index = collected_results_.size();
-        collected_results_.push_back(cr);
-        token_result_indices_[token].push_back(result_index);
-
-        auto worker = registry_.get_instrument(inst);
-        if (worker) {
-          token_futures_[token].push_back(worker->execute(std::move(nop)));
-        }
-      } else {
-        // Send each command for this instrument in order; mark last as barrier
-        auto &vec = it->second;
-        for (size_t i = 0; i < vec.size(); ++i) {
-          SerializedCommand cmd = vec[i];
-          cmd.sync_token = token;
-          if (i + 1 == vec.size()) {
-            cmd.is_sync_barrier = true;
-          } else {
-            cmd.is_sync_barrier = false;
-          }
-
-          CallResult cr;
-          cr.command_id = "";
-          // Reconstruct display name with channel if present
-          std::string display_name = cmd.instrument_name;
-          auto channel_it = cmd.params.find("channel");
-          if (channel_it != cmd.params.end()) {
-            if (auto ch = std::get_if<int64_t>(&channel_it->second)) {
-              display_name += ":" + std::to_string(*ch);
-            }
-          }
-          cr.instrument_name = display_name;
-          cr.verb = cmd.verb;
-          cr.params = cmd.params;
-          cr.executed_at = std::chrono::steady_clock::now();
-          size_t result_index = collected_results_.size();
-          collected_results_.push_back(cr);
-          token_result_indices_[token].push_back(result_index);
-
-          auto worker = registry_.get_instrument(cmd.instrument_name);
-          if (worker) {
-            token_futures_[token].push_back(worker->execute(std::move(cmd)));
-          }
-        }
-      }
-    }
-
-    // Done dispatching token commands across all instruments
-    return;
-  }
-
-  // Non-enqueue fallback: execute & wait
+  // Always use blocking execution (enqueue_mode should be false)
   execute_parallel_buffer();
 }
 

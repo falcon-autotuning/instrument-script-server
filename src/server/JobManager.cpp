@@ -140,21 +140,8 @@ void JobManager::worker_loop() {
       if (!running_ && queue_.empty())
         break;
       if (!queue_.empty()) {
-        // Before popping a non-measure job, wait for active measure jobs to
-        // finish. Peek at the front to see its type.
+        // Pop and set running (blocking mode - jobs execute sequentially)
         jid = queue_.front();
-        auto &jpeek = jobs_.at(jid);
-        if (jpeek.type != "measure") {
-          // Wait until there are no active measure jobs before proceeding.
-          while (!active_measure_jobs_.empty() && running_) {
-            LOG_DEBUG("JOB", "LOOP",
-                      "Waiting for active measure jobs to finish before "
-                      "running non-measure job");
-            measure_cv_.wait(lk);
-          }
-        }
-
-        // Pop and set running
         queue_.pop_front();
         auto &j = jobs_.at(jid);
         j.status = "running";
@@ -217,7 +204,8 @@ void JobManager::worker_loop() {
           throw std::runtime_error("missing script_path");
         }
 
-        // Prepare Lua state and runtime context (enqueue mode)
+        // Prepare Lua state and runtime context (blocking mode - enqueue_mode=false)
+        // This allows users to perform math on measurement results in Lua
         sol::state lua;
         lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::table,
                            sol::lib::string, sol::lib::io, sol::lib::os);
@@ -227,7 +215,7 @@ void JobManager::worker_loop() {
 
         SyncCoordinator sync_coordinator;
         auto ctx = bind_runtime_context(lua, InstrumentRegistry::instance(),
-                                        sync_coordinator, true);
+                                        sync_coordinator, false);
 
         // Load the script file
         auto load_result = lua.safe_script_file(script_path);
@@ -346,51 +334,10 @@ void JobManager::worker_loop() {
           throw std::runtime_error(ctx->get_error());
         }
 
-        // Mark this measure job active
-        {
-          std::lock_guard<std::mutex> lk(mutex_);
-          active_measure_jobs_.insert(jid);
-        }
-
-        // Spawn monitor thread to wait for enqueued commands to complete.
-        std::thread monitor([jid, ctx]() mutable {
-          LOG_INFO("JOB", "MON", "Monitoring job {}", jid);
-          // Release tokens in order and wait for command completion
-          ctx->process_tokens_and_wait();
-
-          // Collect results JSON
-          json r = ctx->collect_results_json();
-
-          // Update job record and mark inactive
-          auto &mgr = JobManager::instance();
-          {
-            std::lock_guard<std::mutex> lk(mgr.mutex_);
-            auto it = mgr.jobs_.find(jid);
-            if (it != mgr.jobs_.end()) {
-              // Check for errors from context:error() after execution
-              if (ctx->has_error()) {
-                it->second.status = "failed";
-                it->second.error = ctx->get_error();
-                it->second.result = r; // Still include partial results
-              } else {
-                it->second.result = r;
-                it->second.status = "completed";
-              }
-              it->second.finished_at = std::chrono::system_clock::now();
-              LOG_INFO("JOB", "MON", "Job {} completed (monitor)", jid);
-            }
-            // Remove from active measure jobs and notify waiting non-measure
-            // jobs
-            mgr.active_measure_jobs_.erase(jid);
-          }
-          mgr.measure_cv_.notify_all();
-        });
-
-        monitor.detach();
-
-        // Mark success for now (actual completion will be done by monitor)
+        // Blocking mode: script has completed execution synchronously
+        // Collect results directly
+        result = ctx->collect_results_json();
         success = true;
-        result["message"] = "enqueued";
       } else {
         // unknown job type
         throw std::runtime_error("unknown job type: " + run_info.type);
@@ -407,30 +354,15 @@ void JobManager::worker_loop() {
       std::lock_guard<std::mutex> lk(mutex_);
       auto it = jobs_.find(jid);
       if (it != jobs_.end()) {
-        if (run_info.type != "measure") {
-          // For non-measure jobs we set final status here
-          if (success) {
-            it->second.status = "completed";
-            it->second.result = result;
-          } else {
-            it->second.status = "failed";
-            it->second.error = err;
-          }
-          it->second.finished_at = std::chrono::system_clock::now();
+        // Update status based on success
+        if (success) {
+          it->second.status = "completed";
+          it->second.result = result;
         } else {
-          // measure: monitor thread will mark completion; leave as
-          // running/enqueued
-          if (!success) {
-            it->second.status = "failed";
-            it->second.error = err;
-            it->second.finished_at = std::chrono::system_clock::now();
-            // remove from active set if failed at enqueue time
-            active_measure_jobs_.erase(jid);
-            measure_cv_.notify_all();
-          } else {
-            // it->second.status remains "running" while monitor works
-          }
+          it->second.status = "failed";
+          it->second.error = err;
         }
+        it->second.finished_at = std::chrono::system_clock::now();
       }
     }
 
