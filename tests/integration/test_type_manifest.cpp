@@ -24,7 +24,7 @@ protected:
   void SetUp() override {
     log_path_ = std::filesystem::current_path() / "script_test.log";
     PluginTestFixture::SetUp();
-    InstrumentLogger::instance().init(log_path_, spdlog::level::debug);
+    InstrumentLogger::instance().init(log_path_.string(), spdlog::level::debug);
 
     test_scripts_dir_ =
         std::filesystem::current_path() / "tests" / "data" / "test_scripts";
@@ -73,7 +73,7 @@ protected:
 
     std::error_code ec;
     std::filesystem::remove(log_path_, ec);
-    
+
     // Shutdown logger to allow next test to create new log file
     InstrumentLogger::instance().shutdown();
   }
