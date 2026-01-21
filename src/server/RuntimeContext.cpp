@@ -40,6 +40,92 @@ bool BufferHandle::multiply_gain(double gain) {
   return ipc::DataBufferManager::instance().multiply_gain(buffer_id_, gain);
 }
 
+// MeasurementResponse implementation
+
+MeasurementResponse::MeasurementResponse(const std::string &instrument, const std::string &verb,
+                                         double value_double)
+    : instrument_(instrument), verb_(verb), type_("float"), value_double_(value_double) {}
+
+MeasurementResponse::MeasurementResponse(const std::string &instrument, const std::string &verb,
+                                         int64_t value_int)
+    : instrument_(instrument), verb_(verb), type_("integer"), value_int_(value_int) {}
+
+MeasurementResponse::MeasurementResponse(const std::string &instrument, const std::string &verb,
+                                         const std::string &value_str)
+    : instrument_(instrument), verb_(verb), type_("string"), value_str_(value_str) {}
+
+MeasurementResponse::MeasurementResponse(const std::string &instrument, const std::string &verb,
+                                         bool value_bool)
+    : instrument_(instrument), verb_(verb), type_("boolean"), value_bool_(value_bool) {}
+
+MeasurementResponse::MeasurementResponse(const std::string &instrument, const std::string &verb,
+                                         std::shared_ptr<BufferHandle> buffer)
+    : instrument_(instrument), verb_(verb), type_("buffer"), buffer_(buffer) {}
+
+sol::object MeasurementResponse::value(sol::this_state s) const {
+  sol::state_view lua(s);
+  
+  if (type_ == "float") {
+    return sol::make_object(lua, value_double_);
+  } else if (type_ == "integer") {
+    return sol::make_object(lua, value_int_);
+  } else if (type_ == "string") {
+    return sol::make_object(lua, value_str_);
+  } else if (type_ == "boolean") {
+    return sol::make_object(lua, value_bool_);
+  } else if (type_ == "buffer") {
+    return sol::make_object(lua, buffer_);
+  }
+  
+  return sol::nil;
+}
+
+std::shared_ptr<MeasurementResponse> MeasurementResponse::add_offset(double offset) const {
+  if (type_ == "float") {
+    return std::make_shared<MeasurementResponse>(instrument_, verb_, value_double_ + offset);
+  } else if (type_ == "integer") {
+    return std::make_shared<MeasurementResponse>(instrument_, verb_, 
+                                                  static_cast<int64_t>(value_int_ + offset));
+  } else if (type_ == "buffer" && buffer_) {
+    // For buffers, apply the offset to the underlying data
+    buffer_->add_offset(offset);
+    return std::make_shared<MeasurementResponse>(instrument_, verb_, buffer_);
+  }
+  
+  LOG_WARN("LUA_CONTEXT", "MATH", 
+           "add_offset called on non-numeric type: {}", type_);
+  // Return a copy of self for non-numeric types
+  if (type_ == "string") {
+    return std::make_shared<MeasurementResponse>(instrument_, verb_, value_str_);
+  } else if (type_ == "boolean") {
+    return std::make_shared<MeasurementResponse>(instrument_, verb_, value_bool_);
+  }
+  return std::make_shared<MeasurementResponse>(instrument_, verb_, 0.0);
+}
+
+std::shared_ptr<MeasurementResponse> MeasurementResponse::multiply_gain(double gain) const {
+  if (type_ == "float") {
+    return std::make_shared<MeasurementResponse>(instrument_, verb_, value_double_ * gain);
+  } else if (type_ == "integer") {
+    return std::make_shared<MeasurementResponse>(instrument_, verb_, 
+                                                  static_cast<int64_t>(value_int_ * gain));
+  } else if (type_ == "buffer" && buffer_) {
+    // For buffers, apply the gain to the underlying data
+    buffer_->multiply_gain(gain);
+    return std::make_shared<MeasurementResponse>(instrument_, verb_, buffer_);
+  }
+  
+  LOG_WARN("LUA_CONTEXT", "MATH", 
+           "multiply_gain called on non-numeric type: {}", type_);
+  // Return a copy of self for non-numeric types
+  if (type_ == "string") {
+    return std::make_shared<MeasurementResponse>(instrument_, verb_, value_str_);
+  } else if (type_ == "boolean") {
+    return std::make_shared<MeasurementResponse>(instrument_, verb_, value_bool_);
+  }
+  return std::make_shared<MeasurementResponse>(instrument_, verb_, 0.0);
+}
+
 // RuntimeContext implementation
 
 RuntimeContext::RuntimeContext(InstrumentRegistry &registry,
@@ -195,25 +281,36 @@ sol::object RuntimeContext::call(const std::string &func_name,
   if (!resp.return_value && !resp.has_large_data)
     return sol::nil;
 
+  // Always return MeasurementResponse objects (not raw values)
   if (resp.has_large_data) {
-    // Return a BufferHandle for array data
+    // Return MeasurementResponse wrapping a BufferHandle for array data
     auto handle = std::make_shared<BufferHandle>(
         resp.buffer_id, resp.element_count, resp.data_type);
-    return sol::make_object(lua, handle);
+    auto response = std::make_shared<MeasurementResponse>(
+        instrument_spec, verb, handle);
+    return sol::make_object(lua, response);
   }
 
-  // Map return types into Lua
+  // Map return types into MeasurementResponse objects
   if (auto d = std::get_if<double>(&*resp.return_value)) {
-    return sol::make_object(lua, *d);
+    auto response = std::make_shared<MeasurementResponse>(
+        instrument_spec, verb, *d);
+    return sol::make_object(lua, response);
   } else if (auto i = std::get_if<int64_t>(&*resp.return_value)) {
-    return sol::make_object(lua, *i);
+    auto response = std::make_shared<MeasurementResponse>(
+        instrument_spec, verb, *i);
+    return sol::make_object(lua, response);
   } else if (auto s = std::get_if<std::string>(&*resp.return_value)) {
-    return sol::make_object(lua, *s);
+    auto response = std::make_shared<MeasurementResponse>(
+        instrument_spec, verb, *s);
+    return sol::make_object(lua, response);
   } else if (auto b = std::get_if<bool>(&*resp.return_value)) {
-    return sol::make_object(lua, *b);
+    auto response = std::make_shared<MeasurementResponse>(
+        instrument_spec, verb, *b);
+    return sol::make_object(lua, response);
   } else if (auto arr = std::get_if<std::vector<double>>(&*resp.return_value)) {
     // Always use buffers for arrays (new behavior)
-    // Create a buffer and return a handle
+    // Create a buffer and return MeasurementResponse wrapping BufferHandle
     auto &buf_mgr = ipc::DataBufferManager::instance();
     std::string buffer_id = buf_mgr.create_buffer(
         instrument_id, cr.command_id, ipc::DataType::FLOAT64, 
@@ -221,7 +318,9 @@ sol::object RuntimeContext::call(const std::string &func_name,
     
     auto handle = std::make_shared<BufferHandle>(
         buffer_id, arr->size(), "float64");
-    return sol::make_object(lua, handle);
+    auto response = std::make_shared<MeasurementResponse>(
+        instrument_spec, verb, handle);
+    return sol::make_object(lua, response);
   }
 
   return sol::nil;
@@ -481,6 +580,17 @@ bind_runtime_context(sol::state &lua, InstrumentRegistry &registry,
       "type", &BufferHandle::type,
       "add_offset", &BufferHandle::add_offset,
       "multiply_gain", &BufferHandle::multiply_gain);
+
+  // Bind MeasurementResponse - wraps return values with metadata
+  lua.new_usertype<MeasurementResponse>(
+      "MeasurementResponse", sol::no_constructor,
+      "instrument", &MeasurementResponse::instrument,
+      "verb", &MeasurementResponse::verb,
+      "type", &MeasurementResponse::type,
+      "value", &MeasurementResponse::value,
+      "buffer", &MeasurementResponse::buffer,
+      "add_offset", &MeasurementResponse::add_offset,
+      "multiply_gain", &MeasurementResponse::multiply_gain);
 
   // Bind RuntimeContext
   lua.new_usertype<RuntimeContext>(

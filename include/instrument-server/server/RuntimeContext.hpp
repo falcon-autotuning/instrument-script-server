@@ -42,6 +42,55 @@ private:
   std::string data_type_;
 };
 
+/// Lua-accessible measurement response object
+/// Wraps scalar values with metadata and provides math operations
+class INSTRUMENT_SERVER_API MeasurementResponse {
+public:
+  MeasurementResponse(const std::string &instrument, const std::string &verb,
+                      double value_double);
+  MeasurementResponse(const std::string &instrument, const std::string &verb,
+                      int64_t value_int);
+  MeasurementResponse(const std::string &instrument, const std::string &verb,
+                      const std::string &value_str);
+  MeasurementResponse(const std::string &instrument, const std::string &verb,
+                      bool value_bool);
+  MeasurementResponse(const std::string &instrument, const std::string &verb,
+                      std::shared_ptr<BufferHandle> buffer);
+
+  /// Get the instrument name
+  const std::string &instrument() const { return instrument_; }
+
+  /// Get the verb/command
+  const std::string &verb() const { return verb_; }
+
+  /// Get the return type
+  const std::string &type() const { return type_; }
+
+  /// Get the value (for scalars)
+  sol::object value(sol::this_state s) const;
+
+  /// Get the buffer (for arrays)
+  std::shared_ptr<BufferHandle> buffer() const { return buffer_; }
+
+  /// Add offset to numeric value (for scalars)
+  std::shared_ptr<MeasurementResponse> add_offset(double offset) const;
+
+  /// Multiply numeric value by gain (for scalars)
+  std::shared_ptr<MeasurementResponse> multiply_gain(double gain) const;
+
+private:
+  std::string instrument_;
+  std::string verb_;
+  std::string type_;  // "float", "integer", "string", "boolean", "buffer"
+  
+  // Value storage (only one is used)
+  double value_double_{0.0};
+  int64_t value_int_{0};
+  std::string value_str_;
+  bool value_bool_{false};
+  std::shared_ptr<BufferHandle> buffer_;
+};
+
 /// Result of a single context:call() operation
 struct INSTRUMENT_SERVER_API CallResult {
   std::string command_id;
