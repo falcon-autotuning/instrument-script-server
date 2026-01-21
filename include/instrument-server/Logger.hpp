@@ -79,9 +79,18 @@ public:
       // ignore drop errors
     }
 
-    spdlog::shutdown();
-
+    // Reset our shared_ptr BEFORE calling spdlog::shutdown() so that any later
+    // attempts to use InstrumentLogger won't call into spdlog after global
+    // resources have been torn down (avoids use-after-free in async logger).
     logger_.reset();
+
+    // Call spdlog::shutdown() after we've cleared our reference to the logger.
+    // Be defensive in case spdlog is already being shut down elsewhere.
+    try {
+      spdlog::shutdown();
+    } catch (...) {
+      // ignore shutdown errors
+    }
   }
 
   template <typename... Args>

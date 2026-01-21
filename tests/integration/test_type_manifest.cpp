@@ -63,7 +63,7 @@ protected:
   }
 
   void TearDown() override {
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     if (auto l = spdlog::get("instrument")) {
       l->flush();
     }
@@ -310,6 +310,8 @@ TEST_F(TypeManifestTest, ComplexTypeTable) {
   EXPECT_TRUE(out["ok"].get<bool>());
 
   auto log = read_log();
+  std::cout << "The entire log content:\n"
+            << log << std::endl; // For debugging"
   // match the actual formatted float "5.0" seen in the log sink
   EXPECT_NE(log.find("Voltage: 5.0"), std::string::npos);
   EXPECT_NE(log.find("Rate: 1000"), std::string::npos);
