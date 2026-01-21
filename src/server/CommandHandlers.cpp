@@ -532,7 +532,7 @@ __context_schema_version = nil
     }
 
     // Check if the script defined a main function (new format)
-    sol::optional<sol::function> main_func = lua["main"];
+    sol::optional<sol::protected_function> main_func = lua["main"];
     
     if (main_func) {
       // New format: call main function with context
