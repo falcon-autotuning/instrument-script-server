@@ -73,6 +73,9 @@ protected:
 
     std::error_code ec;
     std::filesystem::remove(log_path_, ec);
+    
+    // Shutdown logger to allow next test to create new log file
+    InstrumentLogger::instance().shutdown();
   }
 
   void create_test_script(const std::string &name, const std::string &content) {

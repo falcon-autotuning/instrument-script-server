@@ -49,7 +49,7 @@ public:
 
       logger_->set_level(level);
 
-      logger_->flush_on(spdlog::level::warn);
+      logger_->flush_on(spdlog::level::info);
 
       // Don't register if already exists
       if (!spdlog::get("instrument")) {
