@@ -11,6 +11,10 @@
       
       
       
+        <link rel="prev" href="../EMBEDDING_API/">
+      
+      
+        <link rel="next" href="../TEAL_MIGRATION/">
       
       
         
@@ -21,7 +25,7 @@
     
     
       
-        <title>Job Scheduling & Queue Management - Instrument Script Server</title>
+        <title>Job Scheduling & Staging - Instrument Script Server</title>
       
     
     
@@ -105,7 +109,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Job Scheduling &amp; Queue Management
+              Job Scheduling & Staging
             
           </span>
         </div>
@@ -254,15 +258,37 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../IPC_PROTOCOL/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../ARCHITECTURE/" class="md-tabs__link">
           
   
   
   Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../TEAL_MIGRATION/" class="md-tabs__link">
+          
+  
+  
+  Teal/TypeScript Support
 
         </a>
       </li>
@@ -536,26 +562,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -573,7 +604,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -583,6 +614,34 @@
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -626,7 +685,7 @@
   <span class="md-ellipsis">
     
   
-    Synchronzing Instruments
+    Synchronizing Instruments
   
 
     
@@ -647,14 +706,629 @@
   
   
     <li class="md-nav__item">
-      <a href="../ARCHITECTURE/" class="md-nav__link">
+      <a href="../RPC/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Overview
+    HTTP RPC Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../EMBEDDING_API/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Embedding API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Job Scheduling & Staging
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Job Scheduling & Staging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#job-queue-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Job Queue Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Job Queue Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#job-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Job Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#job-states" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Job States
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#queue-behavior" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queue Behavior
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Queue Behavior">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#measure-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measure Jobs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-and-list-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status and List Commands
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#submitting-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Submitting Jobs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Submitting Jobs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#via-rpc-recommended-for-embedding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via RPC (Recommended for Embedding)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#via-c-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via C++ API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#via-cli-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via CLI (Background)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#querying-job-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Querying Job Status
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Querying Job Status">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#via-rpc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via RPC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#via-c-api_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via C++ API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fetching-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fetching Results
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Fetching Results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#via-rpc_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via RPC
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#via-c-api_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via C++ API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#listing-all-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing All Jobs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Listing All Jobs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#via-rpc_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via RPC
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#canceling-jobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Canceling Jobs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Canceling Jobs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#via-rpc_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via RPC
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#command-staging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Staging
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Command Staging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-is-staging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is Staging?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#benefits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benefits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Limitations
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#practical-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Practical Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Practical Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#high-throughput-measurement-queue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High-Throughput Measurement Queue
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-time-status-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real-Time Status Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#queue-ordering-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Queue Ordering Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-characteristics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Characteristics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Teal/TypeScript Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Teal/TypeScript Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../TEAL_MIGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../TEAL_TYPE_MANIFEST/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type Manifest
   
 
     

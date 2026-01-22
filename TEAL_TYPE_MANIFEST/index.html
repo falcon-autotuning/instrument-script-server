@@ -1,0 +1,2343 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Server for managing scientific instruments in Cpp">
+      
+      
+      
+      
+        <link rel="prev" href="../TEAL_MIGRATION/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/icons/icon-256.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Type Manifest - Instrument Script Server</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#teal-type-manifest-generation-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Instrument Script Server" class="md-header__button md-logo" aria-label="Instrument Script Server" data-md-component="logo">
+      
+  <img src="../assets/icons/icon-256.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Instrument Script Server
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Type Manifest
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to system preference"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="Switch to system preference" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href=".." class="md-tabs__link">
+          
+  
+  
+  Get Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../CONFIGURATION/" class="md-tabs__link">
+          
+  
+  
+  Configurations
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../ARCHITECTURE/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../TEAL_MIGRATION/" class="md-tabs__link">
+          
+  
+  
+  Teal/TypeScript Support
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Instrument Script Server" class="md-nav__button md-logo" aria-label="Instrument Script Server" data-md-component="logo">
+      
+  <img src="../assets/icons/icon-256.png" alt="logo">
+
+    </a>
+    Instrument Script Server
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Get Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Get Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Welcome to Instrument Script Server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CLI_USAGE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configurations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Configurations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONFIGURATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setting up Instruments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PLUGIN_DEVELOPMENT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Non-VISA plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../IPC_PROTOCOL/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Server Communications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SYNCHRONIZATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Synchronizing Instruments
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../RPC/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP RPC Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../EMBEDDING_API/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Embedding API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../JOB_SCHEDULING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Job Scheduling & Staging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Teal/TypeScript Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Teal/TypeScript Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../TEAL_MIGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type Manifest
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type Manifest
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-a-type-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is a Type Manifest?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#teal-script-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Teal Script Format
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Teal Script Format">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generating-the-type-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generating the Type Manifest
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Generating the Type Manifest">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manual-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#automated-generation-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automated Generation Script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-teal-compiler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the Teal Compiler
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-the-type-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the Type Manifest
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using the Type Manifest">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#via-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#via-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#programmatic-embedded-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Programmatic (Embedded API)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-manifest-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type Manifest Schema
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Type Manifest Schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supported-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-complex-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: Complex Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#missing-required-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Missing Required Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unused-globals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unused Globals
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#invalid-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Invalid Manifest
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-always-include-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Always Include Context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-use-descriptive-parameter-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Use Descriptive Parameter Names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-document-complex-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Document Complex Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-validate-parameters-in-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Validate Parameters in Script
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-with-build-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration with Build Systems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integration with Build Systems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#makefile-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Makefile Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cmake-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CMake Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#no-main-function-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "No main function found"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameter-type-mismatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Parameter type mismatch"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backward-compatibility-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Backward Compatibility Issues"
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#simple-measurement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Simple Measurement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#complex-measurement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complex Measurement
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="Page contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Page contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-a-type-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is a Type Manifest?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#teal-script-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Teal Script Format
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Teal Script Format">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#generating-the-type-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Generating the Type Manifest
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Generating the Type Manifest">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manual-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Generation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#automated-generation-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automated Generation Script
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-the-teal-compiler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the Teal Compiler
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-the-type-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using the Type Manifest
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Using the Type Manifest">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#via-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via CLI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#via-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Via API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#programmatic-embedded-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Programmatic (Embedded API)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-manifest-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type Manifest Schema
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Type Manifest Schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supported-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-complex-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: Complex Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#missing-required-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Missing Required Parameters
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unused-globals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unused Globals
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#invalid-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Invalid Manifest
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-always-include-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Always Include Context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-use-descriptive-parameter-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Use Descriptive Parameter Names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-document-complex-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Document Complex Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-validate-parameters-in-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Validate Parameters in Script
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#integration-with-build-systems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Integration with Build Systems
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Integration with Build Systems">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#makefile-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Makefile Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cmake-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CMake Example
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#no-main-function-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "No main function found"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameter-type-mismatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Parameter type mismatch"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backward-compatibility-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "Backward Compatibility Issues"
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#simple-measurement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Simple Measurement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#complex-measurement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complex Measurement
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="teal-type-manifest-generation-guide">Teal Type Manifest Generation Guide<a class="headerlink" href="#teal-type-manifest-generation-guide" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>This guide explains how to generate a type manifest for Teal measurement scripts that enables static type checking and proper parameter passing to the <code>main</code> function.</p>
+<h2 id="what-is-a-type-manifest">What is a Type Manifest?<a class="headerlink" href="#what-is-a-type-manifest" title="Permanent link">&para;</a></h2>
+<p>A type manifest is a JSON document that describes the parameters of your main function, including their names and types. This allows the instrument-script-server to:</p>
+<ol>
+<li>Validate that all required parameters are provided</li>
+<li>Pass parameters directly to main() in the correct order</li>
+<li>Detect unused global variables</li>
+<li>Provide type information for debugging</li>
+</ol>
+<h2 id="teal-script-format">Teal Script Format<a class="headerlink" href="#teal-script-format" title="Permanent link">&para;</a></h2>
+<h3 id="basic-structure">Basic Structure<a class="headerlink" href="#basic-structure" title="Permanent link">&para;</a></h3>
+<div class="language-teal highlight"><pre><span></span><code><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">Define</span><span class="w"> </span><span class="n n-Attributes">the</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext</span><span class="w"> </span><span class="n n-Attributes">type</span>
+<span class="nf">record</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext</span>
+<span class="w">    </span><span class="nl">log:</span><span class="c1"> function(RuntimeContext, string)</span>
+<span class="w">    </span><span class="nl">call:</span><span class="c1"> function(RuntimeContext, string, {any:any}): any</span>
+<span class="w">    </span><span class="nl">error:</span><span class="c1"> function(RuntimeContext, string)</span>
+<span class="w">    </span><span class="nl">parallel:</span><span class="c1"> function(RuntimeContext, function())</span>
+<span class="nf">end</span>
+
+<span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">Define</span><span class="w"> </span><span class="n n-Attributes">your</span><span class="w"> </span><span class="n n-Attributes">main</span><span class="w"> </span><span class="n n-Attributes">function</span><span class="w"> </span><span class="n n-Attributes">with</span><span class="w"> </span><span class="n n-Attributes">typed</span><span class="w"> </span><span class="n n-Attributes">parameters</span>
+<span class="nf">function</span><span class="w"> </span><span class="n n-Attributes">main(ctx:</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext,</span><span class="w"> </span><span class="n n-Attributes">voltage:</span><span class="w"> </span><span class="n n-Attributes">number,</span><span class="w"> </span><span class="n n-Attributes">sampleRate:</span><span class="w"> </span><span class="n n-Attributes">number):</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="w">    </span><span class="nf">ctx:log(&quot;Starting</span><span class="w"> </span><span class="n n-Attributes">measurement&quot;)</span>
+<span class="w">    </span><span class="nl">ctx:log(&quot;Voltage:</span><span class="c1"> &quot; .. tostring(voltage))</span>
+<span class="w">    </span><span class="nf">ctx:log(&quot;Sample</span><span class="w"> </span><span class="n n-Attributes">rate:</span><span class="w"> </span><span class="s">&quot; .. tostring(sampleRate))</span>
+
+<span class="w">    </span><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">Your</span><span class="w"> </span><span class="n n-Attributes">measurement</span><span class="w"> </span><span class="n n-Attributes">code</span><span class="w"> </span><span class="n n-Attributes">here</span>
+
+<span class="w">    </span><span class="nf">return</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="nf">end</span>
+</code></pre></div>
+<h2 id="generating-the-type-manifest">Generating the Type Manifest<a class="headerlink" href="#generating-the-type-manifest" title="Permanent link">&para;</a></h2>
+<h3 id="manual-generation">Manual Generation<a class="headerlink" href="#manual-generation" title="Permanent link">&para;</a></h3>
+<p>For simple scripts, you can manually create the type manifest JSON:</p>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ctx&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RuntimeContext&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;voltage&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;sampleRate&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="automated-generation-script">Automated Generation Script<a class="headerlink" href="#automated-generation-script" title="Permanent link">&para;</a></h3>
+<p>For complex scripts or multiple measurements, use this Lua script to extract type information from your Teal files:</p>
+<div class="language-lua highlight"><pre><span></span><code><span class="cp">#!/usr/bin/env lua</span>
+<span class="c1">-- teal_manifest_generator.lua</span>
+<span class="c1">-- Usage: lua teal_manifest_generator.lua measurement.tl &gt; manifest.json</span>
+
+<span class="kd">local</span><span class="w"> </span><span class="nv">json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">require</span><span class="p">(</span><span class="s2">&quot;json&quot;</span><span class="p">)</span><span class="w">  </span><span class="c1">-- You&#39;ll need a JSON library</span>
+
+<span class="kr">function</span><span class="w"> </span><span class="nf">parse_teal_signature</span><span class="p">(</span><span class="nv">teal_file</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">io.open</span><span class="p">(</span><span class="nv">teal_file</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="nv">file</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">        </span><span class="nb">error</span><span class="p">(</span><span class="s2">&quot;Cannot open file: &quot;</span><span class="w"> </span><span class="o">..</span><span class="w"> </span><span class="nv">teal_file</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">end</span>
+
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">content</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">file</span><span class="p">:</span><span class="nf">read</span><span class="p">(</span><span class="s2">&quot;*all&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nv">file</span><span class="p">:</span><span class="nf">close</span><span class="p">()</span>
+
+<span class="w">    </span><span class="c1">-- Find main function signature</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">pattern</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;function%s+main%(([^)]*)%)%s*:%s*([%w_]+)&quot;</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">params_str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">content</span><span class="p">:</span><span class="nf">match</span><span class="p">(</span><span class="nv">pattern</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="nv">params_str</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">        </span><span class="nb">error</span><span class="p">(</span><span class="s2">&quot;No main function found in &quot;</span><span class="w"> </span><span class="o">..</span><span class="w"> </span><span class="nv">teal_file</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">end</span>
+
+<span class="w">    </span><span class="c1">-- Parse parameters</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">parameters</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">    </span><span class="kr">for</span><span class="w"> </span><span class="nv">param</span><span class="w"> </span><span class="kr">in</span><span class="w"> </span><span class="nv">params_str</span><span class="p">:</span><span class="nf">gmatch</span><span class="p">(</span><span class="s2">&quot;([^,]+)&quot;</span><span class="p">)</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">        </span><span class="kd">local</span><span class="w"> </span><span class="nv">name</span><span class="p">,</span><span class="w"> </span><span class="nb">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">param</span><span class="p">:</span><span class="nf">match</span><span class="p">(</span><span class="s2">&quot;^%s*([%w_]+)%s*:%s*([%w_]+)%s*$&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="kr">if</span><span class="w"> </span><span class="nv">name</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="nb">type</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">            </span><span class="nb">table.insert</span><span class="p">(</span><span class="nv">parameters</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nv">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">name</span><span class="p">,</span><span class="w"> </span><span class="nb">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">type</span><span class="p">})</span>
+<span class="w">        </span><span class="kr">end</span>
+<span class="w">    </span><span class="kr">end</span>
+
+<span class="w">    </span><span class="kr">return</span><span class="w"> </span><span class="p">{</span><span class="nv">parameters</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">parameters</span><span class="p">}</span>
+<span class="kr">end</span>
+
+<span class="c1">-- Main</span>
+<span class="kr">if</span><span class="w"> </span><span class="o">#</span><span class="nv">arg</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">    </span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Usage: lua teal_manifest_generator.lua measurement.tl&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">os.exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="kr">end</span>
+
+<span class="kd">local</span><span class="w"> </span><span class="nv">manifest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">parse_teal_signature</span><span class="p">(</span><span class="nv">arg</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="nv">json</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="nv">manifest</span><span class="p">))</span>
+</code></pre></div>
+<h3 id="using-the-teal-compiler">Using the Teal Compiler<a class="headerlink" href="#using-the-teal-compiler" title="Permanent link">&para;</a></h3>
+<p>Teal's compiler can be extended to output type information. Here's a custom build command:</p>
+<div class="language-bash highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
+<span class="c1"># compile_with_manifest.sh</span>
+
+<span class="nv">TEAL_FILE</span><span class="o">=</span><span class="nv">$1</span>
+<span class="nv">LUA_FILE</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TEAL_FILE</span><span class="p">%.tl</span><span class="si">}</span><span class="s2">.lua&quot;</span>
+<span class="nv">MANIFEST_FILE</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">TEAL_FILE</span><span class="p">%.tl</span><span class="si">}</span><span class="s2">_manifest.json&quot;</span>
+
+<span class="c1"># Compile Teal to Lua</span>
+tl<span class="w"> </span>build<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEAL_FILE</span><span class="s2">&quot;</span>
+
+<span class="c1"># Generate manifest (using the generator script)</span>
+lua<span class="w"> </span>teal_manifest_generator.lua<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TEAL_FILE</span><span class="s2">&quot;</span><span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$MANIFEST_FILE</span><span class="s2">&quot;</span>
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Compiled: </span><span class="nv">$LUA_FILE</span><span class="s2">&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Manifest: </span><span class="nv">$MANIFEST_FILE</span><span class="s2">&quot;</span>
+</code></pre></div>
+<h2 id="using-the-type-manifest">Using the Type Manifest<a class="headerlink" href="#using-the-type-manifest" title="Permanent link">&para;</a></h2>
+<h3 id="via-cli">Via CLI<a class="headerlink" href="#via-cli" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code>instrument-server<span class="w"> </span>measure<span class="w"> </span>measurement.lua<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--globals<span class="w"> </span><span class="s1">&#39;{&quot;voltage&quot;: 5.0, &quot;sampleRate&quot;: 1000}&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--type-manifest-file<span class="w"> </span>manifest.json
+</code></pre></div>
+<h3 id="via-api">Via API<a class="headerlink" href="#via-api" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8555/measure<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">        &quot;script_path&quot;: &quot;/path/to/measurement.lua&quot;,</span>
+<span class="s1">        &quot;globals&quot;: {</span>
+<span class="s1">            &quot;voltage&quot;: 5.0,</span>
+<span class="s1">            &quot;sampleRate&quot;: 1000</span>
+<span class="s1">        },</span>
+<span class="s1">        &quot;type_manifest&quot;: {</span>
+<span class="s1">            &quot;parameters&quot;: [</span>
+<span class="s1">                {&quot;name&quot;: &quot;ctx&quot;, &quot;type&quot;: &quot;RuntimeContext&quot;},</span>
+<span class="s1">                {&quot;name&quot;: &quot;voltage&quot;, &quot;type&quot;: &quot;number&quot;},</span>
+<span class="s1">                {&quot;name&quot;: &quot;sampleRate&quot;, &quot;type&quot;: &quot;number&quot;}</span>
+<span class="s1">            ]</span>
+<span class="s1">        }</span>
+<span class="s1">    }&#39;</span>
+</code></pre></div>
+<h3 id="programmatic-embedded-api">Programmatic (Embedded API)<a class="headerlink" href="#programmatic-embedded-api" title="Permanent link">&para;</a></h3>
+<div class="language-cpp highlight"><pre><span></span><code><span class="n">json</span><span class="w"> </span><span class="n">params</span><span class="p">;</span>
+<span class="n">params</span><span class="p">[</span><span class="s">&quot;script_path&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;/path/to/measurement.lua&quot;</span><span class="p">;</span>
+<span class="n">params</span><span class="p">[</span><span class="s">&quot;globals&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">{</span><span class="s">&quot;voltage&quot;</span><span class="p">,</span><span class="w"> </span><span class="mf">5.0</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="s">&quot;sampleRate&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">1000</span><span class="p">}</span>
+<span class="p">};</span>
+<span class="n">params</span><span class="p">[</span><span class="s">&quot;type_manifest&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">{</span><span class="s">&quot;parameters&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">json</span><span class="o">::</span><span class="n">array</span><span class="p">({</span>
+<span class="w">        </span><span class="p">{{</span><span class="s">&quot;name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;ctx&quot;</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">&quot;type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RuntimeContext&quot;</span><span class="p">}},</span>
+<span class="w">        </span><span class="p">{{</span><span class="s">&quot;name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;voltage&quot;</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">&quot;type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;number&quot;</span><span class="p">}},</span>
+<span class="w">        </span><span class="p">{{</span><span class="s">&quot;name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sampleRate&quot;</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="s">&quot;type&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;number&quot;</span><span class="p">}}</span>
+<span class="w">    </span><span class="p">})}</span>
+<span class="p">};</span>
+
+<span class="n">json</span><span class="w"> </span><span class="n">out</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">handle_measure</span><span class="p">(</span><span class="n">params</span><span class="p">,</span><span class="w"> </span><span class="n">out</span><span class="p">);</span>
+</code></pre></div>
+<h2 id="type-manifest-schema">Type Manifest Schema<a class="headerlink" href="#type-manifest-schema" title="Permanent link">&para;</a></h2>
+<h3 id="structure">Structure<a class="headerlink" href="#structure" title="Permanent link">&para;</a></h3>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;param_name&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;type_name&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;optional&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Optional description&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="supported-types">Supported Types<a class="headerlink" href="#supported-types" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>RuntimeContext</code> - The measurement context (always first parameter)</li>
+<li><code>number</code> - Numeric values (integers and floats)</li>
+<li><code>string</code> - String values</li>
+<li><code>boolean</code> - Boolean values</li>
+<li><code>table</code> - Lua tables (complex types)</li>
+<li><code>any</code> - Any type (for dynamic values)</li>
+</ul>
+<h3 id="example-complex-types">Example: Complex Types<a class="headerlink" href="#example-complex-types" title="Permanent link">&para;</a></h3>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ctx&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RuntimeContext&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;config&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Configuration object with voltage and rate&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;channels&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Array of channel numbers&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;enableLogging&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
+<h3 id="missing-required-parameters">Missing Required Parameters<a class="headerlink" href="#missing-required-parameters" title="Permanent link">&para;</a></h3>
+<p>If a parameter is declared in the type manifest but not provided in globals:</p>
+<div class="language-text highlight"><pre><span></span><code>Error: Missing required parameter &#39;sampleRate&#39; (declared in type_manifest but not provided in globals)
+</code></pre></div>
+<h3 id="unused-globals">Unused Globals<a class="headerlink" href="#unused-globals" title="Permanent link">&para;</a></h3>
+<p>If a global is provided but not declared in the type manifest:</p>
+<div class="language-text highlight"><pre><span></span><code>Warning: Global variable &#39;unusedParam&#39; provided but not used by typed main function (injecting as global)
+</code></pre></div>
+<h3 id="invalid-manifest">Invalid Manifest<a class="headerlink" href="#invalid-manifest" title="Permanent link">&para;</a></h3>
+<p>If the manifest structure is invalid:</p>
+<div class="language-text highlight"><pre><span></span><code>Error: Invalid type_manifest: missing or invalid &#39;parameters&#39; array
+</code></pre></div>
+<h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
+<h3 id="1-always-include-context">1. Always Include Context<a class="headerlink" href="#1-always-include-context" title="Permanent link">&para;</a></h3>
+<div class="language-teal highlight"><pre><span></span><code><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">✓</span><span class="w"> </span><span class="n n-Attributes">Correct</span>
+<span class="nf">function</span><span class="w"> </span><span class="n n-Attributes">main(ctx:</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext,</span><span class="w"> </span><span class="n n-Attributes">voltage:</span><span class="w"> </span><span class="n n-Attributes">number):</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="w">    </span><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">...</span>
+<span class="nf">end</span>
+
+<span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">✗</span><span class="w"> </span><span class="n n-Attributes">Wrong</span><span class="w"> </span><span class="n n-Attributes">-</span><span class="w"> </span><span class="n n-Attributes">context</span><span class="w"> </span><span class="n n-Attributes">must</span><span class="w"> </span><span class="n n-Attributes">be</span><span class="w"> </span><span class="n n-Attributes">first</span><span class="w"> </span><span class="n n-Attributes">parameter</span>
+<span class="nf">function</span><span class="w"> </span><span class="n n-Attributes">main(voltage:</span><span class="w"> </span><span class="n n-Attributes">number,</span><span class="w"> </span><span class="n n-Attributes">ctx:</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext):</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="w">    </span><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">...</span>
+<span class="nf">end</span>
+</code></pre></div>
+<h3 id="2-use-descriptive-parameter-names">2. Use Descriptive Parameter Names<a class="headerlink" href="#2-use-descriptive-parameter-names" title="Permanent link">&para;</a></h3>
+<div class="language-teal highlight"><pre><span></span><code><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">✓</span><span class="w"> </span><span class="n n-Attributes">Correct</span><span class="w"> </span><span class="n n-Attributes">-</span><span class="w"> </span><span class="n n-Attributes">clear</span><span class="w"> </span><span class="n n-Attributes">parameter</span><span class="w"> </span><span class="n n-Attributes">names</span>
+<span class="nf">function</span><span class="w"> </span><span class="n n-Attributes">main(ctx:</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext,</span><span class="w"> </span><span class="n n-Attributes">outputVoltage:</span><span class="w"> </span><span class="n n-Attributes">number,</span><span class="w"> </span><span class="n n-Attributes">samplingRate:</span><span class="w"> </span><span class="n n-Attributes">number):</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+
+<span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">✗</span><span class="w"> </span><span class="n n-Attributes">Avoid</span><span class="w"> </span><span class="n n-Attributes">-</span><span class="w"> </span><span class="n n-Attributes">unclear</span><span class="w"> </span><span class="n n-Attributes">names</span>
+<span class="nf">function</span><span class="w"> </span><span class="n n-Attributes">main(ctx:</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext,</span><span class="w"> </span><span class="n n-Attributes">v:</span><span class="w"> </span><span class="n n-Attributes">number,</span><span class="w"> </span><span class="n n-Attributes">r:</span><span class="w"> </span><span class="n n-Attributes">number):</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+</code></pre></div>
+<h3 id="3-document-complex-types">3. Document Complex Types<a class="headerlink" href="#3-document-complex-types" title="Permanent link">&para;</a></h3>
+<div class="language-teal highlight"><pre><span></span><code><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">Define</span><span class="w"> </span><span class="n n-Attributes">custom</span><span class="w"> </span><span class="n n-Attributes">types</span>
+<span class="nf">record</span><span class="w"> </span><span class="n n-Attributes">MeasurementConfig</span>
+<span class="w">    </span><span class="nl">voltage:</span><span class="c1"> number</span>
+<span class="w">    </span><span class="nl">rate:</span><span class="c1"> number</span>
+<span class="w">    </span><span class="nl">channels:</span><span class="c1"> {number}</span>
+<span class="nf">end</span>
+
+<span class="nf">function</span><span class="w"> </span><span class="n n-Attributes">main(ctx:</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext,</span><span class="w"> </span><span class="n n-Attributes">config:</span><span class="w"> </span><span class="n n-Attributes">MeasurementConfig):</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="w">    </span><span class="nl">ctx:log(&quot;Voltage:</span><span class="c1"> &quot; .. tostring(config.voltage))</span>
+<span class="w">    </span><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">...</span>
+<span class="nf">end</span>
+</code></pre></div>
+<h3 id="4-validate-parameters-in-script">4. Validate Parameters in Script<a class="headerlink" href="#4-validate-parameters-in-script" title="Permanent link">&para;</a></h3>
+<div class="language-teal highlight"><pre><span></span><code><span class="nf">function</span><span class="w"> </span><span class="n n-Attributes">main(ctx:</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext,</span><span class="w"> </span><span class="n n-Attributes">voltage:</span><span class="w"> </span><span class="n n-Attributes">number):</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="w">    </span><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">Validate</span><span class="w"> </span><span class="n n-Attributes">parameter</span><span class="w"> </span><span class="n n-Attributes">ranges</span>
+<span class="w">    </span><span class="nf">if</span><span class="w"> </span><span class="n n-Attributes">voltage</span><span class="w"> </span><span class="n n-Attributes">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n n-Attributes">or</span><span class="w"> </span><span class="n n-Attributes">voltage</span><span class="w"> </span><span class="n n-Attributes">&gt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="n n-Attributes">then</span>
+<span class="w">        </span><span class="nf">ctx:error(&quot;Voltage</span><span class="w"> </span><span class="n n-Attributes">must</span><span class="w"> </span><span class="n n-Attributes">be</span><span class="w"> </span><span class="n n-Attributes">between</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n n-Attributes">and</span><span class="w"> </span><span class="mi">10</span><span class="n n-Attributes">V&quot;)</span>
+<span class="w">        </span><span class="nf">return</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="w">    </span><span class="nf">end</span>
+
+<span class="w">    </span><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">Your</span><span class="w"> </span><span class="n n-Attributes">measurement</span><span class="w"> </span><span class="n n-Attributes">code</span>
+<span class="nf">end</span>
+</code></pre></div>
+<h2 id="integration-with-build-systems">Integration with Build Systems<a class="headerlink" href="#integration-with-build-systems" title="Permanent link">&para;</a></h2>
+<h3 id="makefile-example">Makefile Example<a class="headerlink" href="#makefile-example" title="Permanent link">&para;</a></h3>
+<div class="language-makefile highlight"><pre><span></span><code><span class="nf">%.lua %.json</span><span class="o">:</span><span class="w"> </span>%.<span class="n">tl</span>
+<span class="w">    </span>tl<span class="w"> </span>build<span class="w"> </span>$&lt;
+<span class="w">    </span>lua<span class="w"> </span>teal_manifest_generator.lua<span class="w"> </span>$&lt;<span class="w"> </span>&gt;<span class="w"> </span><span class="k">$(</span>basename<span class="w"> </span>$&lt;<span class="k">)</span>_manifest.json
+
+<span class="nf">measurements</span><span class="o">:</span><span class="w"> </span><span class="n">measurement</span>1.<span class="n">lua</span> <span class="n">measurement</span>2.<span class="n">lua</span> <span class="n">measurement</span>3.<span class="n">lua</span>
+
+<span class="nf">clean</span><span class="o">:</span>
+<span class="w">    </span>rm<span class="w"> </span>-f<span class="w"> </span>*.lua<span class="w"> </span>*_manifest.json
+</code></pre></div>
+<h3 id="cmake-example">CMake Example<a class="headerlink" href="#cmake-example" title="Permanent link">&para;</a></h3>
+<div class="language-cmake highlight"><pre><span></span><code><span class="nb">function</span><span class="p">(</span><span class="s">compile_teal_measurement</span><span class="w"> </span><span class="s">TEAL_FILE</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">get_filename_component</span><span class="p">(</span><span class="s">BASE_NAME</span><span class="w"> </span><span class="o">${</span><span class="nv">TEAL_FILE</span><span class="o">}</span><span class="w"> </span><span class="s">NAME_WE</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">set</span><span class="p">(</span><span class="s">LUA_FILE</span><span class="w"> </span><span class="s2">&quot;${CMAKE_CURRENT_BINARY_DIR}/${BASE_NAME}.lua&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">set</span><span class="p">(</span><span class="s">MANIFEST_FILE</span><span class="w"> </span><span class="s2">&quot;${CMAKE_CURRENT_BINARY_DIR}/${BASE_NAME}_manifest.json&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="nb">add_custom_command</span><span class="p">(</span>
+<span class="w">        </span><span class="s">OUTPUT</span><span class="w"> </span><span class="o">${</span><span class="nv">LUA_FILE</span><span class="o">}</span><span class="w"> </span><span class="o">${</span><span class="nv">MANIFEST_FILE</span><span class="o">}</span>
+<span class="w">        </span><span class="s">COMMAND</span><span class="w"> </span><span class="s">tl</span><span class="w"> </span><span class="s">build</span><span class="w"> </span><span class="o">${</span><span class="nv">TEAL_FILE</span><span class="o">}</span>
+<span class="w">        </span><span class="s">COMMAND</span><span class="w"> </span><span class="s">lua</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_SOURCE_DIR</span><span class="o">}</span><span class="s">/scripts/teal_manifest_generator.lua</span><span class="w"> </span>
+<span class="w">                </span><span class="o">${</span><span class="nv">TEAL_FILE</span><span class="o">}</span><span class="w"> </span><span class="s">&gt;</span><span class="w"> </span><span class="o">${</span><span class="nv">MANIFEST_FILE</span><span class="o">}</span>
+<span class="w">        </span><span class="s">DEPENDS</span><span class="w"> </span><span class="o">${</span><span class="nv">TEAL_FILE</span><span class="o">}</span>
+<span class="w">        </span><span class="s">COMMENT</span><span class="w"> </span><span class="s2">&quot;Compiling Teal measurement: ${TEAL_FILE}&quot;</span>
+<span class="w">    </span><span class="p">)</span>
+
+<span class="w">    </span><span class="nb">add_custom_target</span><span class="p">(</span><span class="o">${</span><span class="nv">BASE_NAME</span><span class="o">}</span><span class="s">_measurement</span><span class="w"> </span>
+<span class="w">        </span><span class="s">DEPENDS</span><span class="w"> </span><span class="o">${</span><span class="nv">LUA_FILE</span><span class="o">}</span><span class="w"> </span><span class="o">${</span><span class="nv">MANIFEST_FILE</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">endfunction</span><span class="p">()</span>
+
+<span class="nb">compile_teal_measurement</span><span class="p">(</span><span class="s">measurements/dc_voltage.tl</span><span class="p">)</span>
+<span class="nb">compile_teal_measurement</span><span class="p">(</span><span class="s">measurements/frequency_sweep.tl</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="no-main-function-found">"No main function found"<a class="headerlink" href="#no-main-function-found" title="Permanent link">&para;</a></h3>
+<p>Ensure your Teal script defines a <code>main</code> function:</p>
+<div class="language-teal highlight"><pre><span></span><code><span class="nf">function</span><span class="w"> </span><span class="n n-Attributes">main(ctx:</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext):</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="w">    </span><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">Your</span><span class="w"> </span><span class="n n-Attributes">code</span>
+<span class="w">    </span><span class="nf">return</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="nf">end</span>
+</code></pre></div>
+<h3 id="parameter-type-mismatch">"Parameter type mismatch"<a class="headerlink" href="#parameter-type-mismatch" title="Permanent link">&para;</a></h3>
+<p>The manifest describes the expected types. Ensure the globals match:</p>
+<div class="language-json highlight"><pre><span></span><code><span class="c1">// Manifest says number</span>
+<span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;voltage&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">}</span>
+
+<span class="c1">// But you&#39;re passing string</span>
+<span class="p">{</span><span class="nt">&quot;globals&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;voltage&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;5.0&quot;</span><span class="p">}}</span><span class="w">  </span><span class="c1">// ✗ Wrong</span>
+
+<span class="c1">// Pass number instead</span>
+<span class="p">{</span><span class="nt">&quot;globals&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;voltage&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">5.0</span><span class="p">}}</span><span class="w">  </span><span class="c1">// ✓ Correct</span>
+</code></pre></div>
+<h3 id="backward-compatibility-issues">"Backward Compatibility Issues"<a class="headerlink" href="#backward-compatibility-issues" title="Permanent link">&para;</a></h3>
+<p>To support both old and new formats:</p>
+<div class="language-teal highlight"><pre><span></span><code><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">New</span><span class="w"> </span><span class="n n-Attributes">format</span><span class="w"> </span><span class="n n-Attributes">with</span><span class="w"> </span><span class="n n-Attributes">types</span>
+<span class="nf">function</span><span class="w"> </span><span class="n n-Attributes">main(ctx:</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext,</span><span class="w"> </span><span class="n n-Attributes">voltage:</span><span class="w"> </span><span class="n n-Attributes">number):</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="w">    </span><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">Measurement</span><span class="w"> </span><span class="n n-Attributes">code</span>
+<span class="nf">end</span>
+
+<span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">Also</span><span class="w"> </span><span class="n n-Attributes">works</span><span class="w"> </span><span class="n n-Attributes">without</span><span class="w"> </span><span class="n n-Attributes">manifest</span><span class="w"> </span><span class="n n-Attributes">(legacy)</span>
+<span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">Globals</span><span class="w"> </span><span class="n n-Attributes">will</span><span class="w"> </span><span class="n n-Attributes">be</span><span class="w"> </span><span class="n n-Attributes">injected</span><span class="w"> </span><span class="n n-Attributes">automatically</span>
+</code></pre></div>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<h3 id="simple-measurement">Simple Measurement<a class="headerlink" href="#simple-measurement" title="Permanent link">&para;</a></h3>
+<p><strong>measurement_simple.tl:</strong>
+<div class="language-teal highlight"><pre><span></span><code><span class="nf">record</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext</span>
+<span class="w">    </span><span class="nl">log:</span><span class="c1"> function(RuntimeContext, string)</span>
+<span class="w">    </span><span class="nl">call:</span><span class="c1"> function(RuntimeContext, string, {any:any}): any</span>
+<span class="nf">end</span>
+
+<span class="nf">function</span><span class="w"> </span><span class="n n-Attributes">main(ctx:</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext,</span><span class="w"> </span><span class="n n-Attributes">voltage:</span><span class="w"> </span><span class="n n-Attributes">number):</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="w">    </span><span class="nf">ctx:log(&quot;Setting</span><span class="w"> </span><span class="n n-Attributes">voltage:</span><span class="w"> </span><span class="s">&quot; .. tostring(voltage))</span>
+<span class="w">    </span><span class="nf">ctx:call(&quot;PowerSupply.SET_VOLTAGE&quot;,</span><span class="w"> </span><span class="n n-Attributes">{voltage</span><span class="w"> </span><span class="n n-Attributes">=</span><span class="w"> </span><span class="n n-Attributes">voltage})</span>
+<span class="w">    </span><span class="nf">return</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="nf">end</span>
+</code></pre></div></p>
+<p><strong>manifest:</strong>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ctx&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RuntimeContext&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;voltage&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<h3 id="complex-measurement">Complex Measurement<a class="headerlink" href="#complex-measurement" title="Permanent link">&para;</a></h3>
+<p><strong>measurement_complex.tl:</strong>
+<div class="language-teal highlight"><pre><span></span><code><span class="nf">record</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext</span>
+<span class="w">    </span><span class="nl">log:</span><span class="c1"> function(RuntimeContext, string)</span>
+<span class="w">    </span><span class="nl">call:</span><span class="c1"> function(RuntimeContext, string, {any:any}): any</span>
+<span class="w">    </span><span class="nl">parallel:</span><span class="c1"> function(RuntimeContext, function())</span>
+<span class="nf">end</span>
+
+<span class="nf">record</span><span class="w"> </span><span class="n n-Attributes">ChannelConfig</span>
+<span class="w">    </span><span class="nl">id:</span><span class="c1"> number</span>
+<span class="w">    </span><span class="nl">voltage:</span><span class="c1"> number</span>
+<span class="w">    </span><span class="nl">current_limit:</span><span class="c1"> number</span>
+<span class="nf">end</span>
+
+<span class="nf">function</span><span class="w"> </span><span class="n n-Attributes">main(ctx:</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext,</span><span class="w"> </span><span class="n n-Attributes">channels:</span><span class="w"> </span><span class="n n-Attributes">{ChannelConfig},</span><span class="w"> </span><span class="n n-Attributes">duration:</span><span class="w"> </span><span class="n n-Attributes">number):</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="w">    </span><span class="nf">ctx:log(&quot;Configuring</span><span class="w"> </span><span class="s">&quot; .. tostring(#channels) .. &quot;</span><span class="w"> </span><span class="n n-Attributes">channels&quot;)</span>
+
+<span class="w">    </span><span class="nf">ctx:parallel(function()</span>
+<span class="w">        </span><span class="nf">for</span><span class="w"> </span><span class="n n-Attributes">_,</span><span class="w"> </span><span class="n n-Attributes">ch</span><span class="w"> </span><span class="n n-Attributes">in</span><span class="w"> </span><span class="n n-Attributes">ipairs(channels)</span><span class="w"> </span><span class="n n-Attributes">do</span>
+<span class="w">            </span><span class="nf">ctx:call(&quot;PowerSupply:Channel&quot;</span><span class="w"> </span><span class="n n-Attributes">..</span><span class="w"> </span><span class="n n-Attributes">ch.id</span><span class="w"> </span><span class="n n-Attributes">..</span><span class="w"> </span><span class="s">&quot;.SET_VOLTAGE&quot;</span><span class="n n-Attributes">,</span><span class="w"> </span>
+<span class="w">                    </span><span class="nf">{voltage</span><span class="w"> </span><span class="n n-Attributes">=</span><span class="w"> </span><span class="n n-Attributes">ch.voltage})</span>
+<span class="w">            </span><span class="nf">ctx:call(&quot;PowerSupply:Channel&quot;</span><span class="w"> </span><span class="n n-Attributes">..</span><span class="w"> </span><span class="n n-Attributes">ch.id</span><span class="w"> </span><span class="n n-Attributes">..</span><span class="w"> </span><span class="s">&quot;.SET_CURRENT_LIMIT&quot;</span><span class="n n-Attributes">,</span><span class="w"> </span>
+<span class="w">                    </span><span class="nf">{current</span><span class="w"> </span><span class="n n-Attributes">=</span><span class="w"> </span><span class="n n-Attributes">ch.current_limit})</span>
+<span class="w">        </span><span class="nf">end</span>
+<span class="w">    </span><span class="nf">end)</span>
+
+<span class="w">    </span><span class="nf">ctx:log(&quot;Waiting</span><span class="w"> </span><span class="s">&quot; .. tostring(duration) .. &quot;</span><span class="n n-Attributes">s&quot;)</span>
+<span class="w">    </span><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">Measurement</span><span class="w"> </span><span class="n n-Attributes">logic</span><span class="w"> </span><span class="n n-Attributes">here</span>
+
+<span class="w">    </span><span class="nf">return</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="nf">end</span>
+</code></pre></div></p>
+<p><strong>manifest:</strong>
+<div class="language-json highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;parameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ctx&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;RuntimeContext&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;channels&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Array of channel configurations&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;duration&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Measurement duration in seconds&quot;</span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div></p>
+<h2 id="conclusion">Conclusion<a class="headerlink" href="#conclusion" title="Permanent link">&para;</a></h2>
+<p>The type manifest system enables:
+- ✓ Static type checking with Teal
+- ✓ Clear parameter contracts
+- ✓ Better error messages
+- ✓ Runtime type validation
+- ✓ Backward compatibility</p>
+<p>For questions or issues, see the main <a href="../TEAL_MIGRATION/">TEAL_MIGRATION.md</a> guide.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.tabs.link", "content.code.annotate", "content.code.copy", "announce.dismiss", "navigation.tabs", "navigation.instant", "navigation.instant.prefetch", "navigation.instant.preview", "navigation.instant.progress", "navigation.path", "navigation.sections", "navigation.top", "navigation.tracking", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

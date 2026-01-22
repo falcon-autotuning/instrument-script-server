@@ -262,11 +262,31 @@
     
     
       <li class="md-tabs__item">
-        <a href="IPC_PROTOCOL/" class="md-tabs__link">
+        <a href="ARCHITECTURE/" class="md-tabs__link">
           
   
   
   Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="TEAL_MIGRATION/" class="md-tabs__link">
+          
+  
+  
+  Teal/TypeScript Support
 
         </a>
       </li>
@@ -443,22 +463,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance" class="md-nav__link">
+  <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Performance
+        Quick Start
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Performance">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Documentation Guide">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#end-to-end-performance-best-case" class="md-nav__link">
+  <a href="#getting-started" class="md-nav__link">
     <span class="md-ellipsis">
       
-        End-to-End Performance (Best Case)
+        Getting Started
       
     </span>
   </a>
@@ -466,10 +497,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#scalability" class="md-nav__link">
+  <a href="#core-concepts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scalability
+        Core Concepts
       
     </span>
   </a>
@@ -477,10 +508,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#use-cases" class="md-nav__link">
+  <a href="#extension-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Use Cases
+        Extension &amp; Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tealtypescript-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Teal/TypeScript Support
       
     </span>
   </a>
@@ -493,43 +535,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#important-measurement-script-requirements" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#new-important-embedding-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        New / Important: Embedding API
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#new-important-job-scheduling-staging-and-nops" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        New / Important: Job scheduling, staging, and NOPs
+        Important: Measurement Script Requirements
       
     </span>
   </a>
@@ -553,6 +562,78 @@
     <span class="md-ellipsis">
       
         RPC Port Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-lua-measurement-library-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Lua Measurement Library Path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#measurement-script-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measurement Script Structure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Measurement Script Structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#new-format-teal-compatible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New Format (Teal-Compatible)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#legacy-format-deprecated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy Format (Deprecated)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#teal-static-typing-with-type-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Teal Static Typing with Type Manifest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backward-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backward Compatibility
       
     </span>
   </a>
@@ -588,10 +669,32 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#installing-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#build" class="md-nav__link">
     <span class="md-ellipsis">
       
         Build
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running Tests
       
     </span>
   </a>
@@ -898,6 +1001,34 @@
   
   
     <li class="md-nav__item">
+      <a href="ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="IPC_PROTOCOL/" class="md-nav__link">
         
   
@@ -933,7 +1064,7 @@
   <span class="md-ellipsis">
     
   
-    Synchronzing Instruments
+    Synchronizing Instruments
   
 
     
@@ -954,14 +1085,185 @@
   
   
     <li class="md-nav__item">
-      <a href="ARCHITECTURE/" class="md-nav__link">
+      <a href="RPC/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Overview
+    HTTP RPC Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="EMBEDDING_API/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Embedding API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="JOB_SCHEDULING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Job Scheduling & Staging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Teal/TypeScript Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Teal/TypeScript Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="TEAL_MIGRATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="TEAL_TYPE_MANIFEST/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Type Manifest
   
 
     
@@ -1022,22 +1324,33 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#performance" class="md-nav__link">
+  <a href="#quick-start" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Performance
+        Quick Start
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Performance">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation Guide
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Documentation Guide">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#end-to-end-performance-best-case" class="md-nav__link">
+  <a href="#getting-started" class="md-nav__link">
     <span class="md-ellipsis">
       
-        End-to-End Performance (Best Case)
+        Getting Started
       
     </span>
   </a>
@@ -1045,10 +1358,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#scalability" class="md-nav__link">
+  <a href="#core-concepts" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scalability
+        Core Concepts
       
     </span>
   </a>
@@ -1056,10 +1369,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#use-cases" class="md-nav__link">
+  <a href="#extension-integration" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Use Cases
+        Extension &amp; Integration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tealtypescript-support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Teal/TypeScript Support
       
     </span>
   </a>
@@ -1072,43 +1396,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#important-measurement-script-requirements" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Quick Start
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Documentation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#new-important-embedding-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        New / Important: Embedding API
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#new-important-job-scheduling-staging-and-nops" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        New / Important: Job scheduling, staging, and NOPs
+        Important: Measurement Script Requirements
       
     </span>
   </a>
@@ -1132,6 +1423,78 @@
     <span class="md-ellipsis">
       
         RPC Port Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-lua-measurement-library-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External Lua Measurement Library Path
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#measurement-script-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measurement Script Structure
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Measurement Script Structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#new-format-teal-compatible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        New Format (Teal-Compatible)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#legacy-format-deprecated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Legacy Format (Deprecated)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#teal-static-typing-with-type-manifest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Teal Static Typing with Type Manifest
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backward-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backward Compatibility
       
     </span>
   </a>
@@ -1167,10 +1530,32 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#installing-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installing Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#build" class="md-nav__link">
     <span class="md-ellipsis">
       
         Build
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running Tests
       
     </span>
   </a>
@@ -1293,29 +1678,6 @@
 <li><strong>Synchronization</strong>:  Parallel execution with precise timing coordination across instruments</li>
 <li><strong>Cross-Platform</strong>: Works on Linux and Windows</li>
 </ul>
-<h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h2>
-<p>The Instrument Script Server is designed for high-performance laboratory automation with minimal overhead:</p>
-<h3 id="end-to-end-performance-best-case">End-to-End Performance (Best Case)<a class="headerlink" href="#end-to-end-performance-best-case" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Average Command Latency</strong>: ~200 µs per command</li>
-<li><strong>Throughput</strong>: ~5,000 commands/second</li>
-<li><strong>IPC Throughput</strong>: 400,000+ messages/second</li>
-<li><strong>Sync Barrier Overhead</strong>: &lt;4 µs per synchronization point</li>
-</ul>
-<h3 id="scalability">Scalability<a class="headerlink" href="#scalability" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Concurrent Instruments</strong>: Supports 10+ instruments simultaneously</li>
-<li><strong>Multi-instrument Commands</strong>: 200 µs average latency with 10 concurrent instruments</li>
-<li><strong>Setup Time</strong>: ~500 ms per additional instrument</li>
-</ul>
-<h3 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Single instrument control: ~200 µs overhead per command</li>
-<li>Complex measurements with parameters: ~220 µs overhead</li>
-<li>Array/large data transfers: ~220 µs overhead</li>
-<li>Multi-instrument parallel execution: Linear scaling up to 10+ instruments</li>
-</ul>
-<p>These benchmarks were measured on a standard development machine and represent typical performance. Actual performance may vary based on hardware, instrument drivers, and measurement complexity.</p>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span class="c1"># Build and install</span>
 make<span class="w"> </span>build
@@ -1340,26 +1702,38 @@ instrument-server<span class="w"> </span>list
 <span class="c1"># Shutdown</span>
 instrument-server<span class="w"> </span>daemon<span class="w"> </span>stop
 </code></pre></div>
-<h2 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h2>
-<p>Find it <a href="https://falcon-autotuning.github.io/instrument-script-server/">here</a>.</p>
+<h2 id="documentation-guide">Documentation Guide<a class="headerlink" href="#documentation-guide" title="Permanent link">&para;</a></h2>
+<h3 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">&para;</a></h3>
+<p>Start here if you're new to the Instrument Script Server:</p>
 <ul>
-<li><strong><a href="docs/CONFIGURATION.md">Configuration Guide</a></strong> - How to write instrument configurations and API definitions</li>
-<li><strong><a href="docs/CLI_USAGE.md">CLI Usage</a></strong> - Complete command-line interface reference</li>
-<li><strong><a href="docs/PLUGIN_DEVELOPMENT.md">Plugin Development</a></strong> - Creating custom instrument drivers</li>
-<li><strong><a href="docs/ARCHITECTURE.md">Architecture</a></strong> - System design and components</li>
-<li><strong><a href="docs/SYNCHRONIZATION.md">Synchronization</a></strong> - Parallel execution protocol</li>
-<li><strong><a href="docs/EMBEDDING_API.md">Embedding API</a></strong> - How to embed the server inside other processes/servers (new)</li>
-<li><strong><a href="docs/JOB_SCHEDULING.md">Job Scheduling &amp; Staging</a></strong> - New job handling, staging and NOPs (new)</li>
+<li><strong><a href="CLI_USAGE/">CLI Usage</a></strong> - Complete command-line interface reference</li>
+<li><strong><a href="CONFIGURATION/">Configuration Guide</a></strong> - How to write instrument configurations and API definitions</li>
 </ul>
-<h2 id="new-important-embedding-api">New / Important: Embedding API<a class="headerlink" href="#new-important-embedding-api" title="Permanent link">&para;</a></h2>
-<p>A programmatic API is now available to embed the Instrument Script Server within other servers/processes (for example, a higher-level orchestration server that wants to directly control instruments without launching a separate daemon process). See docs/EMBEDDING_API.md for API surface, patterns, and examples (C++ and Lua).</p>
-<p>Key points:</p>
+<h3 id="core-concepts">Core Concepts<a class="headerlink" href="#core-concepts" title="Permanent link">&para;</a></h3>
 <ul>
-<li>You can create an in-process server instance, register instruments or instrument factories, and submit measurement jobs programmatically.</li>
-<li>Embedding supports the same IPC, worker-process model and Lua runtime, but runs the ServerDaemon API inside your process.</li>
-<li>Embedding is designed to be non-blocking: the host process receives callbacks or futures for job completion.</li>
+<li><strong><a href="ARCHITECTURE/">Architecture</a></strong> - System design and components</li>
+<li><strong><a href="IPC_PROTOCOL/">IPC Protocol</a></strong> - Inter-process communication details</li>
+<li><strong><a href="SYNCHRONIZATION/">Synchronization</a></strong> - Parallel execution protocol</li>
 </ul>
-<h2 id="new-important-job-scheduling-staging-and-nops">New / Important: Job scheduling, staging, and NOPs<a class="headerlink" href="#new-important-job-scheduling-staging-and-nops" title="Permanent link">&para;</a></h2>
+<h3 id="extension-integration">Extension &amp; Integration<a class="headerlink" href="#extension-integration" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><a href="PLUGIN_DEVELOPMENT/">Plugin Development</a></strong> - Creating custom instrument drivers</li>
+<li><strong><a href="EMBEDDING_API/">Embedding API</a></strong> - Embed the server inside other processes/servers</li>
+<li><strong><a href="RPC/">HTTP RPC Interface</a></strong> - Remote procedure call interface for external integrations</li>
+<li><strong><a href="JOB_SCHEDULING/">Job Scheduling &amp; Staging</a></strong> - Job handling, staging and NOPs</li>
+</ul>
+<h3 id="tealtypescript-support">Teal/TypeScript Support<a class="headerlink" href="#tealtypescript-support" title="Permanent link">&para;</a></h3>
+<p>The server now supports statically-typed measurement scripts using Teal (TypeScript for Lua):</p>
+<ul>
+<li><strong><a href="TEAL_MIGRATION/">Teal Migration Guide</a></strong> - New script format for Teal static typing</li>
+<li><strong><a href="TEAL_TYPE_MANIFEST/">Type Manifest</a></strong> - Type checking and validation for measurement scripts</li>
+</ul>
+<h2 id="important-measurement-script-requirements">Important: Measurement Script Requirements<a class="headerlink" href="#important-measurement-script-requirements" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Return Statement Required</p>
+<p>Measurement scripts using the <code>main()</code> function format <strong>must</strong> include a return statement (can be <code>nil</code>). This is mandatory for proper error handling and result collection.</p>
+</div>
+<p>See the <a href="TEAL_MIGRATION/">Teal Migration Guide</a> for complete script format requirements.</p>
 <p>The server now supports a job-based measurement lifecycle and staging area for measurement artifacts prior to deployment:</p>
 <ul>
 <li>Jobs represent a complete measurement run (script, parameters, artifacts).</li>
@@ -1375,34 +1749,161 @@ instrument-server<span class="w"> </span>daemon<span class="w"> </span>stop
 <li><strong>Default</strong>: <code>8555</code></li>
 <li><strong>Description</strong>: Sets the HTTP RPC server port on localhost for API access</li>
 </ul>
-<p><strong>Usage:</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Start daemon with custom RPC port</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">INSTRUMENT_SCRIPT_SERVER_RPC_PORT</span><span class="o">=</span><span class="m">9000</span>
-instrument-server<span class="w"> </span>daemon<span class="w"> </span>start
+<h3 id="external-lua-measurement-library-path">External Lua Measurement Library Path<a class="headerlink" href="#external-lua-measurement-library-path" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Variable</strong>: <code>INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB</code></li>
+<li><strong>Default</strong>: ``</li>
+<li><strong>Description</strong>: Sets the path(s) for optional Lua libraries to load for interpreting measurement scripts. Supports:</li>
+<li>A single directory containing Lua modules</li>
+<li>A single Lua bundle file</li>
+<li>Multiple paths separated by semicolons (<code>;</code>)</li>
+<li>Example: <code>export INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB="/path/to/lib1;/path/to/lib2;/path/to/bundle.lua"</code></li>
+</ul>
+<h2 id="measurement-script-structure">Measurement Script Structure<a class="headerlink" href="#measurement-script-structure" title="Permanent link">&para;</a></h2>
+<h3 id="new-format-teal-compatible">New Format (Teal-Compatible)<a class="headerlink" href="#new-format-teal-compatible" title="Permanent link">&para;</a></h3>
+<p>The server uses blocking execution with structured return types for type safety:</p>
+<div class="language-lua highlight"><pre><span></span><code><span class="c1">-- Define a main function that receives the runtime context</span>
+<span class="kr">function</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="nv">ctx</span><span class="p">,</span><span class="w"> </span><span class="nv">voltage</span><span class="p">)</span>
+<span class="w">    </span><span class="nv">ctx</span><span class="p">:</span><span class="nf">log</span><span class="p">(</span><span class="s2">&quot;Starting measurement&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c1">-- ctx:call() returns MeasurementResponse objects with metadata</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">current_resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ctx</span><span class="p">:</span><span class="nf">call</span><span class="p">(</span><span class="s2">&quot;DMM.MEASURE&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">current</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">current_resp</span><span class="p">:</span><span class="nf">value</span><span class="p">()</span><span class="w">  </span><span class="c1">-- Extract actual value</span>
+
+<span class="w">    </span><span class="c1">-- Perform math operations</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">power</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">current</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nv">voltage</span>
+
+<span class="w">    </span><span class="c1">-- Or use built-in operations on measurements</span>
+<span class="w">    </span><span class="kd">local</span><span class="w"> </span><span class="nv">adjusted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">current_resp</span><span class="p">:</span><span class="nf">add_offset</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">):</span><span class="nf">multiply_gain</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kr">return</span><span class="w"> </span><span class="nv">adjusted</span><span class="p">:</span><span class="nf">value</span><span class="p">()</span>
+<span class="kr">end</span>
 </code></pre></div>
+<p><strong>MeasurementResponse Structure:</strong>
+- <code>instrument()</code> - Returns instrument name
+- <code>verb()</code> - Returns command name
+- <code>type()</code> - Returns value type ("float", "integer", "string", "boolean", "buffer")
+- <code>value()</code> - Returns the actual value
+- <code>add_offset(offset)</code> - Adds offset to numeric values
+- <code>multiply_gain(gain)</code> - Multiplies numeric values by gain</p>
+<p>See <a href="docs/TEAL_MIGRATION.md">Teal Migration Guide</a> for complete details.</p>
+<h3 id="legacy-format-deprecated">Legacy Format (Deprecated)<a class="headerlink" href="#legacy-format-deprecated" title="Permanent link">&para;</a></h3>
+<p>Scripts without a <code>main</code> function continue to work but emit deprecation warnings:</p>
+<div class="language-lua highlight"><pre><span></span><code><span class="c1">-- Old format: still supported (deprecated)</span>
+<span class="nv">context</span><span class="p">:</span><span class="nf">log</span><span class="p">(</span><span class="s2">&quot;Starting measurement&quot;</span><span class="p">)</span>
+<span class="kd">local</span><span class="w"> </span><span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">context</span><span class="p">:</span><span class="nf">call</span><span class="p">(</span><span class="s2">&quot;INSTRUMENT.COMMAND&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="nv">ctx</span><span class="p">:</span><span class="nf">error</span><span class="p">(</span><span class="s2">&quot;Measurement failed: no result&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="kr">return</span><span class="w"> </span><span class="kc">nil</span>
+<span class="w">    </span><span class="kr">end</span>
+
+<span class="w">    </span><span class="c1">-- Results are automatically collected from context:call()</span>
+<span class="w">    </span><span class="kr">return</span><span class="w"> </span><span class="kc">nil</span><span class="w">  </span><span class="c1">-- Optional return value</span>
+<span class="kr">end</span>
+</code></pre></div>
+<h3 id="teal-static-typing-with-type-manifest">Teal Static Typing with Type Manifest<a class="headerlink" href="#teal-static-typing-with-type-manifest" title="Permanent link">&para;</a></h3>
+<p>For Teal scripts with typed parameters, use a <strong>type manifest</strong> to declare parameter types:</p>
+<div class="language-teal highlight"><pre><span></span><code><span class="nf">--</span><span class="w"> </span><span class="n n-Attributes">Teal</span><span class="w"> </span><span class="n n-Attributes">script</span><span class="w"> </span><span class="n n-Attributes">with</span><span class="w"> </span><span class="n n-Attributes">typed</span><span class="w"> </span><span class="n n-Attributes">parameters</span>
+<span class="nf">record</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext</span>
+<span class="w">    </span><span class="nl">log:</span><span class="c1"> function(RuntimeContext, string)</span>
+<span class="w">    </span><span class="nl">call:</span><span class="c1"> function(RuntimeContext, string, {any:any}): any</span>
+<span class="nf">end</span>
+
+<span class="nf">function</span><span class="w"> </span><span class="n n-Attributes">main(ctx:</span><span class="w"> </span><span class="n n-Attributes">RuntimeContext,</span><span class="w"> </span><span class="n n-Attributes">voltage:</span><span class="w"> </span><span class="n n-Attributes">number,</span><span class="w"> </span><span class="n n-Attributes">sampleRate:</span><span class="w"> </span><span class="n n-Attributes">number):</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="w">    </span><span class="nl">ctx:log(&quot;Voltage:</span><span class="c1"> &quot; .. tostring(voltage))</span>
+<span class="w">    </span><span class="nf">ctx:log(&quot;Sample</span><span class="w"> </span><span class="n n-Attributes">rate:</span><span class="w"> </span><span class="s">&quot; .. tostring(sampleRate))</span>
+<span class="w">    </span><span class="nf">return</span><span class="w"> </span><span class="n n-Attributes">nil</span>
+<span class="nf">end</span>
+</code></pre></div>
+<p>Generate a type manifest from your Teal file:</p>
+<div class="language-bash highlight"><pre><span></span><code>lua<span class="w"> </span>scripts/teal_manifest_generator.lua<span class="w"> </span>measurement.tl<span class="w"> </span>&gt;<span class="w"> </span>manifest.json
+</code></pre></div>
+<p>Pass the manifest when running the measurement:</p>
+<div class="language-bash highlight"><pre><span></span><code>instrument-server<span class="w"> </span>measure<span class="w"> </span>measurement.lua<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--globals<span class="w"> </span><span class="s1">&#39;{&quot;voltage&quot;: 5.0, &quot;sampleRate&quot;: 1000}&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--type-manifest-file<span class="w"> </span>manifest.json
+</code></pre></div>
+<p><strong>Benefits:</strong>
+- ✓ Compile-time type checking with Teal
+- ✓ Runtime parameter validation
+- ✓ Clear parameter contracts
+- ✓ Better error messages
+- ✓ Missing parameter detection
+- ✓ Unused global warnings</p>
+<p>See <a href="docs/TEAL_TYPE_MANIFEST.md">TEAL_TYPE_MANIFEST.md</a> for complete documentation.</p>
+<p><strong>Key features:</strong>
+- <strong>Context parameter</strong>: The <code>main(ctx)</code> function signature receives the runtime context
+- <strong>Typed parameters</strong>: Additional parameters can be passed with type validation
+- <strong>Global variables</strong>: Spec variables are injected as globals (with warnings)
+- <strong>Explicit error handling</strong>: Use <code>context:error(message)</code> to report script errors
+- <strong>Automatic result collection</strong>: All <code>context:call()</code> operations are automatically captured
+- <strong>Return statement</strong>: Main function must have a return statement (can be <code>nil</code>)</p>
+<h3 id="backward-compatibility">Backward Compatibility<a class="headerlink" href="#backward-compatibility" title="Permanent link">&para;</a></h3>
+<p>Scripts without a <code>main</code> function continue to work using the old format:
+<div class="language-lua highlight"><pre><span></span><code><span class="c1">-- Old format: executes at script load time</span>
+<span class="nv">context</span><span class="p">:</span><span class="nf">log</span><span class="p">(</span><span class="s2">&quot;Starting measurement&quot;</span><span class="p">)</span>
+<span class="kd">local</span><span class="w"> </span><span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">context</span><span class="p">:</span><span class="nf">call</span><span class="p">(</span><span class="s2">&quot;INSTRUMENT.COMMAND&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nv">param</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">value</span><span class="p">})</span>
+</code></pre></div></p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <h3 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h3>
 <p>Required:</p>
 <ul>
 <li>CMake 3.20+</li>
-<li>C++17 compiler</li>
+<li>C++17 compiler (Clang or GCC recommended)</li>
 <li>Lua 5.3+ or LuaJIT</li>
-<li>sol2 (Lua C++ bindings)</li>
+<li>sol2 (Lua C++ bindings) - v3.5.0+</li>
 <li>spdlog (logging)</li>
 <li>nlohmann_json (JSON parsing)</li>
 <li>yaml-cpp (YAML parsing)</li>
 <li>Google Test (for testing)</li>
+<li>Boost (boost-interprocess, boost-date-time)</li>
 </ul>
 <p>Optional:</p>
 <ul>
 <li>NI-VISA (for VISA instruments)</li>
 </ul>
+<h3 id="installing-dependencies">Installing Dependencies<a class="headerlink" href="#installing-dependencies" title="Permanent link">&para;</a></h3>
+<p><strong>Arch Linux:</strong>
+<div class="language-bash highlight"><pre><span></span><code>sudo<span class="w"> </span>pacman<span class="w"> </span>-S<span class="w"> </span>base-devel<span class="w"> </span>git<span class="w"> </span>cmake<span class="w"> </span>ninja<span class="w"> </span>clang<span class="w"> </span>lld<span class="w"> </span>llvm<span class="w"> </span>lua<span class="w"> </span>luajit<span class="w"> </span>spdlog<span class="w"> </span>nlohmann-json<span class="w"> </span>yaml-cpp<span class="w"> </span>gtest<span class="w"> </span>boost
+
+<span class="c1"># Install sol2 (header-only)</span>
+git<span class="w"> </span>clone<span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span>--branch<span class="w"> </span>v3.5.0<span class="w"> </span>https://github.com/ThePhD/sol2.git<span class="w"> </span>/tmp/sol2
+sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/usr/local/include/sol
+sudo<span class="w"> </span>cp<span class="w"> </span>-r<span class="w"> </span>/tmp/sol2/include/sol/*<span class="w"> </span>/usr/local/include/sol/
+</code></pre></div></p>
+<p><strong>Ubuntu/Debian:</strong>
+<div class="language-bash highlight"><pre><span></span><code>sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>build-essential<span class="w"> </span>git<span class="w"> </span>cmake<span class="w"> </span>ninja-build<span class="w"> </span>clang<span class="w"> </span>liblua5.3-dev<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libspdlog-dev<span class="w"> </span>nlohmann-json3-dev<span class="w"> </span>libyaml-cpp-dev<span class="w"> </span>libgtest-dev<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libboost-date-time-dev<span class="w"> </span>libboost-interprocess-dev
+
+<span class="c1"># Install sol2 (header-only)</span>
+git<span class="w"> </span>clone<span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span>--branch<span class="w"> </span>v3.5.0<span class="w"> </span>https://github.com/ThePhD/sol2.git<span class="w"> </span>/tmp/sol2
+sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/usr/local/include/sol
+sudo<span class="w"> </span>cp<span class="w"> </span>-r<span class="w"> </span>/tmp/sol2/include/sol/*<span class="w"> </span>/usr/local/include/sol/
+</code></pre></div></p>
+<p><strong>Windows:</strong>
+Dependencies are managed via vcpkg (see <code>vcpkg.json</code>). The CI pipeline handles Windows builds automatically.</p>
 <h3 id="build">Build<a class="headerlink" href="#build" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/falcon-autotuning/instrument-script-server.git
 <span class="nb">cd</span><span class="w"> </span>instrument-script-server
-make<span class="w"> </span>build
+make<span class="w"> </span>clean<span class="w">  </span><span class="c1"># Clean any previous builds</span>
+make<span class="w"> </span>build<span class="w">  </span><span class="c1"># Build the project</span>
 sudo<span class="w"> </span>cmake<span class="w"> </span>--install<span class="w"> </span>.
 </code></pre></div>
+<h3 id="running-tests">Running Tests<a class="headerlink" href="#running-tests" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>build
+
+<span class="c1"># Run unit tests</span>
+make<span class="w"> </span>test_unit
+
+<span class="c1"># Run integration tests</span>
+make<span class="w"> </span>test_integration
+
+<span class="c1"># Run performance benchmarks</span>
+make<span class="w"> </span>test_perf
+</code></pre></div>
+<p><strong>Note:</strong> All tests must pass before committing changes. Both unit and integration tests validate the new main function format, deprecation warnings, and error handling.</p>
 <h3 id="verify-installation">Verify Installation<a class="headerlink" href="#verify-installation" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code>instrument-server<span class="w"> </span>--help
 instrument-server<span class="w"> </span>plugins
