@@ -1,6 +1,7 @@
 # Instrument Script Server
 
 A modular, process-isolated system for controlling scientific instruments for laboratory automation.
+Our [documentation](https://falcon-autotuning.github.io/instrument-script-server/) can bring you up to speed.
 
 ## Features
 
