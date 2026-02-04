@@ -1,0 +1,67 @@
+api_version: "1.0.0"
+instrument:
+  vendor: "MockVendor"
+  model: "MockModel"
+  identifier: "DemoAPI"
+  description: "Demo mock instrument for testing"
+
+protocol:
+  type: MockTest
+
+io:
+  - name: voltage
+    type: float
+    role: input
+    description: "Voltage value"
+    unit: "V"
+  - name: current
+    type: float
+    role: output
+    description: "Measured current"
+    unit: "A"
+  - name: message
+    type: string
+    role: output
+    description: "Text message"
+  - name: status
+    type: boolean
+    role: output
+    description: "Status flag"
+
+commands:
+  IDN:
+    template: "*IDN?"
+    description: "Identification query"
+    parameters: []
+    outputs: [message]
+
+  MEASURE:
+    template: "MEAS:CURR?"
+    description: "Measure current"
+    parameters: []
+    outputs: [current]
+
+  SET:
+    template: "SOUR:VOLT {voltage}"
+    description: "Set voltage"
+    parameters:
+      - io: voltage
+    outputs: []
+
+  GET:
+    template: "SOUR:VOLT?"
+    description: "Get voltage setting"
+    parameters: []
+    outputs: [voltage]
+
+  GET_STRING:
+    template: "GET:STRING?"
+    description: "Get string value"
+    parameters: []
+    outputs: [message]
+
+  GET_BOOL:
+    template: "GET:BOOL?"
+    description: "Get boolean value"
+    parameters: []
+    outputs: [status]
