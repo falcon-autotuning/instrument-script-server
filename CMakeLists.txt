@@ -50,6 +50,11 @@ find_package(spdlog REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
+# Create alias if it doesn't exist (for older yaml-cpp versions)
+if(TARGET yaml-cpp AND NOT TARGET yaml-cpp::yaml-cpp)
+  add_library(yaml-cpp::yaml-cpp ALIAS yaml-cpp)
+endif()
+
 # Lua (prefer LuaJIT if available)
 find_package(LuaJIT QUIET)
 if(LuaJIT_FOUND)

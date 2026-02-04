@@ -15,9 +15,15 @@ Our [documentation](https://falcon-autotuning.github.io/instrument-script-server
 ## Quick Start
 
 ```bash
+# Install dependencies (Ubuntu 22.04)
+sudo make setup-ubuntu
+
+# Or for Arch Linux
+sudo make setup-arch
+
 # Build and install
 make build
-sudo cmake --install .
+sudo make install
 
 # Start the server daemon
 instrument-server daemon start
@@ -216,44 +222,34 @@ local result = context:call("INSTRUMENT.COMMAND", {param = value})
 
 ## Installation
 
-### Dependencies
+**Quick Install:**
 
-Required:
-
-- CMake 3.20+
-- C++17 compiler (Clang or GCC recommended)
-- Lua 5.3+ or LuaJIT
-- sol2 (Lua C++ bindings) - v3.5.0+
-- spdlog (logging)
-- nlohmann_json (JSON parsing)
-- yaml-cpp (YAML parsing)
-- Google Test (for testing)
-- Boost (boost-interprocess, boost-date-time)
-
-Optional:
-
-- NI-VISA (for VISA instruments)
-
-### Installing Dependencies
-
-**Arch Linux:**
 ```bash
-sudo pacman -S base-devel git cmake ninja clang lld llvm lua luajit spdlog nlohmann-json yaml-cpp gtest boost
+# Ubuntu 22.04 LTS
+sudo make setup-ubuntu
+make build
+sudo make install
 
-# Install sol2 (header-only)
-git clone --depth 1 --branch v3.5.0 https://github.com/ThePhD/sol2.git /tmp/sol2
-sudo mkdir -p /usr/local/include/sol
-sudo cp -r /tmp/sol2/include/sol/* /usr/local/include/sol/
+# Arch Linux  
+sudo make setup-arch
+make build
+sudo make install
 ```
 
-**Ubuntu/Debian:**
-```bash
-sudo apt-get update
-sudo apt-get install build-essential git cmake ninja-build clang liblua5.3-dev \
-    libspdlog-dev nlohmann-json3-dev libyaml-cpp-dev libgtest-dev \
-    libboost-date-time-dev libboost-interprocess-dev
+For detailed installation instructions, troubleshooting, and platform-specific notes, see [INSTALL.md](INSTALL.md).
 
-# Install sol2 (header-only)
+### Dependencies
+
+See [INSTALL.md](INSTALL.md) for detailed dependency installation instructions.
+
+### Build
+
+```bash
+git clone https://github.com/falcon-autotuning/instrument-script-server.git
+cd instrument-script-server
+make clean  # Clean any previous builds
+make build  # Build the project
+sudo make install  # Install binaries and libraries-only)
 git clone --depth 1 --branch v3.5.0 https://github.com/ThePhD/sol2.git /tmp/sol2
 sudo mkdir -p /usr/local/include/sol
 sudo cp -r /tmp/sol2/include/sol/* /usr/local/include/sol/
@@ -295,6 +291,8 @@ make test_perf
 instrument-server --help
 instrument-server plugins
 ```
+
+If you encounter library loading errors, run `sudo ldconfig` to update the dynamic linker cache. See [INSTALL.md](INSTALL.md#troubleshooting) for more troubleshooting tips.
 
 ## Configuration
 
