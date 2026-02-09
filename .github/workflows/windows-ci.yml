@@ -155,53 +155,131 @@ jobs:
       - name: Collect release artifacts
         run: |
           New-Item -ItemType Directory -Force -Path release-staging\instrument-script-server-windows-x64\bin
-          New-Item -ItemType Directory -Force -Path release-staging\instrument-script-server-windows-x64\lib
+          New-Item -ItemType Directory -Force -Path release-staging\instrument-script-server-windows-x64\include
           New-Item -ItemType Directory -Force -Path release-staging\instrument-script-server-windows-x64\licenses
 
-          # Copy executables
-          Get-ChildItem -Path "build" -Filter *.exe -Recurse | 
-            Where-Object {$_.DirectoryName -notmatch "tests" -and $_.Name -match "^instrument-"} | 
-            Copy-Item -Destination "release-staging\instrument-script-server-windows-x64\bin\" -ErrorAction SilentlyContinue
+          Write-Host "=== Copying Executables ==="
+          # Copy main executables (not test executables)
+          Get-ChildItem -Path "build" -Filter *.exe | 
+            Where-Object {$_.Name -match "^instrument-" -or $_.Name -eq "template-expander.exe"} | 
+            ForEach-Object {
+              Write-Host "Copying: $($_.Name)"
+              Copy-Item $_.FullName -Destination "release-staging\instrument-script-server-windows-x64\bin\" -ErrorAction SilentlyContinue
+            }
 
+          Write-Host "`n=== Copying Core DLL ==="
           # Copy core DLL
-          Get-ChildItem -Path "build" -Filter *instrument-server-core.dll -Recurse | 
+          Get-ChildItem -Path "build" -Filter *instrument-server-core.dll | 
             Where-Object {$_.DirectoryName -notmatch "vcpkg_installed"} | 
-            Copy-Item -Destination "release-staging\instrument-script-server-windows-x64\lib\" -ErrorAction SilentlyContinue
+            ForEach-Object {
+              Write-Host "Copying: $($_.Name)"
+              Copy-Item $_.FullName -Destination "release-staging\instrument-script-server-windows-x64\bin\" -ErrorAction SilentlyContinue
+            }
 
-          # Copy vcpkg DLLs
+          Write-Host "`n=== Copying vcpkg DLLs (excluding gtest) ==="
+          # Copy vcpkg DLLs (exclude gtest and gmock)
           if (Test-Path "build\vcpkg_installed\x64-windows\bin") {
             Get-ChildItem -Path "build\vcpkg_installed\x64-windows\bin" -Filter *.dll | 
-              Copy-Item -Destination "release-staging\instrument-script-server-windows-x64\lib\" -ErrorAction SilentlyContinue
+              Where-Object {$_.Name -notmatch "gtest" -and $_.Name -notmatch "gmock"} |
+              ForEach-Object {
+                Write-Host "Copying: $($_.Name)"
+                Copy-Item $_.FullName -Destination "release-staging\instrument-script-server-windows-x64\bin\" -ErrorAction SilentlyContinue
+              }
           }
 
-          # Collect licenses
-          Write-Host "Collecting licenses..."
+          Write-Host "`n=== Verifying Dependencies with dumpbin ==="
+          # Check dependencies for main executables
+          $dumpbin = (Get-Command dumpbin -ErrorAction SilentlyContinue).Source
+          if ($dumpbin) {
+            Get-ChildItem -Path "release-staging\instrument-script-server-windows-x64\bin" -Filter instrument-*.exe | ForEach-Object {
+              Write-Host "`n--- Dependencies for $($_.Name) ---"
+              & dumpbin /dependents $_.FullName | Select-String "\.dll"
+            }
+          }
+
+          Write-Host "`n=== Copying Headers ==="
+          # Copy public headers
+          if (Test-Path "include") {
+            Copy-Item -Path "include\*" -Destination "release-staging\instrument-script-server-windows-x64\include\" -Recurse -Force
+          }
+
+          # Copy vcpkg headers (exclude gtest/gmock)
+          if (Test-Path "build\vcpkg_installed\x64-windows\include") {
+            Get-ChildItem -Path "build\vcpkg_installed\x64-windows\include" -Directory | 
+              Where-Object {$_.Name -notmatch "gtest" -and $_.Name -notmatch "gmock"} |
+              ForEach-Object {
+                Copy-Item -Path $_.FullName -Destination "release-staging\instrument-script-server-windows-x64\include\" -Recurse -Force -ErrorAction SilentlyContinue
+              }
+          }
+
+          Write-Host "`n=== Collecting Licenses ==="
+          # Copy main license
           Copy-Item -Path "LICENSE" -Destination "release-staging\instrument-script-server-windows-x64\licenses\" -ErrorAction SilentlyContinue
 
-          # Collect vcpkg licenses
+          # Collect vcpkg licenses (exclude gtest/gmock)
           if (Test-Path "build\vcpkg_installed\x64-windows\share") {
-            Get-ChildItem -Path "build\vcpkg_installed\x64-windows\share" -Recurse -Include copyright,LICENSE*,COPYING* | ForEach-Object {
-              $pkg = Split-Path (Split-Path $_.FullName -Parent) -Leaf
-              Copy-Item $_.FullName -Destination "release-staging\instrument-script-server-windows-x64\licenses\${pkg}_LICENSE.txt" -ErrorAction SilentlyContinue
-            }
+            Get-ChildItem -Path "build\vcpkg_installed\x64-windows\share" -Recurse -Include copyright,LICENSE*,COPYING* | 
+              Where-Object {$_.FullName -notmatch "gtest" -and $_.FullName -notmatch "gmock"} |
+              ForEach-Object {
+                $pkg = Split-Path (Split-Path $_.FullName -Parent) -Leaf
+                Copy-Item $_.FullName -Destination "release-staging\instrument-script-server-windows-x64\licenses\${pkg}_LICENSE.txt" -ErrorAction SilentlyContinue
+              }
           }
 
           # Copy vcpkg manifest
           Copy-Item -Path "vcpkg.json" -Destination "release-staging\instrument-script-server-windows-x64\" -ErrorAction SilentlyContinue
 
-          # Create README
+          Write-Host "`n=== Creating README ==="
           @"
           # Instrument Script Server - Windows x64 Release
 
+          ## Package Contents
+
+          ``````
+          instrument-script-server-windows-x64/
+          ├── bin/                      # Executables and DLLs
+          │   ├── instrument-server.exe # Main server executable
+          │   ├── instrument-worker.exe # Worker process executable
+          │   ├── template-expander.exe # YAML template processor (if available)
+          │   ├── *.dll                 # All required DLLs
+          ├── include/                  # Header files for plugin development
+          ├── licenses/                 # All applicable licenses
+          ├── vcpkg.json                # Dependency manifest
+          └── README.md                 # This file
+          ``````
+
           ## Installation
+
+          ### Option 1: Portable Installation (Recommended)
 
           ``````powershell
           # Extract archive
           Expand-Archive instrument-script-server-windows-x64.zip -DestinationPath C:\instrument-server
 
-          # Add to PATH (Administrator PowerShell)
+          # Add to PATH (Current session)
           `$env:PATH += ";C:\instrument-server\bin"
-          [Environment]::SetEnvironmentVariable("PATH", `$env:PATH, [EnvironmentVariableTarget]::Machine)
+
+          # Add to PATH (Permanent - Administrator PowerShell required)
+          [Environment]::SetEnvironmentVariable(
+              "PATH",
+              [Environment]::GetEnvironmentVariable("PATH", "Machine") + ";C:\instrument-server\bin",
+              "Machine"
+          )
+          ``````
+
+          ### Option 2: User Directory Installation
+
+          ``````powershell
+          # Extract to user directory
+          `$installDir = "`$env:USERPROFILE\instrument-script-server"
+          Expand-Archive instrument-script-server-windows-x64.zip -DestinationPath `$installDir
+
+          # Add to user PATH
+          `$userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+          [Environment]::SetEnvironmentVariable("PATH", "`$userPath;`$installDir\bin", "User")
+
+          # Reload environment (or restart PowerShell)
+          `$env:PATH = [Environment]::GetEnvironmentVariable("PATH", "User")
           ``````
 
           ## Usage
@@ -223,16 +301,26 @@ jobs:
           instrument-server daemon stop
           ``````
 
+          ## Plugin Development
+
+          The ``include/`` directory contains all headers needed for developing custom instrument plugins.
+          See the official documentation for plugin development guide.
+
           ## Dependencies
 
-          All required DLLs are included in the ``lib/`` directory.
+          All required DLLs are included in the ``bin/`` directory. No additional dependencies need to be installed.
+
+          ## System Requirements
+
+          - Windows 10/11 (x64)
+          - Visual C++ Redistributable may be required (usually pre-installed)
 
           ## License
 
           See the ``licenses/`` directory for all applicable licenses.
           "@ | Out-File -FilePath "release-staging\instrument-script-server-windows-x64\README.md" -Encoding UTF8
 
-          Write-Host "=== Release Structure ==="
+          Write-Host "`n=== Final Release Structure ==="
           Get-ChildItem -Path "release-staging\instrument-script-server-windows-x64" -Recurse | Select-Object FullName
         shell: pwsh
 
