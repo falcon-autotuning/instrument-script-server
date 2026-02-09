@@ -23,23 +23,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Create vcpkg cache directories
-        run: |
-          mkdir -p "${{ github.workspace }}/.vcpkg/bincache"
-          mkdir -p "${{ github.workspace }}/.vcpkg/downloads"
-          echo "Created cache directories:"
-          ls -la "${{ github.workspace }}/.vcpkg/"
-
-      - name: Attempt to restore vcpkg binary cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            .vcpkg/bincache
-            .vcpkg/downloads
-          key: vcpkg-linux-${{ hashFiles('vcpkg.json', 'vcpkg-lock.json', '**/vcpkg-configuration.json') }}
-          restore-keys: |
-            vcpkg-linux-
-
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
@@ -77,8 +60,6 @@ jobs:
             -DCMAKE_C_COMPILER=clang \
             -DCMAKE_CXX_COMPILER=clang++ \
             -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
-            -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" \
-            -DCMKAE_CXX_FLAGS="-Oz -g" \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_TESTS=ON
 
@@ -96,15 +77,37 @@ jobs:
           echo ""
           echo "=== Test Executables ==="
           find build/tests -type f -executable 2>/dev/null | xargs ls -lh || echo "No test executables found"
+          echo ""
+          echo "=== Tools ==="
+          find build -type f -executable -name "template-expander" 2>/dev/null | xargs ls -lh || echo "template-expander not found"
 
       - name: Run unit tests
         run: |
+          # Add build directory to PATH for executables (instrument-worker, template-expander, etc.)
+          export PATH="$PWD/build:$PATH"
+
+          # Set library paths
           export LD_LIBRARY_PATH="$PWD/build:$PWD/build/vcpkg_installed/x64-linux/lib:$LD_LIBRARY_PATH"
+
+          # Verify critical executables are accessible
+          echo "Checking for instrument-worker..."
+          which instrument-worker || echo "WARNING: instrument-worker not in PATH"
+
+          echo "Checking for template-expander..."
+          which template-expander || echo "WARNING: template-expander not in PATH (some tests may fail)"
+
+          # Run tests
           ./build/tests/unit_tests
 
       - name: Run integration tests
         run: |
+          # Add build directory to PATH
+          export PATH="$PWD/build:$PATH"
+
+          # Set library paths
           export LD_LIBRARY_PATH="$PWD/build:$PWD/build/vcpkg_installed/x64-linux/lib:$LD_LIBRARY_PATH"
+
+          # Run tests
           ./build/tests/integration_tests
 
       - name: Collect release artifacts
@@ -114,6 +117,11 @@ jobs:
           # Copy executables
           find build -maxdepth 1 -type f -executable -name "instrument-*" \
             -exec cp {} release-staging/instrument-script-server-linux-x64/bin/ \;
+
+          # Copy template-expander if it exists (needed for runtime)
+          if [ -f "build/template-expander" ]; then
+            cp build/template-expander release-staging/instrument-script-server-linux-x64/bin/
+          fi
 
           # Copy core shared library
           find build -maxdepth 1 -type f -name "libinstrument-server-core.so*" \
@@ -153,6 +161,11 @@ jobs:
           # Install binaries
           sudo install -m 755 bin/instrument-server /usr/local/bin/
           sudo install -m 755 bin/instrument-worker /usr/local/bin/
+
+          # Install template-expander if present
+          if [ -f "bin/template-expander" ]; then
+            sudo install -m 755 bin/template-expander /usr/local/bin/
+          fi
 
           # Install libraries
           sudo install -m 644 lib/*.so* /usr/local/lib/
