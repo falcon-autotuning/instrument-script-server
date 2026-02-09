@@ -213,8 +213,14 @@ jobs:
           }
 
           Write-Host "`n=== Collecting Licenses ==="
-          # Copy main license
-          Copy-Item -Path "LICENSE" -Destination "release-staging\instrument-script-server-windows-x64\licenses\" -ErrorAction SilentlyContinue
+          # Copy project LICENSE to both root and licenses directory
+          if (Test-Path "LICENSE") {
+            Copy-Item -Path "LICENSE" -Destination "release-staging\instrument-script-server-windows-x64\LICENSE"
+            Copy-Item -Path "LICENSE" -Destination "release-staging\instrument-script-server-windows-x64\licenses\instrument-script-server_LICENSE.txt"
+            Write-Host "✓ Project LICENSE copied to root and licenses\"
+          } else {
+            Write-Warning "Project LICENSE file not found!"
+          }
 
           # Collect vcpkg licenses (exclude gtest/gmock)
           if (Test-Path "build\vcpkg_installed\x64-windows\share") {
@@ -224,10 +230,13 @@ jobs:
                 $pkg = Split-Path (Split-Path $_.FullName -Parent) -Leaf
                 Copy-Item $_.FullName -Destination "release-staging\instrument-script-server-windows-x64\licenses\${pkg}_LICENSE.txt" -ErrorAction SilentlyContinue
               }
+            Write-Host "✓ Dependency licenses collected"
           }
 
           # Copy vcpkg manifest
-          Copy-Item -Path "vcpkg.json" -Destination "release-staging\instrument-script-server-windows-x64\" -ErrorAction SilentlyContinue
+          if (Test-Path "vcpkg.json") {
+            Copy-Item -Path "vcpkg.json" -Destination "release-staging\instrument-script-server-windows-x64\" -ErrorAction SilentlyContinue
+          }
 
           Write-Host "`n=== Creating README ==="
           @"
@@ -244,6 +253,9 @@ jobs:
           │   ├── *.dll                 # All required DLLs
           ├── include/                  # Header files for plugin development
           ├── licenses/                 # All applicable licenses
+          │   ├── instrument-script-server_LICENSE.txt
+          │   └── ... (dependency licenses)
+          ├── LICENSE                   # Main project license (copy)
           ├── vcpkg.json                # Dependency manifest
           └── README.md                 # This file
           ``````
@@ -317,11 +329,21 @@ jobs:
 
           ## License
 
-          See the ``licenses/`` directory for all applicable licenses.
+          See the ``LICENSE`` file in this directory and the ``licenses/`` directory for all applicable licenses.
           "@ | Out-File -FilePath "release-staging\instrument-script-server-windows-x64\README.md" -Encoding UTF8
+
+          Write-Host "`n✓ README.md created"
 
           Write-Host "`n=== Final Release Structure ==="
           Get-ChildItem -Path "release-staging\instrument-script-server-windows-x64" -Recurse | Select-Object FullName
+
+          Write-Host "`n=== Dependency Count ==="
+          $dllCount = (Get-ChildItem -Path "release-staging\instrument-script-server-windows-x64\bin" -Filter *.dll).Count
+          Write-Host "Total DLLs in package: $dllCount"
+
+          Write-Host "`n=== License Files ==="
+          $licenseCount = (Get-ChildItem -Path "release-staging\instrument-script-server-windows-x64\licenses" -File).Count
+          Write-Host "Total licenses collected: $licenseCount"
         shell: pwsh
 
       - name: Create release archive

@@ -111,26 +111,31 @@ jobs:
           mkdir -p release-staging/instrument-script-server-linux-x64/{bin,include,licenses}
 
           echo "=== Copying Executables ==="
+          # Copy main executables from build root
           find build -maxdepth 1 -type f -executable \
             \( -name "instrument-server" -o -name "instrument-worker" \) \
             -exec cp -v {} release-staging/instrument-script-server-linux-x64/bin/ \;
 
+          # Copy template-expander if it exists
           if [ -f "build/template-expander" ]; then
             cp -v build/template-expander release-staging/instrument-script-server-linux-x64/bin/
           fi
 
           echo ""
           echo "=== Copying Core Library ==="
+          # Copy core shared library to bin/ (merged with executables on Linux)
           find build -maxdepth 1 -type f -name "libinstrument-server-core.so*" \
             -exec cp -v {} release-staging/instrument-script-server-linux-x64/bin/ \;
 
           echo ""
           echo "=== Copying vcpkg Dependencies (Dynamic) ==="
+          # Copy all vcpkg shared libraries (exclude gtest)
           if [ -d "build/vcpkg_installed/x64-linux-dynamic/lib" ]; then
             echo "Found vcpkg dynamic libraries:"
             find build/vcpkg_installed/x64-linux-dynamic/lib -type f -name "*.so*" \
               ! -name "*gtest*" ! -name "*gmock*" | head -20
             
+            # Copy all .so files and their symlinks
             find build/vcpkg_installed/x64-linux-dynamic/lib \
               \( -type f -o -type l \) -name "*.so*" \
               ! -name "*gtest*" ! -name "*gmock*" \
@@ -142,11 +147,14 @@ jobs:
 
           echo ""
           echo "=== Copying Headers ==="
+          # Copy public headers for the library
           if [ -d "include" ]; then
             cp -rv include/* release-staging/instrument-script-server-linux-x64/include/
           fi
 
+          # Copy vcpkg headers (for users who want to build plugins)
           if [ -d "build/vcpkg_installed/x64-linux-dynamic/include" ]; then
+            # Copy main include directories, excluding test frameworks
             for dir in build/vcpkg_installed/x64-linux-dynamic/include/*; do
               dirname=$(basename "$dir")
               if [[ "$dirname" != "gtest" && "$dirname" != "gmock" ]]; then
@@ -157,6 +165,7 @@ jobs:
 
           echo ""
           echo "=== Verifying Dependencies with ldd ==="
+          # Check what libraries the executables need
           for exe in release-staging/instrument-script-server-linux-x64/bin/instrument-server \
                      release-staging/instrument-script-server-linux-x64/bin/instrument-worker; do
             if [ -f "$exe" ]; then
@@ -167,20 +176,33 @@ jobs:
 
           echo ""
           echo "=== Collecting Licenses ==="
-          cp LICENSE release-staging/instrument-script-server-linux-x64/licenses/LICENSE || true
+          # Copy project LICENSE to both root and licenses directory
+          if [ -f "LICENSE" ]; then
+            cp -v LICENSE release-staging/instrument-script-server-linux-x64/LICENSE
+            cp -v LICENSE release-staging/instrument-script-server-linux-x64/licenses/instrument-script-server_LICENSE.txt
+            echo "✓ Project LICENSE copied to root and licenses/"
+          else
+            echo "WARNING: Project LICENSE file not found!"
+          fi
 
+          # Collect vcpkg package licenses (exclude gtest)
           if [ -d "build/vcpkg_installed/x64-linux-dynamic/share" ]; then
             find build/vcpkg_installed/x64-linux-dynamic/share -type f \
               \( -name "copyright" -o -name "LICENSE*" -o -name "COPYING*" \) \
               -path "*/share/*" ! -path "*/gtest/*" ! -path "*/gmock/*" \
               -exec bash -c 'pkg=$(basename $(dirname $(dirname {}))); cp {} release-staging/instrument-script-server-linux-x64/licenses/${pkg}_LICENSE.txt 2>/dev/null || true' \;
+            
+            echo "✓ Dependency licenses collected"
           fi
 
-          cp vcpkg.json release-staging/instrument-script-server-linux-x64/ || true
+          # Copy vcpkg manifest
+          if [ -f "vcpkg.json" ]; then
+            cp -v vcpkg.json release-staging/instrument-script-server-linux-x64/
+          fi
 
           echo ""
           echo "=== Creating README ==="
-          cat > release-staging/instrument-script-server-linux-x64/README.md << 'EOF'
+          cat > release-staging/instrument-script-server-linux-x64/README.md <<'EOF'
           # Instrument Script Server - Linux x64 Release
 
           ## Package Contents
@@ -194,6 +216,9 @@ jobs:
           │   ├── *.so*               # All required shared libraries
           ├── include/                # Header files for plugin development
           ├── licenses/               # All applicable licenses
+          │   ├── instrument-script-server_LICENSE.txt
+          │   └── ... (dependency licenses)
+          ├── LICENSE                 # Main project license (copy)
           ├── vcpkg.json              # Dependency manifest
           └── README.md               # This file
           ```
@@ -212,30 +237,30 @@ jobs:
           sudo mkdir -p /opt
           sudo mv instrument-script-server-linux-x64 /opt/instrument-script-server
 
-          # Create symlinks to executables in /usr/local/bin
-          sudo ln -sf /opt/instrument-script-server/bin/instrument-server /usr/local/bin/instrument-server
-          sudo ln -sf /opt/instrument-script-server/bin/instrument-worker /usr/local/bin/instrument-worker
-
-          # If template-expander exists
-          if [ -f /opt/instrument-script-server/bin/template-expander ]; then
-            sudo ln -sf /opt/instrument-script-server/bin/template-expander /usr/local/bin/template-expander
-          fi
-
-          # Create wrapper scripts that set LD_LIBRARY_PATH (alternative to symlinks)
-          # This ensures the bundled libraries are used
-          sudo tee /usr/local/bin/instrument-server << 'WRAPPER' > /dev/null
+          # Create wrapper scripts that set LD_LIBRARY_PATH
+          sudo tee /usr/local/bin/instrument-server > /dev/null <<'WRAPPER'
           #!/bin/bash
           export LD_LIBRARY_PATH="/opt/instrument-script-server/bin:$LD_LIBRARY_PATH"
           exec /opt/instrument-script-server/bin/instrument-server "$@"
           WRAPPER
 
-          sudo tee /usr/local/bin/instrument-worker << 'WRAPPER' > /dev/null
+          sudo tee /usr/local/bin/instrument-worker > /dev/null <<'WRAPPER'
           #!/bin/bash
           export LD_LIBRARY_PATH="/opt/instrument-script-server/bin:$LD_LIBRARY_PATH"
           exec /opt/instrument-script-server/bin/instrument-worker "$@"
           WRAPPER
 
           sudo chmod +x /usr/local/bin/instrument-server /usr/local/bin/instrument-worker
+
+          # If template-expander exists
+          if [ -f /opt/instrument-script-server/bin/template-expander ]; then
+            sudo tee /usr/local/bin/template-expander > /dev/null <<'WRAPPER'
+          #!/bin/bash
+          export LD_LIBRARY_PATH="/opt/instrument-script-server/bin:$LD_LIBRARY_PATH"
+          exec /opt/instrument-script-server/bin/template-expander "$@"
+          WRAPPER
+            sudo chmod +x /usr/local/bin/template-expander
+          fi
 
           # Verify installation
           instrument-server --version
@@ -258,17 +283,17 @@ jobs:
           # Create wrapper scripts in ~/.local/bin
           mkdir -p ~/.local/bin
 
-          cat > ~/.local/bin/instrument-server << 'EOF'
+          cat > ~/.local/bin/instrument-server <<'WRAPPER'
           #!/bin/bash
           export LD_LIBRARY_PATH="$HOME/.local/opt/instrument-script-server/bin:$LD_LIBRARY_PATH"
           exec "$HOME/.local/opt/instrument-script-server/bin/instrument-server" "$@"
-          EOF
+          WRAPPER
 
-          cat > ~/.local/bin/instrument-worker << 'EOF'
+          cat > ~/.local/bin/instrument-worker <<'WRAPPER'
           #!/bin/bash
           export LD_LIBRARY_PATH="$HOME/.local/opt/instrument-script-server/bin:$LD_LIBRARY_PATH"
           exec "$HOME/.local/opt/instrument-script-server/bin/instrument-worker" "$@"
-          EOF
+          WRAPPER
 
           chmod +x ~/.local/bin/instrument-server ~/.local/bin/instrument-worker
 
@@ -371,28 +396,49 @@ jobs:
 
           ## License
 
-          See the `licenses/` directory for all applicable licenses.
+          See the `LICENSE` file in this directory and the `licenses/` directory for all applicable licenses.
           EOF
+
+          echo "✓ README.md created"
 
           echo ""
           echo "=== Verifying All Dependencies Are Bundled ==="
           echo "Checking for missing dependencies..."
+          missing_deps=0
           for exe in release-staging/instrument-script-server-linux-x64/bin/instrument-*; do
             if [ -f "$exe" ] && [ -x "$exe" ]; then
               echo "Checking $(basename $exe)..."
-              LD_LIBRARY_PATH="release-staging/instrument-script-server-linux-x64/bin:$LD_LIBRARY_PATH" \
-                ldd "$exe" | grep "not found" && echo "ERROR: Missing dependencies!" || echo "  ✓ All dependencies present"
+              if LD_LIBRARY_PATH="release-staging/instrument-script-server-linux-x64/bin:$LD_LIBRARY_PATH" \
+                ldd "$exe" | grep "not found" > /dev/null; then
+                echo "  ✗ ERROR: Missing dependencies!"
+                LD_LIBRARY_PATH="release-staging/instrument-script-server-linux-x64/bin:$LD_LIBRARY_PATH" \
+                  ldd "$exe" | grep "not found"
+                missing_deps=1
+              else
+                echo "  ✓ All dependencies present"
+              fi
             fi
           done
 
+          if [ $missing_deps -eq 1 ]; then
+            echo ""
+            echo "ERROR: Some dependencies are missing from the package!"
+            exit 1
+          fi
+
           echo ""
           echo "=== Final Release Structure ==="
-          tree release-staging/instrument-script-server-linux-x64 || find release-staging/instrument-script-server-linux-x64 -type f
+          tree release-staging/instrument-script-server-linux-x64 || find release-staging/instrument-script-server-linux-x64 -type f | sort
 
           echo ""
           echo "=== Dependency Count ==="
           echo "Total .so files in package:"
           find release-staging/instrument-script-server-linux-x64/bin -name "*.so*" -type f | wc -l
+
+          echo ""
+          echo "=== License Files ==="
+          echo "Total licenses collected:"
+          find release-staging/instrument-script-server-linux-x64/licenses -type f | wc -l
 
       - name: Create release archive
         run: |
