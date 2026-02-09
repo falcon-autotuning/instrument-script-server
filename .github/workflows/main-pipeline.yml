@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  # Build for Linux
+  linux-build:
+    uses: ./.github/workflows/linux-ci.yml
+    permissions:
+      contents: read
+
+  # Build for Windows
+  windows-build:
+    uses: ./.github/workflows/windows-ci.yml
+    permissions:
+      contents: read
+
+  # Create release with all artifacts
+  create-release:
+    needs: [linux-build, windows-build]
+    uses: ./.github/workflows/create-release.yml
+    permissions:
+      contents: write
