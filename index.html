@@ -669,10 +669,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#installing-dependencies" class="md-nav__link">
+  <a href="#build" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installing Dependencies
+        Build
       
     </span>
   </a>
@@ -680,7 +680,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#build" class="md-nav__link">
+  <a href="#build_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Build
@@ -1530,10 +1530,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#installing-dependencies" class="md-nav__link">
+  <a href="#build" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Installing Dependencies
+        Build
       
     </span>
   </a>
@@ -1541,7 +1541,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#build" class="md-nav__link">
+  <a href="#build_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Build
@@ -1668,7 +1668,8 @@
 
 
 <h1 id="instrument-script-server">Instrument Script Server<a class="headerlink" href="#instrument-script-server" title="Permanent link">&para;</a></h1>
-<p>A modular, process-isolated system for controlling scientific instruments for laboratory automation.</p>
+<p>A modular, process-isolated system for controlling scientific instruments for laboratory automation.
+Our <a href="https://falcon-autotuning.github.io/instrument-script-server/">documentation</a> can bring you up to speed.</p>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Process Isolation</strong>: Each instrument runs in a separate worker process for fault tolerance</li>
@@ -1679,9 +1680,15 @@
 <li><strong>Cross-Platform</strong>: Works on Linux and Windows</li>
 </ul>
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Build and install</span>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Install dependencies (Ubuntu 22.04)</span>
+sudo<span class="w"> </span>make<span class="w"> </span>setup-ubuntu
+
+<span class="c1"># Or for Arch Linux</span>
+sudo<span class="w"> </span>make<span class="w"> </span>setup-arch
+
+<span class="c1"># Build and install</span>
 make<span class="w"> </span>build
-sudo<span class="w"> </span>cmake<span class="w"> </span>--install<span class="w"> </span>.
+sudo<span class="w"> </span>make<span class="w"> </span>install
 
 <span class="c1"># Start the server daemon</span>
 instrument-server<span class="w"> </span>daemon<span class="w"> </span>start
@@ -1845,46 +1852,33 @@ instrument-server<span class="w"> </span>daemon<span class="w"> </span>stop
 <span class="kd">local</span><span class="w"> </span><span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">context</span><span class="p">:</span><span class="nf">call</span><span class="p">(</span><span class="s2">&quot;INSTRUMENT.COMMAND&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nv">param</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">value</span><span class="p">})</span>
 </code></pre></div></p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
+<p><strong>Quick Install:</strong></p>
+<div class="language-bash highlight"><pre><span></span><code><span class="c1"># Ubuntu 22.04 LTS</span>
+sudo<span class="w"> </span>make<span class="w"> </span>setup-ubuntu
+make<span class="w"> </span>build
+sudo<span class="w"> </span>make<span class="w"> </span>install
+
+<span class="c1"># Arch Linux  </span>
+sudo<span class="w"> </span>make<span class="w"> </span>setup-arch
+make<span class="w"> </span>build
+sudo<span class="w"> </span>make<span class="w"> </span>install
+</code></pre></div>
+<p>For detailed installation instructions, troubleshooting, and platform-specific notes, see <a href="INSTALL.md">INSTALL.md</a>.</p>
 <h3 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h3>
-<p>Required:</p>
-<ul>
-<li>CMake 3.20+</li>
-<li>C++17 compiler (Clang or GCC recommended)</li>
-<li>Lua 5.3+ or LuaJIT</li>
-<li>sol2 (Lua C++ bindings) - v3.5.0+</li>
-<li>spdlog (logging)</li>
-<li>nlohmann_json (JSON parsing)</li>
-<li>yaml-cpp (YAML parsing)</li>
-<li>Google Test (for testing)</li>
-<li>Boost (boost-interprocess, boost-date-time)</li>
-</ul>
-<p>Optional:</p>
-<ul>
-<li>NI-VISA (for VISA instruments)</li>
-</ul>
-<h3 id="installing-dependencies">Installing Dependencies<a class="headerlink" href="#installing-dependencies" title="Permanent link">&para;</a></h3>
-<p><strong>Arch Linux:</strong>
-<div class="language-bash highlight"><pre><span></span><code>sudo<span class="w"> </span>pacman<span class="w"> </span>-S<span class="w"> </span>base-devel<span class="w"> </span>git<span class="w"> </span>cmake<span class="w"> </span>ninja<span class="w"> </span>clang<span class="w"> </span>lld<span class="w"> </span>llvm<span class="w"> </span>lua<span class="w"> </span>luajit<span class="w"> </span>spdlog<span class="w"> </span>nlohmann-json<span class="w"> </span>yaml-cpp<span class="w"> </span>gtest<span class="w"> </span>boost
-
-<span class="c1"># Install sol2 (header-only)</span>
+<p>See <a href="INSTALL.md">INSTALL.md</a> for detailed dependency installation instructions.</p>
+<h3 id="build">Build<a class="headerlink" href="#build" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/falcon-autotuning/instrument-script-server.git
+<span class="nb">cd</span><span class="w"> </span>instrument-script-server
+make<span class="w"> </span>clean<span class="w">  </span><span class="c1"># Clean any previous builds</span>
+make<span class="w"> </span>build<span class="w">  </span><span class="c1"># Build the project</span>
+sudo<span class="w"> </span>make<span class="w"> </span>install<span class="w">  </span><span class="c1"># Install binaries and libraries-only)</span>
 git<span class="w"> </span>clone<span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span>--branch<span class="w"> </span>v3.5.0<span class="w"> </span>https://github.com/ThePhD/sol2.git<span class="w"> </span>/tmp/sol2
 sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/usr/local/include/sol
 sudo<span class="w"> </span>cp<span class="w"> </span>-r<span class="w"> </span>/tmp/sol2/include/sol/*<span class="w"> </span>/usr/local/include/sol/
-</code></pre></div></p>
-<p><strong>Ubuntu/Debian:</strong>
-<div class="language-bash highlight"><pre><span></span><code>sudo<span class="w"> </span>apt-get<span class="w"> </span>update
-sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>build-essential<span class="w"> </span>git<span class="w"> </span>cmake<span class="w"> </span>ninja-build<span class="w"> </span>clang<span class="w"> </span>liblua5.3-dev<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>libspdlog-dev<span class="w"> </span>nlohmann-json3-dev<span class="w"> </span>libyaml-cpp-dev<span class="w"> </span>libgtest-dev<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>libboost-date-time-dev<span class="w"> </span>libboost-interprocess-dev
-
-<span class="c1"># Install sol2 (header-only)</span>
-git<span class="w"> </span>clone<span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span>--branch<span class="w"> </span>v3.5.0<span class="w"> </span>https://github.com/ThePhD/sol2.git<span class="w"> </span>/tmp/sol2
-sudo<span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/usr/local/include/sol
-sudo<span class="w"> </span>cp<span class="w"> </span>-r<span class="w"> </span>/tmp/sol2/include/sol/*<span class="w"> </span>/usr/local/include/sol/
-</code></pre></div></p>
+</code></pre></div>
 <p><strong>Windows:</strong>
 Dependencies are managed via vcpkg (see <code>vcpkg.json</code>). The CI pipeline handles Windows builds automatically.</p>
-<h3 id="build">Build<a class="headerlink" href="#build" title="Permanent link">&para;</a></h3>
+<h3 id="build_1">Build<a class="headerlink" href="#build_1" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/falcon-autotuning/instrument-script-server.git
 <span class="nb">cd</span><span class="w"> </span>instrument-script-server
 make<span class="w"> </span>clean<span class="w">  </span><span class="c1"># Clean any previous builds</span>
@@ -1908,6 +1902,7 @@ make<span class="w"> </span>test_perf
 <div class="language-bash highlight"><pre><span></span><code>instrument-server<span class="w"> </span>--help
 instrument-server<span class="w"> </span>plugins
 </code></pre></div>
+<p>If you encounter library loading errors, run <code>sudo ldconfig</code> to update the dynamic linker cache. See <a href="INSTALL.md#troubleshooting">INSTALL.md</a> for more troubleshooting tips.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>Configuration files are located in the <code>examples/</code> folder:</p>
 <ul>
