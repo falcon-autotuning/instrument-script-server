@@ -158,7 +158,6 @@ jobs:
           ## 📝 Build Information
 
           - **Commit:** $GITHUB_SHA
-          - **Build Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
           - **Compiler:** Clang/LLVM (Linux), Clang-CL (Windows)
           - **Build Type:** Release (Optimized)
           - **C++ Standard:** C++17
