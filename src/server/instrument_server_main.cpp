@@ -1,4 +1,5 @@
 #include "instrument-server/server/CommandHandlers.hpp"
+#include "instrument-server/version.hpp"
 #include <iostream>
 #include <spdlog/spdlog.h>
 
@@ -36,6 +37,8 @@ void print_usage() {
   std::cout << "\nOptions:\n";
   std::cout << "  --plugin <path>      Custom plugin (. so/. dll)\n";
   std::cout << "  --log-level <level>  Log level (default: info)\n";
+  std::cout << "  --version            Show version information\n";
+  std::cout << "  --help, -h           Show this help message\n";
   std::cout << "\nWorkflow:\n";
   std::cout << "  1. Start daemon:\n";
   std::cout << "     instrument-server daemon start\n";
@@ -323,6 +326,9 @@ int main(int argc, char **argv) {
     return rc;
   } else if (command == "--help" || command == "-h") {
     print_usage();
+    return 0;
+  } else if (command == "--version" || command == "-v") {
+    std::cout << "instrument-script-server " << get_full_version() << std::endl;
     return 0;
   } else {
     std::cerr << "Unknown command: " << command << "\n\n";

@@ -4,6 +4,46 @@ project(
   VERSION 1.1.0
   LANGUAGES C CXX)
 
+# Git version detection
+find_package(Git QUIET)
+set(INSTSERVER_VERSION "${PROJECT_VERSION}")
+set(INSTSERVER_GIT_COMMIT "unknown")
+set(INSTSERVER_GIT_TAG "")
+
+if(GIT_FOUND)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE INSTSERVER_GIT_COMMIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET)
+  
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe --tags --exact-match HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE INSTSERVER_GIT_TAG
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET)
+  
+  # If we're not on a tagged commit, check if we have tags at all
+  if(NOT INSTSERVER_GIT_TAG)
+    execute_process(
+      COMMAND ${GIT_EXECUTABLE} describe --tags --abbrev=0 HEAD
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      OUTPUT_VARIABLE INSTSERVER_GIT_TAG
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      ERROR_QUIET)
+  endif()
+endif()
+
+message(STATUS "Version: ${INSTSERVER_VERSION}")
+if(NOT INSTSERVER_GIT_COMMIT STREQUAL "unknown")
+  message(STATUS "Git commit: ${INSTSERVER_GIT_COMMIT}")
+endif()
+if(INSTSERVER_GIT_TAG)
+  message(STATUS "Git tag: ${INSTSERVER_GIT_TAG}")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -99,6 +139,7 @@ add_library(
   instrument-server-core SHARED
   src/SchemaValidator.cpp
   src/Logger.cpp
+  src/version.cpp
   src/SerializedCommand.cpp
   src/ipc/SharedQueue.cpp
   src/ipc/ProcessManager.cpp
@@ -124,6 +165,14 @@ set_target_properties(instrument-server-core
 # checked in include/instrument-server/export.h
 target_compile_definitions(instrument-server-core
                            PRIVATE instrument_server_core_EXPORTS)
+
+# Add version information
+target_compile_definitions(
+  instrument-server-core
+  PRIVATE
+  INSTSERVER_VERSION="${INSTSERVER_VERSION}"
+  INSTSERVER_GIT_COMMIT="${INSTSERVER_GIT_COMMIT}"
+  INSTSERVER_GIT_TAG="${INSTSERVER_GIT_TAG}")
 
 target_link_libraries(
   instrument-server-core
