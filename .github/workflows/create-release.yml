@@ -1,0 +1,214 @@
+name: Create GitHub Release
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Display structure of downloaded files
+        run: |
+          echo "=== Downloaded Artifacts Structure ==="
+          ls -R release-artifacts
+          echo ""
+          echo "=== File Sizes ==="
+          find release-artifacts -type f -exec ls -lh {} \;
+
+      - name: Verify all artifacts present
+        run: |
+          required_artifacts=(
+            "instrument-script-server-linux-x64/instrument-script-server-linux-x64.tar.gz"
+            "instrument-script-server-linux-x64/instrument-script-server-linux-x64.tar.gz.sha256"
+            "instrument-script-server-windows-x64/instrument-script-server-windows-x64.zip"
+            "instrument-script-server-windows-x64/instrument-script-server-windows-x64.zip.sha256"
+          )
+
+          all_present=true
+          for artifact in "${required_artifacts[@]}"; do
+            if [ -f "release-artifacts/$artifact" ]; then
+              echo "[OK] $artifact"
+            else
+              echo "[MISSING] $artifact"
+              all_present=false
+            fi
+          done
+
+          if [ "$all_present" = false ]; then
+            echo ""
+            echo "ERROR: Not all required artifacts are present!"
+            exit 1
+          fi
+
+          echo ""
+          echo "✓ All artifacts verified"
+
+      - name: Generate release tag
+        id: tag
+        run: |
+          # Use semantic versioning with date
+          VERSION="$(git rev-parse --short HEAD)"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version: $VERSION"
+
+          # Also create a friendly name
+          RELEASE_NAME="Instrument Script Server $VERSION"
+          echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create release notes
+        id: notes
+        run: |
+          cat > release-notes.md << 'EOF'
+          # Instrument Script Server Release
+
+          Multi-platform release of the Instrument Script Server for scientific instrument control and laboratory automation.
+
+          ## 📦 Packages
+
+          ### Linux x64
+
+          **`instrument-script-server-linux-x64.tar.gz`**
+          - Optimized release build
+          - Clang/LLVM compiled
+          - Includes all executables, shared libraries, and dependencies
+          - Ready-to-use installation
+
+          ### Windows x64
+
+          **`instrument-script-server-windows-x64.zip`**
+          - Optimized release build
+          - Clang-CL compiled
+          - Includes all executables, DLLs, and dependencies
+          - Ready-to-use installation
+
+          ## ✅ Verification
+
+          Each package includes a `.sha256` checksum file. Verify your download:
+
+          **Linux/macOS:**
+          ```bash
+          sha256sum -c instrument-script-server-*.sha256
+          ```
+
+          **Windows (PowerShell):**
+          ```powershell
+          $expected = (Get-Content instrument-script-server-*.sha256).Split()[0]
+          $actual = (Get-FileHash instrument-script-server-*.zip -Algorithm SHA256).Hash.ToLower()
+          if ($expected -eq $actual) { "OK" } else { "MISMATCH" }
+          ```
+
+          ## 📋 System Requirements
+
+          ### Linux
+          - glibc 2.31+ (Ubuntu 20.04+, similar distributions)
+          - All dependencies included in package
+
+          ### Windows
+          - Windows 10/11 (x64)
+          - Visual C++ Redistributable (usually pre-installed)
+          - All dependencies included in package
+
+          ## 🚀 Quick Start
+
+          ### Linux
+
+          ```bash
+          # Extract
+          tar -xzf instrument-script-server-linux-x64.tar.gz
+          cd instrument-script-server-linux-x64
+
+          # Install
+          sudo install -m 755 bin/instrument-server /usr/local/bin/
+          sudo install -m 755 bin/instrument-worker /usr/local/bin/
+          sudo install -m 644 lib/*.so* /usr/local/lib/
+          sudo ldconfig
+
+          # Start
+          instrument-server daemon start
+          ```
+
+          ### Windows
+
+          ```powershell
+          # Extract
+          Expand-Archive instrument-script-server-windows-x64.zip -DestinationPath C:\instrument-server
+
+          # Add to PATH
+          $env:PATH += ";C:\instrument-server\bin"
+
+          # Start
+          instrument-server daemon start
+          ```
+
+          ## 📝 Build Information
+
+          - **Commit:** $GITHUB_SHA
+          - **Compiler:** Clang/LLVM (Linux), Clang-CL (Windows)
+          - **Build Type:** Release (Optimized)
+          - **C++ Standard:** C++17
+          - **Package Manager:** vcpkg
+
+          ## 📚 Documentation
+
+          For complete documentation, visit the [repository](https://github.com/$GITHUB_REPOSITORY)
+
+          ## 📄 Licenses
+
+          Each package includes a `licenses/` directory with all applicable licenses for the software and its dependencies.
+
+          EOF
+
+          echo "Release notes created"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.version }}
+          name: ${{ steps.tag.outputs.release_name }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: false
+          files: |
+            release-artifacts/instrument-script-server-linux-x64/instrument-script-server-linux-x64.tar.gz
+            release-artifacts/instrument-script-server-linux-x64/instrument-script-server-linux-x64.tar.gz.sha256
+            release-artifacts/instrument-script-server-windows-x64/instrument-script-server-windows-x64.zip
+            release-artifacts/instrument-script-server-windows-x64/instrument-script-server-windows-x64.zip.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Summary
+        run: |
+          echo "=================================================="
+          echo "Release created successfully!"
+          echo "=================================================="
+          echo "Tag: ${{ steps.tag.outputs.version }}"
+          echo "Name: ${{ steps.tag.outputs.release_name }}"
+          echo ""
+          echo "Artifacts included:"
+          echo "  📦 instrument-script-server-linux-x64.tar.gz"
+          echo "  📦 instrument-script-server-windows-x64.zip"
+          echo "  🔒 SHA256 checksums for all packages"
+          echo ""
+          echo "Release URL:"
+          echo "  https://github.com/$GITHUB_REPOSITORY/releases/tag/${{ steps.tag.outputs.version }}"
+          echo "=================================================="
+
+      - name: Setup tmate session on failure
+        if: failure()
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30

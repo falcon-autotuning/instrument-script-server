@@ -1,6 +1,7 @@
 # Instrument Script Server
 
 A modular, process-isolated system for controlling scientific instruments for laboratory automation.
+Our [documentation](https://falcon-autotuning.github.io/instrument-script-server/) can bring you up to speed.
 
 ## Features
 
@@ -239,23 +240,23 @@ For detailed installation instructions, troubleshooting, and platform-specific n
 
 ### Dependencies
 
-Required:
-
-- CMake 3.20+
-- C++17 compiler (Clang or GCC recommended)
-- Lua 5.3+ or LuaJIT
-- sol2 (Lua C++ bindings) - v3.5.0+
-- spdlog (logging)
-- nlohmann_json (JSON parsing)
-- yaml-cpp (YAML parsing)
-- Google Test (for testing)
-- Boost (boost-interprocess, boost-date-time)
-
-Optional:
-
-- NI-VISA (for VISA instruments)
-
 See [INSTALL.md](INSTALL.md) for detailed dependency installation instructions.
+
+### Build
+
+```bash
+git clone https://github.com/falcon-autotuning/instrument-script-server.git
+cd instrument-script-server
+make clean  # Clean any previous builds
+make build  # Build the project
+sudo make install  # Install binaries and libraries-only)
+git clone --depth 1 --branch v3.5.0 https://github.com/ThePhD/sol2.git /tmp/sol2
+sudo mkdir -p /usr/local/include/sol
+sudo cp -r /tmp/sol2/include/sol/* /usr/local/include/sol/
+```
+
+**Windows:**
+Dependencies are managed via vcpkg (see `vcpkg.json`). The CI pipeline handles Windows builds automatically.
 
 ### Build
 

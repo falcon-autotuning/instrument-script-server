@@ -17,7 +17,7 @@ This guide covers detailed installation instructions for various platforms.
 
 ```bash
 # Install all dependencies at once
-sudo make install-deps-ubuntu
+sudo make setup-ubuntu
 ```
 
 ### Manual Installation
@@ -140,7 +140,7 @@ endif()
 
 ```bash
 # Install all dependencies at once
-sudo make install-deps-arch
+sudo make setup-arch
 ```
 
 ### Manual Installation
@@ -161,8 +161,7 @@ git clone https://github.com/falcon-autotuning/instrument-script-server.git
 cd instrument-script-server
 make clean
 make build
-sudo cmake --install build
-sudo ldconfig
+sudo make install
 
 # Verify installation
 instrument-server --help

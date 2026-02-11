@@ -38,18 +38,18 @@ integration-tests:
 	LLVM_PROFILE_FILE=./build/integration_tests.profraw PATH=./build:$$PATH ./build/tests/integration_tests
 
 perf-tests:
-	LLVM_PROFILE_FILE=./build/perf_tests. profraw PATH=./build:$$PATH ./build/tests/perf_tests
+	LLVM_PROFILE_FILE=./build/perf_tests.profraw PATH=./build:$$PATH ./build/tests/perf_tests
 
-coverage:  build-native unit-test integration-tests
-	llvm-profdata merge -sparse ./build/*. profraw -o ./build/instrument_server_core.profdata
-	llvm-cov show ./build/libinstrument-server-core. so \
+coverage: build unit-test integration-tests
+	llvm-profdata merge -sparse ./build/*.profraw -o ./build/instrument_server_core.profdata
+	llvm-cov show ./build/libinstrument-server-core.so \
 		-instr-profile=./build/instrument_server_core.profdata \
 		-ignore-filename-regex='(tests/)' \
 		-Xdemangler c++filt -Xdemangler -n
 
 coverage-overview: 
 	@llvm-cov report ./build/libinstrument-server-core.so \
-		-instr-profile=./build/instrument_server_core. profdata \
+		-instr-profile=./build/instrument_server_core.profdata \
 		-ignore-filename-regex='(tests/)' \
 		-Xdemangler c++filt -Xdemangler -n
 # ============================================================================
