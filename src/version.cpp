@@ -15,7 +15,7 @@ namespace instserver {
 #define INSTSERVER_GIT_TAG ""
 #endif
 
-std::string get_version() {
+INSTRUMENT_SERVER_API std::string get_version() {
     std::string version = INSTSERVER_VERSION;
     std::string tag = INSTSERVER_GIT_TAG;
     
@@ -27,11 +27,11 @@ std::string get_version() {
     return version;
 }
 
-std::string get_git_commit() {
+INSTRUMENT_SERVER_API std::string get_git_commit() {
     return INSTSERVER_GIT_COMMIT;
 }
 
-std::string get_full_version() {
+INSTRUMENT_SERVER_API std::string get_full_version() {
     std::string version = get_version();
     std::string commit = get_git_commit();
     
