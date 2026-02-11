@@ -1,4 +1,4 @@
-name: Release
+name: CI Pipeline and Release
 
 on:
   push:
@@ -9,21 +9,22 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Build for Linux
+  # Build and test for Linux (runs on all pushes and tags)
   linux-build:
     uses: ./.github/workflows/linux-ci.yml
     permissions:
       contents: read
 
-  # Build for Windows
+  # Build and test for Windows (runs on all pushes and tags)
   windows-build:
     uses: ./.github/workflows/windows-ci.yml
     permissions:
       contents: read
 
-  # Create release with all artifacts
+  # Create release with all artifacts (only runs on tag pushes after successful builds)
   create-release:
     needs: [linux-build, windows-build]
+    if: startsWith(github.ref, 'refs/tags/')
     uses: ./.github/workflows/create-release.yml
     permissions:
       contents: write
