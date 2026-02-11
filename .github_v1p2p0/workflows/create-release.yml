@@ -61,21 +61,12 @@ jobs:
       - name: Generate release tag
         id: tag
         run: |
-          # Check if this is a tag push
-          if [[ $GITHUB_REF == refs/tags/* ]]; then
-            # Extract tag name from GITHUB_REF
-            VERSION="${GITHUB_REF#refs/tags/}"
-            echo "Detected tag push: $VERSION"
-          else
-            # Use commit hash for non-tag pushes
-            VERSION="$(git rev-parse --short HEAD)"
-            echo "Using commit hash for non-tag push: $VERSION"
-          fi
-          
+          # Use semantic versioning with date
+          VERSION="$(git rev-parse --short HEAD)"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Generated version: $VERSION"
 
-          # Create a friendly name
+          # Also create a friendly name
           RELEASE_NAME="Instrument Script Server $VERSION"
           echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
 
@@ -167,6 +158,7 @@ jobs:
           ## 📝 Build Information
 
           - **Commit:** $GITHUB_SHA
+          - **Build Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
           - **Compiler:** Clang/LLVM (Linux), Clang-CL (Windows)
           - **Build Type:** Release (Optimized)
           - **C++ Standard:** C++17
