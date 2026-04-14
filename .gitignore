@@ -4,3 +4,4 @@ _codeql_*
 site/
 *.profraw
 .cache/
+vcpkg_installed/
