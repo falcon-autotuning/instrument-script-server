@@ -63,21 +63,26 @@ message(STATUS "Found cJSON library: ${CJSON_LIBRARIES}")
 message(STATUS "Found cJSON headers: ${CJSON_INCLUDE_DIRS}")
 
 # Create the plugin
-add_library(visa_plugin SHARED visa_plugin.c)
-target_compile_definitions(visa_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
+# add_library(visa_plugin SHARED visa_plugin.c)
+# target_compile_definitions(visa_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
+#
+# # Per-target include dirs, avoid global include directories
+# target_include_directories(
+#   visa_plugin PRIVATE ${CMAKE_SOURCE_DIR}/include ${VISA_INCLUDE_DIR}
+#                       ${CJSON_INCLUDE_DIRS})
+#
+# target_link_libraries(visa_plugin PRIVATE instrument-script-server-core
+#                                           ${VISA_LIBRARY})
+# set_target_properties(
+#   visa_plugin
+#   PROPERTIES PREFIX ""
+#              POSITION_INDEPENDENT_CODE ON
+#              C_VISIBILITY_PRESET default)
 
-# Per-target include dirs, avoid global include directories
-target_include_directories(
-  visa_plugin PRIVATE ${CMAKE_SOURCE_DIR}/include ${VISA_INCLUDE_DIR}
-                      ${CJSON_INCLUDE_DIRS})
-
-target_link_libraries(visa_plugin PRIVATE instrument-script-server-core
-                                          ${VISA_LIBRARY})
-set_target_properties(
-  visa_plugin
-  PROPERTIES PREFIX ""
-             POSITION_INDEPENDENT_CODE ON
-             C_VISIBILITY_PRESET default)
-
+add_instrument_plugin(visa_plugin
+  SOURCES visa_plugin.c
+  LINK_LIBRARIES instrument-script-server-core ${VISA_LIBRARY} ${CJSON_LIBRARIES}
+  INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include ${VISA_INCLUDE_DIR} ${CJSON_INCLUDE_DIRS}
+)
 # Install to standard plugin directory
 install(TARGETS visa_plugin LIBRARY DESTINATION lib/instrument-plugins)

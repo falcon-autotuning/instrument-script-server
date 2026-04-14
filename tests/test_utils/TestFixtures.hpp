@@ -4,8 +4,7 @@
 
 #include <gtest/gtest.h>
 
-namespace instserver {
-namespace test {
+namespace instserver::test {
 
 class InstrumentServerTest : public ::testing::Test {
 protected:
@@ -25,5 +24,4 @@ protected:
   std::string mock_plugin_path_;
 };
 
-} // namespace test
-} // namespace instserver
+} // namespace instserver::test

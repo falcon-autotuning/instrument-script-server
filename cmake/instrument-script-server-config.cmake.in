@@ -46,14 +46,20 @@ function(add_instrument_plugin TARGET_NAME)
 
   # Link to core library (provides plugin interface)
   target_link_libraries(${TARGET_NAME}
-                        PRIVATE InstrumentServer::instrument-script-server-core)
+                        PRIVATE instrument-script-server::instrument-script-server-core)
 
   # Link additional libraries
   if(PLUGIN_LINK_LIBRARIES)
-    target_link_libraries(${TARGET_NAME} PRIVATE ${PLUGIN_LINK_LIBRARIES})
+    target_link_libraries(${TARGET_NAME} PRIVATE instrument-script-server::instrument-script-server ${PLUGIN_LINK_LIBRARIES})
   endif()
 
   message(STATUS "Configured instrument plugin:  ${TARGET_NAME}")
 endfunction()
 
-check_required_components(InstrumentServer)
+check_required_components(instrument-script-server)
+check_required_components(instrument-worker)
+check_required_components(template-expander)
+check_required_components(validate-instrument-api)
+check_required_components(validate-instrument-config)
+check_required_components(validate-quantum-dot-config)
+check_required_components(generate-instrument-config)

@@ -6,8 +6,7 @@
 #include <filesystem>
 #include <gtest/gtest.h>
 
-namespace instserver {
-namespace test {
+namespace instserver::test {
 
 class PluginTestFixture : public ::testing::Test {
 protected:
@@ -32,5 +31,4 @@ protected:
   SyncCoordinator sync_coordinator_;
 };
 
-} // namespace test
-} // namespace instserver
+} // namespace instserver::test

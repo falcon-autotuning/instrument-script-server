@@ -1,17 +1,14 @@
 {
   "name": "instrument-script-server",
-  "version-string": "0.1.0",
-  "description": "vcpkg manifest for instrument-script-server (native Windows build)",
+  "version-string": "1.1.2",
+  "description": "a modular, process-isolated system for controlling scientific instruments for FAlCon use",
   "builtin-baseline": "e5a1490e1409d175932ef6014519e9ae149ddb7c",
   "dependencies": [
     "lua",
     "nlohmann-json",
-    "fmt",
     "spdlog",
     "sol2",
     "gtest",
-    "yaml-cpp",
-    "boost-interprocess",
-    "boost-date-time"
+    "yaml-cpp"
   ]
 }

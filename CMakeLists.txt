@@ -64,7 +64,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Build Options
 option(BUILD_TESTS "Build tests" ON)
 option(BUILD_EXAMPLES "Build example plugins" ON)
-option(BUILD_TOOLS "Build command-line tools" ON)
 
 # Performance options
 option(USE_CCACHE "Enable ccache or sccache if available" ON)
@@ -99,27 +98,11 @@ endif()
 
 # Find dependencies
 find_package(Threads       REQUIRED)
+find_package(Lua           REQUIRED)
 find_package(spdlog        CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(yaml-cpp      CONFIG REQUIRED)
-
-# Create alias if it doesn't exist (for older yaml-cpp versions)
-if(TARGET yaml-cpp AND NOT TARGET yaml-cpp::yaml-cpp)
-  add_library(yaml-cpp::yaml-cpp ALIAS yaml-cpp)
-endif()
-
-# Lua (prefer LuaJIT if available)
-find_package(LuaJIT QUIET)
-if(LuaJIT_FOUND)
-  set(LUA_LIBRARIES ${LUAJIT_LIBRARIES})
-  set(LUA_INCLUDE_DIR ${LUAJIT_INCLUDE_DIR})
-else()
-  find_package(Lua REQUIRED)
-endif()
-
-# sol2 (header-only)
-find_path(SOL2_INCLUDE_DIR sol/sol.hpp REQUIRED)
-message(STATUS "Using sol2 includes: ${SOL2_INCLUDE_DIR}")
+find_package(sol2          CONFIG REQUIRED)
 
 # VISA (optional)
 find_library(
@@ -222,10 +205,26 @@ if(ENABLE_PCH)
 endif()
 
 add_executable(instrument-script-server src/server/instrument_server_main.cpp)
-target_link_libraries(instrument-script-server PRIVATE instrument-script-server-core)
-
 add_executable(instrument-worker src/workers/generic_worker_main.cpp)
-target_link_libraries(instrument-worker PRIVATE instrument-script-server-core)
+add_executable(validate-instrument-api src/instrument_api_validator_main.cpp)
+add_executable(validate-instrument-config
+                 src/instrument_config_validator_main.cpp)
+add_executable(validate-quantum-dot-config
+                 src/quantum_dot_config_validator_main.cpp)
+add_executable(template-expander src/template_expander.cpp)
+add_executable(generate-instrument-config
+                 src/instrument_configuration_generator.cpp)
+foreach(target
+        instrument-script-server
+        instrument-worker
+        validate-instrument-api
+        validate-instrument-config
+        validate-quantum-dot-config
+        template-expander
+        generate-instrument-config
+)
+  target_link_libraries(${target} PRIVATE instrument-script-server-core)
+endforeach()
 
 # VISA built-in plugin (optional)
 if(HAVE_VISA)
@@ -235,25 +234,6 @@ if(HAVE_VISA)
   set_target_properties(visa_builtin PROPERTIES PREFIX "" OUTPUT_NAME
                                                           "visa_builtin")
 endif()
-
-add_executable(validate-instrument-api src/instrument_api_validator_main.cpp)
-target_link_libraries(validate-instrument-api PRIVATE instrument-script-server-core)
-
-add_executable(validate-instrument-config
-                 src/instrument_config_validator_main.cpp)
-target_link_libraries(validate-instrument-config
-                        PRIVATE instrument-script-server-core)
-
-add_executable(validate-quantum-dot-config
-                 src/quantum_dot_config_validator_main.cpp)
-target_link_libraries(validate-quantum-dot-config
-                        PRIVATE instrument-script-server-core)
-add_executable(template-expander src/template_expander.cpp)
-target_link_libraries(template-expander PRIVATE instrument-script-server-core)
-add_executable(generate-instrument-config
-                 src/instrument_configuration_generator.cpp)
-target_link_libraries(generate-instrument-config
-                        PRIVATE instrument-script-server-core)
 
 # Example plugins (FIXED: only build if InstrumentServer is already installed OR
 # during same build)

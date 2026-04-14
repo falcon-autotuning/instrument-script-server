@@ -3,8 +3,7 @@
 
 #include <filesystem>
 
-namespace instserver {
-namespace test {
+namespace instserver::test {
 
 void InstrumentServerTest::SetUp() {
   InstrumentLogger::instance().init("test.log", spdlog::level::debug);
@@ -40,5 +39,4 @@ void IntegrationTest::TearDown() {
   registry.stop_all();
 }
 
-} // namespace test
-} // namespace instserver
+} // namespace instserver::test
