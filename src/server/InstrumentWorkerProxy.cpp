@@ -50,9 +50,6 @@ bool InstrumentWorkerProxy::start() {
   running_ = true;
   response_thread_ = std::thread([this]() { response_listener_loop(); });
 
-  // Wait a bit for worker to initialize
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
   if (!is_alive()) {
     LOG_ERROR(instrument_name_, "PROXY", "Worker died during startup");
     stop();

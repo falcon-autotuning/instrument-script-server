@@ -23,52 +23,42 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
   LOG_INFO("PROCESS", "SPAWN",
            "Spawning worker for instrument:  {} with plugin: {}",
            instrument_name, plugin_path);
-
   std::vector<std::string> args = {worker_executable, instrument_name,
                                    plugin_path};
-
-#ifdef _WIN32
-  // Windows:  spawn_process_impl needs to return both PID and HANDLE
-  // We'll handle this by having spawn_process_impl create the entry
   ProcessId pid = spawn_process_impl(args);
-
   if (pid == 0) {
     LOG_ERROR("PROCESS", "SPAWN", "Failed to spawn worker for:  {}",
               instrument_name);
     return 0;
   }
 
-  // Update the pre-created entry with additional info
+  // Common process info setup
+  auto now = std::chrono::steady_clock::now();
+  auto last_heartbeat = now.time_since_epoch().count();
+
+#ifdef _WIN32
+  // On Windows, update the pre-created entry
   {
     std::lock_guard lock(mutex_);
     auto it = processes_.find(pid);
     if (it != processes_.end()) {
       it->second->instrument_name = instrument_name;
       it->second->plugin_path = plugin_path;
-      it->second->started_at = std::chrono::steady_clock::now();
+      it->second->started_at = now;
+      it->second->is_alive = true;
+      it->second->last_heartbeat = last_heartbeat;
     }
   }
 #else
-  // POSIX: spawn_process_impl just returns PID
-  ProcessId pid = spawn_process_impl(args);
-
-  if (pid == 0) {
-    LOG_ERROR("PROCESS", "SPAWN", "Failed to spawn worker for:  {}",
-              instrument_name);
-    return 0;
-  }
-
-  // Store process info
+  // On Unix, create and insert the entry
   auto info = std::make_unique<ProcessInfo>();
   info->pid = pid;
   info->handle = pid; // On Unix, pid is the handle
   info->instrument_name = instrument_name;
   info->plugin_path = plugin_path;
-  info->started_at = std::chrono::steady_clock::now();
+  info->started_at = now;
   info->is_alive = true;
-  info->last_heartbeat =
-      std::chrono::steady_clock::now().time_since_epoch().count();
-
+  info->last_heartbeat = last_heartbeat;
   {
     std::lock_guard lock(mutex_);
     processes_[pid] = std::move(info);

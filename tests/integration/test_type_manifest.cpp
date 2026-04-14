@@ -27,8 +27,8 @@ protected:
     InstrumentLogger::instance().init(log_path_.string(), spdlog::level::debug);
 
     test_scripts_dir_ =
-        std::filesystem::current_path() / "tests" / "data" / "test_scripts";
-    test_configs_dir_ = std::filesystem::current_path() / "tests" / "data";
+        std::filesystem::current_path() / "data" / "test_scripts";
+    test_configs_dir_ = std::filesystem::current_path() / "data";
 
     // Create test scripts directory if needed
     std::filesystem::create_directories(test_scripts_dir_);

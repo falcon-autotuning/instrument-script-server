@@ -14,7 +14,7 @@ protected:
     InstrumentLogger::instance().init("registry_test.log",
                                       spdlog::level::debug);
 
-    test_data_dir_ = std::filesystem::current_path() / "tests" / "data";
+    test_data_dir_ = std::filesystem::current_path() / "data";
 
     // Start daemon for these tests
     auto &daemon = ServerDaemon::instance();

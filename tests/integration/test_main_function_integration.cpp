@@ -22,26 +22,28 @@ class MainFunctionIntegrationTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
     PluginTestFixture::SetUp();
-    
+
     // Create temp directory for test scripts
-    test_scripts_dir_ = std::filesystem::temp_directory_path() / "test_main_scripts";
+    test_scripts_dir_ =
+        std::filesystem::temp_directory_path() / "test_main_scripts";
     std::filesystem::create_directories(test_scripts_dir_);
-    
+
     // Initialize logger
-    log_path_ = std::filesystem::temp_directory_path() / "test_main_integration.log";
+    log_path_ =
+        std::filesystem::temp_directory_path() / "test_main_integration.log";
     InstrumentLogger::instance().shutdown();
     InstrumentLogger::instance().init(log_path_.string(), spdlog::level::debug);
-    
+
     if (auto l = spdlog::get("instrument")) {
       l->flush_on(spdlog::level::debug);
     }
 
     // Start test instruments
     auto &registry = InstrumentRegistry::instance();
-    
-    auto config_dir = std::filesystem::current_path() / "tests" / "data";
+
+    auto config_dir = std::filesystem::current_path() / "data";
     std::string config1 = (config_dir / "mock_instrument1.yaml").string();
-    
+
     if (std::filesystem::exists(config1)) {
       registry.create_instrument(config1);
     }
@@ -50,7 +52,7 @@ protected:
   void TearDown() override {
     auto &registry = InstrumentRegistry::instance();
     registry.stop_all();
-    
+
     // Clean up
     InstrumentLogger::instance().shutdown();
     std::error_code ec;
@@ -94,13 +96,13 @@ TEST_F(MainFunctionIntegrationTest, NewFormatWithMainFunction) {
 
   json params;
   params["script_path"] = (test_scripts_dir_ / "new_format.lua").string();
-  
+
   json out;
   int result = handle_measure(params, out);
-  
+
   EXPECT_EQ(result, 0);
   EXPECT_TRUE(out["ok"].get<bool>());
-  
+
   auto log = read_log();
   EXPECT_NE(log.find("New format script"), std::string::npos);
   EXPECT_NE(log.find("main function (new format)"), std::string::npos);
@@ -114,14 +116,15 @@ TEST_F(MainFunctionIntegrationTest, CompatibilityModeDeprecationWarning) {
 
   json params;
   params["script_path"] = (test_scripts_dir_ / "old_format.lua").string();
-  
+
   json out;
   int result = handle_measure(params, out);
-  
+
   EXPECT_EQ(result, 0);
   EXPECT_TRUE(out.contains("error"));
-  EXPECT_NE(out["error"].get<std::string>().find("DEPRECATED"), std::string::npos);
-  
+  EXPECT_NE(out["error"].get<std::string>().find("DEPRECATED"),
+            std::string::npos);
+
   auto log = read_log();
   EXPECT_NE(log.find("DEPRECATED"), std::string::npos);
   EXPECT_NE(log.find("compatibility mode"), std::string::npos);
@@ -140,20 +143,19 @@ TEST_F(MainFunctionIntegrationTest, GlobalVariableInjectionWithWarnings) {
 
   json params;
   params["script_path"] = (test_scripts_dir_ / "with_globals.lua").string();
-  params["globals"] = {
-    {"testVoltage", 5.0},
-    {"sampleRate", 1000}
-  };
-  
+  params["globals"] = {{"testVoltage", 5.0}, {"sampleRate", 1000}};
+
   json out;
   int result = handle_measure(params, out);
-  
+
   EXPECT_EQ(result, 0);
   EXPECT_TRUE(out["ok"].get<bool>());
-  
+
   auto log = read_log();
-  EXPECT_NE(log.find("Injecting global variable 'testVoltage'"), std::string::npos);
-  EXPECT_NE(log.find("Injecting global variable 'sampleRate'"), std::string::npos);
+  EXPECT_NE(log.find("Injecting global variable 'testVoltage'"),
+            std::string::npos);
+  EXPECT_NE(log.find("Injecting global variable 'sampleRate'"),
+            std::string::npos);
   EXPECT_NE(log.find("Test voltage: 5"), std::string::npos);
   EXPECT_NE(log.find("Sample rate: 1000"), std::string::npos);
 }
@@ -170,14 +172,14 @@ TEST_F(MainFunctionIntegrationTest, ContextErrorInNewFormat) {
 
   json params;
   params["script_path"] = (test_scripts_dir_ / "with_error.lua").string();
-  
+
   json out;
   int result = handle_measure(params, out);
-  
+
   EXPECT_EQ(result, 1);
   EXPECT_FALSE(out["ok"].get<bool>());
   EXPECT_EQ(out["error"].get<std::string>(), "Test error condition");
-  
+
   auto log = read_log();
   EXPECT_NE(log.find("Test error condition"), std::string::npos);
   EXPECT_NE(log.find("Before error"), std::string::npos);
@@ -195,13 +197,14 @@ TEST_F(MainFunctionIntegrationTest, RuntimeErrorCapture) {
 
   json params;
   params["script_path"] = (test_scripts_dir_ / "runtime_error.lua").string();
-  
+
   json out;
   int result = handle_measure(params, out);
-  
+
   EXPECT_EQ(result, 1);
   EXPECT_FALSE(out["ok"].get<bool>());
-  EXPECT_NE(out["error"].get<std::string>().find("runtime error"), std::string::npos);
+  EXPECT_NE(out["error"].get<std::string>().find("runtime error"),
+            std::string::npos);
 }
 
 // Test combined context:error() and runtime error
@@ -216,13 +219,13 @@ TEST_F(MainFunctionIntegrationTest, CombinedErrorMessages) {
 
   json params;
   params["script_path"] = (test_scripts_dir_ / "combined_error.lua").string();
-  
+
   json out;
   int result = handle_measure(params, out);
-  
+
   EXPECT_EQ(result, 1);
   EXPECT_FALSE(out["ok"].get<bool>());
-  
+
   // Should contain both error messages
   std::string error_msg = out["error"].get<std::string>();
   EXPECT_NE(error_msg.find("Context error"), std::string::npos);
@@ -249,13 +252,13 @@ TEST_F(MainFunctionIntegrationTest, MainReceivesCorrectContextType) {
 
   json params;
   params["script_path"] = (test_scripts_dir_ / "context_type.lua").string();
-  
+
   json out;
   int result = handle_measure(params, out);
-  
+
   EXPECT_EQ(result, 0);
   EXPECT_TRUE(out["ok"].get<bool>());
-  
+
   auto log = read_log();
   EXPECT_NE(log.find("Context has log method"), std::string::npos);
   EXPECT_NE(log.find("Context has call method"), std::string::npos);
