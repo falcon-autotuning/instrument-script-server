@@ -18,11 +18,11 @@ if(GIT_FOUND)
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET
     RESULT_VARIABLE GIT_COMMIT_RESULT)
-  
+
   if(NOT GIT_COMMIT_RESULT EQUAL 0)
     set(INSTSERVER_GIT_COMMIT "unknown")
   endif()
-  
+
   execute_process(
     COMMAND ${GIT_EXECUTABLE} describe --tags --exact-match HEAD
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -30,7 +30,7 @@ if(GIT_FOUND)
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET
     RESULT_VARIABLE GIT_TAG_RESULT)
-  
+
   # If we're not on a tagged commit, check if we have tags at all
   if(NOT GIT_TAG_RESULT EQUAL 0)
     execute_process(
@@ -40,7 +40,7 @@ if(GIT_FOUND)
       OUTPUT_STRIP_TRAILING_WHITESPACE
       ERROR_QUIET
       RESULT_VARIABLE GIT_TAG_ABBREV_RESULT)
-    
+
     if(NOT GIT_TAG_ABBREV_RESULT EQUAL 0)
       set(INSTSERVER_GIT_TAG "")
     endif()
@@ -98,10 +98,10 @@ if(USE_CCACHE)
 endif()
 
 # Find dependencies
-find_package(Threads REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(nlohmann_json REQUIRED)
-find_package(yaml-cpp REQUIRED)
+find_package(Threads       REQUIRED)
+find_package(spdlog        CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(yaml-cpp      CONFIG REQUIRED)
 
 # Create alias if it doesn't exist (for older yaml-cpp versions)
 if(TARGET yaml-cpp AND NOT TARGET yaml-cpp::yaml-cpp)
@@ -221,8 +221,8 @@ if(ENABLE_PCH)
   endif()
 endif()
 
-add_executable(instrument-server src/server/instrument_server_main.cpp)
-target_link_libraries(instrument-server PRIVATE instrument-server-core)
+add_executable(instrument-script-server src/server/instrument_server_main.cpp)
+target_link_libraries(instrument-script-server PRIVATE instrument-server-core)
 
 add_executable(instrument-worker src/workers/generic_worker_main.cpp)
 target_link_libraries(instrument-worker PRIVATE instrument-server-core)
@@ -276,7 +276,7 @@ if(BUILD_TESTS)
 endif()
 
 # Installation
-install(TARGETS instrument-server instrument-worker RUNTIME DESTINATION bin)
+install(TARGETS instrument-script-server instrument-worker RUNTIME DESTINATION bin)
 
 if(BUILD_TOOLS)
   install(TARGETS validate-instrument-api validate-instrument-config
@@ -326,17 +326,17 @@ install(
 include(CMakePackageConfigHelpers)
 
 write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/InstrumentScriptServerConfigVersion.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/instrument-script-server-config-version.cmake"
   VERSION ${PROJECT_VERSION}
   COMPATIBILITY AnyNewerVersion)
 
 configure_package_config_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/InstrumentScriptServerConfig.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/InstrumentScriptServerConfig.cmake"
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/instrument-script-server-config.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/instrument-script-server-config.cmake"
   INSTALL_DESTINATION lib/cmake/InstrumentServer
   PATH_VARS CMAKE_INSTALL_PREFIX)
 
 install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/InstrumentScriptServerConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/InstrumentScriptServerConfigVersion.cmake"
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/instrument-script-server-config.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/instrument-script-server-config-version.cmake"
   DESTINATION lib/cmake/InstrumentServer)

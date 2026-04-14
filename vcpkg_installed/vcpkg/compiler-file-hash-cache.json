@@ -1,0 +1,14 @@
+{
+  "/usr/bin/clang" : 
+  {
+    "hash" : "a46e52f6875fd88b51cc40532f2cdc28346c986f",
+    "size" : 174216,
+    "timestamp" : 1775574189
+  },
+  "/usr/bin/clang++" : 
+  {
+    "hash" : "d87755febf849968fed21c46893ec03398b602d5",
+    "size" : 174112,
+    "timestamp" : 1775574189
+  }
+}

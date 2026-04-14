@@ -1,111 +1,211 @@
-# Simple Makefile for local builds (Linux + cross-clang-to-windows)
-# Use: 
-#   make build            # cross-build for Windows using clang/clang++
-#   make clean            # clean build directories
-# Optional overrides: 
-#   MINGW_SYSROOT=/path/to/sysroot   (defaults to /usr/x86_64-w64-mingw32)
-#   BUILD_DIR=./build-win             (defaults to ./build-win for Windows builds)
 
-.PHONY: all build clean unit-test integration-tests perf-tests coverage \
-        build-native build-windows wine-unit-test wine-integration-test \
-        install-deps-ubuntu install-deps-arch install-sol2 setup-ubuntu setup-arch \
-        install
+.PHONY: all configure build-debug build-release test clean install help check-vcpkg
 
-BUILD_DIR ?= ./build-win
-CMAKE ?= cmake
-NINJA ?= ninja
+PLATFORM := linux
+CMAKE_GENERATOR := Ninja
+VCPKG_TRIPLET ?= x64-linux-dynamic
+NPROC := $(shell nproc 2>/dev/null || echo 4)
+export CC=clang
+export CXX=clang++
 
-all: build
+ENV_FILE := .nuget-credentials
+ifeq ($(wildcard $(ENV_FILE)),)
+  $(info [Makefile] $(ENV_FILE) not found, skipping environment sourcing)
+else
+  include $(ENV_FILE)
+  export $(shell sed 's/=.*//' $(ENV_FILE) | xargs)
+  $(info [Makefile] Loaded environment from $(ENV_FILE))
+endif
+# ── Paths ─────────────────────────────────────────────────────────────────────
+VCPKG_ROOT ?= $(CURDIR)/vcpkg
+VCPKG_TOOLCHAIN ?= $(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake
+VCPKG_INSTALLED_DIR ?= $(CURDIR)/vcpkg_installed
+FEED_URL ?= 
+NUGET_API_KEY ?=
+FEED_NAME ?= 
+USERNAME ?=
+VCPKG_BINARY_SOURCES ?= ""
+ifeq ($(strip $(FEED_URL)),)
+  CMAKE_VCPKG_BINARY_SOURCES :=
+else
+	VCPKG_BINARY_SOURCES := "clear;nuget,$(FEED_URL),readwrite"
+  CMAKE_VCPKG_BINARY_SOURCES := -DVCPKG_BINARY_SOURCES=$(VCPKG_BINARY_SOURCES)
+endif
+LINKER_FLAGS ?=
+ifeq ($(PLATFORM),linux)
+	LINKER_FLAGS := -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld"
+endif
 
-build: 
-	mkdir -p ./build
-	cd ./build && \
-	CC="clang" CXX="clang++" \
-	$(CMAKE) -G Ninja \
-	  -DCMAKE_C_FLAGS="-fprofile-instr-generate -fcoverage-mapping" \
-	  -DCMAKE_CXX_FLAGS="-fprofile-instr-generate -fcoverage-mapping -Oz -g" \
-	  -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld -fprofile-instr-generate" \
-	  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON .. 
-	$(NINJA) -C ./build
+BUILD_DIR_DEBUG := build/debug
+BUILD_DIR_RELEASE := build/release
 
-clean:
-	rm -rf $(BUILD_DIR) ./build $(TMP_TOOLCHAIN)
+INSTALL_PREFIX    ?= /opt/falcon
+INSTALL_LIBDIR    := $(INSTALL_PREFIX)/lib
+INSTALL_INCLUDEDIR := $(INSTALL_PREFIX)/include
+INSTALL_CMAKEDIR  := $(INSTALL_LIBDIR)/cmake/falcon-routine
 
-unit-test:
-	LLVM_PROFILE_FILE=./build/unit_tests.profraw PATH=./build:$$PATH ./build/tests/unit_tests
+# Default target
+all: build-release
 
-integration-tests:
-	LLVM_PROFILE_FILE=./build/integration_tests.profraw PATH=./build:$$PATH ./build/tests/integration_tests
+help:
+	@echo "Instrument Script Server Build System"
+	@echo "===================================="
+	@echo ""
+	@echo "Build targets:"
+	@echo "  make build-debug        - Build debug version"
+	@echo "  make build-release      - Build release version"
+	@echo "  make configure          - Configure both debug and release builds"
+	@echo "  make install            - Install the library"
+	@echo ""
+	@echo "Clean targets:"
+	@echo "  make clean              - Clean build artifacts and test containers"
+	@echo ""
+	@echo "Test targets:"
+	@echo "  make test               - Run tests" 
+	@echo "  make test-debug         - Run debug tests"
+	@echo ""
+	@echo "Environment variables:"
+	@echo "  VCPKG_ROOT              - Path to vcpkg root (default: ../.vcpkg)"
+	@echo "  VCPKG_TRIPLET           - vcpkg triplet (default: x64-linux-dynamic)"
+	@echo ""
+	@echo "Current configuration:"
+	@echo "  Platform: $(PLATFORM)"
+	@echo "  Generator: $(CMAKE_GENERATOR)"
+	@echo "  Triplet: $(VCPKG_TRIPLET)"
 
-perf-tests:
-	LLVM_PROFILE_FILE=./build/perf_tests.profraw PATH=./build:$$PATH ./build/tests/perf_tests
-
-coverage: build unit-test integration-tests
-	llvm-profdata merge -sparse ./build/*.profraw -o ./build/instrument_server_core.profdata
-	llvm-cov show ./build/libinstrument-server-core.so \
-		-instr-profile=./build/instrument_server_core.profdata \
-		-ignore-filename-regex='(tests/)' \
-		-Xdemangler c++filt -Xdemangler -n
-
-coverage-overview: 
-	@llvm-cov report ./build/libinstrument-server-core.so \
-		-instr-profile=./build/instrument_server_core.profdata \
-		-ignore-filename-regex='(tests/)' \
-		-Xdemangler c++filt -Xdemangler -n
-# ============================================================================
-# Dependency Installation Targets
-# ============================================================================
-
-# Install sol2 header-only library
-install-sol2:
-	@echo "Installing sol2 (Lua C++ bindings)..."
-	@if [ -d "/usr/local/include/sol" ]; then \
-		echo "sol2 already installed at /usr/local/include/sol"; \
-	else \
-		git clone --depth 1 --branch v3.3.0 https://github.com/ThePhD/sol2.git /tmp/sol2 && \
-		sudo mkdir -p /usr/local/include && \
-		sudo cp -r /tmp/sol2/include/sol /usr/local/include/ && \
-		rm -rf /tmp/sol2 && \
-		echo "sol2 installed successfully"; \
+.PHONY: vcpkg-bootstrap
+vcpkg-bootstrap:
+	@if [ ! -d "$(VCPKG_ROOT)" ]; then \
+		echo "Cloning vcpkg..."; \
+		git clone https://github.com/microsoft/vcpkg.git $(VCPKG_ROOT); \
+	fi
+	@if [ ! -f "$(VCPKG_ROOT)/vcpkg" ]; then \
+		echo "Bootstrapping vcpkg..."; \
+		cd $(VCPKG_ROOT) && ./bootstrap-vcpkg.sh; \
 	fi
 
-# Ubuntu 22.04 LTS dependency installation
-install-deps-ubuntu:
-	@echo "Installing dependencies for Ubuntu 22.04..."
-	sudo apt update
-	sudo apt install -y build-essential git cmake ninja-build clang lld
-	sudo apt install -y libstdc++-12-dev
-	sudo apt install -y liblua5.3-dev libspdlog-dev nlohmann-json3-dev libyaml-cpp-dev libboost-all-dev
-	sudo apt install -y libgtest-dev
-	@echo "Building Google Test from source..."
-	cd /usr/src/googletest/googletest && sudo cmake . && sudo make && sudo cp lib/*.a /usr/lib/
-	@echo "Dependencies installed successfully!"
-
-# Arch Linux dependency installation
-install-deps-arch:
-	@echo "Installing dependencies for Arch Linux..."
-	sudo pacman -Sy --needed --noconfirm base-devel git cmake ninja clang lld llvm \
-		lua luajit spdlog nlohmann-json yaml-cpp gtest boost
-	@echo "Dependencies installed successfully!"
-
-# Complete Ubuntu setup (dependencies + sol2)
-setup-ubuntu: install-deps-ubuntu install-sol2
-	@echo "Ubuntu setup complete! Ready to build."
-	@echo "Run 'make build' to compile the project."
-
-# Complete Arch setup (dependencies + sol2)
-setup-arch: install-deps-arch install-sol2
-	@echo "Arch Linux setup complete! Ready to build."
-	@echo "Run 'make build' to compile the project."
-
-# Install the built binaries and libraries
-install:
-	@echo "Installing instrument-script-server..."
-	@if [ ! -d "./build" ]; then \
-		echo "Error: Build directory not found. Run 'make build' first."; \
+setup-nuget-auth:
+	@if [ -z "$$NUGET_API_KEY" ]; then \
+		echo "No NUGET_API_KEY found, skipping NuGet setup (local-only build, no binary cache)."; \
+		exit 0; \
+	fi
+	@echo "Setting up NuGet authentication for vcpkg binary caching..."
+	@if ! command -v mono >/dev/null 2>&1; then \
+		echo "Error: mono is not installed. Please install mono (e.g., 'sudo pacman -S mono' on Arch, 'sudo apt install mono-complete' on Ubuntu)."; \
 		exit 1; \
 	fi
-	sudo cmake --install ./build
-	sudo ldconfig
-	@echo "Installation complete!"
-	@echo "Verify with: instrument-server --help"
+	@NUGET_EXE=$$(vcpkg fetch nuget | tail -n1); \
+	mono "$$NUGET_EXE" sources remove -Name "$(FEED_NAME)" || true; \
+	mono "$$NUGET_EXE" sources add -Name "$(FEED_NAME)" -Source "$(FEED_URL)" -Username "$(USERNAME)" -Password "$(NUGET_API_KEY)"
+
+.PHONY: vcpkg-install-deps
+vcpkg-install-deps: setup-nuget-auth 
+	@echo "Installing vcpkg dependencies" 
+	VCPKG_FEATURE_FLAGS=binarycaching \
+		$(VCPKG_ROOT)/vcpkg install \
+		--binarysource=$(VCPKG_BINARY_SOURCES) \
+		--triplet="$(VCPKG_TRIPLET)"
+
+check-vcpkg: vcpkg-bootstrap  vcpkg-install-deps
+	@echo "Checking vcpkg configuration..."
+	@if [ ! -d "$(VCPKG_ROOT)" ]; then \
+		echo "Error: vcpkg not found at $(VCPKG_ROOT)"; \
+		echo "Run 'make deps' in the parent directory first"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(VCPKG_TOOLCHAIN)" ]; then \
+		echo "Error: vcpkg toolchain not found at $(VCPKG_TOOLCHAIN)"; \
+		exit 1; \
+	fi
+	@echo "✓ vcpkg configuration OK"
+
+configure-debug: check-vcpkg
+	@echo "Configuring debug build..."
+	@mkdir -p $(BUILD_DIR_DEBUG)
+	cd $(BUILD_DIR_DEBUG) && cmake ../.. \
+		-DCMAKE_BUILD_TYPE=Debug \
+		-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_TOOLCHAIN) \
+		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
+		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
+		-DBUILD_TESTS=ON \
+		-DUSE_CCACHE=ON \
+		-DENABLE_PCH=ON \
+		-DCMAKE_C_COMPILER=clang \
+		-DCMAKE_CXX_COMPILER=clang++ \
+		$(CMAKE_VCPKG_BINARY_SOURCES) \
+		$(LINKER_FLAGS) \
+		-G $(CMAKE_GENERATOR)
+	@echo "✓ Debug build configured"
+
+configure-release: check-vcpkg
+	@echo "Configuring release build..."
+	@mkdir -p $(BUILD_DIR_RELEASE)
+	cd $(BUILD_DIR_RELEASE) && cmake ../.. \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_TOOLCHAIN) \
+		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
+		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
+		-DBUILD_TESTS=ON \
+		-DUSE_CCACHE=ON \
+		-DENABLE_PCH=ON \
+		-DCMAKE_C_COMPILER=clang \
+		-DCMAKE_CXX_COMPILER=clang++ \
+		$(CMAKE_VCPKG_BINARY_SOURCES) \
+		$(LINKER_FLAGS) \
+		-G $(CMAKE_GENERATOR)
+	@echo "✓ Release build configured"
+
+configure: configure-debug configure-release
+
+build-debug: configure-debug
+	@echo "Building debug..."
+	cmake --build $(BUILD_DIR_DEBUG) -- -j$(NPROC)
+	@echo "✓ Debug build complete"
+	@$(MAKE) clangd-helpers
+
+build-release: configure-release
+	@echo "Building release..."
+	cmake --build $(BUILD_DIR_RELEASE) -- -j$(NPROC)
+	@echo "✓ Release build complete"
+
+install: build-release
+	@echo "Installing falcon-routine..."
+	cmake --install $(BUILD_DIR_RELEASE)
+	@echo "✓ Installation complete"
+
+clean:
+	@echo "Cleaning build artifacts and test containers..."
+	rm -rf $(BUILD_DIR_DEBUG) $(BUILD_DIR_RELEASE) build/ compile_commands.json ./vcpkg_installed/
+	@echo "✓ Clean complete"
+
+.PHONY: clangd-helpers
+clangd-helpers:
+	@if [ -f $(BUILD_DIR_DEBUG)/compile_commands.json ]; then \
+		ln -sf $(BUILD_DIR_DEBUG)/compile_commands.json compile_commands.json; \
+		echo "✓ clangd compile_commands.json symlinked"; \
+	fi
+
+test: build-release
+	@cd $(BUILD_DIR_RELEASE) && \
+		ctest --output-on-failure -C Release
+	@echo "✓ All tests passed"
+
+test-local-debug: build-debug
+	@cd $(BUILD_DIR_DEBUG) && \
+		ctest --output-on-failure -C Debug
+	@echo "✓ All tests passed"
+
+coverage: build-release
+	LLVM_PROFILE_FILE=$(BUILD_DIR_RELEASE)/integration_tests.profraw PATH=$(BUILD_DIR_RELEASE):$$PATH $(BUILD_DIR_RELEASE)/tests/integration_tests || true
+	LLVM_PROFILE_FILE=$(BUILD_DIR_RELEASE)/unit_tests.profraw PATH=$(BUILD_DIR_RELEASE):$$PATH $(BUILD_DIR_RELEASE)/tests/unit_tests || true
+	llvm-profdata merge -sparse $(BUILD_DIR_RELEASE)/*.profraw -o $(BUILD_DIR_RELEASE)/instrument_server_core.profdata
+	llvm-cov show $(BUILD_DIR_RELEASE)/libinstrument-server-core.so \
+		-instr-profile=$(BUILD_DIR_RELEASE)/instrument_server_core.profdata \
+		-ignore-filename-regex='(tests/)' \
+		-Xdemangler c++filt -Xdemangler -n
+
+coverage-overview:
+	@llvm-cov report $(BUILD_DIR_RELEASE)/libinstrument-server-core.so \
+		-instr-profile=$(BUILD_DIR_RELEASE)/instrument_server_core.profdata \
+		-ignore-filename-regex='(tests/)' \
+		-Xdemangler c++filt -Xdemangler -n

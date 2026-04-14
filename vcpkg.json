@@ -2,7 +2,7 @@
   "name": "instrument-script-server",
   "version-string": "0.1.0",
   "description": "vcpkg manifest for instrument-script-server (native Windows build)",
-  "builtin-baseline": "73af4de996897cb45dcf5034d16a551a3cf476f7",
+  "builtin-baseline": "e5a1490e1409d175932ef6014519e9ae149ddb7c",
   "dependencies": [
     "lua",
     "nlohmann-json",
