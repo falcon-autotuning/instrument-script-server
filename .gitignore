@@ -5,4 +5,4 @@ site/
 *.profraw
 .cache/
 vcpkg_installed/
-.nuget_credentials
+.nuget-credentials
