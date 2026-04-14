@@ -1,6 +1,6 @@
 #pragma once
-#include "instrument-server/server/InstrumentRegistry.hpp"
-#include "instrument-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/server/SyncCoordinator.hpp"
 
 #include <gtest/gtest.h>
 

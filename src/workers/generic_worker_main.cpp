@@ -1,7 +1,7 @@
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/SerializedCommand.hpp"
-#include "instrument-server/ipc/SharedQueue.hpp"
-#include "instrument-server/plugin/PluginLoader.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/SerializedCommand.hpp"
+#include "instrument-script-server/ipc/SharedQueue.hpp"
+#include "instrument-script-server/plugin/PluginLoader.hpp"
 #include <chrono>
 #include <csignal>
 #include <iostream>

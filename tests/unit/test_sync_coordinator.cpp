@@ -1,4 +1,4 @@
-#include "instrument-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/server/SyncCoordinator.hpp"
 
 #include <algorithm>
 #include <gtest/gtest.h>

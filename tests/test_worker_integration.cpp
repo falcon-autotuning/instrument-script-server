@@ -1,5 +1,5 @@
-#include "instrument-server/server/InstrumentRegistry.hpp"
-#include "instrument-server/server/InstrumentWorkerProxy.hpp"
+#include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/server/InstrumentWorkerProxy.hpp"
 
 #include <fstream>
 #include <gtest/gtest.h>

@@ -2,9 +2,9 @@
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 
-#include "instrument-server/export.h"
+#include "instrument-script-server/export.h"
 
-#include "instrument-server/ipc/IPCMessage.hpp"
+#include "instrument-script-server/ipc/IPCMessage.hpp"
 
 #include <chrono>
 #include <optional>

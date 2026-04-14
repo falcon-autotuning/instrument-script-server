@@ -1,10 +1,10 @@
-#include "instrument-server/server/HttpRpcServer.hpp"
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/server/CommandHandlers.hpp"
+#include "instrument-script-server/server/HttpRpcServer.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/server/CommandHandlers.hpp"
 #include <nlohmann/json.hpp>
 
 #ifdef _WIN32
-#include "instrument-server/compat/WinSock.hpp"
+#include "instrument-script-server/compat/WinSock.hpp"
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>

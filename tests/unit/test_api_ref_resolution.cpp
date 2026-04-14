@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 #include <string>
 
-#include "instrument-server/server/ApiRefResolver.hpp"
+#include "instrument-script-server/server/ApiRefResolver.hpp"
 
 using namespace instserver::server;
 

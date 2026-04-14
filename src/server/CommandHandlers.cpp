@@ -1,13 +1,13 @@
-#include "instrument-server/server/CommandHandlers.hpp"
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/SerializedCommand.hpp"
-#include "instrument-server/plugin/PluginLoader.hpp"
-#include "instrument-server/plugin/PluginRegistry.hpp"
-#include "instrument-server/server/InstrumentRegistry.hpp"
-#include "instrument-server/server/JobManager.hpp"
-#include "instrument-server/server/RuntimeContext.hpp"
-#include "instrument-server/server/ServerDaemon.hpp"
-#include "instrument-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/server/CommandHandlers.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/SerializedCommand.hpp"
+#include "instrument-script-server/plugin/PluginLoader.hpp"
+#include "instrument-script-server/plugin/PluginRegistry.hpp"
+#include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/server/JobManager.hpp"
+#include "instrument-script-server/server/RuntimeContext.hpp"
+#include "instrument-script-server/server/ServerDaemon.hpp"
+#include "instrument-script-server/server/SyncCoordinator.hpp"
 
 #include <fstream>
 #include <sol/sol.hpp>

@@ -1,11 +1,11 @@
 #include "PlatformPaths.hpp"
 #include "PluginTestFixture.hpp"
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/plugin/PluginRegistry.hpp"
-#include "instrument-server/server/InstrumentRegistry.hpp"
-#include "instrument-server/server/RuntimeContext.hpp"
-#include "instrument-server/server/ServerDaemon.hpp"
-#include "instrument-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/plugin/PluginRegistry.hpp"
+#include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/server/RuntimeContext.hpp"
+#include "instrument-script-server/server/ServerDaemon.hpp"
+#include "instrument-script-server/server/SyncCoordinator.hpp"
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>

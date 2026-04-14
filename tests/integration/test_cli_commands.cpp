@@ -9,36 +9,32 @@
 class CLITest : public ::testing::Test {
 protected:
   void SetUp() override {
-    // Locate the instrument-server executable
+    // Locate the instrument-script-server executable
     executable_path_ = find_instrument_server_executable();
 
     if (executable_path_.empty()) {
-      GTEST_SKIP() << "instrument-server executable not found.  "
+      GTEST_SKIP() << "instrument-script-server executable not found.  "
                    << "This test requires the executable to be built.";
     }
   }
 
-  // Find the instrument-server executable in the build directory
+  // Find the instrument-script-server executable in the build directory
   std::string find_instrument_server_executable() {
     std::vector<std::filesystem::path> search_paths;
 
 #ifdef _WIN32
     search_paths.push_back(std::filesystem::current_path() / "build" /
-                           "instrument-server.exe");
-    search_paths.push_back(std::filesystem::current_path() / "build" /
-                           "instrument-server. exe");
+                           "instrument-script-server.exe");
     search_paths.push_back(std::filesystem::current_path() /
-                           "instrument-server.exe");
-    search_paths.push_back(std::filesystem::current_path() /
-                           "instrument-server.exe");
+                           "instrument-script-server.exe");
 #else
     // Linux: Check build directory
     search_paths.push_back(std::filesystem::current_path() / "build" /
-                           "instrument-server");
+                           "instrument-script-server");
     search_paths.push_back(std::filesystem::current_path() /
-                           "instrument-server");
+                           "instrument-script-server");
     // Also check if it's in PATH
-    search_paths.push_back("instrument-server");
+    search_paths.push_back("instrument-script-server");
 #endif
 
     for (const auto &path : search_paths) {
@@ -49,9 +45,9 @@ protected:
 
     // Try to find in PATH by running which/where
 #ifdef _WIN32
-    FILE *pipe = _popen("where instrument-server 2>NUL", "r");
+    FILE *pipe = _popen("where instrument-script-server 2>NUL", "r");
 #else
-    FILE *pipe = popen("which instrument-server 2>/dev/null", "r");
+    FILE *pipe = popen("which instrument-script-server 2>/dev/null", "r");
 #endif
 
     if (pipe) {

@@ -1,13 +1,13 @@
-#include "instrument-server/server/ServerDaemon.hpp"
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/server/HttpRpcServer.hpp"
+#include "instrument-script-server/server/ServerDaemon.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/server/HttpRpcServer.hpp"
 
 #include <filesystem>
 #include <fstream>
 #include <signal.h>
 
 #ifdef _WIN32
-#include "instrument-server/compat/WinSock.hpp"
+#include "instrument-script-server/compat/WinSock.hpp"
 #include <process.h>
 #include <windows.h>
 #define getpid _getpid
@@ -26,14 +26,14 @@ static std::string get_runtime_dir() {
   if (appdata) {
     return std::string(appdata) + "\\InstrumentServer";
   }
-  return ".\\instrument-server-runtime";
+  return ".\\instrument-script-server-runtime";
 #else
   // Try XDG_RUNTIME_DIR first, fallback to /tmp
   char *xdg_runtime = getenv("XDG_RUNTIME_DIR");
   if (xdg_runtime) {
-    return std::string(xdg_runtime) + "/instrument-server";
+    return std::string(xdg_runtime) + "/instrument-script-server";
   }
-  return "/tmp/instrument-server-" +
+  return "/tmp/instrument-script-server-" +
          std::string(getenv("USER") ? getenv("USER") : "unknown");
 #endif
 }

@@ -5,7 +5,7 @@ Detailed technical documentation of the system architecture, components, and des
 ## Table of Contents
 
 <!--toc:start-->
-- [Instrument Server Architecture](#instrument-server-architecture)
+- [Instrument Server Architecture](#instrument-script-server-architecture)
   - [Table of Contents](#table-of-contents)
   - [System Overview](#system-overview)
     - [Key Design Principles](#key-design-principles)
@@ -61,7 +61,7 @@ The Instrument Server uses a **multi-process, daemon-based architecture** with I
 ```
 ┌───────────────────────────────────────────────────────────────┐
 │                      User Commands                            │
-│  instrument-server start/stop/measure/...                     │
+│  instrument-script-server start/stop/measure/...                     │
 └───────────────────────────────────────────────────────────────┘
                           ↓
 ┌───────────────────────────────────────────────────────────────┐
@@ -184,7 +184,7 @@ registry.remove_instrument() ← cleanup ← shutdown ← SIGTERM
 **Lifecycle**:
 
 ```
-instrument-server <cmd> → Connect to registry → Execute → Exit
+instrument-script-server <cmd> → Connect to registry → Execute → Exit
 ```
 
 **Implementation**: `src/tools/instrument_server_main.cpp`
@@ -207,7 +207,7 @@ static int get_daemon_pid();     // Get PID of running daemon
 
 **State Management**:
 
-- PID file: `/tmp/instrument-server-$USER/server. pid` (Linux)
+- PID file: `/tmp/instrument-script-server-$USER/server. pid` (Linux)
 - PID file: `%LOCALAPPDATA%\InstrumentServer\server.pid` (Windows)
 - Singleton pattern ensures one instance
 
@@ -334,7 +334,7 @@ struct SharedQueue {
 
 ### Message Format
 
-**File**: `include/instrument-server/ipc/IPCMessage.hpp`
+**File**: `include/instrument-script-server/ipc/IPCMessage.hpp`
 
 ```cpp
 struct IPCMessage {
@@ -415,7 +415,7 @@ CommandResponse deserialize_response(const std::string &json);
 
 ### Plugin Interface
 
-**File**: `include/instrument-server/plugin/PluginInterface.h`
+**File**: `include/instrument-script-server/plugin/PluginInterface.h`
 
 ```c
 // Required exports
@@ -496,7 +496,7 @@ connection:
 
 Example loading sequence:
 
-- instrument-server processes `configs/dmm1.yaml`
+- instrument-script-server processes `configs/dmm1.yaml`
 - `dmm1.yaml` contains `api_ref: ../apis/keithley_2400.yaml`
 - The server resolves `../apis/keithley_2400.yaml` relative to `configs/` → `apis/keithley_2400.yaml` and loads that file
 
@@ -701,7 +701,7 @@ Lua script handles error
 ### Linux
 
 - **IPC**: POSIX shared memory (`/dev/shm/`)
-- **PID file**: `/tmp/instrument-server-$USER/server.pid`
+- **PID file**: `/tmp/instrument-script-server-$USER/server.pid`
 - **Process creation**: `fork()` + `execl()`
 - **Signals**:  SIGTERM for graceful shutdown
 
@@ -719,7 +719,7 @@ Lua script handles error
 Restart worker without interrupting others:
 
 ```bash
-instrument-server reload DMM1
+instrument-script-server reload DMM1
 ```
 
 **Implementation**: Track worker state, spawn new worker, transfer state

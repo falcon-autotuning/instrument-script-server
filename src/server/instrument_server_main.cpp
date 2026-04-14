@@ -1,5 +1,5 @@
-#include "instrument-server/server/CommandHandlers.hpp"
-#include "instrument-server/version.hpp"
+#include "instrument-script-server/server/CommandHandlers.hpp"
+#include "instrument-script-server/version.hpp"
 #include <iostream>
 #include <spdlog/spdlog.h>
 
@@ -13,7 +13,7 @@ void signal_handler(int sig) {
 }
 
 void print_usage() {
-  std::cout << "Usage: instrument-server <command> [options]\n\n";
+  std::cout << "Usage: instrument-script-server <command> [options]\n\n";
   std::cout << "Daemon Management:\n";
   std::cout << "  daemon start                       Start server daemon\n";
   std::cout << "  daemon stop                        Stop server daemon\n";
@@ -41,20 +41,20 @@ void print_usage() {
   std::cout << "  --help, -h           Show this help message\n";
   std::cout << "\nWorkflow:\n";
   std::cout << "  1. Start daemon:\n";
-  std::cout << "     instrument-server daemon start\n";
+  std::cout << "     instrument-script-server daemon start\n";
   std::cout << "\n  2. Start instruments:\n";
-  std::cout << "     instrument-server start dac1.yaml\n";
-  std::cout << "     instrument-server start dmm1.yaml\n";
+  std::cout << "     instrument-script-server start dac1.yaml\n";
+  std::cout << "     instrument-script-server start dmm1.yaml\n";
   std::cout
-      << "     instrument-server start scope1.yaml --plugin ./custom.so\n";
+      << "     instrument-script-server start scope1.yaml --plugin ./custom.so\n";
   std::cout << "\n  3. Run measurement:\n";
-  std::cout << "     instrument-server measure my_measurement.lua\n";
+  std::cout << "     instrument-script-server measure my_measurement.lua\n";
   std::cout << "\n  4. Manage:\n";
-  std::cout << "     instrument-server list\n";
-  std::cout << "     instrument-server status DAC1\n";
-  std::cout << "     instrument-server stop DAC1\n";
+  std::cout << "     instrument-script-server list\n";
+  std::cout << "     instrument-script-server status DAC1\n";
+  std::cout << "     instrument-script-server stop DAC1\n";
   std::cout << "\n  5. Shutdown:\n";
-  std::cout << "     instrument-server daemon stop\n";
+  std::cout << "     instrument-script-server daemon stop\n";
 }
 
 spdlog::level::level_enum parse_log_level(const std::string &level) {
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
   if (command == "daemon") {
     // subcommand is positional 0
     if (argc < 3) {
-      std::cerr << "Usage: instrument-server daemon <start|stop|status>\n";
+      std::cerr << "Usage: instrument-script-server daemon <start|stop|status>\n";
       return 1;
     }
     std::string action = argv[2];
@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
     return rc;
   } else if (command == "start") {
     if (argc < 2) {
-      std::cerr << "Usage: instrument-server start <config> [--plugin <path>] "
+      std::cerr << "Usage: instrument-script-server start <config> [--plugin <path>] "
                    "[--log-level <level>]\n";
       return 1;
     }
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
   } else if (command == "stop") {
     if (argc < 3) {
       std::cerr << "Error: stop requires instrument name\n";
-      std::cerr << "Usage: instrument-server stop <name>\n";
+      std::cerr << "Usage: instrument-script-server stop <name>\n";
       return 1;
     }
     nlohmann::json params;
@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
   } else if (command == "status") {
     if (argc < 3) {
       std::cerr << "Error: status requires instrument name\n";
-      std::cerr << "Usage: instrument-server status <name>\n";
+      std::cerr << "Usage: instrument-script-server status <name>\n";
       return 1;
     }
     nlohmann::json params;
@@ -197,8 +197,8 @@ int main(int argc, char **argv) {
   } else if (command == "measure") {
     if (argc < 3) {
       std::cerr << "Error: measure requires script path\n";
-      std::cerr << "Usage: instrument-server measure <script> [--json] ";
-      std::cerr << "Usage instrument-server measure <script>"
+      std::cerr << "Usage: instrument-script-server measure <script> [--json] ";
+      std::cerr << "Usage instrument-script-server measure <script>"
                    "[--globals <string>]"
                    "[--block_inject_globals]"
                    "[--context_schema_version <x.y.z>]"
@@ -238,7 +238,7 @@ int main(int argc, char **argv) {
     if (argc < 3) {
       std::cerr << "Error: test requires config and verb\n";
       std::cerr
-          << "Usage: instrument-server test <config> <verb> [param=value... ] "
+          << "Usage: instrument-script-server test <config> <verb> [param=value... ] "
              "[--plugin <path>] [--log-level <level>]\n";
       return 1;
     }

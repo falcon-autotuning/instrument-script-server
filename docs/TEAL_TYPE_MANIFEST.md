@@ -131,7 +131,7 @@ echo "Manifest: $MANIFEST_FILE"
 ### Via CLI
 
 ```bash
-instrument-server measure measurement.lua \
+instrument-script-server measure measurement.lua \
     --json \
     --globals '{"voltage": 5.0, "sampleRate": 1000}' \
     --type-manifest-file manifest.json

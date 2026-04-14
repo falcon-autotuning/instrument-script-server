@@ -1,5 +1,5 @@
-#include "instrument-server/ipc/DataBufferManager.hpp"
-#include "instrument-server/Logger.hpp"
+#include "instrument-script-server/ipc/DataBufferManager.hpp"
+#include "instrument-script-server/Logger.hpp"
 #include <chrono>
 #include <cstring>
 #include <fstream>

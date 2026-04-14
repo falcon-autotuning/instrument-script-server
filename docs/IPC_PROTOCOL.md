@@ -336,7 +336,7 @@ cat /dev/mqueue/instrument_DMM1_req
 ```bash
 # Log all IPC traffic
 export INSTRUMENT_IPC_DEBUG=1
-instrument-server --config ...
+instrument-script-server --config ...
 
 ```
 

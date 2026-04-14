@@ -599,7 +599,7 @@ end
 ### Enable Sync Logging
 
 ```bash
-instrument-server measure dc script.lua --log-level debug
+instrument-script-server measure dc script.lua --log-level debug
 ```
 
 ### Log Patterns
@@ -664,7 +664,7 @@ context:log(string.format("Parallel block took %.3f ms", elapsed * 1000))
 
 ```bash
 # Check if all instruments are running
-instrument-server list
+instrument-script-server list
 
 # Check worker logs
 tail -f worker_*. log | grep SYNC
@@ -676,7 +676,7 @@ tail -f worker_*. log | grep SYNC
 
 ```bash
 # Restart missing instrument
-instrument-server start configs/missing_instrument.yaml
+instrument-script-server start configs/missing_instrument.yaml
 
 # Or remove it from parallel block
 ```
@@ -723,7 +723,7 @@ end)
 
 ```bash
 # Check worker status
-instrument-server status DAC2
+instrument-script-server status DAC2
 
 # Check worker log
 tail -f worker_DAC2.log
@@ -733,8 +733,8 @@ tail -f worker_DAC2.log
 
 ```bash
 # Restart worker
-instrument-server stop DAC2
-instrument-server start configs/dac2.yaml
+instrument-script-server stop DAC2
+instrument-script-server start configs/dac2.yaml
 ```
 
 ### Problem: Incorrect timing despite sync

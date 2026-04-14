@@ -1,5 +1,5 @@
-#include "instrument-server/plugin/PluginLoader.hpp"
-#include "instrument-server/Logger.hpp"
+#include "instrument-script-server/plugin/PluginLoader.hpp"
+#include "instrument-script-server/Logger.hpp"
 #include <csignal>
 #include <stdexcept>
 

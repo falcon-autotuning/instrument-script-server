@@ -17,7 +17,7 @@ The simplest way to test the workflow is using the existing example configuratio
 In one terminal window:
 
 ```bash
-instrument-server daemon start
+instrument-script-server daemon start
 ```
 
 The daemon will run in the foreground. Keep this terminal open.
@@ -28,7 +28,7 @@ In a second terminal window:
 
 ```bash
 cd examples
-instrument-server start demo_instrument.yaml
+instrument-script-server start demo_instrument.yaml
 ```
 
 You should see output indicating the instrument has started.
@@ -36,7 +36,7 @@ You should see output indicating the instrument has started.
 ### 3. Check Running Instruments
 
 ```bash
-instrument-server list
+instrument-script-server list
 ```
 
 You should see `DemoInstrument` in the list.
@@ -46,7 +46,7 @@ You should see `DemoInstrument` in the list.
 Run the demo measurement script:
 
 ```bash
-instrument-server measure demo_measurement.lua
+instrument-script-server measure demo_measurement.lua
 ```
 
 You'll see log output showing the measurement steps.
@@ -56,7 +56,7 @@ You'll see log output showing the measurement steps.
 For programmatic parsing:
 
 ```bash
-instrument-server measure demo_measurement.lua --json
+instrument-script-server measure demo_measurement.lua --json
 ```
 
 This outputs structured JSON data that can be parsed by other tools.
@@ -64,13 +64,13 @@ This outputs structured JSON data that can be parsed by other tools.
 ### 6. Check Instrument Status
 
 ```bash
-instrument-server status DemoInstrument
+instrument-script-server status DemoInstrument
 ```
 
 ### 7. Stop the Instrument
 
 ```bash
-instrument-server stop DemoInstrument
+instrument-script-server stop DemoInstrument
 ```
 
 ### 8. Stop the Daemon
@@ -78,7 +78,7 @@ instrument-server stop DemoInstrument
 Press `Ctrl+C` in the terminal where the daemon is running, or:
 
 ```bash
-instrument-server daemon stop
+instrument-script-server daemon stop
 ```
 
 ## Using Multiple Instruments
@@ -87,13 +87,13 @@ You can start multiple mock instruments simultaneously:
 
 ```bash
 # Start first instrument
-instrument-server start tests/data/mock_instrument1.yaml
+instrument-script-server start tests/data/mock_instrument1.yaml
 
 # Start second instrument  
-instrument-server start tests/data/mock_instrument2.yaml
+instrument-script-server start tests/data/mock_instrument2.yaml
 
 # List all running instruments
-instrument-server list
+instrument-script-server list
 ```
 
 ## Testing with Real Hardware
@@ -108,7 +108,7 @@ To test with actual instruments (e.g., Agilent 34401A DMM):
 
 2. Start the instrument:
    ```bash
-   instrument-server start my_dmm.yaml
+   instrument-script-server start my_dmm.yaml
    ```
 
 3. Modify a measurement script to use your instrument name
@@ -119,7 +119,7 @@ To test with actual instruments (e.g., Agilent 34401A DMM):
 
 Make sure the daemon is running:
 ```bash
-instrument-server daemon start
+instrument-script-server daemon start
 ```
 
 ### "Plugin not found"
@@ -139,7 +139,7 @@ sudo make install
 
 Stop the existing instrument first:
 ```bash
-instrument-server stop DemoInstrument
+instrument-script-server stop DemoInstrument
 ```
 
 ### View Detailed Logs

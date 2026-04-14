@@ -1,5 +1,5 @@
-#include "instrument-server/ipc/ProcessManager.hpp"
-#include "instrument-server/Logger.hpp"
+#include "instrument-script-server/ipc/ProcessManager.hpp"
+#include "instrument-script-server/Logger.hpp"
 
 #include <sstream>
 

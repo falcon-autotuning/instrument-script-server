@@ -71,7 +71,7 @@ target_include_directories(
   visa_plugin PRIVATE ${CMAKE_SOURCE_DIR}/include ${VISA_INCLUDE_DIR}
                       ${CJSON_INCLUDE_DIRS})
 
-target_link_libraries(visa_plugin PRIVATE instrument-server-core
+target_link_libraries(visa_plugin PRIVATE instrument-script-server-core
                                           ${VISA_LIBRARY})
 set_target_properties(
   visa_plugin

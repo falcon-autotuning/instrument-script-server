@@ -46,7 +46,7 @@ function(add_instrument_plugin TARGET_NAME)
 
   # Link to core library (provides plugin interface)
   target_link_libraries(${TARGET_NAME}
-                        PRIVATE InstrumentServer::instrument-server-core)
+                        PRIVATE InstrumentServer::instrument-script-server-core)
 
   # Link additional libraries
   if(PLUGIN_LINK_LIBRARIES)

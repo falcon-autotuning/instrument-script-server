@@ -1,6 +1,6 @@
 #include "PlatformPaths.hpp"
-#include "instrument-server/plugin/PluginInterface.h"
-#include "instrument-server/plugin/PluginLoader.hpp"
+#include "instrument-script-server/plugin/PluginInterface.h"
+#include "instrument-script-server/plugin/PluginLoader.hpp"
 #include <gtest/gtest.h>
 
 using namespace instserver;

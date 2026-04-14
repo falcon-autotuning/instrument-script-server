@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instrument-server/export.h"
+#include "instrument-script-server/export.h"
 
 #include <atomic>
 #include <cstddef>

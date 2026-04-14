@@ -1,6 +1,6 @@
-#include "instrument-server/server/RuntimeContext.hpp"
-#include "instrument-server/ipc/DataBufferManager.hpp"
-#include "instrument-server/Logger.hpp"
+#include "instrument-script-server/server/RuntimeContext.hpp"
+#include "instrument-script-server/ipc/DataBufferManager.hpp"
+#include "instrument-script-server/Logger.hpp"
 #include <fmt/format.h>
 #include <set>
 #include <variant>

@@ -1,8 +1,8 @@
 #pragma once
-#include "instrument-server/export.h"
+#include "instrument-script-server/export.h"
 
-#include "instrument-server/server/InstrumentRegistry.hpp"
-#include "instrument-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/server/SyncCoordinator.hpp"
 
 #include <atomic>
 #include <cstdint>

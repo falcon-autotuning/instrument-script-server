@@ -1,5 +1,5 @@
-#include "instrument-server/plugin/PluginRegistry.hpp"
-#include "instrument-server/Logger.hpp"
+#include "instrument-script-server/plugin/PluginRegistry.hpp"
+#include "instrument-script-server/Logger.hpp"
 #include <filesystem>
 
 namespace instserver {

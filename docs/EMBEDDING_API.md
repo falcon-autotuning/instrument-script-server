@@ -26,7 +26,7 @@ The embedded server maintains the same worker-process model, IPC mechanism, and 
 ### Starting the Server
 
 ```cpp
-#include <instrument-server/server/ServerDaemon.hpp>
+#include <instrument-script-server/server/ServerDaemon.hpp>
 
 using namespace instserver;
 
@@ -50,7 +50,7 @@ if (! daemon.start()) {
 Use the RPC interface or command handlers directly:
 
 ```cpp
-#include <instrument-server/server/CommandHandlers.hpp>
+#include <instrument-script-server/server/CommandHandlers.hpp>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;

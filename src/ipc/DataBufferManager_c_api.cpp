@@ -1,5 +1,5 @@
-#include "instrument-server/ipc/DataBufferManager_c_api.h"
-#include "instrument-server/ipc/DataBufferManager.hpp"
+#include "instrument-script-server/ipc/DataBufferManager_c_api.h"
+#include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include <cstring>
 
 extern "C" {

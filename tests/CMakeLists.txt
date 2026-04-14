@@ -12,15 +12,15 @@ endif()
 add_library(test-utils STATIC test_utils/MockInstrument.cpp
                               test_utils/TestFixtures.cpp)
 
-target_link_libraries(test-utils PUBLIC instrument-server-core GTest::gtest)
+target_link_libraries(test-utils PUBLIC instrument-script-server-core GTest::gtest)
 target_include_directories(test-utils
                            PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/test_utils)
 
 # Optional test PCH
 if(ENABLE_PCH)
-  if(EXISTS "${CMAKE_SOURCE_DIR}/include/instrument-server/pch.h")
+  if(EXISTS "${CMAKE_SOURCE_DIR}/include/instrument-script-server/pch.h")
     target_precompile_headers(
-      test-utils PRIVATE "${CMAKE_SOURCE_DIR}/include/instrument-server/pch.h")
+      test-utils PRIVATE "${CMAKE_SOURCE_DIR}/include/instrument-script-server/pch.h")
   else()
     target_precompile_headers(test-utils PRIVATE <gtest/gtest.h> <string>
                               <vector>)
@@ -42,7 +42,7 @@ add_executable(
   unit/test_api_ref_resolution.cpp
   unit/test_plugin_registry.cpp
   unit/test_main_function.cpp)
-target_link_libraries(unit_tests PRIVATE instrument-server-core test-utils
+target_link_libraries(unit_tests PRIVATE instrument-script-server-core test-utils
                                          GTest::gtest GTest::gtest_main)
 
 if(ENABLE_PCH)
@@ -53,11 +53,10 @@ if(ENABLE_PCH)
   endif()
 endif()
 
-if(WIN32)
-  add_test(NAME unit_tests COMMAND unit_tests)
-else()
-  gtest_discover_tests(unit_tests)
-endif()
+add_test(NAME unit_tests COMMAND unit_tests)
+set_tests_properties(unit_tests PROPERTIES
+  ENVIRONMENT "PATH=$<TARGET_FILE_DIR:unit_tests>/..:$<TARGET_FILE_DIR:unit_tests>:$ENV{PATH}"
+)
 
 add_executable(
   integration_tests
@@ -74,7 +73,7 @@ add_executable(
   integration/test_type_manifest.cpp)
 
 target_link_libraries(
-  integration_tests PRIVATE instrument-server-core test-utils GTest::gtest
+  integration_tests PRIVATE instrument-script-server-core test-utils GTest::gtest
                             GTest::gtest_main)
 
 # Link math library only on Unix (Linux/macOS)
@@ -82,34 +81,32 @@ if(UNIX)
   target_link_libraries(integration_tests PRIVATE m)
 endif()
 
-if(WIN32)
-  add_test(NAME integration_tests COMMAND integration_tests)
-else()
-  gtest_discover_tests(integration_tests)
-endif()
+add_test(NAME integration_tests COMMAND integration_tests)
+set_tests_properties(integration_tests PROPERTIES
+  ENVIRONMENT "PATH=$<TARGET_FILE_DIR:integration_tests>/..:$<TARGET_FILE_DIR:integration_tests>:$ENV{PATH}"
+)
 
 add_executable(
   perf_tests
   performance/test_ipc_throughput.cpp performance/test_sync_overhead.cpp
   performance/test_end_to_end_overhead.cpp)
-target_link_libraries(perf_tests PRIVATE instrument-server-core test-utils
+target_link_libraries(perf_tests PRIVATE instrument-script-server-core test-utils
                                          GTest::gtest GTest::gtest_main)
 
-if(WIN32)
-  add_test(NAME perf_tests COMMAND perf_tests)
-else()
-  gtest_discover_tests(perf_tests)
-endif()
+add_test(NAME perf_tests COMMAND perf_tests)
+set_tests_properties(perf_tests PROPERTIES
+  ENVIRONMENT "PATH=$<TARGET_FILE_DIR:perf_tests>/..:$<TARGET_FILE_DIR:perf_tests>:$ENV{PATH}"
+)
 
 add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
 target_compile_definitions(mock_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
-target_link_libraries(mock_plugin PRIVATE instrument-server-core)
+target_link_libraries(mock_plugin PRIVATE instrument-script-server-core)
 set_target_properties(mock_plugin PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE
                                                        ON)
 
 add_library(mock_visa_plugin SHARED mocks/mock_visa_plugin.c)
 target_compile_definitions(mock_visa_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
-target_link_libraries(mock_visa_plugin PRIVATE instrument-server-core)
+target_link_libraries(mock_visa_plugin PRIVATE instrument-script-server-core)
 set_target_properties(mock_visa_plugin PROPERTIES PREFIX ""
                                                   POSITION_INDEPENDENT_CODE ON)
 
@@ -118,7 +115,7 @@ add_library(mock_visa_large_data_plugin SHARED
 target_compile_definitions(mock_visa_large_data_plugin
                            PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
 target_link_libraries(mock_visa_large_data_plugin
-                      PRIVATE instrument-server-core)
+                      PRIVATE instrument-script-server-core)
 set_target_properties(mock_visa_large_data_plugin
                       PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE ON)
 

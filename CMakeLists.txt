@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(
-  instrument-server
+  instrument-script-server
   VERSION 1.1.0
   LANGUAGES C CXX)
 
@@ -149,7 +149,7 @@ configure_file(${CMAKE_SOURCE_DIR}/src/embedded_schemas.cpp.in
 
 # Core library
 add_library(
-  instrument-server-core SHARED
+  instrument-script-server-core SHARED
   src/SchemaValidator.cpp
   src/Logger.cpp
   src/version.cpp
@@ -171,30 +171,30 @@ add_library(
   src/server/JobManager.cpp
   ${CMAKE_BINARY_DIR}/embedded_schemas.cpp)
 
-set_target_properties(instrument-server-core
+set_target_properties(instrument-script-server-core
                       PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # CRITICAL FOR WINDOWS: Define export symbol for DLL This matches the symbol
-# checked in include/instrument-server/export.h
-target_compile_definitions(instrument-server-core
+# checked in include/instrument-script-server/export.h
+target_compile_definitions(instrument-script-server-core
                            PRIVATE instrument_server_core_EXPORTS)
 
 # Add version information
 target_compile_definitions(
-  instrument-server-core
+  instrument-script-server-core
   PRIVATE
   INSTSERVER_VERSION="${INSTSERVER_VERSION}"
   INSTSERVER_GIT_COMMIT="${INSTSERVER_GIT_COMMIT}"
   INSTSERVER_GIT_TAG="${INSTSERVER_GIT_TAG}")
 
 target_link_libraries(
-  instrument-server-core
+  instrument-script-server-core
   PUBLIC spdlog::spdlog nlohmann_json::nlohmann_json yaml-cpp::yaml-cpp
          ${PLATFORM_LIBS} ${LUA_LIBRARIES})
 
 # Per-target include directories (avoid global include_directories)
 target_include_directories(
-  instrument-server-core
+  instrument-script-server-core
   PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
          $<INSTALL_INTERFACE:include>
          $<$<BOOL:${LUA_INCLUDE_DIR}>:$<BUILD_INTERFACE:${LUA_INCLUDE_DIR}>>
@@ -203,15 +203,15 @@ target_include_directories(
 # Optional precompiled headers
 if(ENABLE_PCH)
   # Prefer a project-provided PCH header, fallback to common std headers.
-  if(EXISTS "${CMAKE_SOURCE_DIR}/include/instrument-server/pch.h")
-    message(STATUS "Using project PCH: include/instrument-server/pch.h")
+  if(EXISTS "${CMAKE_SOURCE_DIR}/include/instrument-script-server/pch.h")
+    message(STATUS "Using project PCH: include/instrument-script-server/pch.h")
     target_precompile_headers(
-      instrument-server-core PRIVATE
-      "${CMAKE_SOURCE_DIR}/include/instrument-server/pch.h")
+      instrument-script-server-core PRIVATE
+      "${CMAKE_SOURCE_DIR}/include/instrument-script-server/pch.h")
   else()
     message(STATUS "No project PCH found; using common system headers as PCH")
     target_precompile_headers(
-      instrument-server-core
+      instrument-script-server-core
       PRIVATE
       <vector>
       <string>
@@ -222,15 +222,15 @@ if(ENABLE_PCH)
 endif()
 
 add_executable(instrument-script-server src/server/instrument_server_main.cpp)
-target_link_libraries(instrument-script-server PRIVATE instrument-server-core)
+target_link_libraries(instrument-script-server PRIVATE instrument-script-server-core)
 
 add_executable(instrument-worker src/workers/generic_worker_main.cpp)
-target_link_libraries(instrument-worker PRIVATE instrument-server-core)
+target_link_libraries(instrument-worker PRIVATE instrument-script-server-core)
 
 # VISA built-in plugin (optional)
 if(HAVE_VISA)
   add_library(visa_builtin MODULE src/workers/visa_builtin.cpp)
-  target_link_libraries(visa_builtin PRIVATE instrument-server-core
+  target_link_libraries(visa_builtin PRIVATE instrument-script-server-core
                                              ${VISA_LIBRARY})
   set_target_properties(visa_builtin PROPERTIES PREFIX "" OUTPUT_NAME
                                                           "visa_builtin")
@@ -240,23 +240,23 @@ endif()
 if(BUILD_TOOLS)
   # Validators
   add_executable(validate-instrument-api src/instrument_api_validator_main.cpp)
-  target_link_libraries(validate-instrument-api PRIVATE instrument-server-core)
+  target_link_libraries(validate-instrument-api PRIVATE instrument-script-server-core)
 
   add_executable(validate-instrument-config
                  src/instrument_config_validator_main.cpp)
   target_link_libraries(validate-instrument-config
-                        PRIVATE instrument-server-core)
+                        PRIVATE instrument-script-server-core)
 
   add_executable(validate-quantum-dot-config
                  src/quantum_dot_config_validator_main.cpp)
   target_link_libraries(validate-quantum-dot-config
-                        PRIVATE instrument-server-core)
+                        PRIVATE instrument-script-server-core)
   add_executable(template-expander src/template_expander.cpp)
-  target_link_libraries(template-expander PRIVATE instrument-server-core)
+  target_link_libraries(template-expander PRIVATE instrument-script-server-core)
   add_executable(generate-instrument-config
                  src/instrument_configuration_generator.cpp)
   target_link_libraries(generate-instrument-config
-                        PRIVATE instrument-server-core)
+                        PRIVATE instrument-script-server-core)
 endif()
 
 # Example plugins (FIXED: only build if InstrumentServer is already installed OR
@@ -297,19 +297,19 @@ endif()
 
 install(
   DIRECTORY schemas/
-  DESTINATION share/instrument-server/schemas
+  DESTINATION share/instrument-script-server/schemas
   FILES_MATCHING
   PATTERN "*.json")
 
 install(
   DIRECTORY docs/
-  DESTINATION share/doc/instrument-server
+  DESTINATION share/doc/instrument-script-server
   FILES_MATCHING
   PATTERN "*.md")
 
 # Export targets for use by external plugins
 install(
-  TARGETS instrument-server-core
+  TARGETS instrument-script-server-core
   EXPORT InstrumentServerTargets
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib

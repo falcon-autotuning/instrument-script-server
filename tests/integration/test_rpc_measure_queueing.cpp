@@ -1,9 +1,9 @@
-#include "instrument-server/server/ServerDaemon.hpp"
+#include "instrument-script-server/server/ServerDaemon.hpp"
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
 #ifdef _WIN32
-#include "instrument-server/compat/WinSock.hpp"
+#include "instrument-script-server/compat/WinSock.hpp"
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>

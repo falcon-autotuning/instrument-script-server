@@ -1,6 +1,6 @@
 #include "PluginTestFixture.hpp"
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/server/InstrumentRegistry.hpp"
 
 #include <filesystem>
 #include <gtest/gtest.h>
@@ -14,7 +14,7 @@ protected:
     // Load plugins first
     PluginTestFixture::SetUp();
     registry_ = &InstrumentRegistry::instance();
-    test_data_dir_ = std::filesystem::current_path() / "tests" / "data";
+    test_data_dir_ = std::filesystem::current_path() / "data";
     config_path_ = test_data_dir_ / "mock_instrument1.yaml";
     if (!std::filesystem::exists(config_path_)) {
       GTEST_SKIP() << "Config not found at: " << config_path_;

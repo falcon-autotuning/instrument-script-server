@@ -14,7 +14,7 @@ This is a minimal example of an instrument plugin for the Instrument Script Serv
 ```bash
 mkdir build
 cd build
-cmake ..  -DCMAKE_PREFIX_PATH=/path/to/instrument-server-install
+cmake ..  -DCMAKE_PREFIX_PATH=/path/to/instrument-script-server-install
 cmake --build . 
 ```
 

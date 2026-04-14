@@ -1,4 +1,4 @@
-#include "instrument-server/Logger.hpp"
+#include "instrument-script-server/Logger.hpp"
 
 namespace instserver {
 

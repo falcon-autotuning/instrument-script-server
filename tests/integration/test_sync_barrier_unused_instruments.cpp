@@ -1,6 +1,6 @@
-#include "instrument-server/server/InstrumentRegistry.hpp"
-#include "instrument-server/server/JobManager.hpp"
-#include "instrument-server/server/ServerDaemon.hpp"
+#include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/server/JobManager.hpp"
+#include "instrument-script-server/server/ServerDaemon.hpp"
 #include <chrono>
 #include <fstream>
 #include <gtest/gtest.h>

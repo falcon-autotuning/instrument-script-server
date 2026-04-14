@@ -1,8 +1,8 @@
-#include "instrument-server/server/InstrumentRegistry.hpp"
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/plugin/PluginRegistry.hpp"
-#include "instrument-server/server/ApiRefResolver.hpp"
-#include "instrument-server/server/InstrumentWorkerProxy.hpp"
+#include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/plugin/PluginRegistry.hpp"
+#include "instrument-script-server/server/ApiRefResolver.hpp"
+#include "instrument-script-server/server/InstrumentWorkerProxy.hpp"
 #include <nlohmann/json.hpp>
 #include <yaml-cpp/yaml.h>
 

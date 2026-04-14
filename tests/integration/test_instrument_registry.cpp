@@ -1,7 +1,7 @@
 #include "PluginTestFixture.hpp"
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/server/InstrumentRegistry.hpp"
-#include "instrument-server/server/ServerDaemon.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/server/ServerDaemon.hpp"
 #include <filesystem>
 #include <gtest/gtest.h>
 

@@ -187,25 +187,25 @@ clangd-helpers:
 
 test: build-release
 	@cd $(BUILD_DIR_RELEASE) && \
-		ctest --output-on-failure -C Release
+		ctest --output-on-failure --verbose -C Release
 	@echo "✓ All tests passed"
 
 test-local-debug: build-debug
 	@cd $(BUILD_DIR_DEBUG) && \
-		ctest --output-on-failure -C Debug
+		ctest --output-on-failure --verbose -C Debug
 	@echo "✓ All tests passed"
 
 coverage: build-release
 	LLVM_PROFILE_FILE=$(BUILD_DIR_RELEASE)/integration_tests.profraw PATH=$(BUILD_DIR_RELEASE):$$PATH $(BUILD_DIR_RELEASE)/tests/integration_tests || true
 	LLVM_PROFILE_FILE=$(BUILD_DIR_RELEASE)/unit_tests.profraw PATH=$(BUILD_DIR_RELEASE):$$PATH $(BUILD_DIR_RELEASE)/tests/unit_tests || true
 	llvm-profdata merge -sparse $(BUILD_DIR_RELEASE)/*.profraw -o $(BUILD_DIR_RELEASE)/instrument_server_core.profdata
-	llvm-cov show $(BUILD_DIR_RELEASE)/libinstrument-server-core.so \
+	llvm-cov show $(BUILD_DIR_RELEASE)/libinstrument-script-server-core.so \
 		-instr-profile=$(BUILD_DIR_RELEASE)/instrument_server_core.profdata \
 		-ignore-filename-regex='(tests/)' \
 		-Xdemangler c++filt -Xdemangler -n
 
 coverage-overview:
-	@llvm-cov report $(BUILD_DIR_RELEASE)/libinstrument-server-core.so \
+	@llvm-cov report $(BUILD_DIR_RELEASE)/libinstrument-script-server-core.so \
 		-instr-profile=$(BUILD_DIR_RELEASE)/instrument_server_core.profdata \
 		-ignore-filename-regex='(tests/)' \
 		-Xdemangler c++filt -Xdemangler -n

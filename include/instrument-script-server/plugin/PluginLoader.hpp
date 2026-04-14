@@ -1,12 +1,12 @@
 #pragma once
-#include "instrument-server/export.h"
+#include "instrument-script-server/export.h"
 
 #include "PluginInterface.h"
 
 #include <string>
 
 #ifdef _WIN32
-#include "instrument-server/compat/WinSock.hpp"
+#include "instrument-script-server/compat/WinSock.hpp"
 #include <windows.h>
 using LibraryHandle = HMODULE;
 #else

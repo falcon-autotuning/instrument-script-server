@@ -1,5 +1,5 @@
 #include "TestFixtures.hpp"
-#include "instrument-server/Logger.hpp"
+#include "instrument-script-server/Logger.hpp"
 
 #include <filesystem>
 

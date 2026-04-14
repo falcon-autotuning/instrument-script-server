@@ -111,10 +111,10 @@ sudo ldconfig
 
 ```bash
 # Check if the server is installed correctly
-instrument-server --help
+instrument-script-server --help
 
 # Check available plugins
-instrument-server plugins
+instrument-script-server plugins
 ```
 
 ### Known Issues on Ubuntu 22.04
@@ -164,7 +164,7 @@ make build
 sudo make install
 
 # Verify installation
-instrument-server --help
+instrument-script-server --help
 ```
 
 ---
@@ -198,7 +198,7 @@ cmake --install build
 
 ## Troubleshooting
 
-### "error while loading shared libraries: libinstrument-server-core.so"
+### "error while loading shared libraries: libinstrument-script-server-core.so"
 
 After installation, if you see this error, run:
 
@@ -293,15 +293,15 @@ cd /path/to/instrument-script-server
 sudo cmake --build build --target uninstall  # If your CMake supports uninstall
 
 # Or manually remove files:
-sudo rm -f /usr/local/bin/instrument-server
+sudo rm -f /usr/local/bin/instrument-script-server
 sudo rm -f /usr/local/bin/instrument-worker
 sudo rm -f /usr/local/bin/validate-*
 sudo rm -f /usr/local/bin/template-expander
 sudo rm -f /usr/local/bin/generate-instrument-config
-sudo rm -rf /usr/local/include/instrument-server
-sudo rm -rf /usr/local/share/instrument-server
-sudo rm -rf /usr/local/share/doc/instrument-server
-sudo rm -f /usr/local/lib/libinstrument-server-core.so
+sudo rm -rf /usr/local/include/instrument-script-server
+sudo rm -rf /usr/local/share/instrument-script-server
+sudo rm -rf /usr/local/share/doc/instrument-script-server
+sudo rm -f /usr/local/lib/libinstrument-script-server-core.so
 sudo rm -rf /usr/local/lib/instrument-plugins
 sudo rm -rf /usr/local/lib/cmake/InstrumentServer
 sudo ldconfig
@@ -319,7 +319,7 @@ For active development, you may want to:
    export PATH="$PWD/build:$PATH"
    
    # Or create a symlink
-   sudo ln -s $PWD/build/instrument-server /usr/local/bin/instrument-server
+   sudo ln -s $PWD/build/instrument-script-server /usr/local/bin/instrument-script-server
    ```
 
 2. **Enable debug builds:**

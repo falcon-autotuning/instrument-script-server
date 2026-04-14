@@ -1,5 +1,5 @@
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/server/ServerDaemon.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/server/ServerDaemon.hpp"
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -7,7 +7,7 @@
 
 // Platform-specific includes
 #ifdef _WIN32
-#include "instrument-server/compat/WinSock.hpp"
+#include "instrument-script-server/compat/WinSock.hpp"
 #include <process.h>
 #include <windows.h>
 #define getpid _getpid
@@ -223,11 +223,11 @@ TEST_F(MeasureCommandTest, MeasureWithoutDaemon) {
 #ifdef _WIN32
   // Windows: redirect to NUL
   std::string cmd =
-      "instrument-server measure " + script_path.string() + " > NUL 2>&1";
+      "instrument-script-server measure " + script_path.string() + " > NUL 2>&1";
 #else
   // Unix: redirect to /dev/null
   std::string cmd =
-      "instrument-server measure " + script_path.string() + " > /dev/null 2>&1";
+      "instrument-script-server measure " + script_path.string() + " > /dev/null 2>&1";
 #endif
 
   int result = run_command_with_timeout(cmd, 5);
@@ -248,10 +248,10 @@ TEST_F(MeasureCommandTest, MeasureWithDaemon) {
 
 #ifdef _WIN32
   std::string cmd =
-      "instrument-server measure " + script_path.string() + " > NUL 2>&1";
+      "instrument-script-server measure " + script_path.string() + " > NUL 2>&1";
 #else
   std::string cmd =
-      "instrument-server measure " + script_path.string() + " > /dev/null 2>&1";
+      "instrument-script-server measure " + script_path.string() + " > /dev/null 2>&1";
 #endif
 
   int result = run_command_with_timeout(cmd, 5);

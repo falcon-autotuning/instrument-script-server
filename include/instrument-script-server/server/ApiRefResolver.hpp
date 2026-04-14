@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instrument-server/export.h"
+#include "instrument-script-server/export.h"
 #include <string>
 
 namespace instserver {
@@ -15,7 +15,7 @@ namespace server {
 ///
 /// Throws std::runtime_error if the resolved file does not exist.
 ///
-/// The function is exported from the instrument-server-core library so tests
+/// The function is exported from the instrument-script-server-core library so tests
 /// and other executables can link against it on Windows.
 INSTRUMENT_SERVER_API std::string
 resolve_api_ref(const std::string &api_ref, const std::string &config_path);

@@ -103,7 +103,7 @@ make build
 sudo make install
 
 # 4. Verify installation
-instrument-server --help
+instrument-script-server --help
 ```
 
 ### First Time Setup (Arch Linux)
@@ -118,7 +118,7 @@ make build
 sudo make install
 
 # 4. Verify installation
-instrument-server --help
+instrument-script-server --help
 ```
 
 ### Development Iteration
@@ -172,7 +172,7 @@ ninja
 
 ```bash
 cd build
-sudo cmake --install . --prefix=/opt/instrument-server
+sudo cmake --install . --prefix=/opt/instrument-script-server
 ```
 
 ### Run Tests in Debugger

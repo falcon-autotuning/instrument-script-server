@@ -1,4 +1,4 @@
-#include <instrument-server/version.hpp>
+#include <instrument-script-server/version.hpp>
 
 namespace instserver {
 

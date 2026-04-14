@@ -1,4 +1,4 @@
-#include "instrument-server/SchemaValidator.hpp"
+#include "instrument-script-server/SchemaValidator.hpp"
 
 #include <regex>
 #include <set>

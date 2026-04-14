@@ -1,5 +1,5 @@
-#include "instrument-server/ipc/SharedQueue.hpp"
-#include "instrument-server/Logger.hpp"
+#include "instrument-script-server/ipc/SharedQueue.hpp"
+#include "instrument-script-server/Logger.hpp"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/interprocess/creation_tags.hpp>
 #include <memory>

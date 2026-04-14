@@ -1,4 +1,4 @@
-#include "instrument-server/server/ServerDaemon.hpp"
+#include "instrument-script-server/server/ServerDaemon.hpp"
 
 #include <gtest/gtest.h>
 #include <thread>

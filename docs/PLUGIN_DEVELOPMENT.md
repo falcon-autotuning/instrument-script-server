@@ -96,12 +96,12 @@ void plugin_shutdown(void);
 
 ### Header File
 
-**Location**: `<instrument-server/plugin/PluginInterface.h>`
+**Location**: `<instrument-script-server/plugin/PluginInterface.h>`
 
 After installing InstrumentServer, this header is available at:
 
-- Linux/macOS: `/usr/local/include/instrument-server/plugin/PluginInterface.h`
-- Windows: `C:\Program Files\InstrumentServer\include\instrument-server\plugin\PluginInterface.h`
+- Linux/macOS: `/usr/local/include/instrument-script-server/plugin/PluginInterface.h`
+- Windows: `C:\Program Files\InstrumentServer\include\instrument-script-server\plugin\PluginInterface.h`
 
 ```c
 #ifndef INSTRUMENT_PLUGIN_INTERFACE_H
@@ -216,7 +216,7 @@ sudo cmake --install .
 
 This installs:
 
-- Headers to `/usr/local/include/instrument-server/`
+- Headers to `/usr/local/include/instrument-script-server/`
 - CMake config to `/usr/local/lib/cmake/InstrumentServer/`
 - Helper function `add_instrument_plugin()`
 
@@ -254,7 +254,7 @@ install(TARGETS my_instrument_plugin
 **Create `my_plugin.c`:**
 
 ```c
-#include <instrument-server/plugin/PluginInterface.h>
+#include <instrument-script-server/plugin/PluginInterface.h>
 #include <string.h>
 
 // Your instrument SDK includes
@@ -366,15 +366,15 @@ Test the plugin:
 
 ```bash
 # Test with explicit plugin path
-instrument-server test my_instrument.yaml IDN --plugin ./build/my_instrument_plugin.so
+instrument-script-server test my_instrument.yaml IDN --plugin ./build/my_instrument_plugin.so
 
 # After installation, test without path
-instrument-server test my_instrument.yaml IDN
+instrument-script-server test my_instrument.yaml IDN
 
 # If successful, start using it
-instrument-server daemon start
-instrument-server start my_instrument.yaml
-instrument-server status MyInstrument1
+instrument-script-server daemon start
+instrument-script-server start my_instrument.yaml
+instrument-script-server status MyInstrument1
 ```
 
 ## Development Workflow
@@ -540,7 +540,7 @@ install(TARGETS my_plugin LIBRARY DESTINATION lib/instrument-plugins)
 
 ```bash
 # Check if plugin is discoverable
-instrument-server plugins
+instrument-script-server plugins
 
 # Should list your plugin if installed to standard location
 ```
@@ -549,7 +549,7 @@ instrument-server plugins
 
 ```bash
 # Test with explicit path
-instrument-server discover /path/to/my/plugins
+instrument-script-server discover /path/to/my/plugins
 
 # Should show plugin details
 ```
@@ -560,28 +560,28 @@ instrument-server discover /path/to/my/plugins
 # Create minimal config files (shown in Quick Start)
 # Then test individual commands
 
-instrument-server test my_instrument.yaml IDN
-instrument-server test my_instrument.yaml MEASURE
+instrument-script-server test my_instrument.yaml IDN
+instrument-script-server test my_instrument.yaml MEASURE
 ```
 
 ### 4. Integration Testing
 
 ```bash
 # Start daemon
-instrument-server daemon start
+instrument-script-server daemon start
 
 # Start instrument
-instrument-server start my_instrument. yaml
+instrument-script-server start my_instrument. yaml
 
 # Check status
-instrument-server status MyInstrument1
+instrument-script-server status MyInstrument1
 
 # Run measurement script
-instrument-server measure dc test_measurement.lua
+instrument-script-server measure dc test_measurement.lua
 
 # Cleanup
-instrument-server stop MyInstrument1
-instrument-server daemon stop
+instrument-script-server stop MyInstrument1
+instrument-script-server daemon stop
 ```
 
 ### 5. Unit Testing Plugin Directly
@@ -593,7 +593,7 @@ Create a test program:
 #include <assert.h>
 #include <stdio.h>
 #include <dlfcn.h>
-#include <instrument-server/plugin/PluginInterface.h>
+#include <instrument-script-server/plugin/PluginInterface.h>
 
 int main() {
   // Load plugin
@@ -664,7 +664,7 @@ gcc -o test_plugin test_plugin.c -ldl -I/usr/local/include
 ### Example 1: Simple Echo Plugin (No Dependencies)
 
 ```c
-#include <instrument-server/plugin/PluginInterface.h>
+#include <instrument-script-server/plugin/PluginInterface.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -722,7 +722,7 @@ install(TARGETS echo_plugin LIBRARY DESTINATION lib/instrument-plugins)
 ### Example 2: Serial Port Plugin
 
 ```c
-#include <instrument-server/plugin/PluginInterface.h>
+#include <instrument-script-server/plugin/PluginInterface.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -806,7 +806,7 @@ void plugin_shutdown(void) {
 ### Example 3: VISA Plugin
 
 ```c
-#include <instrument-server/plugin/PluginInterface.h>
+#include <instrument-script-server/plugin/PluginInterface.h>
 #include <visa. h>
 #include <string. h>
 
@@ -921,7 +921,7 @@ Use data buffers when your plugin returns:
 ### Creating Data Buffers in C Plugins
 
 ```c
-#include <instrument-server/ipc/DataBufferManager_C.h>
+#include <instrument-script-server/ipc/DataBufferManager_C.h>
 
 int32_t plugin_execute_command(const PluginCommand *cmd, PluginResponse *resp) {
   // ... execute command and get data ...

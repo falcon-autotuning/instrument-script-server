@@ -1,6 +1,6 @@
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/server/InstrumentRegistry.hpp"
-#include "instrument-server/server/RuntimeContext.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/server/RuntimeContext.hpp"
 
 #include <fstream>
 #include <gtest/gtest.h>

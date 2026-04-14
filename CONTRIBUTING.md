@@ -11,13 +11,13 @@ Also, feel free to propose changes to these guidelines by updating this file and
 
 ## <a id="questions"></a> Have a Question?
 
-Please don't open a GitHub issue for questions about how to use `instrument-server`, as the goal is to use issues for managing bugs and feature requests. Issues that are related to general support will be closed and redirected to [discussions](https://github.com/falcon-autotuning/instrument-script-server/discussions).
+Please don't open a GitHub issue for questions about how to use `instrument-script-server`, as the goal is to use issues for managing bugs and feature requests. Issues that are related to general support will be closed and redirected to [discussions](https://github.com/falcon-autotuning/instrument-script-server/discussions).
 
 For all support related questions, please [open a discussion post](https://github.com/falcon-autotuning/instrument-script-server/discussions/new/choose).
 
 ## <a id="bugs"></a> Found a Bug?
 
-If you've identified a bug in `instrument-server`, please [submit an issue](#issue) to our GitHub repo: [falcon-autotuning/instrument-script-server](https://github.com/falcon-autotuning/instrument-script-server/issues/new). Please also feel free to submit a [Pull Request](#pr) with a fix for the bug!
+If you've identified a bug in `instrument-script-server`, please [submit an issue](#issue) to our GitHub repo: [falcon-autotuning/instrument-script-server](https://github.com/falcon-autotuning/instrument-script-server/issues/new). Please also feel free to submit a [Pull Request](#pr) with a fix for the bug!
 
 ## <a id="features"></a> Have a Feature Request?
 

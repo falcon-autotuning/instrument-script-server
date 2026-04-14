@@ -26,23 +26,23 @@ make build
 sudo make install
 
 # Start the server daemon
-instrument-server daemon start
+instrument-script-server daemon start
 
 # Start instruments (customize configs with your instruments)
-instrument-server start configs/instrument1.yaml
-instrument-server start configs/instrument2.yaml
+instrument-script-server start configs/instrument1.yaml
+instrument-script-server start configs/instrument2.yaml
 
 # Run a measurement
-instrument-server measure my_measurement.lua
+instrument-script-server measure my_measurement.lua
 
 # Run with JSON output for programmatic parsing
-instrument-server measure my_measurement.lua --json
+instrument-script-server measure my_measurement.lua --json
 
 # Check status
-instrument-server list
+instrument-script-server list
 
 # Shutdown
-instrument-server daemon stop
+instrument-script-server daemon stop
 ```
 
 ## Documentation Guide
@@ -187,7 +187,7 @@ lua scripts/teal_manifest_generator.lua measurement.tl > manifest.json
 Pass the manifest when running the measurement:
 
 ```bash
-instrument-server measure measurement.lua \
+instrument-script-server measure measurement.lua \
     --json \
     --globals '{"voltage": 5.0, "sampleRate": 1000}' \
     --type-manifest-file manifest.json
@@ -288,8 +288,8 @@ make test_perf
 ### Verify Installation
 
 ```bash
-instrument-server --help
-instrument-server plugins
+instrument-script-server --help
+instrument-script-server plugins
 ```
 
 If you encounter library loading errors, run `sudo ldconfig` to update the dynamic linker cache. See [INSTALL.md](INSTALL.md#troubleshooting) for more troubleshooting tips.
@@ -308,11 +308,11 @@ See the [Configuration Guide](CONFIGURATION.md) for detailed information on the 
 
 ```bash
 # 1. Start the daemon
-instrument-server daemon start
+instrument-script-server daemon start
 
 # 2. Start your instruments (modify example configs with your connection details)
-instrument-server start examples/instrument-configurations/agi_34401_config.yaml
-instrument-server start examples/instrument-configurations/dso9254a_config.yaml
+instrument-script-server start examples/instrument-configurations/agi_34401_config.yaml
+instrument-script-server start examples/instrument-configurations/dso9254a_config.yaml
 
 # 3. Write and run a measurement script
 cat > simple_measurement.lua << 'EOF'
@@ -322,14 +322,14 @@ local result = context:call("INSTRUMENT_NAME.MEASURE_VOLTAGE")
 print("Measured:  " .. result ..  " V")
 EOF
 
-instrument-server measure simple_measurement.lua
+instrument-script-server measure simple_measurement.lua
 
 # 4. Check status
-instrument-server list
-instrument-server status INSTRUMENT_NAME
+instrument-script-server list
+instrument-script-server status INSTRUMENT_NAME
 
 # 5. Stop when done
-instrument-server daemon stop
+instrument-script-server daemon stop
 ```
 
 ## Built-in Validation Tools
@@ -338,10 +338,10 @@ The server includes built-in configuration validation:
 
 ```bash
 # Validate an instrument configuration
-instrument-server validate config examples/instrument-configurations/agi_34401_config.yaml
+instrument-script-server validate config examples/instrument-configurations/agi_34401_config.yaml
 
 # Validate an API definition
-instrument-server validate api examples/instrument-apis/agi_34401a. yaml
+instrument-script-server validate api examples/instrument-apis/agi_34401a. yaml
 ```
 
 ## Testing

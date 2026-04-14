@@ -1,4 +1,4 @@
-#include "instrument-server/SerializedCommand.hpp"
+#include "instrument-script-server/SerializedCommand.hpp"
 #include <nlohmann/json.hpp>
 
 namespace instserver {

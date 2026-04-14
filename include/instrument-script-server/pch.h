@@ -1,5 +1,5 @@
 #pragma once
-// Project-wide precompiled header for instrument-server
+// Project-wide precompiled header for instrument-script-server
 // Keep this header stable (only include headers that rarely change)
 //
 // Notes:
@@ -43,6 +43,6 @@
 
 // If you have any internal project "small" headers needed everywhere,
 // you can include them here (careful: changing these will invalidate PCH)
-#include <instrument-server/export.h>
+#include <instrument-script-server/export.h>
 
 // End of pch.h

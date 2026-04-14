@@ -1,7 +1,7 @@
-#include "instrument-server/server/InstrumentWorkerProxy.hpp"
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/ipc/ProcessManager.hpp"
-#include "instrument-server/ipc/SharedQueue.hpp"
+#include "instrument-script-server/server/InstrumentWorkerProxy.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/ipc/ProcessManager.hpp"
+#include "instrument-script-server/ipc/SharedQueue.hpp"
 
 namespace instserver {
 

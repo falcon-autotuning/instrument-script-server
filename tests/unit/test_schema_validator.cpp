@@ -56,7 +56,7 @@ TEST(SchemaValidatorTest, ValidateAgilentInstrumentDirect) {
   fs::path test_dir = fs::path(__FILE__).parent_path();
   fs::path yaml_path =
       test_dir / "../../examples/instrument-apis/agi_34401a.yaml";
-  int ret = run_validator("../validate-instrument-api",
+  int ret = run_validator("validate-instrument-api",
                           yaml_path.lexically_normal().string());
   EXPECT_EQ(ret, 0) << "Validation failed for Agilent instrument API";
 }
@@ -67,7 +67,7 @@ TEST(SchemaValidatorTest, ValidateAgilentInstrumentWithExpander) {
       test_dir / "../../examples/instrument-apis/agi_34401a.yaml";
   std::string expanded_path =
       expand_template(yaml_path.lexically_normal().string());
-  int ret = run_validator("../validate-instrument-api", expanded_path);
+  int ret = run_validator("validate-instrument-api", expanded_path);
   EXPECT_EQ(ret, 0) << "Validation failed for expanded Agilent instrument API";
 }
 
@@ -77,7 +77,7 @@ TEST(SchemaValidatorTest, ValidateKeysightInstrument) {
       test_dir / "../../examples/instrument-apis/dso9254a.yaml.tmpl";
   std::string expanded_path =
       expand_template(yaml_path.lexically_normal().string());
-  int ret = run_validator("../validate-instrument-api", expanded_path);
+  int ret = run_validator("validate-instrument-api", expanded_path);
   EXPECT_EQ(ret, 0) << "Validation failed for expanded Keysight instrument API";
 }
 
@@ -85,7 +85,7 @@ TEST(SchemaValidatorTest, ValidateQuantumDotDeviceConfig) {
   fs::path test_dir = fs::path(__FILE__).parent_path();
   fs::path yaml_path =
       test_dir / "../../examples/one_charge_sensor_quantum_dot_device.yaml";
-  int ret = run_validator("../validate-quantum-dot-config",
+  int ret = run_validator("validate-quantum-dot-config",
                           yaml_path.lexically_normal().string());
   EXPECT_EQ(ret, 0) << "Validation failed for quantum dot device config";
 }
@@ -96,7 +96,7 @@ TEST(SchemaValidatorTest, GenerateAndValidateAgilentInstrumentConfiguration) {
       test_dir / "../../examples/instrument-apis/agi_34401a.yaml";
   std::string api_path = expand_template(yaml_path.lexically_normal().string());
   auto config_path = generate_configuration(api_path);
-  auto ret2 = run_validator("../validate-instrument-config", config_path);
+  auto ret2 = run_validator("validate-instrument-config", config_path);
   EXPECT_EQ(ret2, 0)
       << "Validation failed for generated Agilent instrument configuration";
 }
@@ -107,7 +107,7 @@ TEST(SchemaValidatorTest, GenerateAndValidateKeysightInstrumentConfiguration) {
       test_dir / "../../examples/instrument-apis/dso9254a.yaml.tmpl";
   std::string api_path = expand_template(yaml_path.lexically_normal().string());
   auto config_path = generate_configuration(api_path);
-  auto ret2 = run_validator("../validate-instrument-config", config_path);
+  auto ret2 = run_validator("validate-instrument-config", config_path);
   EXPECT_EQ(ret2, 0)
       << "Validation failed for generated Keysight instrument configuration";
 }

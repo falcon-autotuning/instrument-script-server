@@ -1,11 +1,11 @@
 # Instrument Server CLI Usage Guide
 
-Complete guide to using the `instrument-server` command-line interface.
+Complete guide to using the `instrument-script-server` command-line interface.
 
 ## Table of Contents
 
 <!--toc: start-->
-- [Instrument Server CLI Usage Guide](#instrument-server-cli-usage-guide)
+- [Instrument Server CLI Usage Guide](#instrument-script-server-cli-usage-guide)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
     - [Command Categories](#command-categories)
@@ -49,11 +49,11 @@ Complete guide to using the `instrument-server` command-line interface.
 
 ## Overview
 
-The `instrument-server` command provides a unified interface for all instrument server operations.
+The `instrument-script-server` command provides a unified interface for all instrument server operations.
 All commands follow the pattern:
 
 ```bash
-instrument-server <command> [subcommand] [options]
+instrument-script-server <command> [subcommand] [options]
 ```
 
 ### Command Categories
@@ -81,17 +81,17 @@ The server daemon is a background process that manages the instrument registry a
 ### Start Daemon
 
 ```bash
-instrument-server daemon start [--log-level <level>]
+instrument-script-server daemon start [--log-level <level>]
 ```
 
 **Example:**
 
 ```bash
 # Start with default logging (info)
-instrument-server daemon start
+instrument-script-server daemon start
 
 # Start with debug logging
-instrument-server daemon start --log-level debug
+instrument-script-server daemon start --log-level debug
 ```
 
 **Output:**
@@ -106,19 +106,19 @@ Daemon running in background
 - Must be running before any instrument operations
 - Only one daemon instance can run at a time
 - Daemon persists until explicitly stopped
-- On Linux:  PID file stored in `/tmp/instrument-server-$USER/server. pid`
+- On Linux:  PID file stored in `/tmp/instrument-script-server-$USER/server. pid`
 - On Windows: PID file stored in `%LOCALAPPDATA%\InstrumentServer\server.pid`
 
 ### Stop Daemon
 
 ```bash
-instrument-server daemon stop
+instrument-script-server daemon stop
 ```
 
 **Example:**
 
 ```bash
-instrument-server daemon stop
+instrument-script-server daemon stop
 ```
 
 **Output:**
@@ -137,20 +137,20 @@ Server daemon stopped
 ### Check Daemon Status
 
 ```bash
-instrument-server daemon status
+instrument-script-server daemon status
 ```
 
 **Example:**
 
 ```bash
-instrument-server daemon status
+instrument-script-server daemon status
 ```
 
 **Output (if running):**
 
 ```
 Server daemon is running (PID: 12345)
-Runtime directory: /tmp/instrument-server-user/server. pid
+Runtime directory: /tmp/instrument-script-server-user/server. pid
 ```
 
 **Output (if not running):**
@@ -169,7 +169,7 @@ Server daemon is not running
 ### Start Instrument
 
 ```bash
-instrument-server start <config> [--plugin <path>] [--log-level <level>]
+instrument-script-server start <config> [--plugin <path>] [--log-level <level>]
 ```
 
 **Arguments:**
@@ -182,18 +182,18 @@ instrument-server start <config> [--plugin <path>] [--log-level <level>]
 
 ```bash
 # Start instrument with discovered plugin
-instrument-server start configs/dmm1.yaml
+instrument-script-server start configs/dmm1.yaml
 
 # Start with custom plugin
-instrument-server start configs/custom_instrument.yaml --plugin ./my_plugin.so
+instrument-script-server start configs/custom_instrument.yaml --plugin ./my_plugin.so
 
 # Start with debug logging
-instrument-server start configs/dac1.yaml --log-level debug
+instrument-script-server start configs/dac1.yaml --log-level debug
 
 # Start multiple instruments
-instrument-server start configs/dac1.yaml
-instrument-server start configs/dac2.yaml
-instrument-server start configs/dmm1.yaml
+instrument-script-server start configs/dac1.yaml
+instrument-script-server start configs/dac2.yaml
+instrument-script-server start configs/dmm1.yaml
 ```
 
 **Output:**
@@ -211,7 +211,7 @@ Started instrument:  DMM1
 ### Stop Instrument
 
 ```bash
-instrument-server stop <name>
+instrument-script-server stop <name>
 ```
 
 **Arguments:**
@@ -221,7 +221,7 @@ instrument-server stop <name>
 **Example:**
 
 ```bash
-instrument-server stop DMM1
+instrument-script-server stop DMM1
 ```
 
 **Output:**
@@ -233,7 +233,7 @@ Stopped instrument: DMM1
 ### Check Instrument Status
 
 ```bash
-instrument-server status <name>
+instrument-script-server status <name>
 ```
 
 **Arguments:**
@@ -243,7 +243,7 @@ instrument-server status <name>
 **Example:**
 
 ```bash
-instrument-server status DMM1
+instrument-script-server status DMM1
 ```
 
 **Output:**
@@ -268,13 +268,13 @@ Instrument:  DMM1
 ### List All Instruments
 
 ```bash
-instrument-server list
+instrument-script-server list
 ```
 
 **Example:**
 
 ```bash
-instrument-server list
+instrument-script-server list
 ```
 
 **Output:**
@@ -300,7 +300,7 @@ Run Lua measurement scripts that control running instruments.
 ### Measure Command
 
 ```bash
-instrument-server measure <script> [--globals <string>] [--block_inject_globals] [--context_schema_version <x.y.z>] [--json] [--log-level <level>] 
+instrument-script-server measure <script> [--globals <string>] [--block_inject_globals] [--context_schema_version <x.y.z>] [--json] [--log-level <level>] 
 ```
 
 **Arguments:**
@@ -323,16 +323,16 @@ instrument-server measure <script> [--globals <string>] [--block_inject_globals]
 
 ```bash
 # Run measurement script with text output
-instrument-server measure scripts/iv_curve.lua
+instrument-script-server measure scripts/iv_curve.lua
 
 # Get results in JSON format for programmatic parsing
-instrument-server measure scripts/iv_curve.lua --json
+instrument-script-server measure scripts/iv_curve.lua --json
 
 # With debug logging
-instrument-server measure scripts/test.lua --log-level debug
+instrument-script-server measure scripts/test.lua --log-level debug
 
 # Save JSON output to file
-instrument-server measure scripts/sweep.lua --json > results.json
+instrument-script-server measure scripts/sweep.lua --json > results.json
 ```
 
 #### Automatic Result Collection
@@ -382,7 +382,7 @@ For large data buffers (waveforms, large arrays), the output shows a reference w
 Use `--json` flag to get structured output for automation and data processing:
 
 ```bash
-instrument-server measure script.lua --json
+instrument-script-server measure script.lua --json
 ```
 
 Output structure:
@@ -636,7 +636,7 @@ with tempfile.NamedTemporaryFile(mode='w', suffix='.lua', delete=False) as f:
 
 # Run measurement
 result = subprocess.run(
-    ['instrument-server', 'measure', script_path],
+    ['instrument-script-server', 'measure', script_path],
     capture_output=True,
     text=True
 )
@@ -657,7 +657,7 @@ Test individual instrument commands without writing full scripts.
 ### Test Command
 
 ```bash
-instrument-server test <config> <verb> [param=value ... ] [--plugin <path>] [--log-level <level>]
+instrument-script-server test <config> <verb> [param=value ... ] [--plugin <path>] [--log-level <level>]
 ```
 
 **Arguments:**
@@ -672,16 +672,16 @@ instrument-server test <config> <verb> [param=value ... ] [--plugin <path>] [--l
 
 ```bash
 # Test identity query
-instrument-server test configs/dmm1.yaml IDN
+instrument-script-server test configs/dmm1.yaml IDN
 
 # Test with parameters
-instrument-server test configs/dac1.yaml SET_VOLTAGE channel=1 voltage=5.0
+instrument-script-server test configs/dac1.yaml SET_VOLTAGE channel=1 voltage=5.0
 
 # Test with custom plugin
-instrument-server test configs/custom. yaml MEASURE --plugin ./my_plugin.so
+instrument-script-server test configs/custom. yaml MEASURE --plugin ./my_plugin.so
 
 # Test with debug logging
-instrument-server test configs/scope1.yaml TRIGGER --log-level debug
+instrument-script-server test configs/scope1.yaml TRIGGER --log-level debug
 ```
 
 **Output:**
@@ -709,13 +709,13 @@ Discover and manage instrument driver plugins.
 ### List Available Plugins
 
 ```bash
-instrument-server plugins
+instrument-script-server plugins
 ```
 
 **Example:**
 
 ```bash
-instrument-server plugins
+instrument-script-server plugins
 ```
 
 **Output:**
@@ -741,7 +741,7 @@ Total:  3 plugin(s)
 ### Discover Plugins
 
 ```bash
-instrument-server discover [path1] [path2] ...
+instrument-script-server discover [path1] [path2] ...
 ```
 
 **Arguments:**
@@ -752,10 +752,10 @@ instrument-server discover [path1] [path2] ...
 
 ```bash
 # Discover in default locations
-instrument-server discover
+instrument-script-server discover
 
 # Discover in custom directories
-instrument-server discover /opt/custom-plugins ./local-plugins
+instrument-script-server discover /opt/custom-plugins ./local-plugins
 ```
 
 **Output:**
@@ -788,20 +788,20 @@ Validate configuration files against JSON schemas before using them.
 
 ```bash
 # Validate instrument configuration
-instrument-server validate config <file>
+instrument-script-server validate config <file>
 
 # Validate API definition
-instrument-server validate api <file>
+instrument-script-server validate api <file>
 ```
 
 **Examples:**
 
 ```bash
 # Validate instrument configuration
-instrument-server validate config examples/instrument-configurations/agi_34401_config.yaml
+instrument-script-server validate config examples/instrument-configurations/agi_34401_config.yaml
 
 # Validate API definition
-instrument-server validate api examples/instrument-apis/agi_34401a.yaml
+instrument-script-server validate api examples/instrument-apis/agi_34401a.yaml
 ```
 
 **Output (success):**
@@ -882,125 +882,125 @@ grep "DMM1" instrument_server.log
 
 ```bash
 # 1. Start daemon
-instrument-server daemon start
+instrument-script-server daemon start
 
 # 2. Start instruments
-instrument-server start configs/dac1.yaml
-instrument-server start configs/dmm1.yaml
+instrument-script-server start configs/dac1.yaml
+instrument-script-server start configs/dmm1.yaml
 
 # 3.  Verify instruments are running
-instrument-server list
+instrument-script-server list
 
 # 4. Run measurement
-instrument-server measure scripts/iv_curve.lua
+instrument-script-server measure scripts/iv_curve.lua
 
 # 5. Check instrument status
-instrument-server status DMM1
+instrument-script-server status DMM1
 
 # 6. Stop instruments
-instrument-server stop DAC1
-instrument-server stop DMM1
+instrument-script-server stop DAC1
+instrument-script-server stop DMM1
 
 # 7. Stop daemon
-instrument-server daemon stop
+instrument-script-server daemon stop
 ```
 
 ### Example 2: Development Workflow
 
 ```bash
 # 1. Start daemon with debug logging
-instrument-server daemon start --log-level debug
+instrument-script-server daemon start --log-level debug
 
 # 2. Validate configuration before using
-instrument-server validate config configs/test_instrument.yaml
-instrument-server validate api apis/test_api.yaml
+instrument-script-server validate config configs/test_instrument.yaml
+instrument-script-server validate api apis/test_api.yaml
 
 # 3. Test instrument with custom plugin
-instrument-server test configs/test_instrument.yaml IDN --plugin ./my_plugin. so
+instrument-script-server test configs/test_instrument.yaml IDN --plugin ./my_plugin. so
 
 # If test succeeds, start instrument
-instrument-server start configs/test_instrument.yaml --plugin ./my_plugin.so
+instrument-script-server start configs/test_instrument.yaml --plugin ./my_plugin.so
 
 # 4. Run test measurement with debug logging
-instrument-server measure scripts/test_measurement.lua --log-level debug
+instrument-script-server measure scripts/test_measurement.lua --log-level debug
 
 # 5. Check logs for issues
 tail -f instrument_server.log
 tail -f worker_TestInstrument.log
 
 # 6. Stop and restart instrument if needed
-instrument-server stop TestInstrument
-instrument-server start configs/test_instrument.yaml --plugin ./my_plugin.so
+instrument-script-server stop TestInstrument
+instrument-script-server start configs/test_instrument.yaml --plugin ./my_plugin.so
 
 # 7. Cleanup
-instrument-server daemon stop
+instrument-script-server daemon stop
 ```
 
 ### Example 3: Multi-Instrument Setup
 
 ```bash
 # 1. Start daemon
-instrument-server daemon start
+instrument-script-server daemon start
 
 # 2. Discover available plugins
-instrument-server plugins
+instrument-script-server plugins
 
 # 3. Start multiple instruments
-instrument-server start configs/dac1.yaml
-instrument-server start configs/dac2.yaml
-instrument-server start configs/dac3.yaml
-instrument-server start configs/dmm1.yaml
-instrument-server start configs/dmm2.yaml
-instrument-server start configs/scope1.yaml
+instrument-script-server start configs/dac1.yaml
+instrument-script-server start configs/dac2.yaml
+instrument-script-server start configs/dac3.yaml
+instrument-script-server start configs/dmm1.yaml
+instrument-script-server start configs/dmm2.yaml
+instrument-script-server start configs/scope1.yaml
 
 # 4. Verify all running
-instrument-server list
+instrument-script-server list
 
 # 5. Check individual status
 for inst in DAC1 DAC2 DAC3 DMM1 DMM2 Scope1; do
     echo "=== $inst ==="
-    instrument-server status $inst
+    instrument-script-server status $inst
 done
 
 # 6. Run complex measurement with parallel execution
-instrument-server measure scripts/stability_diagram.lua
+instrument-script-server measure scripts/stability_diagram.lua
 
 # 7. Selective shutdown
-instrument-server stop Scope1
+instrument-script-server stop Scope1
 
 # 8. Continue with remaining instruments
-instrument-server measure scripts/final_measurement.lua
+instrument-script-server measure scripts/final_measurement.lua
 
 # 9. Complete shutdown
-instrument-server daemon stop
+instrument-script-server daemon stop
 ```
 
 ### Example 4: Troubleshooting
 
 ```bash
 # 1. Check daemon status
-instrument-server daemon status
+instrument-script-server daemon status
 
 # If not running, start it
 if [ $? -ne 0 ]; then
-    instrument-server daemon start
+    instrument-script-server daemon start
 fi
 
 # 2. Validate configuration files
-instrument-server validate config configs/problematic_instrument.yaml
-instrument-server validate api apis/problematic_api.yaml
+instrument-script-server validate config configs/problematic_instrument.yaml
+instrument-script-server validate api apis/problematic_api.yaml
 
 # 3. Try starting instrument with debug logging
-instrument-server start configs/problematic_instrument.yaml --log-level debug
+instrument-script-server start configs/problematic_instrument.yaml --log-level debug
 
 # 4. Check logs immediately
 tail -20 instrument_server.log
 
 # 5. Test specific command
-instrument-server test configs/problematic_instrument.yaml IDN
+instrument-script-server test configs/problematic_instrument.yaml IDN
 
 # 6. If plugin issue, try with explicit plugin path
-instrument-server start configs/problematic_instrument.yaml \
+instrument-script-server start configs/problematic_instrument.yaml \
     --plugin /usr/local/lib/instrument-plugins/visa_builtin.so \
     --log-level debug
 
@@ -1008,11 +1008,11 @@ instrument-server start configs/problematic_instrument.yaml \
 tail -f worker_ProblematicInstrument.log
 
 # 8. Check IPC issues (Linux)
-ls -la /tmp/instrument-server-$USER/
+ls -la /tmp/instrument-script-server-$USER/
 
 # 9. Clean up if needed
-instrument-server daemon stop
-rm -rf /tmp/instrument-server-$USER/
+instrument-script-server daemon stop
+rm -rf /tmp/instrument-script-server-$USER/
 ```
 
 ## Exit Codes
@@ -1029,23 +1029,23 @@ All commands return exit codes for scripting:
 ```bash
 #!/bin/bash
 
-instrument-server daemon start
+instrument-script-server daemon start
 if [ $? -ne 0 ]; then
     echo "Failed to start daemon"
     exit 1
 fi
 
-instrument-server start configs/dmm1.yaml
+instrument-script-server start configs/dmm1.yaml
 if [ $? -ne 0 ]; then
     echo "Failed to start DMM1"
-    instrument-server daemon stop
+    instrument-script-server daemon stop
     exit 1
 fi
 
-instrument-server measure scripts/measurement.lua
+instrument-script-server measure scripts/measurement.lua
 result=$? 
 
-instrument-server daemon stop
+instrument-script-server daemon stop
 exit $result
 ```
 

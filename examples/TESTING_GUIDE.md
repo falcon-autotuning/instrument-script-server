@@ -70,14 +70,14 @@ If you have VISA-compatible instruments:
 
 3. Start the daemon:
    ```bash
-   instrument-server daemon start
+   instrument-script-server daemon start
    ```
    
    (Keep this running in one terminal)
 
 4. In another terminal, start your instrument:
    ```bash
-   instrument-server start mydmm.yaml
+   instrument-script-server start mydmm.yaml
    ```
 
 5. Create a simple measurement script:
@@ -97,7 +97,7 @@ If you have VISA-compatible instruments:
 
 6. Run the measurement:
    ```bash
-   instrument-server measure my_measurement.lua
+   instrument-script-server measure my_measurement.lua
    ```
 
 ## Testing Real Workflow Components
@@ -108,10 +108,10 @@ Even without hardware, you can test these components:
 
 ```bash
 # Validate an instrument configuration
-instrument-server validate config examples/instrument-configurations/agi_34401_config.yaml
+instrument-script-server validate config examples/instrument-configurations/agi_34401_config.yaml
 
 # Validate an API definition
-instrument-server validate api examples/instrument-apis/agi_34401a.yaml
+instrument-script-server validate api examples/instrument-apis/agi_34401a.yaml
 ```
 
 ### 2. Script Syntax
@@ -126,16 +126,16 @@ lua -l examples/scripts/dc_getset_example.lua
 
 ```bash
 # Start daemon
-instrument-server daemon start
+instrument-script-server daemon start
 
 # In another terminal:
-instrument-server daemon status
+instrument-script-server daemon status
 
 # Check for any running instruments (will be empty without hardware)
-instrument-server list
+instrument-script-server list
 
 # Stop daemon
-instrument-server daemon stop
+instrument-script-server daemon stop
 ```
 
 ## What Each Component Does
@@ -144,17 +144,17 @@ From the README workflow:
 
 ```bash
 # 1. Start server daemon - manages all instruments and workers
-instrument-server daemon start
+instrument-script-server daemon start
 
 # 2. Start instruments - loads configuration and creates worker processes
-instrument-server start configs/instrument1.yaml
-instrument-server start configs/instrument2.yaml
+instrument-script-server start configs/instrument1.yaml
+instrument-script-server start configs/instrument2.yaml
 
 # 3. Run measurement - executes Lua script against running instruments
-instrument-server measure my_measurement.lua
+instrument-script-server measure my_measurement.lua
 
 # 4. JSON output - structured output for programmatic use
-instrument-server measure my_measurement.lua --json
+instrument-script-server measure my_measurement.lua --json
 ```
 
 ## Example Command Outputs
@@ -168,7 +168,7 @@ Running Instruments:
 
 ### Status Command:
 ```
-instrument-server status DMM1
+instrument-script-server status DMM1
 ```
 Shows connection state, last command, errors, etc.
 

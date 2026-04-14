@@ -1,4 +1,4 @@
-#include "instrument-server/ipc/DataBufferManager.hpp"
+#include "instrument-script-server/ipc/DataBufferManager.hpp"
 
 #include <algorithm>
 #include <filesystem>

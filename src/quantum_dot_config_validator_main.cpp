@@ -1,5 +1,5 @@
 
-#include <instrument-server/SchemaValidator.hpp>
+#include <instrument-script-server/SchemaValidator.hpp>
 #include <iostream>
 #include <yaml-cpp/yaml.h>
 using namespace instserver;

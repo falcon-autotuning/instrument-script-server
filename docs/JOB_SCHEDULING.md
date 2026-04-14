@@ -102,7 +102,7 @@ Response:
 ### Via C++ API
 
 ```cpp
-#include <instrument-server/server/JobManager.hpp>
+#include <instrument-script-server/server/JobManager.hpp>
 
 using namespace instserver::server;
 
@@ -117,7 +117,7 @@ std::string job_id = JobManager::instance().submit_measure(
 The CLI `measure` command blocks by default. For non-blocking: 
 
 ```bash
-instrument-server measure script.lua &
+instrument-script-server measure script.lua &
 JOB_PID=$! 
 
 # Query via RPC for status

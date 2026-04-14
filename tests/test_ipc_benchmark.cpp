@@ -1,4 +1,4 @@
-#include "instrument-server/ipc/SharedQueue.hpp"
+#include "instrument-script-server/ipc/SharedQueue.hpp"
 
 #include <atomic>
 #include <chrono>

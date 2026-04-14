@@ -1,5 +1,5 @@
 // src/ipc/WorkerProtocol. cpp
-#include "instrument-server/ipc/WorkerProtocol.hpp"
+#include "instrument-script-server/ipc/WorkerProtocol.hpp"
 
 namespace instserver {
 namespace ipc {

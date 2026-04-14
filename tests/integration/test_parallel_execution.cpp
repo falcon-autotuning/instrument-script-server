@@ -1,5 +1,5 @@
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/server/SyncCoordinator.hpp"
 #include <algorithm>
 #include <gtest/gtest.h>
 #include <spdlog/common.h>

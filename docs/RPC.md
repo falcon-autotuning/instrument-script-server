@@ -22,7 +22,7 @@ The HTTP RPC interface provides programmatic access to all server operations wit
 
 ```bash
 export INSTRUMENT_SCRIPT_SERVER_RPC_PORT=8555
-instrument-server daemon start
+instrument-script-server daemon start
 ```
 
 **Set programmatically (C++):**

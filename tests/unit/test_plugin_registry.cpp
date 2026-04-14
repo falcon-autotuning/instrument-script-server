@@ -1,5 +1,5 @@
 #include "PlatformPaths.hpp"
-#include "instrument-server/plugin/PluginRegistry.hpp"
+#include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include <algorithm>
 #include <filesystem>
 #include <gtest/gtest.h>
@@ -21,19 +21,16 @@ TEST_F(PluginRegistryTest, Singleton) {
 }
 
 TEST_F(PluginRegistryTest, DiscoverPlugins) {
-  auto search_paths = get_plugin_search_paths();
+  auto plugin_path = get_test_plugin_dir();
+  ASSERT_TRUE(std::filesystem::exists(plugin_path))
+      << "Plugins not found at: " << plugin_path;
 
-  // Convert to string vector for the API
-  std::vector<std::string> path_strings;
-  for (const auto &p : search_paths) {
-    path_strings.push_back(p.string());
-  }
-
+  // Use the directory containing the plugin for discovery
+  std::vector<std::string> path_strings = {plugin_path.parent_path().string()};
   registry_->discover_plugins(path_strings);
-
   auto protocols = registry_->list_protocols();
-  // Should find at least the mock plugins if they exist
-  EXPECT_GE(protocols.size(), 0);
+  // Should find at least the mock plugin protocol if it exists
+  EXPECT_GE(protocols.size(), 1);
 }
 
 TEST_F(PluginRegistryTest, RegisterPlugin) {

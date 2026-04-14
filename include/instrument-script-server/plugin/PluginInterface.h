@@ -1,7 +1,7 @@
 #ifndef INSTRUMENT_SCRIPT_PLUGIN_INTERFACE_H
 #define INSTRUMENT_SCRIPT_PLUGIN_INTERFACE_H
 
-#include "instrument-server/export.h"
+#include "instrument-script-server/export.h"
 
 #include <stddef.h>
 

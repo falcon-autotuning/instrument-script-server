@@ -1,4 +1,4 @@
-#include "instrument-server/server/ApiRefResolver.hpp"
+#include "instrument-script-server/server/ApiRefResolver.hpp"
 
 #include <filesystem>
 #include <stdexcept>

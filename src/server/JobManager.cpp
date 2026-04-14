@@ -1,8 +1,8 @@
-#include "instrument-server/server/JobManager.hpp"
-#include "instrument-server/Logger.hpp"
-#include "instrument-server/server/RuntimeContext.hpp"
-#include "instrument-server/server/CommandHandlers.hpp"
-#include "instrument-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/server/JobManager.hpp"
+#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/server/RuntimeContext.hpp"
+#include "instrument-script-server/server/CommandHandlers.hpp"
+#include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include <algorithm>
 #include <chrono>
 #include <sol/sol.hpp>

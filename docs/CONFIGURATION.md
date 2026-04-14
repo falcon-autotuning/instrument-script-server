@@ -76,7 +76,7 @@ Resolution rules
 1. If `api_ref` is a `file://` URI, the `file://` scheme is stripped and the remainder is treated as a file-system path (special handling exists for typical Windows `file:///C:/...` forms).
 2. If the resulting path is absolute, it is used as-is. The server requires that the file exists.
 3. If the resulting path is relative, the server attempts to resolve it in two places (in this order):
-   a. The directory containing the instrument configuration file (i.e., the parent directory of the configuration file you passed to `instrument-server start ...`). This is the preferred/primary location and lets you keep the API file next to its configuration.
+   a. The directory containing the instrument configuration file (i.e., the parent directory of the configuration file you passed to `instrument-script-server start ...`). This is the preferred/primary location and lets you keep the API file next to its configuration.
    b. If (a) does not exist, the server falls back to resolving the relative path against the server process current working directory (cwd). This preserves backward compatibility with existing workflows and test expectations that used repo-root/cwd-relative paths.
 4. If the file cannot be found in either location, instrument creation fails with a clear error indicating the preferred (config-relative) path that was checked, e.g.:
 
@@ -90,7 +90,7 @@ Notes & best practices
 
 - For reproducibility, prefer placing the API definition in the same repo/directory tree as the instrument configuration and use a relative path (this makes configurations portable between machines).
 - If you distribute API definitions as part of a system installation, use absolute paths (or file:// URIs) to the installed location.
-- The `instrument-server validate api <file>` command is available to validate an API definition YAML independently; use this before starting instruments to catch schema errors early.
+- The `instrument-script-server validate api <file>` command is available to validate an API definition YAML independently; use this before starting instruments to catch schema errors early.
 - Error messages from the server are intentionally informative; when a referenced API cannot be found the server will log the attempted config-relative path to aid debugging.
 
 Examples
@@ -760,10 +760,10 @@ The server includes built-in validation tools to check your configuration files 
 
 ```bash
 # Validate an instrument configuration
-instrument-server validate config path/to/config.yaml
+instrument-script-server validate config path/to/config.yaml
 
 # Validate an API definition
-instrument-server validate api path/to/api.yaml
+instrument-script-server validate api path/to/api.yaml
 ```
 
 ### Common Validation Errors
