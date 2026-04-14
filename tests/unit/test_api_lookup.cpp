@@ -14,8 +14,11 @@ protected:
     // Load plugins first
     PluginTestFixture::SetUp();
     registry_ = &InstrumentRegistry::instance();
-
     test_data_dir_ = std::filesystem::current_path() / "tests" / "data";
+    config_path_ = test_data_dir_ / "mock_instrument1.yaml";
+    if (!std::filesystem::exists(config_path_)) {
+      GTEST_SKIP() << "Config not found at: " << config_path_;
+    }
 
     InstrumentLogger::instance().shutdown();
     auto tmp = std::filesystem::temp_directory_path();
@@ -30,16 +33,11 @@ protected:
 
   InstrumentRegistry *registry_;
   std::filesystem::path test_data_dir_;
+  std::filesystem::path config_path_;
 };
 
 TEST_F(APILookupTest, GetInstrumentMetadata) {
-  auto config_path = test_data_dir_ / "mock_instrument1.yaml";
-
-  if (!std::filesystem::exists(config_path)) {
-    GTEST_SKIP() << "Config not found";
-  }
-
-  ASSERT_TRUE(registry_->create_instrument(config_path.string()));
+  ASSERT_TRUE(registry_->create_instrument(config_path_.string()));
 
   auto metadata = registry_->get_instrument_metadata("MockInstrument1");
   ASSERT_TRUE(metadata.has_value());
@@ -50,13 +48,7 @@ TEST_F(APILookupTest, GetInstrumentMetadata) {
 }
 
 TEST_F(APILookupTest, CommandExpectsResponse) {
-  auto config_path = test_data_dir_ / "mock_instrument1.yaml";
-
-  if (!std::filesystem::exists(config_path)) {
-    GTEST_SKIP() << "Config not found";
-  }
-
-  ASSERT_TRUE(registry_->create_instrument(config_path.string()));
+  ASSERT_TRUE(registry_->create_instrument(config_path_.string()));
 
   // Commands with non-empty outputs array expect response
   EXPECT_TRUE(registry_->command_expects_response("MockInstrument1", "IDN"));
@@ -85,13 +77,7 @@ TEST_F(APILookupTest, CommandExpectsResponse) {
 }
 
 TEST_F(APILookupTest, GetResponseType) {
-  auto config_path = test_data_dir_ / "mock_instrument1.yaml";
-
-  if (!std::filesystem::exists(config_path)) {
-    GTEST_SKIP() << "Config not found";
-  }
-
-  ASSERT_TRUE(registry_->create_instrument(config_path.string()));
+  ASSERT_TRUE(registry_->create_instrument(config_path_.string()));
 
   // Check response types from io definitions
   auto type_measure =
@@ -126,13 +112,7 @@ TEST_F(APILookupTest, GetResponseType) {
 }
 
 TEST_F(APILookupTest, UnknownCommand) {
-  auto config_path = test_data_dir_ / "mock_instrument1.yaml";
-
-  if (!std::filesystem::exists(config_path)) {
-    GTEST_SKIP() << "Config not found";
-  }
-
-  ASSERT_TRUE(registry_->create_instrument(config_path.string()));
+  ASSERT_TRUE(registry_->create_instrument(config_path_.string()));
 
   // Unknown command should default to no response expected
   EXPECT_FALSE(
@@ -150,13 +130,7 @@ TEST_F(APILookupTest, UnknownInstrument) {
 }
 
 TEST_F(APILookupTest, IOOutputsStructure) {
-  auto config_path = test_data_dir_ / "mock_instrument1.yaml";
-
-  if (!std::filesystem::exists(config_path)) {
-    GTEST_SKIP() << "Config not found";
-  }
-
-  ASSERT_TRUE(registry_->create_instrument(config_path.string()));
+  ASSERT_TRUE(registry_->create_instrument(config_path_.string()));
 
   auto metadata = registry_->get_instrument_metadata("MockInstrument1");
   ASSERT_TRUE(metadata.has_value());
