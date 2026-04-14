@@ -236,28 +236,24 @@ if(HAVE_VISA)
                                                           "visa_builtin")
 endif()
 
-# Tools
-if(BUILD_TOOLS)
-  # Validators
-  add_executable(validate-instrument-api src/instrument_api_validator_main.cpp)
-  target_link_libraries(validate-instrument-api PRIVATE instrument-script-server-core)
+add_executable(validate-instrument-api src/instrument_api_validator_main.cpp)
+target_link_libraries(validate-instrument-api PRIVATE instrument-script-server-core)
 
-  add_executable(validate-instrument-config
+add_executable(validate-instrument-config
                  src/instrument_config_validator_main.cpp)
-  target_link_libraries(validate-instrument-config
+target_link_libraries(validate-instrument-config
                         PRIVATE instrument-script-server-core)
 
-  add_executable(validate-quantum-dot-config
+add_executable(validate-quantum-dot-config
                  src/quantum_dot_config_validator_main.cpp)
-  target_link_libraries(validate-quantum-dot-config
+target_link_libraries(validate-quantum-dot-config
                         PRIVATE instrument-script-server-core)
-  add_executable(template-expander src/template_expander.cpp)
-  target_link_libraries(template-expander PRIVATE instrument-script-server-core)
-  add_executable(generate-instrument-config
+add_executable(template-expander src/template_expander.cpp)
+target_link_libraries(template-expander PRIVATE instrument-script-server-core)
+add_executable(generate-instrument-config
                  src/instrument_configuration_generator.cpp)
-  target_link_libraries(generate-instrument-config
+target_link_libraries(generate-instrument-config
                         PRIVATE instrument-script-server-core)
-endif()
 
 # Example plugins (FIXED: only build if InstrumentServer is already installed OR
 # during same build)
@@ -275,24 +271,33 @@ if(BUILD_TESTS)
   add_subdirectory(tests)
 endif()
 
-# Installation
-install(TARGETS instrument-script-server instrument-worker RUNTIME DESTINATION bin)
+# ── Install ───────────────────────────────────────────────────────────────────
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
-if(BUILD_TOOLS)
-  install(TARGETS validate-instrument-api validate-instrument-config
+install(TARGETS instrument-script-server-core
+  EXPORT instrument-script-server-targets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  INCLUDES DESTINATION include
+)
+
+install(TARGETS instrument-script-server instrument-worker
+                  validate-instrument-api validate-instrument-config
                   validate-quantum-dot-config template-expander
                   generate-instrument-config RUNTIME DESTINATION bin)
-endif()
 
 install(
-  DIRECTORY include/
-  DESTINATION include
+  DIRECTORY include/instrument-script-server
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING
-  PATTERN "*.h"
-  PATTERN "*.hpp")
+    PATTERN "*.hpp"
+    PATTERN "*.h"
+)
 
 if(HAVE_VISA)
-  install(TARGETS visa_builtin LIBRARY DESTINATION lib/instrument-plugins)
+  install(TARGETS visa_builtin
+    LIBRARY DESTINATION lib)
 endif()
 
 install(
@@ -307,36 +312,19 @@ install(
   FILES_MATCHING
   PATTERN "*.md")
 
-# Export targets for use by external plugins
-install(
-  TARGETS instrument-script-server-core
-  EXPORT InstrumentServerTargets
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  INCLUDES
-  DESTINATION include)
-
-install(
-  EXPORT InstrumentServerTargets
-  FILE InstrumentServerTargets.cmake
-  NAMESPACE InstrumentServer::
-  DESTINATION lib/cmake/InstrumentServer)
-
-# Generate CMake config files
-include(CMakePackageConfigHelpers)
-
-write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/instrument-script-server-config-version.cmake"
-  VERSION ${PROJECT_VERSION}
-  COMPATIBILITY AnyNewerVersion)
+install(EXPORT instrument-script-server-targets
+  FILE      instrument-script-server-targets.cmake
+  NAMESPACE instrument-script-server::
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/instrument-script-server
+)
 
 configure_package_config_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/instrument-script-server-config.cmake.in"
+  cmake/instrument-script-server-config.cmake.in
   "${CMAKE_CURRENT_BINARY_DIR}/instrument-script-server-config.cmake"
-  INSTALL_DESTINATION lib/cmake/InstrumentServer
-  PATH_VARS CMAKE_INSTALL_PREFIX)
-
-install(
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/instrument-script-server-config.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/instrument-script-server-config-version.cmake"
-  DESTINATION lib/cmake/InstrumentServer)
+  INSTALL_DESTINATION ${CMAKE_INSTALL_DATADIR}/instrument-script-server
+)
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/instrument-script-server-config.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/instrument-script-server-config-version.cmake"
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/instrument-script-server
+)

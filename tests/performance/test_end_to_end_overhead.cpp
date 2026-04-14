@@ -222,7 +222,7 @@ connection:
   }
 }
 
-TEST_F(EndToEndPerformanceTest, DISABLED_ParallelExecutionOverhead) {
+TEST_F(EndToEndPerformanceTest, ParallelExecutionOverhead) {
   // Measure overhead of parallel execution coordination
   auto &registry = InstrumentRegistry::instance();
 
@@ -254,10 +254,10 @@ connection:
 
   for (int i = 0; i < num_parallel_blocks; i++) {
     lua.script(R"(
-      context:parallel_start()
-      context:call('MockInstrument1.IDN')
-      context:call('MockInstrument2.IDN')
-      context:parallel_end()
+		  context:parallel(function()
+        context:call('MockInstrument1.IDN')
+        context:call('MockInstrument2.IDN')
+      end)
     )");
   }
 
