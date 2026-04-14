@@ -16,7 +16,7 @@ std::string expand_template(const std::string &tmpl_path) {
   // Create a temp file for the expanded output
   std::string tmp_dir = fs::temp_directory_path().string();
   std::string expanded_path = tmp_dir + "/dso9254a_expanded.yaml";
-  std::string cmd = "template-expander " + tmpl_path + " " + expanded_path;
+  std::string cmd = "../template-expander " + tmpl_path + " " + expanded_path;
   int ret = std::system(cmd.c_str());
   if (ret != 0) {
     throw std::runtime_error("Failed to expand template: " + tmpl_path);
@@ -29,8 +29,8 @@ std::string generate_configuration(const std::string &tmpl_path) {
   namespace fs = std::filesystem;
   std::string tmp_dir = fs::temp_directory_path().string();
   std::string expanded_path = tmp_dir + "/dso9254a_config.yaml";
-  std::string cmd =
-      "generate-instrument-config " + tmpl_path + " " + expanded_path + " 2>&1";
+  std::string cmd = "../generate-instrument-config " + tmpl_path + " " +
+                    expanded_path + " 2>&1";
   FILE *pipe = popen(cmd.c_str(), "r");
   if (!pipe) {
     throw std::runtime_error("popen() failed!");
@@ -48,57 +48,66 @@ std::string generate_configuration(const std::string &tmpl_path) {
 
 // Helper to run a CLI validator tool
 int run_validator(const std::string &tool, const std::string &yaml_path) {
-#ifdef _WIN32
-  // Windows:  redirect to NUL
-  std::string cmd = tool + " " + yaml_path + " > NUL 2>&1";
-#else
-  // Linux/Unix: redirect to /dev/null
-  std::string cmd = tool + " " + yaml_path + " > /dev/null 2>&1";
-#endif
+  std::string cmd = tool + " " + yaml_path;
   return std::system(cmd.c_str());
 }
 
 TEST(SchemaValidatorTest, ValidateAgilentInstrumentDirect) {
-  int ret = run_validator("validate-instrument-api",
-                          "examples/instrument-apis/agi_34401a.yaml");
+  fs::path test_dir = fs::path(__FILE__).parent_path();
+  fs::path yaml_path =
+      test_dir / "../../examples/instrument-apis/agi_34401a.yaml";
+  int ret = run_validator("../validate-instrument-api",
+                          yaml_path.lexically_normal().string());
   EXPECT_EQ(ret, 0) << "Validation failed for Agilent instrument API";
 }
 
 TEST(SchemaValidatorTest, ValidateAgilentInstrumentWithExpander) {
-  // ... expand_template as before ...
+  fs::path test_dir = fs::path(__FILE__).parent_path();
+  fs::path yaml_path =
+      test_dir / "../../examples/instrument-apis/agi_34401a.yaml";
   std::string expanded_path =
-      expand_template("examples/instrument-apis/agi_34401a.yaml");
-  int ret = run_validator("validate-instrument-api", expanded_path);
+      expand_template(yaml_path.lexically_normal().string());
+  int ret = run_validator("../validate-instrument-api", expanded_path);
   EXPECT_EQ(ret, 0) << "Validation failed for expanded Agilent instrument API";
 }
 
 TEST(SchemaValidatorTest, ValidateKeysightInstrument) {
+  fs::path test_dir = fs::path(__FILE__).parent_path();
+  fs::path yaml_path =
+      test_dir / "../../examples/instrument-apis/dso9254a.yaml.tmpl";
   std::string expanded_path =
-      expand_template("examples/instrument-apis/dso9254a.yaml.tmpl");
-  int ret = run_validator("validate-instrument-api", expanded_path);
+      expand_template(yaml_path.lexically_normal().string());
+  int ret = run_validator("../validate-instrument-api", expanded_path);
   EXPECT_EQ(ret, 0) << "Validation failed for expanded Keysight instrument API";
 }
 
 TEST(SchemaValidatorTest, ValidateQuantumDotDeviceConfig) {
-  int ret = run_validator("validate-quantum-dot-config",
-                          "examples/one_charge_sensor_quantum_dot_device.yaml");
+  fs::path test_dir = fs::path(__FILE__).parent_path();
+  fs::path yaml_path =
+      test_dir / "../../examples/one_charge_sensor_quantum_dot_device.yaml";
+  int ret = run_validator("../validate-quantum-dot-config",
+                          yaml_path.lexically_normal().string());
   EXPECT_EQ(ret, 0) << "Validation failed for quantum dot device config";
 }
 
 TEST(SchemaValidatorTest, GenerateAndValidateAgilentInstrumentConfiguration) {
-  std::string api_path =
-      expand_template("examples/instrument-apis/agi_34401a.yaml");
+  fs::path test_dir = fs::path(__FILE__).parent_path();
+  fs::path yaml_path =
+      test_dir / "../../examples/instrument-apis/agi_34401a.yaml";
+  std::string api_path = expand_template(yaml_path.lexically_normal().string());
   auto config_path = generate_configuration(api_path);
-  auto ret2 = run_validator("validate-instrument-config", config_path);
+  auto ret2 = run_validator("../validate-instrument-config", config_path);
   EXPECT_EQ(ret2, 0)
       << "Validation failed for generated Agilent instrument configuration";
 }
 
 TEST(SchemaValidatorTest, GenerateAndValidateKeysightInstrumentConfiguration) {
-  std::string api_path =
-      expand_template("examples/instrument-apis/dso9254a.yaml.tmpl");
+  fs::path test_dir = fs::path(__FILE__).parent_path();
+  fs::path yaml_path =
+      test_dir / "../../examples/instrument-apis/dso9254a.yaml.tmpl";
+  std::string api_path = expand_template(yaml_path.lexically_normal().string());
   auto config_path = generate_configuration(api_path);
-  auto ret2 = run_validator("validate-instrument-config", config_path);
+  auto ret2 = run_validator("../validate-instrument-config", config_path);
   EXPECT_EQ(ret2, 0)
       << "Validation failed for generated Keysight instrument configuration";
 }
