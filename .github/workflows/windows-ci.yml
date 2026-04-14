@@ -1,4 +1,4 @@
-name: Windows Build and Test
+name: Windows CI
 
 on:
   push:
@@ -15,358 +15,34 @@ permissions:
 
 jobs:
   build-and-test-windows:
-    name: Build and Test on Windows
-    runs-on: windows-latest
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: bash
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - name: Install build dependencies
+        run: |
+          choco install cmake make
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgGitCommitId: "73af4de996897cb45dcf5034d16a551a3cf476f7"
+          vcpkgGitCommitId: "e5a1490e1409d175932ef6014519e9ae149ddb7c"
 
-      - name: Cache vcpkg binary cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~\AppData\Local\vcpkg\archives
-            build\vcpkg_installed
-          key: vcpkg-windows-${{ hashFiles('vcpkg.json') }}
-          restore-keys: |
-            vcpkg-windows-
-
-      - name: Install dependencies via vcpkg
-        run: |
-          vcpkg install --triplet x64-windows
-        shell: pwsh
-
-      - name: Configure CMake with clang-cl + Ninja
-        shell: pwsh
-        run: |
-          cmake -B build `
-            -S . `
-            -G "Ninja" `
-            -DCMAKE_C_COMPILER=clang `
-            -DCMAKE_CXX_COMPILER=clang++ `
-            -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}\scripts\buildsystems\vcpkg.cmake" `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DBUILD_TESTS=ON
-
-      - name: Build project (Ninja via CMake)
-        shell: pwsh
-        run: |
-          ninja -C build -v
-
-      - name: List build outputs (debug)
-        run: |
-          Write-Host "=== Executables ==="
-          Get-ChildItem -Path "build" -Filter *.exe -Recurse | Where-Object {$_.DirectoryName -notmatch "tests"} | ForEach-Object { 
-            Write-Host "$($_.FullName) - $($_.Length) bytes"
-          }
-
-          Write-Host "`n=== Core DLLs ==="
-          Get-ChildItem -Path "build" -Filter *.dll -Recurse | Where-Object {$_.DirectoryName -notmatch "vcpkg_installed"} | ForEach-Object { 
-            Write-Host "$($_.Name)"
-          }
-
-          Write-Host "`n=== Vcpkg DLLs ==="
-          Get-ChildItem -Path "build/vcpkg_installed/x64-windows/bin" -Filter *.dll | Select-Object -First 20 | ForEach-Object { 
-            Write-Host "$($_.Name)"
-          }
-
-          Write-Host "`n=== Test Executables ==="
-          Get-ChildItem -Path "build/tests" -Filter *.exe -ErrorAction SilentlyContinue | ForEach-Object { 
-            Write-Host "$($_.FullName) - $($_.Length) bytes"
-          }
-        shell: pwsh
-
-      - name: Run unit tests
-        run: |
-          $env:PATH = "$PWD/build/vcpkg_installed/x64-windows/bin;$PWD/build;$env:PATH"
-
-          $testPath = "build/tests/unit_tests.exe"
-
-          if (Test-Path $testPath) {
-            Write-Host "Running unit tests..."
-            Write-Host "Executable: $testPath"
-            Write-Host "Working Directory: $(Get-Location)"
-            
-            & $testPath 2>&1 | Tee-Object -Variable testOutput
-            $exitCode = $LASTEXITCODE
-            
-            Write-Host "`nTest process exit code: $exitCode"
-            
-            if ($exitCode -eq -1073741515 -or $exitCode -eq 3221225781) {
-              Write-Error "DLL NOT FOUND ERROR (0xC0000135)"
-              Write-Host "The test executable cannot find required DLLs."
-              Write-Host "Check that these directories are in PATH:"
-              Write-Host "  - build/vcpkg_installed/x64-windows/bin"
-              Write-Host "  - build"
-              exit 1
-            }
-            
-            if ($exitCode -ne 0) {
-              Write-Error "Unit tests failed with exit code $exitCode"
-              exit $exitCode
-            }
-            
-            Write-Host "✓ Unit tests passed successfully"
-          } else {
-            Write-Error "unit_tests.exe not found at: $testPath"
-            exit 1
-          }
-        shell: pwsh
-
-      - name: Run integration tests
-        run: |
-          $env:PATH = "$PWD/build/vcpkg_installed/x64-windows/bin;$PWD/build;$env:PATH"
-
-          $testPath = "build/tests/integration_tests.exe"
-
-          if (Test-Path $testPath) {
-            Write-Host "Running integration tests..."
-            
-            & $testPath 2>&1 | Tee-Object -Variable testOutput
-            $exitCode = $LASTEXITCODE
-            
-            Write-Host "`nTest process exit code: $exitCode"
-            
-            if ($exitCode -eq -1073741515 -or $exitCode -eq 3221225781) {
-              Write-Error "DLL NOT FOUND ERROR (0xC0000135)"
-              exit 1
-            }
-            
-            if ($exitCode -ne 0) {
-              Write-Error "Integration tests failed with exit code $exitCode"
-              exit $exitCode
-            }
-            
-            Write-Host "✓ Integration tests passed successfully"
-          } else {
-            Write-Error "integration_tests.exe not found at: $testPath"
-            exit 1
-          }
-        shell: pwsh
-
-      - name: Collect release artifacts
-        run: |
-          New-Item -ItemType Directory -Force -Path release-staging\instrument-script-server-windows-x64\bin
-          New-Item -ItemType Directory -Force -Path release-staging\instrument-script-server-windows-x64\include
-          New-Item -ItemType Directory -Force -Path release-staging\instrument-script-server-windows-x64\licenses
-
-          Write-Host "=== Copying Executables ==="
-          # Copy main executables (not test executables)
-          Get-ChildItem -Path "build" -Filter *.exe | 
-            Where-Object {$_.Name -match "^instrument-" -or $_.Name -eq "template-expander.exe"} | 
-            ForEach-Object {
-              Write-Host "Copying: $($_.Name)"
-              Copy-Item $_.FullName -Destination "release-staging\instrument-script-server-windows-x64\bin\" -ErrorAction SilentlyContinue
-            }
-
-          Write-Host "`n=== Copying Core DLL ==="
-          # Copy core DLL
-          Get-ChildItem -Path "build" -Filter *instrument-server-core.dll | 
-            Where-Object {$_.DirectoryName -notmatch "vcpkg_installed"} | 
-            ForEach-Object {
-              Write-Host "Copying: $($_.Name)"
-              Copy-Item $_.FullName -Destination "release-staging\instrument-script-server-windows-x64\bin\" -ErrorAction SilentlyContinue
-            }
-
-          Write-Host "`n=== Copying vcpkg DLLs (excluding gtest) ==="
-          # Copy vcpkg DLLs (exclude gtest and gmock)
-          if (Test-Path "build\vcpkg_installed\x64-windows\bin") {
-            Get-ChildItem -Path "build\vcpkg_installed\x64-windows\bin" -Filter *.dll | 
-              Where-Object {$_.Name -notmatch "gtest" -and $_.Name -notmatch "gmock"} |
-              ForEach-Object {
-                Write-Host "Copying: $($_.Name)"
-                Copy-Item $_.FullName -Destination "release-staging\instrument-script-server-windows-x64\bin\" -ErrorAction SilentlyContinue
-              }
-          }
-
-          Write-Host "`n=== Verifying Dependencies with dumpbin ==="
-          # Check dependencies for main executables
-          $dumpbin = (Get-Command dumpbin -ErrorAction SilentlyContinue).Source
-          if ($dumpbin) {
-            Get-ChildItem -Path "release-staging\instrument-script-server-windows-x64\bin" -Filter instrument-*.exe | ForEach-Object {
-              Write-Host "`n--- Dependencies for $($_.Name) ---"
-              & dumpbin /dependents $_.FullName | Select-String "\.dll"
-            }
-          }
-
-          Write-Host "`n=== Copying Headers ==="
-          # Copy public headers
-          if (Test-Path "include") {
-            Copy-Item -Path "include\*" -Destination "release-staging\instrument-script-server-windows-x64\include\" -Recurse -Force
-          }
-
-          # Copy vcpkg headers (exclude gtest/gmock)
-          if (Test-Path "build\vcpkg_installed\x64-windows\include") {
-            Get-ChildItem -Path "build\vcpkg_installed\x64-windows\include" -Directory | 
-              Where-Object {$_.Name -notmatch "gtest" -and $_.Name -notmatch "gmock"} |
-              ForEach-Object {
-                Copy-Item -Path $_.FullName -Destination "release-staging\instrument-script-server-windows-x64\include\" -Recurse -Force -ErrorAction SilentlyContinue
-              }
-          }
-
-          Write-Host "`n=== Collecting Licenses ==="
-          # Copy project LICENSE to both root and licenses directory
-          if (Test-Path "LICENSE") {
-            Copy-Item -Path "LICENSE" -Destination "release-staging\instrument-script-server-windows-x64\LICENSE"
-            Copy-Item -Path "LICENSE" -Destination "release-staging\instrument-script-server-windows-x64\licenses\instrument-script-server_LICENSE.txt"
-            Write-Host "✓ Project LICENSE copied to root and licenses\"
-          } else {
-            Write-Warning "Project LICENSE file not found!"
-          }
-
-          # Collect vcpkg licenses (exclude gtest/gmock)
-          if (Test-Path "build\vcpkg_installed\x64-windows\share") {
-            Get-ChildItem -Path "build\vcpkg_installed\x64-windows\share" -Recurse -Include copyright,LICENSE*,COPYING* | 
-              Where-Object {$_.FullName -notmatch "gtest" -and $_.FullName -notmatch "gmock"} |
-              ForEach-Object {
-                $pkg = Split-Path (Split-Path $_.FullName -Parent) -Leaf
-                Copy-Item $_.FullName -Destination "release-staging\instrument-script-server-windows-x64\licenses\${pkg}_LICENSE.txt" -ErrorAction SilentlyContinue
-              }
-            Write-Host "✓ Dependency licenses collected"
-          }
-
-          # Copy vcpkg manifest
-          if (Test-Path "vcpkg.json") {
-            Copy-Item -Path "vcpkg.json" -Destination "release-staging\instrument-script-server-windows-x64\" -ErrorAction SilentlyContinue
-          }
-
-          Write-Host "`n=== Creating README ==="
-          @"
-          # Instrument Script Server - Windows x64 Release
-
-          ## Package Contents
-
-          ``````
-          instrument-script-server-windows-x64/
-          ├── bin/                      # Executables and DLLs
-          │   ├── instrument-server.exe # Main server executable
-          │   ├── instrument-worker.exe # Worker process executable
-          │   ├── template-expander.exe # YAML template processor (if available)
-          │   ├── *.dll                 # All required DLLs
-          ├── include/                  # Header files for plugin development
-          ├── licenses/                 # All applicable licenses
-          │   ├── instrument-script-server_LICENSE.txt
-          │   └── ... (dependency licenses)
-          ├── LICENSE                   # Main project license (copy)
-          ├── vcpkg.json                # Dependency manifest
-          └── README.md                 # This file
-          ``````
-
-          ## Installation
-
-          ### Option 1: Portable Installation (Recommended)
-
-          ``````powershell
-          # Extract archive
-          Expand-Archive instrument-script-server-windows-x64.zip -DestinationPath C:\instrument-server
-
-          # Add to PATH (Current session)
-          `$env:PATH += ";C:\instrument-server\bin"
-
-          # Add to PATH (Permanent - Administrator PowerShell required)
-          [Environment]::SetEnvironmentVariable(
-              "PATH",
-              [Environment]::GetEnvironmentVariable("PATH", "Machine") + ";C:\instrument-server\bin",
-              "Machine"
-          )
-          ``````
-
-          ### Option 2: User Directory Installation
-
-          ``````powershell
-          # Extract to user directory
-          `$installDir = "`$env:USERPROFILE\instrument-script-server"
-          Expand-Archive instrument-script-server-windows-x64.zip -DestinationPath `$installDir
-
-          # Add to user PATH
-          `$userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-          [Environment]::SetEnvironmentVariable("PATH", "`$userPath;`$installDir\bin", "User")
-
-          # Reload environment (or restart PowerShell)
-          `$env:PATH = [Environment]::GetEnvironmentVariable("PATH", "User")
-          ``````
-
-          ## Usage
-
-          ``````powershell
-          # Start the server daemon
-          instrument-server daemon start
-
-          # Start instruments
-          instrument-server start configs\instrument1.yaml
-
-          # Run a measurement
-          instrument-server measure my_measurement.lua
-
-          # Check status
-          instrument-server list
-
-          # Shutdown
-          instrument-server daemon stop
-          ``````
-
-          ## Plugin Development
-
-          The ``include/`` directory contains all headers needed for developing custom instrument plugins.
-          See the official documentation for plugin development guide.
-
-          ## Dependencies
-
-          All required DLLs are included in the ``bin/`` directory. No additional dependencies need to be installed.
-
-          ## System Requirements
-
-          - Windows 10/11 (x64)
-          - Visual C++ Redistributable may be required (usually pre-installed)
-
-          ## License
-
-          See the ``LICENSE`` file in this directory and the ``licenses/`` directory for all applicable licenses.
-          "@ | Out-File -FilePath "release-staging\instrument-script-server-windows-x64\README.md" -Encoding UTF8
-
-          Write-Host "`n✓ README.md created"
-
-          Write-Host "`n=== Final Release Structure ==="
-          Get-ChildItem -Path "release-staging\instrument-script-server-windows-x64" -Recurse | Select-Object FullName
-
-          Write-Host "`n=== Dependency Count ==="
-          $dllCount = (Get-ChildItem -Path "release-staging\instrument-script-server-windows-x64\bin" -Filter *.dll).Count
-          Write-Host "Total DLLs in package: $dllCount"
-
-          Write-Host "`n=== License Files ==="
-          $licenseCount = (Get-ChildItem -Path "release-staging\instrument-script-server-windows-x64\licenses" -File).Count
-          Write-Host "Total licenses collected: $licenseCount"
-        shell: pwsh
-
-      - name: Create release archive
-        run: |
-          cd release-staging
-          Compress-Archive -Path instrument-script-server-windows-x64 -DestinationPath instrument-script-server-windows-x64.zip
-          $hash = (Get-FileHash -Path instrument-script-server-windows-x64.zip -Algorithm SHA256).Hash.ToLower()
-          "$hash  instrument-script-server-windows-x64.zip" | Out-File -FilePath instrument-script-server-windows-x64.zip.sha256 -Encoding ASCII
-          cd ..
-        shell: pwsh
-
-      - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: instrument-script-server-windows-x64
-          path: |
-            release-staging\instrument-script-server-windows-x64.zip
-            release-staging\instrument-script-server-windows-x64.zip.sha256
-          retention-days: 7
-
-      - name: Setup tmate session for debugging (on failure)
-        if: failure()
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 30
-        with:
-          limit-access-to-actor: true
+      - name: Set VCPKG_ROOT as Unix-style path
+        run: echo "VCPKG_ROOT=$(echo "${{ github.workspace }}/vcpkg" | sed 's|\\|/|g')" >> $GITHUB_ENV
+      - name: Add PowerShell to PATH
+        run: echo "C:\Windows\System32\WindowsPowerShell\v1.0" >> $GITHUB_PATH
+      - name: Run tests
+        env:
+          PATH: "C:/Program Files/LLVM/bin;C:/Program Files/CMake/bin;C:/ProgramData/chocolatey/bin;${{ env.PATH }}"
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          FEED_URL: ${{ secrets.NUGET_FEED_URL }}
+          FEED_NAME: ${{ secrets.NUGET_FEED_NAME }}
+          USERNAME: $ {{ secrets.NUGET_USERNAME }}
+          CC: clang-cl
+          CXX: clang-cl
+        run: make test

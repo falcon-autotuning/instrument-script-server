@@ -1,4 +1,4 @@
-name: CI Pipeline and Release
+name: CI Pipeline
 
 on:
   push:
@@ -20,11 +20,3 @@ jobs:
     uses: ./.github/workflows/windows-ci.yml
     permissions:
       contents: read
-
-  # Create release with all artifacts (only runs on tag pushes after successful builds)
-  create-release:
-    needs: [linux-build, windows-build]
-    if: startsWith(github.ref, 'refs/tags/')
-    uses: ./.github/workflows/create-release.yml
-    permissions:
-      contents: write
