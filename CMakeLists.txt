@@ -293,7 +293,7 @@ install(
   PATTERN "*.md")
 
 write_basic_package_version_file(
-  "${CMAKE_CURRENT_BINARY_DIR}/falcon-routine-config-version.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/instrument-script-server-config-version.cmake"
   VERSION ${PROJECT_VERSION}
   COMPATIBILITY AnyNewerVersion
 )
