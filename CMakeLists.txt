@@ -292,6 +292,12 @@ install(
   FILES_MATCHING
   PATTERN "*.md")
 
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/falcon-routine-config-version.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
 install(EXPORT instrument-script-server-targets
   FILE      instrument-script-server-targets.cmake
   NAMESPACE instrument-script-server::
