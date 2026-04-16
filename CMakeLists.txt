@@ -105,10 +105,23 @@ find_package(yaml-cpp      CONFIG REQUIRED)
 find_package(sol2          CONFIG REQUIRED)
 
 # VISA (optional)
-find_library(
-  VISA_LIBRARY
-  NAMES visa visa64
-  PATHS /usr/local/vxipnp/linux64/lib)
+if(WIN32)
+  find_library(
+    VISA_LIBRARY
+    NAMES visa visa64
+    PATHS
+      "C:/Program Files/IVI Foundation/VISA/Win64/Bin"
+      "C:/Program Files (x86)/IVI Foundation/VISA/WinNT/Bin"
+      "C:/Windows/System32"
+      "C:/Windows/SysWOW64"
+  )
+else()
+  find_library(
+    VISA_LIBRARY
+    NAMES visa visa64
+    PATHS /usr/local/vxipnp/linux64/lib
+  )
+endif()
 if(VISA_LIBRARY)
   message(STATUS "Found VISA library:  ${VISA_LIBRARY}")
   set(HAVE_VISA ON)
