@@ -1,13 +1,49 @@
 
 .PHONY: all configure build-debug build-release test clean install help check-vcpkg
 
-PLATFORM := linux
-CMAKE_GENERATOR := Ninja
-VCPKG_TRIPLET ?= x64-linux-dynamic
-NPROC := $(shell nproc 2>/dev/null || echo 4)
-export CC=clang
-export CXX=clang++
+# Platform detection (works on Linux, MINGW/MSYS, and native Windows)
+UNAME_S := $(shell uname -s 2>/dev/null || echo Unknown)
+IS_MINGW := $(findstring MINGW,$(UNAME_S))
+IS_CYGWIN := $(findstring CYGWIN,$(UNAME_S))
+IS_WINDOWS_NT := $(filter Windows_NT,$(OS))
+ifeq ($(or $(IS_MINGW),$(IS_CYGWIN),$(IS_WINDOWS_NT)),)
+  PLATFORM := linux
+else
+  PLATFORM := windows
+endif
 
+# Default compilers (user can override from environment)
+ifeq ($(PLATFORM),windows)
+  # prefer clang-cl when available; user can pass CC/ CXX to override
+  CMAKE_GENERATOR := Ninja
+  VCPKG_TRIPLET := x64-win-llvm
+  VCPKG_DEBUG_BIN := $(PWD)/vcpkg_installed/x64-windows/bin
+  VCPKG_RELEASE_LIB := $(PWD)/vcpkg_installed/x64-windows/lib
+  EXE_SUFFIX := .exe
+	NPROC := $(shell powershell -Command "[Environment]::ProcessorCount" 2>NUL || echo 4)
+  STRIP_CMD := # no-op (strip not usually present); set to "llvm-strip" if you have it
+	RUN_PREFIX := PATH=$(VCPKG_DEBUG_BIN):$(VCPKG_RELEASE_LIB):$$PATH
+	SUDO ?= 
+  PYTHON_EXECUTABLE ?= python
+  # On Windows, Ninja + clang-cl: still pass CMAKE_C_COMPILER / CMAKE_CXX_COMPILER
+  export CC=clang-cl
+	export CXX=clang-cl
+else
+  CMAKE_GENERATOR := Ninja
+  VCPKG_TRIPLET := x64-linux-dynamic
+  VCPKG_DEBUG_LIB := $(PWD)/vcpkg_installed/x64-linux-dynamic/debug/lib
+  VCPKG_RELEASE_LIB := $(PWD)/vcpkg_installed/x64-linux-dynamic/lib
+  EXE_SUFFIX :=
+  NPROC := $(shell nproc 2>/dev/null || echo 4)
+  STRIP_CMD := strip
+	RUN_PREFIX := LD_LIBRARY_PATH=$(VCPKG_DEBUG_LIB):$(VCPKG_RELEASE_LIB):$$LD_LIBRARY_PATH
+	SUDO := sudo
+	PYTHON_EXECUTABLE ?= python3
+	export CC=clang
+	export CXX=clang++
+endif
+
+# Paths
 ENV_FILE := .nuget-credentials
 ifeq ($(wildcard $(ENV_FILE)),)
   $(info [Makefile] $(ENV_FILE) not found, skipping environment sourcing)
@@ -24,16 +60,20 @@ FEED_URL ?=
 NUGET_API_KEY ?=
 FEED_NAME ?= 
 USERNAME ?=
-VCPKG_BINARY_SOURCES ?= ""
+VCPKG_BINARY_SOURCES ?= 
 ifeq ($(strip $(FEED_URL)),)
   CMAKE_VCPKG_BINARY_SOURCES :=
 else
-	VCPKG_BINARY_SOURCES := "clear;nuget,$(FEED_URL),readwrite"
+	VCPKG_BINARY_SOURCES := "nuget,$(FEED_URL),readwrite"
   CMAKE_VCPKG_BINARY_SOURCES := -DVCPKG_BINARY_SOURCES=$(VCPKG_BINARY_SOURCES)
 endif
 LINKER_FLAGS ?=
 ifeq ($(PLATFORM),linux)
 	LINKER_FLAGS := -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=lld"
+endif
+VCPKG_OVERLAY_TRIPS ?=
+ifeq ($(PLATFORM),windows)
+	VCPKG_OVERLAY_TRIPS := -DVCPKG_OVERLAY_TRIPLETS=../../my-vcpkg-triplets
 endif
 
 BUILD_DIR_DEBUG := build/debug
@@ -79,32 +119,49 @@ vcpkg-bootstrap:
 		echo "Cloning vcpkg..."; \
 		git clone https://github.com/microsoft/vcpkg.git $(VCPKG_ROOT); \
 	fi
-	@if [ ! -f "$(VCPKG_ROOT)/vcpkg" ]; then \
+	@if [ ! -f "$(VCPKG_ROOT)/vcpkg" ] && [ ! -f "$(VCPKG_ROOT)/vcpkg.exe" ]; then \
 		echo "Bootstrapping vcpkg..."; \
-		cd $(VCPKG_ROOT) && ./bootstrap-vcpkg.sh; \
+		UNAME="$$(uname -s 2>/dev/null || echo Unknown)"; \
+		if echo "$$UNAME" | grep -i -q 'mingw\|msys\|cygwin'; then \
+			echo "Detected Windows bash environment ($$UNAME). Using cmd.exe to launch bootstrap-vcpkg.bat"; \
+			BAT_PATH="$$(cygpath -w "$(VCPKG_ROOT)/bootstrap-vcpkg.bat")"; \
+			cmd.exe //C "$$BAT_PATH"; \
+			git clone https://github.com/Neumann-A/my-vcpkg-triplets.git || true; \
+		else \
+			echo "Detected Unix environment ($$UNAME). Using bootstrap-vcpkg.sh"; \
+			cd $(VCPKG_ROOT) && ./bootstrap-vcpkg.sh; \
+		fi \
 	fi
 
 setup-nuget-auth:
 	@if [ -z "$$NUGET_API_KEY" ]; then \
-		echo "No NUGET_API_KEY found, skipping NuGet setup (local-only build, no binary cache)."; \
+		echo "No .nuget_api_key or NUGET_API_KEY found, skipping NuGet setup (local-only build, no binary cache)."; \
 		exit 0; \
 	fi
 	@echo "Setting up NuGet authentication for vcpkg binary caching..."
-	@if ! command -v mono >/dev/null 2>&1; then \
-		echo "Error: mono is not installed. Please install mono (e.g., 'sudo pacman -S mono' on Arch, 'sudo apt install mono-complete' on Ubuntu)."; \
-		exit 1; \
+	@if [ "$$(uname -s 2>/dev/null)" != "Windows_NT" ] && [ "$$(uname -o 2>/dev/null)" != "Msys" ] && [ "$$(uname -o 2>/dev/null)" != "Cygwin" ]; then \
+		if ! command -v mono >/dev/null 2>&1; then \
+			echo "Error: mono is not installed. Please install mono (e.g., 'sudo pacman -S mono' on Arch, 'sudo apt install mono-complete' on Ubuntu)."; \
+			exit 1; \
+		fi; \
 	fi
 	@NUGET_EXE=$$(vcpkg fetch nuget | tail -n1); \
-	mono "$$NUGET_EXE" sources remove -Name "$(FEED_NAME)" || true; \
-	mono "$$NUGET_EXE" sources add -Name "$(FEED_NAME)" -Source "$(FEED_URL)" -Username "$(USERNAME)" -Password "$(NUGET_API_KEY)"
+	if [ "$$(uname -s 2>/dev/null)" = "Linux" ]; then \
+		MONO_PREFIX="mono "; \
+	else \
+		MONO_PREFIX=""; \
+	fi; \
+	$$MONO_PREFIX"$$NUGET_EXE" sources remove -Name "$(FEED_NAME)" || true; \
+	$$MONO_PREFIX"$$NUGET_EXE" sources add -Name "$(FEED_NAME)" -Source "$(FEED_URL)" -Username "$(USERNAME)" -Password "$(NUGET_API_KEY)";
 
 .PHONY: vcpkg-install-deps
 vcpkg-install-deps: setup-nuget-auth 
 	@echo "Installing vcpkg dependencies" 
-	VCPKG_FEATURE_FLAGS=binarycaching \
+	VCPKG_FEATURE_FLAGS=binarycaching VCPKG_OVERLAY_TRIPLETS=my-vcpkg-triplets \
 		$(VCPKG_ROOT)/vcpkg install \
-		--binarysource=$(VCPKG_BINARY_SOURCES) \
-		--triplet="$(VCPKG_TRIPLET)"
+		--binarysource="$(VCPKG_BINARY_SOURCES)" \
+		--triplet="$(VCPKG_TRIPLET)" \
+		--vcpkg-root="$(VCPKG_ROOT)"
 
 check-vcpkg: vcpkg-bootstrap  vcpkg-install-deps
 	@echo "Checking vcpkg configuration..."
@@ -126,6 +183,7 @@ configure-debug: check-vcpkg
 		-DCMAKE_BUILD_TYPE=Debug \
 		-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_TOOLCHAIN) \
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
+		$(VCPKG_OVERLAY_TRIPS) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
 		-DBUILD_TESTS=ON \
 		-DUSE_CCACHE=ON \
@@ -144,6 +202,7 @@ configure-release: check-vcpkg
 		-DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_TOOLCHAIN_FILE=$(VCPKG_TOOLCHAIN) \
 		-DVCPKG_INSTALLED_DIR=$(VCPKG_INSTALLED_DIR) \
+		$(VCPKG_OVERLAY_TRIPS) \
 		-DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET) \
 		-DBUILD_TESTS=ON \
 		-DUSE_CCACHE=ON \
