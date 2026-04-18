@@ -1,4 +1,6 @@
 build/
+vcpkg/
+my-vcpkg-triplets/
 *.log
 _codeql_*
 site/
