@@ -1,6 +1,10 @@
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
+set(DLL_SEARCH_PATHS "${CMAKE_BINARY_DIR}}/tests" "${CMAKE_BINARY_DIR}")
+string(REPLACE ";" "\\;" TEST_PATH_ENV "${DLL_SEARCH_PATHS}")
+set(TEST_PATH_ENV "${TEST_PATH_ENV};$ENV{PATH}")
+
 # Small helper for an optional PCH header inside tests/
 if(NOT DEFINED ENABLE_PCH)
   # inherit default from parent; allow running tests/CMakeLists standalone
@@ -54,9 +58,8 @@ if(ENABLE_PCH)
 endif()
 
 add_test(NAME unit_tests COMMAND unit_tests)
-set_tests_properties(unit_tests PROPERTIES
-  ENVIRONMENT "PATH=$<TARGET_FILE_DIR:unit_tests>/..:$<TARGET_FILE_DIR:unit_tests>:$ENV{PATH}"
-)
+set_tests_properties(unit_tests
+    PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
 
 add_executable(
   integration_tests
@@ -82,9 +85,8 @@ if(UNIX)
 endif()
 
 add_test(NAME integration_tests COMMAND integration_tests)
-set_tests_properties(integration_tests PROPERTIES
-  ENVIRONMENT "PATH=$<TARGET_FILE_DIR:integration_tests>/..:$<TARGET_FILE_DIR:integration_tests>:$ENV{PATH}"
-)
+set_tests_properties(integration_tests
+    PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
 
 add_executable(
   perf_tests
@@ -95,8 +97,7 @@ target_link_libraries(perf_tests PRIVATE instrument-script-server-core test-util
 
 add_test(NAME perf_tests COMMAND perf_tests)
 set_tests_properties(perf_tests PROPERTIES
-  ENVIRONMENT "PATH=$<TARGET_FILE_DIR:perf_tests>/..:$<TARGET_FILE_DIR:perf_tests>:$ENV{PATH}"
-)
+    PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
 
 add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
 target_compile_definitions(mock_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
