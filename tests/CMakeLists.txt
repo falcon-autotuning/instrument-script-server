@@ -96,7 +96,7 @@ target_link_libraries(perf_tests PRIVATE instrument-script-server-core test-util
                                          GTest::gtest GTest::gtest_main)
 
 add_test(NAME perf_tests COMMAND perf_tests)
-set_tests_properties(perf_tests PROPERTIES
+set_tests_properties(perf_tests
     PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
 
 add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
