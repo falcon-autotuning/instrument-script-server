@@ -298,7 +298,7 @@ private:
   }
 
   SerializedCommand deserialize_command_from_msg(const ipc::IPCMessage &msg) {
-    std::string payload(msg.payload, msg.payload_size);
+    std::string payload(msg.payload.data(), msg.payload_size);
     return ipc::deserialize_command(payload);
   }
 
@@ -314,7 +314,8 @@ private:
     resp_msg.sync_token = cmd.sync_token.value_or(0);
     resp_msg.payload_size =
         std::min(resp_payload.size(), sizeof(resp_msg.payload));
-    std::memcpy(resp_msg.payload, resp_payload.data(), resp_msg.payload_size);
+    std::memcpy(resp_msg.payload.data(), resp_payload.data(),
+                resp_msg.payload_size);
 
     ipc_queue_->send(resp_msg, IPC_SEND_TIMEOUT);
   }

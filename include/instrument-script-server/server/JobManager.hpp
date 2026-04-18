@@ -11,8 +11,7 @@
 #include <thread>
 #include <unordered_map>
 
-namespace instserver {
-namespace server {
+namespace instserver::server {
 
 struct JobInfo {
   std::string id;
@@ -78,5 +77,4 @@ private:
   std::condition_variable measure_cv_;
 };
 
-} // namespace server
-} // namespace instserver
+} // namespace instserver::server

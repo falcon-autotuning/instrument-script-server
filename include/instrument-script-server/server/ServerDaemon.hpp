@@ -29,13 +29,13 @@ public:
   void stop();
 
   /// Check if daemon is running
-  bool is_running() const;
+  [[nodiscard]] bool is_running() const;
 
   /// Set RPC port to bind the HttpRpcServer (0 = disabled / ephemeral)
   void set_rpc_port(uint16_t port) { rpc_port_ = port; }
 
   /// Get the configured RPC port (0 if not set)
-  uint16_t rpc_port() const { return rpc_port_; }
+  [[nodiscard]] uint16_t rpc_port() const { return rpc_port_; }
 
   /// Get the PID file path
   static std::string get_pid_file_path();

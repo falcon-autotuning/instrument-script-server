@@ -23,10 +23,10 @@ public:
   virtual void shutdown() = 0;
 
   /// Get processor type for logging
-  virtual std::string processor_type() const = 0;
+  [[nodiscard]] virtual std::string processor_type() const = 0;
 
   /// Get connection info
-  virtual std::string connection_info() const = 0;
+  [[nodiscard]] virtual std::string connection_info() const = 0;
 };
 
 using CommandProcessorPtr = std::shared_ptr<CommandProcessor>;

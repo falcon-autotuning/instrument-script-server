@@ -190,7 +190,7 @@ test: build-release
 		ctest --output-on-failure --verbose -C Release
 	@echo "✓ All tests passed"
 
-test-local-debug: build-debug
+test-debug: build-debug
 	@cd $(BUILD_DIR_DEBUG) && \
 		ctest --output-on-failure --verbose -C Debug
 	@echo "✓ All tests passed"

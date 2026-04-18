@@ -1,11 +1,9 @@
 #pragma once
 
 #include <atomic>
-#include <string>
 #include <thread>
 
-namespace instserver {
-namespace server {
+namespace instserver::server {
 
 class HttpRpcServer {
 public:
@@ -19,7 +17,7 @@ public:
   void stop();
 
   // Get port (useful if started with 0 to pick ephemeral port)
-  uint16_t port() const;
+  [[nodiscard]] uint16_t port() const;
 
 private:
   void run_loop(uint16_t port);
@@ -27,8 +25,7 @@ private:
   std::atomic<bool> running_;
   std::thread server_thread_;
   uint16_t bound_port_;
-  int listen_fd_{-1};  // Listening socket FD for proper cleanup
+  int listen_fd_{-1}; // Listening socket FD for proper cleanup
 };
 
-} // namespace server
-} // namespace instserver
+} // namespace instserver::server

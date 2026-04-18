@@ -12,8 +12,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace instserver {
-namespace ipc {
+namespace instserver::ipc {
 
 /// Type of data stored in buffer
 enum class DataType : uint8_t {
@@ -201,5 +200,4 @@ private:
   std::string generate_buffer_id();
 };
 
-} // namespace ipc
-} // namespace instserver
+} // namespace instserver::ipc

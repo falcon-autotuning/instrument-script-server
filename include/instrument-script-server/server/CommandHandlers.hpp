@@ -4,11 +4,11 @@
 #include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
 
-namespace instserver {
-namespace server {
+namespace instserver::server {
 
 // Lua helper functions (shared between CommandHandlers and JobManager)
-INSTRUMENT_SERVER_API sol::object json_to_lua(sol::state_view lua, const nlohmann::json &json_value);
+INSTRUMENT_SERVER_API sol::object json_to_lua(sol::state_view lua,
+                                              const nlohmann::json &json_value);
 INSTRUMENT_SERVER_API void load_optional_lua_libs(sol::state &lua);
 
 /// Unified command handlers usable by both the CLI and the HTTP RPC server.
@@ -47,5 +47,4 @@ int INSTRUMENT_SERVER_API handle_job_list(const nlohmann::json &params,
 int INSTRUMENT_SERVER_API handle_job_cancel(const nlohmann::json &params,
                                             nlohmann::json &out);
 
-} // namespace server
-} // namespace instserver
+} // namespace instserver::server

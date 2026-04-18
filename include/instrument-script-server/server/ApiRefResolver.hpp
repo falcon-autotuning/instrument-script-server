@@ -3,8 +3,7 @@
 #include "instrument-script-server/export.h"
 #include <string>
 
-namespace instserver {
-namespace server {
+namespace instserver::server {
 
 /// Resolve an api_ref (from an instrument configuration) into an absolute
 /// filesystem path. Supports:
@@ -15,10 +14,9 @@ namespace server {
 ///
 /// Throws std::runtime_error if the resolved file does not exist.
 ///
-/// The function is exported from the instrument-script-server-core library so tests
-/// and other executables can link against it on Windows.
+/// The function is exported from the instrument-script-server-core library so
+/// tests and other executables can link against it on Windows.
 INSTRUMENT_SERVER_API std::string
 resolve_api_ref(const std::string &api_ref, const std::string &config_path);
 
-} // namespace server
-} // namespace instserver
+} // namespace instserver::server

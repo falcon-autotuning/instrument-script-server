@@ -22,13 +22,13 @@ public:
                         const std::string &data_type);
 
   /// Get the buffer ID
-  const std::string &id() const { return buffer_id_; }
+  [[nodiscard]] const std::string &id() const { return buffer_id_; }
 
   /// Get number of elements
-  uint64_t size() const { return element_count_; }
+  [[nodiscard]] uint64_t size() const { return element_count_; }
 
   /// Get data type
-  const std::string &type() const { return data_type_; }
+  [[nodiscard]] const std::string &type() const { return data_type_; }
 
   /// Add offset to all elements (array + scalar)
   bool add_offset(double offset);
@@ -58,31 +58,33 @@ public:
                       std::shared_ptr<BufferHandle> buffer);
 
   /// Get the instrument name
-  const std::string &instrument() const { return instrument_; }
+  [[nodiscard]] const std::string &instrument() const { return instrument_; }
 
   /// Get the verb/command
-  const std::string &verb() const { return verb_; }
+  [[nodiscard]] const std::string &verb() const { return verb_; }
 
   /// Get the return type
-  const std::string &type() const { return type_; }
+  [[nodiscard]] const std::string &type() const { return type_; }
 
   /// Get the value (for scalars)
-  sol::object value(sol::this_state s) const;
+  [[nodiscard]] sol::object value(sol::this_state s) const;
 
   /// Get the buffer (for arrays)
-  std::shared_ptr<BufferHandle> buffer() const { return buffer_; }
+  [[nodiscard]] std::shared_ptr<BufferHandle> buffer() const { return buffer_; }
 
   /// Add offset to numeric value (for scalars)
-  std::shared_ptr<MeasurementResponse> add_offset(double offset) const;
+  [[nodiscard]] std::shared_ptr<MeasurementResponse>
+  add_offset(double offset) const;
 
   /// Multiply numeric value by gain (for scalars)
-  std::shared_ptr<MeasurementResponse> multiply_gain(double gain) const;
+  [[nodiscard]] std::shared_ptr<MeasurementResponse>
+  multiply_gain(double gain) const;
 
 private:
   std::string instrument_;
   std::string verb_;
-  std::string type_;  // "float", "integer", "string", "boolean", "buffer"
-  
+  std::string type_; // "float", "integer", "string", "boolean", "buffer"
+
   // Value storage (only one is used)
   double value_double_{0.0};
   int64_t value_int_{0};

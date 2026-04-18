@@ -5,8 +5,7 @@
 #include <fstream>
 #include <sstream>
 
-namespace instserver {
-namespace ipc {
+namespace instserver::ipc {
 
 // DataBuffer implementation
 
@@ -18,7 +17,7 @@ DataBuffer::DataBuffer(const std::string &buffer_id, void *data,
 }
 
 DataBuffer::~DataBuffer() {
-  if (owns_memory_ && data_) {
+  if (owns_memory_ && (data_ != nullptr)) {
     free(data_);
     data_ = nullptr;
   }
@@ -34,7 +33,7 @@ DataBuffer::DataBuffer(DataBuffer &&other) noexcept
 
 DataBuffer &DataBuffer::operator=(DataBuffer &&other) noexcept {
   if (this != &other) {
-    if (owns_memory_ && data_) {
+    if (owns_memory_ && (data_ != nullptr)) {
       free(data_);
     }
 
@@ -146,49 +145,49 @@ bool DataBuffer::export_to_csv(const std::string &filepath) const {
 
   switch (data_type_) {
   case DataType::FLOAT32: {
-    const float *arr = static_cast<const float *>(data_);
+    const auto *arr = static_cast<const float *>(data_);
     for (size_t i = 0; i < element_count_; ++i) {
       file << arr[i] << "\n";
     }
     break;
   }
   case DataType::FLOAT64: {
-    const double *arr = static_cast<const double *>(data_);
+    const auto *arr = static_cast<const double *>(data_);
     for (size_t i = 0; i < element_count_; ++i) {
       file << arr[i] << "\n";
     }
     break;
   }
   case DataType::INT32: {
-    const int32_t *arr = static_cast<const int32_t *>(data_);
+    const auto *arr = static_cast<const int32_t *>(data_);
     for (size_t i = 0; i < element_count_; ++i) {
       file << arr[i] << "\n";
     }
     break;
   }
   case DataType::INT64: {
-    const int64_t *arr = static_cast<const int64_t *>(data_);
+    const auto *arr = static_cast<const int64_t *>(data_);
     for (size_t i = 0; i < element_count_; ++i) {
       file << arr[i] << "\n";
     }
     break;
   }
   case DataType::UINT32: {
-    const uint32_t *arr = static_cast<const uint32_t *>(data_);
+    const auto *arr = static_cast<const uint32_t *>(data_);
     for (size_t i = 0; i < element_count_; ++i) {
       file << arr[i] << "\n";
     }
     break;
   }
   case DataType::UINT64: {
-    const uint64_t *arr = static_cast<const uint64_t *>(data_);
+    const auto *arr = static_cast<const uint64_t *>(data_);
     for (size_t i = 0; i < element_count_; ++i) {
       file << arr[i] << "\n";
     }
     break;
   }
   case DataType::UINT8: {
-    const uint8_t *arr = static_cast<const uint8_t *>(data_);
+    const auto *arr = static_cast<const uint8_t *>(data_);
     for (size_t i = 0; i < element_count_; ++i) {
       file << static_cast<int>(arr[i]) << "\n";
     }
@@ -235,14 +234,14 @@ std::string DataBufferManager::create_buffer(const std::string &instrument_name,
 
   // Allocate memory
   void *buffer_data = malloc(byte_size);
-  if (!buffer_data) {
+  if (buffer_data == nullptr) {
     LOG_ERROR("DATA_BUFFER", "CREATE", "Failed to allocate {} bytes",
               byte_size);
     return "";
   }
 
   // Copy data if provided
-  if (data) {
+  if (data != nullptr) {
     memcpy(buffer_data, data, byte_size);
   } else {
     memset(buffer_data, 0, byte_size);
@@ -347,9 +346,10 @@ void DataBufferManager::clear_all() {
   buffers_.clear();
 }
 
-bool DataBufferManager::add_offset(const std::string &buffer_id, double offset) {
+bool DataBufferManager::add_offset(const std::string &buffer_id,
+                                   double offset) {
   std::lock_guard lock(mutex_);
-  
+
   auto it = buffers_.find(buffer_id);
   if (it == buffers_.end()) {
     LOG_ERROR("DATA_BUFFER", "MATH", "Buffer not found: {}", buffer_id);
@@ -358,37 +358,42 @@ bool DataBufferManager::add_offset(const std::string &buffer_id, double offset) 
 
   auto &buffer = it->second.buffer;
   size_t count = buffer->element_count();
-  
+
   // Apply offset based on data type
   switch (buffer->data_type()) {
-    case DataType::FLOAT32: {
-      float *data = buffer->as_float32();
-      for (size_t i = 0; i < count; ++i) {
-        data[i] += static_cast<float>(offset);
-      }
-      LOG_DEBUG("DATA_BUFFER", "MATH", "Added offset {} to {} FLOAT32 elements in buffer {}", 
-               offset, count, buffer_id);
-      return true;
+  case DataType::FLOAT32: {
+    float *data = buffer->as_float32();
+    for (size_t i = 0; i < count; ++i) {
+      data[i] += static_cast<float>(offset);
     }
-    case DataType::FLOAT64: {
-      double *data = buffer->as_float64();
-      for (size_t i = 0; i < count; ++i) {
-        data[i] += offset;
-      }
-      LOG_DEBUG("DATA_BUFFER", "MATH", "Added offset {} to {} FLOAT64 elements in buffer {}", 
-               offset, count, buffer_id);
-      return true;
+    LOG_DEBUG("DATA_BUFFER", "MATH",
+              "Added offset {} to {} FLOAT32 elements in buffer {}", offset,
+              count, buffer_id);
+    return true;
+  }
+  case DataType::FLOAT64: {
+    double *data = buffer->as_float64();
+    for (size_t i = 0; i < count; ++i) {
+      data[i] += offset;
     }
-    default:
-      LOG_ERROR("DATA_BUFFER", "MATH", "add_offset only supports float/double buffers, buffer {} has type {}", 
-               buffer_id, static_cast<int>(buffer->data_type()));
-      return false;
+    LOG_DEBUG("DATA_BUFFER", "MATH",
+              "Added offset {} to {} FLOAT64 elements in buffer {}", offset,
+              count, buffer_id);
+    return true;
+  }
+  default:
+    LOG_ERROR(
+        "DATA_BUFFER", "MATH",
+        "add_offset only supports float/double buffers, buffer {} has type {}",
+        buffer_id, static_cast<int>(buffer->data_type()));
+    return false;
   }
 }
 
-bool DataBufferManager::multiply_gain(const std::string &buffer_id, double gain) {
+bool DataBufferManager::multiply_gain(const std::string &buffer_id,
+                                      double gain) {
   std::lock_guard lock(mutex_);
-  
+
   auto it = buffers_.find(buffer_id);
   if (it == buffers_.end()) {
     LOG_ERROR("DATA_BUFFER", "MATH", "Buffer not found: {}", buffer_id);
@@ -397,33 +402,36 @@ bool DataBufferManager::multiply_gain(const std::string &buffer_id, double gain)
 
   auto &buffer = it->second.buffer;
   size_t count = buffer->element_count();
-  
+
   // Apply gain based on data type
   switch (buffer->data_type()) {
-    case DataType::FLOAT32: {
-      float *data = buffer->as_float32();
-      for (size_t i = 0; i < count; ++i) {
-        data[i] *= static_cast<float>(gain);
-      }
-      LOG_DEBUG("DATA_BUFFER", "MATH", "Multiplied {} FLOAT32 elements by gain {} in buffer {}", 
-               count, gain, buffer_id);
-      return true;
+  case DataType::FLOAT32: {
+    float *data = buffer->as_float32();
+    for (size_t i = 0; i < count; ++i) {
+      data[i] *= static_cast<float>(gain);
     }
-    case DataType::FLOAT64: {
-      double *data = buffer->as_float64();
-      for (size_t i = 0; i < count; ++i) {
-        data[i] *= gain;
-      }
-      LOG_DEBUG("DATA_BUFFER", "MATH", "Multiplied {} FLOAT64 elements by gain {} in buffer {}", 
-               count, gain, buffer_id);
-      return true;
+    LOG_DEBUG("DATA_BUFFER", "MATH",
+              "Multiplied {} FLOAT32 elements by gain {} in buffer {}", count,
+              gain, buffer_id);
+    return true;
+  }
+  case DataType::FLOAT64: {
+    double *data = buffer->as_float64();
+    for (size_t i = 0; i < count; ++i) {
+      data[i] *= gain;
     }
-    default:
-      LOG_ERROR("DATA_BUFFER", "MATH", "multiply_gain only supports float/double buffers, buffer {} has type {}", 
-               buffer_id, static_cast<int>(buffer->data_type()));
-      return false;
+    LOG_DEBUG("DATA_BUFFER", "MATH",
+              "Multiplied {} FLOAT64 elements by gain {} in buffer {}", count,
+              gain, buffer_id);
+    return true;
+  }
+  default:
+    LOG_ERROR("DATA_BUFFER", "MATH",
+              "multiply_gain only supports float/double buffers, buffer {} has "
+              "type {}",
+              buffer_id, static_cast<int>(buffer->data_type()));
+    return false;
   }
 }
 
-} // namespace ipc
-} // namespace instserver
+} // namespace instserver::ipc

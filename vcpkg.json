@@ -9,6 +9,7 @@
     "spdlog",
     "sol2",
     "gtest",
-    "yaml-cpp"
+    "yaml-cpp",
+    "boost-interprocess"
   ]
 }

@@ -1,11 +1,10 @@
 #include "MockInstrument.hpp"
-
+#include "instrument-script-server/plugin/PluginInterface.h"
 #include <cstring>
 #include <memory>
 #include <thread>
 
-namespace instserver {
-namespace test {
+namespace instserver::test {
 
 MockInstrument::MockInstrument(const std::string &name) : name_(name) {}
 
@@ -135,5 +134,4 @@ void MockInstrumentRegistry::clear() {
   instruments_.clear();
 }
 
-} // namespace test
-} // namespace instserver
+} // namespace instserver::test

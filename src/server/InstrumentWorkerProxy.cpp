@@ -171,7 +171,7 @@ InstrumentWorkerProxy::execute(SerializedCommand cmd) {
   msg.id = msg_id;
   msg.sync_token = cmd.sync_token.value_or(0);
   msg.payload_size = std::min(payload.size(), sizeof(msg.payload));
-  std::memcpy(msg.payload, payload.data(), msg.payload_size);
+  std::memcpy(msg.payload.data(), payload.data(), msg.payload_size);
 
   if (!ipc_queue_->send(msg, cmd.timeout)) {
     LOG_ERROR(instrument_name_, cmd.id, "Failed to send command");
@@ -264,7 +264,7 @@ void InstrumentWorkerProxy::handle_ipc_message(const ipc::IPCMessage &msg) {
 
 void InstrumentWorkerProxy::handle_response_message(
     const ipc::IPCMessage &msg) {
-  std::string payload(msg.payload, msg.payload_size);
+  std::string payload(msg.payload.data(), msg.payload_size);
   CommandResponse resp = ipc::deserialize_response(payload);
   LOG_DEBUG(instrument_name_, resp.command_id, "Received response: success={}",
             resp.success);

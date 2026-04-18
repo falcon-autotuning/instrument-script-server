@@ -2,7 +2,7 @@
 #include "instrument-script-server/export.h"
 
 #include "instrument-script-server/SerializedCommand.hpp"
-#include "instrument-script-server/ipc/ProcessManager.hpp"
+#include "instrument-script-server/ipc/PlatformTypes.hpp"
 #include "instrument-script-server/ipc/SharedQueue.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
 

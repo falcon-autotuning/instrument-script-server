@@ -9,8 +9,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace instserver {
-namespace plugin {
+namespace instserver::plugin {
 
 /// Registry for managing loaded plugins
 class INSTRUMENT_SERVER_API PluginRegistry {
@@ -53,5 +52,4 @@ private:
   mutable std::mutex mutex_;
 };
 
-} // namespace plugin
-} // namespace instserver
+} // namespace instserver::plugin

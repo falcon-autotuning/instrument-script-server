@@ -12,8 +12,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace instserver {
-namespace ipc {
+namespace instserver::ipc {
 
 /// Manages worker process lifecycle
 class INSTRUMENT_SERVER_API ProcessManager {
@@ -84,5 +83,4 @@ private:
   bool is_alive_impl(ProcessHandle handle) const;
 };
 
-} // namespace ipc
-} // namespace instserver
+} // namespace instserver::ipc

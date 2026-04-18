@@ -46,8 +46,8 @@ struct INSTRUMENT_SERVER_API CommandResponse {
 } // namespace instserver
 
 // Serialization functions in ipc namespace
-namespace instserver {
-namespace ipc {
+
+namespace instserver::ipc {
 
 /// Serialize command to JSON string
 INSTRUMENT_SERVER_API std::string
@@ -65,5 +65,4 @@ serialize_response(const CommandResponse &resp);
 INSTRUMENT_SERVER_API CommandResponse
 deserialize_response(const std::string &json);
 
-} // namespace ipc
-} // namespace instserver
+} // namespace instserver::ipc

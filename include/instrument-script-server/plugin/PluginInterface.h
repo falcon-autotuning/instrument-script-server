@@ -3,13 +3,12 @@
 
 #include "instrument-script-server/export.h"
 
-#include <stddef.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // API version

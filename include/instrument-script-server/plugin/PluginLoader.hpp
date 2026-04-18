@@ -14,8 +14,7 @@ using LibraryHandle = HMODULE;
 using LibraryHandle = void *;
 #endif
 
-namespace instserver {
-namespace plugin {
+namespace instserver::plugin {
 
 /// RAII wrapper for dynamically loaded plugin
 class INSTRUMENT_SERVER_API PluginLoader {
@@ -33,10 +32,10 @@ public:
   PluginLoader &operator=(PluginLoader &&other) noexcept;
 
   /// Check if plugin loaded successfully
-  bool is_loaded() const { return handle_ != nullptr; }
+  [[nodiscard]] bool is_loaded() const { return handle_ != nullptr; }
 
   /// Get plugin metadata
-  PluginMetadata get_metadata() const;
+  [[nodiscard]] PluginMetadata get_metadata() const;
 
   /// Initialize plugin
   int32_t initialize(const PluginConfig &config);
@@ -49,7 +48,7 @@ public:
   void shutdown();
 
   /// Get last error message
-  const std::string &get_error() const { return error_message_; }
+  [[nodiscard]] const std::string &get_error() const { return error_message_; }
 
 private:
   LibraryHandle handle_{nullptr};
@@ -66,5 +65,4 @@ private:
   void unload();
 };
 
-} // namespace plugin
-} // namespace instserver
+} // namespace instserver::plugin

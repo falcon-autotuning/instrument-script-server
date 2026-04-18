@@ -10,8 +10,7 @@
 #include <optional>
 #include <string>
 
-namespace instserver {
-namespace ipc {
+namespace instserver::ipc {
 
 /// Bidirectional IPC queue pair (request + response queues)
 class INSTRUMENT_SERVER_API SharedQueue {
@@ -42,13 +41,17 @@ public:
   receive(std::chrono::milliseconds timeout = std::chrono::milliseconds(5000));
 
   /// Check if queue is valid
-  bool is_valid() const {
+  [[nodiscard]] bool is_valid() const {
     return request_queue_ != nullptr && response_queue_ != nullptr;
   }
 
   /// Get queue names
-  std::string get_request_queue_name() const { return request_queue_name_; }
-  std::string get_response_queue_name() const { return response_queue_name_; }
+  [[nodiscard]] std::string get_request_queue_name() const {
+    return request_queue_name_;
+  }
+  [[nodiscard]] std::string get_response_queue_name() const {
+    return response_queue_name_;
+  }
 
   /// Cleanup queue files (call when instrument removed)
   static void cleanup(const std::string &instrument_name);
@@ -61,5 +64,4 @@ private:
   bool is_server_;
 };
 
-} // namespace ipc
-} // namespace instserver
+} // namespace instserver::ipc
