@@ -58,8 +58,11 @@ if(ENABLE_PCH)
 endif()
 
 add_test(NAME unit_tests COMMAND unit_tests)
-set_tests_properties(unit_tests
-    PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
+if(WIN32)
+  set_tests_properties(unit_tests PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
+else()
+  set_tests_properties(unit_tests PROPERTIES ENVIRONMENT "PATH=$<TARGET_FILE_DIR:unit_tests>/..:$<TARGET_FILE_DIR:unit_tests>:$ENV{PATH}")
+endif()
 
 add_executable(
   integration_tests
@@ -85,8 +88,11 @@ if(UNIX)
 endif()
 
 add_test(NAME integration_tests COMMAND integration_tests)
-set_tests_properties(integration_tests
-    PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
+if(WIN32)
+  set_tests_properties(integration_tests PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
+else()
+  set_tests_properties(integration_tests PROPERTIES ENVIRONMENT "PATH=$<TARGET_FILE_DIR:integration_tests>/..:$<TARGET_FILE_DIR:integration_tests>:$ENV{PATH}")
+endif()
 
 add_executable(
   perf_tests
@@ -96,8 +102,11 @@ target_link_libraries(perf_tests PRIVATE instrument-script-server-core test-util
                                          GTest::gtest GTest::gtest_main)
 
 add_test(NAME perf_tests COMMAND perf_tests)
-set_tests_properties(perf_tests
-    PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
+if(WIN32)
+  set_tests_properties(perf_tests PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
+else()
+  set_tests_properties(perf_tests PROPERTIES ENVIRONMENT "PATH=$<TARGET_FILE_DIR:perf_tests>/..:$<TARGET_FILE_DIR:perf_tests>:$ENV{PATH}")
+endif()
 
 add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
 target_compile_definitions(mock_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
@@ -149,19 +158,3 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/test_script.lua
                ${CMAKE_BINARY_DIR}/tests/data/test_script.lua COPYONLY)
 
 install(TARGETS mock_plugin LIBRARY DESTINATION lib/instrument-plugins)
-
-add_custom_target(
-  test_unit
-  COMMAND ${CMAKE_BINARY_DIR}/tests/unit_tests
-  DEPENDS unit_tests
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-add_custom_target(
-  test_integration
-  COMMAND ${CMAKE_BINARY_DIR}/tests/integration_tests
-  DEPENDS integration_tests
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-add_custom_target(
-  test_perf
-  COMMAND ${CMAKE_BINARY_DIR}/tests/perf_tests
-  DEPENDS perf_tests
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
