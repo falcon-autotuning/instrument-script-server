@@ -28,9 +28,11 @@ protected:
   }
 
   void TearDown() override {
+    // Clean up after each test - use public API only
     auto &daemon = ServerDaemon::instance();
     if (daemon.is_running()) {
       daemon.stop();
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
   }
 };

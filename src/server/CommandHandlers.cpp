@@ -145,24 +145,25 @@ void load_optional_lua_libs(sol::state &lua) {
              "(INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB)");
     return;
   }
-  
+
   // Support multiple paths separated by semicolons
   std::string paths_str(envp);
   std::vector<std::string> paths;
   size_t start = 0;
   size_t end = paths_str.find(';');
-  
+
   while (end != std::string::npos) {
     paths.push_back(paths_str.substr(start, end - start));
     start = end + 1;
     end = paths_str.find(';', start);
   }
   paths.push_back(paths_str.substr(start));
-  
+
   // Load each path
   for (const auto &path_str : paths) {
-    if (path_str.empty()) continue;
-    
+    if (path_str.empty())
+      continue;
+
     std::filesystem::path p(path_str);
     if (!std::filesystem::exists(p)) {
       LOG_WARN("SERVER", "MEASURE", "Specified helpers path does not exist: {}",
@@ -175,7 +176,8 @@ void load_optional_lua_libs(sol::state &lua) {
       // treat as bundle file
       load_bundle_file(lua, p.string());
     } else {
-      LOG_WARN("SERVER", "MEASURE", "Helpers path not dir or file: {}", path_str);
+      LOG_WARN("SERVER", "MEASURE", "Helpers path not dir or file: {}",
+               path_str);
     }
   }
 }
@@ -236,6 +238,7 @@ int handle_daemon(const json &params, json &out) {
     }
     daemon.stop();
     out["ok"] = true;
+    out["message"] = "daemon stopped";
     return 0;
   } else if (action == "status") {
     bool running = ServerDaemon::is_already_running();
@@ -501,14 +504,14 @@ __context_schema_version = nil
             std::string("context_spec injection error: ") + err.what();
         return 1;
       }
-      
+
       // Log warnings for each injected global variable
       sol::optional<sol::table> injected_vars = lua["__injected_vars"];
       if (injected_vars) {
         for (size_t i = 1; i <= injected_vars->size(); ++i) {
           sol::optional<std::string> var_name = (*injected_vars)[i];
           if (var_name) {
-            LOG_WARN("SERVER", "MEASURE", 
+            LOG_WARN("SERVER", "MEASURE",
                      "Injecting global variable '{}' from spec", *var_name);
           }
         }
@@ -533,90 +536,102 @@ __context_schema_version = nil
 
     // Check if the script defined a main function (new format)
     sol::optional<sol::protected_function> main_func = lua["main"];
-    
+
     if (main_func) {
       // New format: call main function with context
-      LOG_INFO("SERVER", "MEASURE", "Executing script with main function (new format)");
-      
+      LOG_INFO("SERVER", "MEASURE",
+               "Executing script with main function (new format)");
+
       // Check if type_manifest is provided (Teal static typing support)
       if (params.contains("type_manifest")) {
         const auto &manifest = params["type_manifest"];
-        
+
         // Validate manifest structure
-        if (!manifest.contains("parameters") || !manifest["parameters"].is_array()) {
+        if (!manifest.contains("parameters") ||
+            !manifest["parameters"].is_array()) {
           out["ok"] = false;
-          out["error"] = "Invalid type_manifest: missing or invalid 'parameters' array";
+          out["error"] =
+              "Invalid type_manifest: missing or invalid 'parameters' array";
           return 1;
         }
-        
+
         // Build arguments based on manifest
         std::vector<sol::object> args;
-        args.push_back(sol::make_object(lua, ctx_shared.get())); // First arg is always context
-        
+        args.push_back(sol::make_object(
+            lua, ctx_shared.get())); // First arg is always context
+
         const auto &param_defs = manifest["parameters"];
         for (size_t i = 1; i < param_defs.size(); ++i) { // Skip first (context)
           const auto &param = param_defs[i];
-          
+
           if (!param.contains("name") || !param["name"].is_string()) {
             out["ok"] = false;
-            out["error"] = fmt::format("Invalid type_manifest: parameter {} missing 'name'", i);
-            return 1;
-          }
-          
-          std::string param_name = param["name"];
-          
-          // Check if this parameter exists in globals
-          if (!params.contains("globals") || !params["globals"].contains(param_name)) {
-            out["ok"] = false;
             out["error"] = fmt::format(
-                "Missing required parameter '{}' (declared in type_manifest but not provided in globals)", 
-                param_name);
-            LOG_ERROR("SERVER", "MEASURE", 
-                      "Missing required parameter '{}' for typed main function", param_name);
+                "Invalid type_manifest: parameter {} missing 'name'", i);
             return 1;
           }
-          
+
+          std::string param_name = param["name"];
+
+          // Check if this parameter exists in globals
+          if (!params.contains("globals") ||
+              !params["globals"].contains(param_name)) {
+            out["ok"] = false;
+            out["error"] =
+                fmt::format("Missing required parameter '{}' (declared in "
+                            "type_manifest but not provided in globals)",
+                            param_name);
+            LOG_ERROR("SERVER", "MEASURE",
+                      "Missing required parameter '{}' for typed main function",
+                      param_name);
+            return 1;
+          }
+
           // Convert JSON value to Lua object
           sol::object arg = json_to_lua(lua, params["globals"][param_name]);
           args.push_back(arg);
-          
-          LOG_INFO("SERVER", "MEASURE", 
-                   "Passing parameter '{}' to main function (type: {})", 
-                   param_name, 
-                   param.value("type", "unknown"));
+
+          LOG_INFO("SERVER", "MEASURE",
+                   "Passing parameter '{}' to main function (type: {})",
+                   param_name, param.value("type", "unknown"));
         }
-        
+
         // Check for unused globals (warnings)
         if (params.contains("globals")) {
-          for (auto it = params["globals"].begin(); it != params["globals"].end(); ++it) {
+          for (auto it = params["globals"].begin();
+               it != params["globals"].end(); ++it) {
             std::string global_name = it.key();
             bool found = false;
-            
+
             for (size_t i = 1; i < param_defs.size(); ++i) {
               if (param_defs[i]["name"] == global_name) {
                 found = true;
                 break;
               }
             }
-            
+
             if (!found) {
               LOG_WARN("SERVER", "MEASURE",
-                       "Global variable '{}' provided but not used by typed main function (injecting as global)", 
+                       "Global variable '{}' provided but not used by typed "
+                       "main function (injecting as global)",
                        global_name);
               // Still inject it as global for backward compatibility
               lua[global_name] = json_to_lua(lua, it.value());
             }
           }
         }
-        
+
         // Call main with unpacked arguments
-        sol::protected_function_result main_result = (*main_func)(sol::as_args(args));
-        
+        sol::protected_function_result main_result =
+            (*main_func)(sol::as_args(args));
+
         if (!main_result.valid()) {
           sol::error err = main_result;
-          std::string error_msg = std::string("Script execution error: ") + err.what();
+          std::string error_msg =
+              std::string("Script execution error: ") + err.what();
           if (ctx_shared->has_error()) {
-            error_msg = ctx_shared->get_error() + " (Runtime: " + err.what() + ")";
+            error_msg =
+                ctx_shared->get_error() + " (Runtime: " + err.what() + ")";
           }
           out["ok"] = false;
           out["error"] = error_msg;
@@ -624,29 +639,33 @@ __context_schema_version = nil
         }
       } else {
         // Legacy: call main with just context parameter
-        sol::protected_function_result main_result = (*main_func)(ctx_shared.get());
-        
+        sol::protected_function_result main_result =
+            (*main_func)(ctx_shared.get());
+
         if (!main_result.valid()) {
           sol::error err = main_result;
-          std::string error_msg = std::string("Script execution error: ") + err.what();
+          std::string error_msg =
+              std::string("Script execution error: ") + err.what();
           // If context:error() was also called, include both messages
           if (ctx_shared->has_error()) {
-            error_msg = ctx_shared->get_error() + " (Runtime: " + err.what() + ")";
+            error_msg =
+                ctx_shared->get_error() + " (Runtime: " + err.what() + ")";
           }
           out["ok"] = false;
           out["error"] = error_msg;
           return 1;
         }
       }
-      
+
       // The main function should return results (optional)
       // We still collect results from context:call() operations
     } else {
       // Old format: script executed at load time (backward compatibility)
-      LOG_WARN("SERVER", "MEASURE", 
+      LOG_WARN("SERVER", "MEASURE",
                "DEPRECATED: Script uses compatibility mode (no main function). "
                "Please migrate to new format with main(ctx) function.");
-      out["error"] = "DEPRECATED: Compatibility mode will be removed in a future version";
+      out["error"] =
+          "DEPRECATED: Compatibility mode will be removed in a future version";
       // Result was already executed during safe_script_file
     }
 
@@ -658,7 +677,7 @@ __context_schema_version = nil
       const auto &results = ctx_shared->get_results();
       out["script"] = std::filesystem::path(script_path).filename().string();
       out["results"] = json::array();
-      
+
       for (size_t i = 0; i < results.size(); ++i) {
         const auto &r = results[i];
         json result_json;
@@ -714,7 +733,7 @@ __context_schema_version = nil
 
         out["results"].push_back(result_json);
       }
-      
+
       return 1;
     }
 

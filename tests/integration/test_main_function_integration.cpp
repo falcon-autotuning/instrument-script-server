@@ -58,6 +58,12 @@ protected:
     std::error_code ec;
     std::filesystem::remove_all(test_scripts_dir_, ec);
     std::filesystem::remove(log_path_, ec);
+    // Clean up after each test - use public API only
+    auto &daemon = ServerDaemon::instance();
+    if (daemon.is_running()) {
+      daemon.stop();
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
   }
 
   std::string read_log() {

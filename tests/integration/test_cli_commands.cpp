@@ -1,3 +1,4 @@
+#include "instrument-script-server/server/ServerDaemon.hpp"
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -15,6 +16,14 @@ protected:
     if (executable_path_.empty()) {
       GTEST_SKIP() << "instrument-script-server executable not found.  "
                    << "This test requires the executable to be built.";
+    }
+  }
+  void TearDown() override {
+    // Clean up after each test - use public API only
+    auto &daemon = instserver::ServerDaemon::instance();
+    if (daemon.is_running()) {
+      daemon.stop();
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
   }
 

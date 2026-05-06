@@ -196,10 +196,11 @@ protected:
   }
 
   void TearDown() override {
-    // If we started the daemon ourselves, stop it now.
-    if (started_daemon_) {
-      auto &daemon = instserver::ServerDaemon::instance();
+    // Clean up after each test - use public API only
+    auto &daemon = instserver::ServerDaemon::instance();
+    if (daemon.is_running()) {
       daemon.stop();
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
   }
 

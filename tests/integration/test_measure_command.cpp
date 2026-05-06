@@ -58,7 +58,15 @@ protected:
     script.close();
   }
 
-  void TearDown() override { std::filesystem::remove_all(test_dir_); }
+  void TearDown() override {
+    std::filesystem::remove_all(test_dir_);
+    // Clean up after each test - use public API only
+    auto &daemon = ServerDaemon::instance();
+    if (daemon.is_running()) {
+      daemon.stop();
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
+  }
 
 #ifdef _WIN32
   // Windows implementation using CreateProcess
@@ -222,12 +230,12 @@ TEST_F(MeasureCommandTest, MeasureWithoutDaemon) {
   // Use timeout wrapper to prevent hanging
 #ifdef _WIN32
   // Windows: redirect to NUL
-  std::string cmd =
-      "instrument-script-server measure " + script_path.string() + " > NUL 2>&1";
+  std::string cmd = "instrument-script-server measure " + script_path.string() +
+                    " > NUL 2>&1";
 #else
   // Unix: redirect to /dev/null
-  std::string cmd =
-      "instrument-script-server measure " + script_path.string() + " > /dev/null 2>&1";
+  std::string cmd = "instrument-script-server measure " + script_path.string() +
+                    " > /dev/null 2>&1";
 #endif
 
   int result = run_command_with_timeout(cmd, 5);
@@ -247,11 +255,11 @@ TEST_F(MeasureCommandTest, MeasureWithDaemon) {
   auto script_path = test_dir_ / "test.lua";
 
 #ifdef _WIN32
-  std::string cmd =
-      "instrument-script-server measure " + script_path.string() + " > NUL 2>&1";
+  std::string cmd = "instrument-script-server measure " + script_path.string() +
+                    " > NUL 2>&1";
 #else
-  std::string cmd =
-      "instrument-script-server measure " + script_path.string() + " > /dev/null 2>&1";
+  std::string cmd = "instrument-script-server measure " + script_path.string() +
+                    " > /dev/null 2>&1";
 #endif
 
   int result = run_command_with_timeout(cmd, 5);

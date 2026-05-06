@@ -35,6 +35,12 @@ protected:
   void TearDown() override {
     auto &registry = InstrumentRegistry::instance();
     registry.stop_all();
+    // Clean up after each test - use public API only
+    auto &daemon = instserver::ServerDaemon::instance();
+    if (daemon.is_running()) {
+      daemon.stop();
+      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    }
   }
 };
 
