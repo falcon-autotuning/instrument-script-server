@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(
   instrument-script-server
-  VERSION 1.1.5
+  VERSION 1.1.6
   LANGUAGES C CXX)
 
 # Git version detection
