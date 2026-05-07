@@ -1,3 +1,6 @@
 [submodule "cmake/bootstrap"]
 	path = cmake/bootstrap
 	url = https://github.com/falcon-autotuning/cmake-vcpkg-bootstrap.git
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/microsoft/vcpkg.git
