@@ -5,10 +5,15 @@
 
 namespace instserver {
 
-// Global process manager instance
+// Global process manager instance.
+//
+// Use a heap-backed singleton to avoid static deinitialization order issues at
+// process shutdown. InstrumentRegistry teardown can still call into the process
+// manager during global destruction; a function-local static object can be
+// destroyed too early, leading to use-after-destruction in stop paths.
 static ipc::ProcessManager &get_process_manager() {
-  static ipc::ProcessManager manager;
-  return manager;
+  static auto *manager = new ipc::ProcessManager();
+  return *manager;
 }
 
 InstrumentWorkerProxy::InstrumentWorkerProxy(const std::string &instrument_name,
