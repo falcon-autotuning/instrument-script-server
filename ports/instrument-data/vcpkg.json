@@ -1,0 +1,16 @@
+{
+  "name": "instrument-data",
+  "version": "1.0.0",
+  "description": "An cross OS shared memory platform for collecting scientific data from instruments",
+  "dependencies": [
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    },
+    "glib"
+  ]
+}
