@@ -27,31 +27,39 @@ static inline DataType map_array_type(ArrayType type) {
 
 DataBuffer::DataBuffer(const std::string &buffer_id, void *data,
                        size_t byte_size, DataType data_type,
-                       size_t element_count)
+                       size_t element_count, void *c_buf)
     : buffer_id_(buffer_id), data_(data), byte_size_(byte_size),
-      element_count_(element_count), data_type_(data_type), owns_memory_(true) {
+      element_count_(element_count), data_type_(data_type),
+      owns_memory_(true), c_buf_(c_buf) {
 }
 
 DataBuffer::~DataBuffer() {
   if (owns_memory_ && !buffer_id_.empty()) {
     LOG_DEBUG("DATA_BUFFER", "DESTRUCT", "Releasing shared handle for buffer {}", buffer_id_);
     data_manager_release_buffer(buffer_id_.c_str());
+  } else if (!owns_memory_ && c_buf_) {
+    // Non-owning peek: balance the process-local ref count in the C library
+    data_buffer_unref(static_cast<::DataBuffer*>(c_buf_));
   }
 }
 
 DataBuffer::DataBuffer(DataBuffer &&other) noexcept
     : buffer_id_(std::move(other.buffer_id_)), data_(other.data_),
       byte_size_(other.byte_size_), element_count_(other.element_count_),
-      data_type_(other.data_type_), owns_memory_(other.owns_memory_) {
+      data_type_(other.data_type_), owns_memory_(other.owns_memory_),
+      c_buf_(other.c_buf_) {
   other.data_ = nullptr;
   other.buffer_id_.clear();
   other.owns_memory_ = false;
+  other.c_buf_ = nullptr;
 }
 
 DataBuffer &DataBuffer::operator=(DataBuffer &&other) noexcept {
   if (this != &other) {
     if (owns_memory_ && !buffer_id_.empty()) {
       data_manager_release_buffer(buffer_id_.c_str());
+    } else if (!owns_memory_ && c_buf_) {
+      data_buffer_unref(static_cast<::DataBuffer*>(c_buf_));
     }
 
     buffer_id_ = std::move(other.buffer_id_);
@@ -60,10 +68,12 @@ DataBuffer &DataBuffer::operator=(DataBuffer &&other) noexcept {
     element_count_ = other.element_count_;
     data_type_ = other.data_type_;
     owns_memory_ = other.owns_memory_;
+    c_buf_ = other.c_buf_;
 
     other.data_ = nullptr;
     other.buffer_id_.clear();
     other.owns_memory_ = false;
+    other.c_buf_ = nullptr;
   }
   return *this;
 }
@@ -288,7 +298,7 @@ DataBufferManager::get_buffer(const std::string &buffer_id) {
   size_t element_count = c_meta.element_count;
 
   // Non-owning wrapper: lifetime is managed by the caller + release_buffer().
-  auto buffer = std::make_shared<DataBuffer>(buffer_id, raw_data, bytes, dtype, element_count);
+  auto buffer = std::make_shared<DataBuffer>(buffer_id, raw_data, bytes, dtype, element_count, c_buf);
   buffer->set_non_owning();
   return buffer;
 }

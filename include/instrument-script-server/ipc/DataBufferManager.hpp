@@ -86,7 +86,7 @@ struct INSTRUMENT_SERVER_API DataBufferMetadata {
 class INSTRUMENT_SERVER_API DataBuffer {
 public:
   DataBuffer(const std::string &buffer_id, void *data, size_t byte_size,
-             DataType data_type, size_t element_count);
+             DataType data_type, size_t element_count, void *c_buf = nullptr);
   ~DataBuffer();
 
   // Non-copyable, movable
@@ -132,6 +132,7 @@ private:
   size_t element_count_;
   DataType data_type_;
   bool owns_memory_;
+  void *c_buf_;
 };
 
 /// Manages shared memory buffers for large data transfers

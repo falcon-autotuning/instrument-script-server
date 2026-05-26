@@ -20,6 +20,7 @@ class INSTRUMENT_SERVER_API BufferHandle {
 public:
   explicit BufferHandle(const std::string &buffer_id, uint64_t element_count,
                         const std::string &data_type);
+  ~BufferHandle();
 
   /// Get the buffer ID
   [[nodiscard]] const std::string &id() const { return buffer_id_; }

@@ -1,6 +1,7 @@
 #include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/SerializedCommand.hpp"
 #include "instrument-script-server/ipc/SharedQueue.hpp"
+#include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
 #include <chrono>
 #include <csignal>
@@ -311,8 +312,8 @@ private:
 
   void handle_command(const ipc::IPCMessage &msg) {
     SerializedCommand cmd = deserialize_command_from_msg(msg);
-    LOG_DEBUG(instrument_name_, cmd.id, "Received command: {} (sync={})",
-              cmd.verb, cmd.sync_token.value_or(0));
+    LOG_INFO(instrument_name_, "WORKER_MAIN", "Received command: {} (id={}, sync={})",
+             cmd.verb, cmd.id, cmd.sync_token.value_or(0));
 
     PluginResponse plugin_resp = {};
     int32_t exec_result = 0;
@@ -328,6 +329,30 @@ private:
       // Optionally set text_response
       std::strncpy(plugin_resp.text_response, "BARRIER_NOP",
                    PLUGIN_MAX_PAYLOAD - 1);
+    } else if (cmd.verb == "__RELEASE_BUFFER__") {
+      // Internal release command to free worker creator's ownership of the buffer
+      plugin_resp.success = true;
+      std::strncpy(plugin_resp.command_id, cmd.id.c_str(),
+                   PLUGIN_MAX_STRING_LEN - 1);
+      std::strncpy(plugin_resp.instrument_name, cmd.instrument_name.c_str(),
+                   PLUGIN_MAX_STRING_LEN - 1);
+      
+      std::string buffer_id = "";
+      auto it = cmd.params.find("buffer_id");
+      if (it != cmd.params.end()) {
+        if (auto s = std::get_if<std::string>(&it->second)) {
+          buffer_id = *s;
+        }
+      }
+
+      if (!buffer_id.empty()) {
+        LOG_INFO(instrument_name_, "WORKER_MAIN", "Executing __RELEASE_BUFFER__ for buffer: {}", buffer_id);
+        ipc::DataBufferManager::instance().release_buffer(buffer_id);
+        std::strncpy(plugin_resp.text_response, "RELEASED", PLUGIN_MAX_PAYLOAD - 1);
+      } else {
+        plugin_resp.success = false;
+        std::strncpy(plugin_resp.error_message, "Missing buffer_id param", PLUGIN_MAX_STRING_LEN - 1);
+      }
     } else {
       // Normal plugin execution
       exec_result =

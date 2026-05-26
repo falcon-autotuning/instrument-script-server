@@ -31,7 +31,12 @@ namespace instserver {
 BufferHandle::BufferHandle(const std::string &buffer_id, uint64_t element_count,
                            const std::string &data_type)
     : buffer_id_(buffer_id), element_count_(element_count),
-      data_type_(data_type) {}
+      data_type_(data_type) {
+  // Graceful ownership transfer: attach to the buffer in the server process to claim ownership
+  ipc::DataBufferManager::instance().get_buffer(buffer_id_);
+}
+
+BufferHandle::~BufferHandle() {}
 
 bool BufferHandle::add_offset(double offset) {
   return ipc::DataBufferManager::instance().add_offset(buffer_id_, offset);
@@ -304,6 +309,29 @@ sol::object RuntimeContext::call(const std::string &func_name,
     // Return MeasurementResponse wrapping a BufferHandle for array data
     auto handle = std::make_shared<BufferHandle>(
         resp.buffer_id, resp.element_count, resp.data_type);
+
+    // Hand-off/Ownership Transfer:
+    // 1. Server process has now attached to the buffer via BufferHandle's constructor (which calls get_buffer).
+    // 2. Since the server safely owns the buffer, we can now send a release command to the worker
+    //    so the worker releases its local creator reference, leaving the server as the sole owner.
+    auto worker = registry_.get_instrument(instrument_id);
+    if (worker) {
+      SerializedCommand release_cmd;
+      release_cmd.instrument_name = instrument_id;
+      release_cmd.verb = "__RELEASE_BUFFER__";
+      release_cmd.params["buffer_id"] = resp.buffer_id;
+      release_cmd.expects_response = true;
+      release_cmd.id = fmt::format("release-{}-{}", resp.buffer_id,
+          std::chrono::steady_clock::now().time_since_epoch().count());
+
+      try {
+        LOG_INFO("LUA_CONTEXT", "HANDOFF", "Sending __RELEASE_BUFFER__ to worker for buffer: {}", resp.buffer_id);
+        worker->execute_sync(release_cmd, std::chrono::milliseconds(1000));
+      } catch (const std::exception &e) {
+        LOG_ERROR("LUA_CONTEXT", "HANDOFF", "Failed to send __RELEASE_BUFFER__ to worker: {}", e.what());
+      }
+    }
+
     auto response =
         std::make_shared<MeasurementResponse>(instrument_spec, verb, handle);
     return sol::make_object(lua, response);
@@ -336,6 +364,12 @@ sol::object RuntimeContext::call(const std::string &func_name,
 
     auto handle =
         std::make_shared<BufferHandle>(buffer_id, arr->size(), "float64");
+
+    // Handoff: since the server itself created the buffer (refcount = 1),
+    // and the BufferHandle constructor attached to it (refcount = 2),
+    // the server's creator role is done, so we release the initial creator reference.
+    buf_mgr.release_buffer(buffer_id);
+
     auto response =
         std::make_shared<MeasurementResponse>(instrument_spec, verb, handle);
     return sol::make_object(lua, response);
