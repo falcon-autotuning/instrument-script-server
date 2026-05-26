@@ -52,5 +52,7 @@ int INSTRUMENT_SERVER_API handle_release_buffer(const nlohmann::json &params,
                                                nlohmann::json &out);
 int INSTRUMENT_SERVER_API handle_get_buffer_metadata(const nlohmann::json &params,
                                                      nlohmann::json &out);
+int INSTRUMENT_SERVER_API handle_read_buffer(const nlohmann::json &params,
+                                             nlohmann::json &out);
 
 } // namespace instserver::server

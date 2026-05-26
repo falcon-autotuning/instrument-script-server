@@ -412,6 +412,8 @@ void HttpRpcServer::run_loop(uint16_t port) {
         rc = server::handle_release_buffer(params, resp);
       } else if (command == "get_buffer_metadata") {
         rc = server::handle_get_buffer_metadata(params, resp);
+      } else if (command == "read_buffer") {
+        rc = server::handle_read_buffer(params, resp);
       } else {
         resp["ok"] = false;
         resp["error"] = "unknown command";
