@@ -1,14 +1,17 @@
 #include "instrument-script-server/ipc/ProcessManager.hpp"
 #include "instrument-script-server/Logger.hpp"
 
+#include <filesystem>
 #include <sstream>
 
 #ifdef _WIN32
 #include <processthreadsapi.h>
+#include <windows.h>
 #else
 #include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <limits.h>
 extern char **environ;
 #endif
 
@@ -23,7 +26,35 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
   LOG_INFO("PROCESS", "SPAWN",
            "Spawning worker for instrument:  {} with plugin: {}",
            instrument_name, plugin_path);
-  std::vector<std::string> args = {worker_executable, instrument_name,
+
+  std::string resolved_worker = worker_executable;
+  std::filesystem::path exe_dir;
+
+#ifdef _WIN32
+  char path[MAX_PATH];
+  DWORD length = GetModuleFileNameA(NULL, path, MAX_PATH);
+  if (length > 0) {
+    exe_dir = std::filesystem::path(std::string(path, length)).parent_path();
+  }
+#else
+  char path[PATH_MAX];
+  ssize_t count = readlink("/proc/self/exe", path, PATH_MAX);
+  if (count != -1) {
+    exe_dir = std::filesystem::path(std::string(path, count)).parent_path();
+  }
+#endif
+
+  if (!exe_dir.empty()) {
+    std::filesystem::path candidate1 = exe_dir / worker_executable;
+    std::filesystem::path candidate2 = exe_dir.parent_path() / worker_executable;
+    if (std::filesystem::exists(candidate1)) {
+      resolved_worker = candidate1.string();
+    } else if (std::filesystem::exists(candidate2)) {
+      resolved_worker = candidate2.string();
+    }
+  }
+
+  std::vector<std::string> args = {resolved_worker, instrument_name,
                                    plugin_path};
   ProcessId pid = spawn_process_impl(args);
   if (pid == 0) {

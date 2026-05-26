@@ -111,6 +111,11 @@ public:
   uint64_t *as_uint64();
   uint8_t *as_uint8();
 
+  /// Mark this wrapper as non-owning so the destructor will not call
+  /// data_manager_release_buffer. Used by DataBufferManager::get_buffer()
+  /// to return a peek without bumping the global ref count.
+  void set_non_owning() { owns_memory_ = false; }
+
   const float *as_float32() const;
   const double *as_float64() const;
   const int32_t *as_int32() const;
@@ -172,32 +177,6 @@ public:
 
 private:
   DataBufferManager() = default;
-
-  struct BufferEntry {
-    std::shared_ptr<DataBuffer> buffer;
-    DataBufferMetadata metadata;
-    std::atomic<uint32_t> ref_count;
-
-    // Constructor to initialize atomic properly
-    BufferEntry(std::shared_ptr<DataBuffer> buf, DataBufferMetadata meta,
-                uint32_t initial_ref_count)
-        : buffer(std::move(buf)), metadata(std::move(meta)),
-          ref_count(initial_ref_count) {}
-
-    // Explicitly delete copy operations
-    BufferEntry(const BufferEntry &) = delete;
-    BufferEntry &operator=(const BufferEntry &) = delete;
-
-    // Delete move operations (atomic can't be moved)
-    BufferEntry(BufferEntry &&) = delete;
-    BufferEntry &operator=(BufferEntry &&) = delete;
-  };
-
-  mutable std::mutex mutex_;
-  std::unordered_map<std::string, BufferEntry> buffers_;
-  std::atomic<uint64_t> next_buffer_id_{1};
-
-  std::string generate_buffer_id();
 };
 
 } // namespace instserver::ipc

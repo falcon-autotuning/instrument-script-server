@@ -12,6 +12,7 @@
         "VCPKG_ROOT": "${sourceDir}/vcpkg",
         "VCPKG_INSTALLED_DIR": "${sourceDir}/vcpkg_installed",
         "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/my-vcpkg-triplets",
+        "VCPKG_OVERLAY_PORTS": "${sourceDir}/ports",
         "CMAKE_MAKE_PROGRAM": "ninja",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "USE_CCACHE": "ON",

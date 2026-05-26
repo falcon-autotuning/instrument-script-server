@@ -11,6 +11,16 @@
     "gtest",
     "yaml-cpp",
     "boost-interprocess",
-    "boost-date-time"
+    "boost-date-time",
+    {
+      "name": "instrument-data",
+      "version>=": "1.0.0"
+    }
+  ],
+  "overrides": [
+    {
+      "name": "instrument-data",
+      "version": "1.0.0"
+    }
   ]
 }

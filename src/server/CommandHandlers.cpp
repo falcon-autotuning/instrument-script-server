@@ -8,6 +8,7 @@
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/ipc/DataBufferManager.hpp"
 
 #include <fstream>
 #include <sol/sol.hpp>
@@ -1123,5 +1124,66 @@ int handle_job_cancel(const json &params, json &out) {
     out["error"] = "failed to cancel job (maybe already finished)";
   return ok ? 0 : 1;
 }
+
+int handle_list_buffers(const json &params, json &out) {
+  (void)params;
+  out = json::object();
+  auto &mgr = ipc::DataBufferManager::instance();
+  auto buffers = mgr.list_buffers();
+  out["ok"] = true;
+  out["buffers"] = json::array();
+  for (const auto &id : buffers) {
+    if (auto meta_opt = mgr.get_metadata(id)) {
+      auto meta = *meta_opt;
+      json b;
+      b["buffer_id"] = id;
+      b["element_count"] = meta.element_count;
+      b["byte_size"] = meta.byte_size;
+      b["data_type"] = meta.data_type;
+      out["buffers"].push_back(b);
+    }
+  }
+  return 0;
+}
+
+int handle_release_buffer(const json &params, json &out) {
+  out = json::object();
+  std::string id = params.value("buffer_id", "");
+  if (id.empty()) {
+    out["ok"] = false;
+    out["error"] = "missing buffer_id";
+    return 1;
+  }
+  auto &mgr = ipc::DataBufferManager::instance();
+  mgr.release_buffer(id);
+  out["ok"] = true;
+  out["message"] = "Buffer released successfully";
+  return 0;
+}
+
+int handle_get_buffer_metadata(const json &params, json &out) {
+  out = json::object();
+  std::string id = params.value("buffer_id", "");
+  if (id.empty()) {
+    out["ok"] = false;
+    out["error"] = "missing buffer_id";
+    return 1;
+  }
+  auto &mgr = ipc::DataBufferManager::instance();
+  auto meta_opt = mgr.get_metadata(id);
+  if (!meta_opt) {
+    out["ok"] = false;
+    out["error"] = "buffer not found";
+    return 1;
+  }
+  auto meta = *meta_opt;
+  out["ok"] = true;
+  out["buffer_id"] = id;
+  out["element_count"] = meta.element_count;
+  out["byte_size"] = meta.byte_size;
+  out["data_type"] = meta.data_type;
+  return 0;
+}
+
 } // namespace server
 } // namespace instserver

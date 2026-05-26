@@ -406,6 +406,12 @@ void HttpRpcServer::run_loop(uint16_t port) {
         rc = server::handle_job_list(params, resp);
       } else if (command == "job_cancel") {
         rc = server::handle_job_cancel(params, resp);
+      } else if (command == "list_buffers") {
+        rc = server::handle_list_buffers(params, resp);
+      } else if (command == "release_buffer") {
+        rc = server::handle_release_buffer(params, resp);
+      } else if (command == "get_buffer_metadata") {
+        rc = server::handle_get_buffer_metadata(params, resp);
       } else {
         resp["ok"] = false;
         resp["error"] = "unknown command";

@@ -1,11 +1,27 @@
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/Logger.hpp"
+#include <instrument-data.h>
 #include <chrono>
 #include <cstring>
 #include <fstream>
 #include <sstream>
 
+#ifdef _WIN32
+#include <process.h>
+#define getpid _getpid
+#else
+#include <unistd.h>
+#endif
+
 namespace instserver::ipc {
+
+static inline ArrayType map_data_type(DataType type) {
+  return static_cast<ArrayType>(type);
+}
+
+static inline DataType map_array_type(ArrayType type) {
+  return static_cast<DataType>(type);
+}
 
 // DataBuffer implementation
 
@@ -17,9 +33,9 @@ DataBuffer::DataBuffer(const std::string &buffer_id, void *data,
 }
 
 DataBuffer::~DataBuffer() {
-  if (owns_memory_ && (data_ != nullptr)) {
-    free(data_);
-    data_ = nullptr;
+  if (owns_memory_ && !buffer_id_.empty()) {
+    LOG_DEBUG("DATA_BUFFER", "DESTRUCT", "Releasing shared handle for buffer {}", buffer_id_);
+    data_manager_release_buffer(buffer_id_.c_str());
   }
 }
 
@@ -28,13 +44,14 @@ DataBuffer::DataBuffer(DataBuffer &&other) noexcept
       byte_size_(other.byte_size_), element_count_(other.element_count_),
       data_type_(other.data_type_), owns_memory_(other.owns_memory_) {
   other.data_ = nullptr;
+  other.buffer_id_.clear();
   other.owns_memory_ = false;
 }
 
 DataBuffer &DataBuffer::operator=(DataBuffer &&other) noexcept {
   if (this != &other) {
-    if (owns_memory_ && (data_ != nullptr)) {
-      free(data_);
+    if (owns_memory_ && !buffer_id_.empty()) {
+      data_manager_release_buffer(buffer_id_.c_str());
     }
 
     buffer_id_ = std::move(other.buffer_id_);
@@ -45,6 +62,7 @@ DataBuffer &DataBuffer::operator=(DataBuffer &&other) noexcept {
     owns_memory_ = other.owns_memory_;
 
     other.data_ = nullptr;
+    other.buffer_id_.clear();
     other.owns_memory_ = false;
   }
   return *this;
@@ -207,18 +225,6 @@ DataBufferManager &DataBufferManager::instance() {
   return manager;
 }
 
-std::string DataBufferManager::generate_buffer_id() {
-  uint64_t id = next_buffer_id_.fetch_add(1);
-  auto now = std::chrono::system_clock::now();
-  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                now.time_since_epoch())
-                .count();
-
-  std::ostringstream oss;
-  oss << "buffer_" << ms << "_" << id;
-  return oss.str();
-}
-
 std::string DataBufferManager::create_buffer(const std::string &instrument_name,
                                              const std::string &command_id,
                                              DataType data_type,
@@ -230,48 +236,30 @@ std::string DataBufferManager::create_buffer(const std::string &instrument_name,
     return "";
   }
 
-  size_t byte_size = element_count * element_size;
-
-  // Allocate memory
-  void *buffer_data = malloc(byte_size);
-  if (buffer_data == nullptr) {
-    LOG_ERROR("DATA_BUFFER", "CREATE", "Failed to allocate {} bytes",
-              byte_size);
+  void *raw_data = nullptr;
+  gchar *c_id = data_manager_create_buffer_zero_copy(
+      instrument_name.c_str(),
+      command_id.c_str(),
+      map_data_type(data_type),
+      element_count,
+      &raw_data
+  );
+  if (c_id == nullptr) {
+    LOG_ERROR("DATA_BUFFER", "CREATE", "Failed to create shared memory buffer via instrument-data");
     return "";
   }
 
-  // Copy data if provided
-  if (data != nullptr) {
-    memcpy(buffer_data, data, byte_size);
-  } else {
-    memset(buffer_data, 0, byte_size);
+  std::string buffer_id(c_id);
+  g_free(c_id);
+
+  if (data != nullptr && raw_data != nullptr) {
+    std::memcpy(raw_data, data, element_count * element_size);
   }
 
-  std::string buffer_id = generate_buffer_id();
-
-  auto buffer = std::make_shared<DataBuffer>(buffer_id, buffer_data, byte_size,
-                                             data_type, element_count);
-
-  DataBufferMetadata metadata;
-  metadata.buffer_id = buffer_id;
-  metadata.instrument_name = instrument_name;
-  metadata.command_id = command_id;
-  metadata.data_type = data_type;
-  metadata.element_count = element_count;
-  metadata.byte_size = byte_size;
-  metadata.timestamp_ms =
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          std::chrono::system_clock::now().time_since_epoch())
-          .count();
-
-  std::lock_guard lock(mutex_);
-
-  // Use try_emplace to construct BufferEntry in-place
-  buffers_.try_emplace(buffer_id, buffer, std::move(metadata), 1);
-
+  size_t bytes = element_count * element_size;
   LOG_INFO("DATA_BUFFER", "CREATE",
-           "Created buffer {} for {}. {} ({} elements, {} bytes)", buffer_id,
-           instrument_name, command_id, element_count, byte_size);
+           "Created shared buffer {} for {}. {} ({} elements, {} bytes)", buffer_id,
+           instrument_name, command_id, element_count, bytes);
 
   return buffer_id;
 }
@@ -284,154 +272,94 @@ std::string DataBufferManager::create_buffer_with_metadata(
 
 std::shared_ptr<DataBuffer>
 DataBufferManager::get_buffer(const std::string &buffer_id) {
-  std::lock_guard lock(mutex_);
-  auto it = buffers_.find(buffer_id);
-  if (it == buffers_.end()) {
+  SharedMetadata c_meta;
+  if (data_manager_get_metadata(buffer_id.c_str(), &c_meta) == FALSE) {
     return nullptr;
   }
 
-  it->second.ref_count++;
-  return it->second.buffer;
+  ::DataBuffer *c_buf = data_manager_get_buffer(buffer_id.c_str());
+  if (c_buf == nullptr) {
+    return nullptr;
+  }
+
+  void *raw_data = data_buffer_data(c_buf);
+  DataType dtype = map_array_type(c_meta.type);
+  size_t bytes = c_meta.byte_size;
+  size_t element_count = c_meta.element_count;
+
+  // Non-owning wrapper: lifetime is managed by the caller + release_buffer().
+  auto buffer = std::make_shared<DataBuffer>(buffer_id, raw_data, bytes, dtype, element_count);
+  buffer->set_non_owning();
+  return buffer;
 }
 
 std::optional<DataBufferMetadata>
 DataBufferManager::get_metadata(const std::string &buffer_id) const {
-  std::lock_guard lock(mutex_);
-  auto it = buffers_.find(buffer_id);
-  if (it == buffers_.end()) {
+  SharedMetadata c_meta;
+  if (data_manager_get_metadata(buffer_id.c_str(), &c_meta) == FALSE) {
     return std::nullopt;
   }
-  return it->second.metadata;
+
+  DataBufferMetadata metadata;
+  metadata.buffer_id = c_meta.buffer_id;
+  metadata.instrument_name = c_meta.instrument_name;
+  metadata.command_id = c_meta.command_id;
+  metadata.data_type = map_array_type(c_meta.type);
+  metadata.element_count = c_meta.element_count;
+  metadata.byte_size = c_meta.byte_size;
+  metadata.timestamp_ms = c_meta.timestamp_ms;
+  metadata.description = "";
+  metadata.dimensions = {c_meta.element_count};
+
+  return metadata;
 }
 
 void DataBufferManager::release_buffer(const std::string &buffer_id) {
-  std::lock_guard lock(mutex_);
-  auto it = buffers_.find(buffer_id);
-  if (it == buffers_.end()) {
-    return;
-  }
-
-  uint32_t ref_count = --it->second.ref_count;
-  LOG_DEBUG("DATA_BUFFER", "RELEASE", "Buffer {} ref count now {}", buffer_id,
-            ref_count);
-
-  if (ref_count == 0) {
-    LOG_INFO("DATA_BUFFER", "RELEASE", "Releasing buffer {}", buffer_id);
-    buffers_.erase(it);
-  }
+  data_manager_release_buffer(buffer_id.c_str());
 }
 
 std::vector<std::string> DataBufferManager::list_buffers() const {
-  std::lock_guard lock(mutex_);
-  std::vector<std::string> ids;
-  ids.reserve(buffers_.size());
-  for (const auto &[id, _] : buffers_) {
-    ids.push_back(id);
+  size_t count = 0;
+  gchar **list = data_manager_list_buffers(&count);
+  std::vector<std::string> result;
+  if (list) {
+    for (size_t i = 0; i < count; ++i) {
+      if (list[i]) {
+        result.push_back(list[i]);
+        g_free(list[i]);
+      }
+    }
+    g_free(list);
   }
-  return ids;
+  return result;
 }
 
 size_t DataBufferManager::total_memory_usage() const {
-  std::lock_guard lock(mutex_);
-  size_t total = 0;
-  for (const auto &[_, entry] : buffers_) {
-    total += entry.metadata.byte_size;
-  }
-  return total;
+  return data_manager_total_local_memory();
 }
 
 void DataBufferManager::clear_all() {
-  std::lock_guard lock(mutex_);
-  LOG_INFO("DATA_BUFFER", "CLEAR", "Clearing {} buffers", buffers_.size());
-  buffers_.clear();
+  size_t count = 0;
+  gchar **list = data_manager_list_buffers(&count);
+  if (list) {
+    for (size_t i = 0; i < count; ++i) {
+      if (list[i]) {
+        data_manager_release_buffer(list[i]);
+        g_free(list[i]);
+      }
+    }
+    g_free(list);
+  }
 }
 
 bool DataBufferManager::add_offset(const std::string &buffer_id,
                                    double offset) {
-  std::lock_guard lock(mutex_);
-
-  auto it = buffers_.find(buffer_id);
-  if (it == buffers_.end()) {
-    LOG_ERROR("DATA_BUFFER", "MATH", "Buffer not found: {}", buffer_id);
-    return false;
-  }
-
-  auto &buffer = it->second.buffer;
-  size_t count = buffer->element_count();
-
-  // Apply offset based on data type
-  switch (buffer->data_type()) {
-  case DataType::FLOAT32: {
-    float *data = buffer->as_float32();
-    for (size_t i = 0; i < count; ++i) {
-      data[i] += static_cast<float>(offset);
-    }
-    LOG_DEBUG("DATA_BUFFER", "MATH",
-              "Added offset {} to {} FLOAT32 elements in buffer {}", offset,
-              count, buffer_id);
-    return true;
-  }
-  case DataType::FLOAT64: {
-    double *data = buffer->as_float64();
-    for (size_t i = 0; i < count; ++i) {
-      data[i] += offset;
-    }
-    LOG_DEBUG("DATA_BUFFER", "MATH",
-              "Added offset {} to {} FLOAT64 elements in buffer {}", offset,
-              count, buffer_id);
-    return true;
-  }
-  default:
-    LOG_ERROR(
-        "DATA_BUFFER", "MATH",
-        "add_offset only supports float/double buffers, buffer {} has type {}",
-        buffer_id, static_cast<int>(buffer->data_type()));
-    return false;
-  }
+  return data_manager_add_offset(buffer_id.c_str(), offset) == TRUE;
 }
 
 bool DataBufferManager::multiply_gain(const std::string &buffer_id,
                                       double gain) {
-  std::lock_guard lock(mutex_);
-
-  auto it = buffers_.find(buffer_id);
-  if (it == buffers_.end()) {
-    LOG_ERROR("DATA_BUFFER", "MATH", "Buffer not found: {}", buffer_id);
-    return false;
-  }
-
-  auto &buffer = it->second.buffer;
-  size_t count = buffer->element_count();
-
-  // Apply gain based on data type
-  switch (buffer->data_type()) {
-  case DataType::FLOAT32: {
-    float *data = buffer->as_float32();
-    for (size_t i = 0; i < count; ++i) {
-      data[i] *= static_cast<float>(gain);
-    }
-    LOG_DEBUG("DATA_BUFFER", "MATH",
-              "Multiplied {} FLOAT32 elements by gain {} in buffer {}", count,
-              gain, buffer_id);
-    return true;
-  }
-  case DataType::FLOAT64: {
-    double *data = buffer->as_float64();
-    for (size_t i = 0; i < count; ++i) {
-      data[i] *= gain;
-    }
-    LOG_DEBUG("DATA_BUFFER", "MATH",
-              "Multiplied {} FLOAT64 elements by gain {} in buffer {}", count,
-              gain, buffer_id);
-    return true;
-  }
-  default:
-    LOG_ERROR("DATA_BUFFER", "MATH",
-              "multiply_gain only supports float/double buffers, buffer {} has "
-              "type {}",
-              buffer_id, static_cast<int>(buffer->data_type()));
-    return false;
-  }
+  return data_manager_multiply_gain(buffer_id.c_str(), gain) == TRUE;
 }
 
 } // namespace instserver::ipc
