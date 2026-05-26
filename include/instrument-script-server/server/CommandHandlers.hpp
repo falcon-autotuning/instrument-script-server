@@ -46,5 +46,7 @@ int INSTRUMENT_SERVER_API handle_job_list(const nlohmann::json &params,
                                           nlohmann::json &out);
 int INSTRUMENT_SERVER_API handle_job_cancel(const nlohmann::json &params,
                                             nlohmann::json &out);
+int INSTRUMENT_SERVER_API handle_read_buffer(const nlohmann::json &params,
+                                             nlohmann::json &out);
 
 } // namespace instserver::server

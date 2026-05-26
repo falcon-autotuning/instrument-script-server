@@ -1,6 +1,7 @@
 #include "instrument-script-server/server/CommandHandlers.hpp"
 #include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/SerializedCommand.hpp"
+#include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
@@ -109,9 +110,11 @@ void preload_lua_modules_from_dir(sol::state &lua, const std::string &libroot) {
                 path.string(), err.what());
       continue;
     }
-    // register loader in package.preload[module] so require(module) returns
-    // module table
-    preload[module] = loader;
+    // Convert to protected_function (stable registry reference) before
+    // assigning to the table — sol::load_result holds a raw Lua stack index
+    // and must not be stored directly in a table proxy.
+    sol::protected_function fn = loader;
+    preload[module] = fn;
     LOG_INFO("SERVER", "MEASURE", "Preloaded Lua module '{}'", module);
   }
 }
@@ -134,6 +137,18 @@ void load_bundle_file(sol::state &lua, const std::string &bundle_path) {
     LOG_ERROR("SERVER", "MEASURE", "bundle execution error {}: {}", bundle_path,
               err.what());
     return;
+  }
+  // If the bundle returned a table, register it as a Lua global under the
+  // file's stem name (e.g., "multimeter.lua" -> lua["multimeter"] = table).
+  // This allows measurement scripts to access the bundle proxy via the stem.
+  if (pres.return_count() > 0) {
+    sol::object ret = pres[0];
+    if (ret.get_type() == sol::type::table) {
+      std::string stem =
+          std::filesystem::path(bundle_path).stem().string();
+      lua[stem] = ret;
+      LOG_INFO("SERVER", "MEASURE", "Registered bundle global '{}'", stem);
+    }
   }
   LOG_INFO("SERVER", "MEASURE", "Loaded bundle {}", bundle_path);
 }
@@ -404,7 +419,8 @@ int handle_measure(const json &params, json &out) {
     // Setup Lua
     sol::state lua;
     lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::table,
-                       sol::lib::string, sol::lib::io, sol::lib::os);
+                       sol::lib::string, sol::lib::io, sol::lib::os,
+                       sol::lib::package);
     load_optional_lua_libs(lua);
 
     SyncCoordinator sync_coordinator;
@@ -534,8 +550,17 @@ __context_schema_version = nil
       return 1;
     }
 
-    // Check if the script defined a main function (new format)
+    // Check if the script defined a main function (new format).
+    // Support both styles:
+    //   (a) global: main = fn
+    //   (b) return table: return { main = fn }
     sol::optional<sol::protected_function> main_func = lua["main"];
+    if (!main_func && load_result.valid()) {
+      sol::object ret_val = load_result;
+      if (ret_val.get_type() == sol::type::table) {
+        main_func = ret_val.as<sol::table>()["main"];
+      }
+    }
 
     if (main_func) {
       // New format: call main function with context
@@ -1122,6 +1147,44 @@ int handle_job_cancel(const json &params, json &out) {
   if (!ok)
     out["error"] = "failed to cancel job (maybe already finished)";
   return ok ? 0 : 1;
+}
+
+int handle_read_buffer(const json &params, json &out) {
+  out = json::object();
+  std::string buffer_id = params.value("buffer_id", "");
+  if (buffer_id.empty()) {
+    out["ok"] = false;
+    out["error"] = "missing buffer_id";
+    return 1;
+  }
+  auto buf = ipc::DataBufferManager::instance().get_buffer(buffer_id);
+  if (!buf) {
+    out["ok"] = false;
+    out["error"] = "buffer not found: " + buffer_id;
+    return 1;
+  }
+  size_t n = buf->element_count();
+  out["ok"] = true;
+  out["buffer_id"] = buffer_id;
+  out["element_count"] = n;
+  // Return data as a JSON array of doubles (upcast float32 as needed)
+  if (buf->as_float64()) {
+    const double *d = buf->as_float64();
+    out["data"] = std::vector<double>(d, d + n);
+    out["data_type"] = "float64";
+  } else if (buf->as_float32()) {
+    const float *f = buf->as_float32();
+    std::vector<double> converted(n);
+    for (size_t i = 0; i < n; ++i)
+      converted[i] = static_cast<double>(f[i]);
+    out["data"] = converted;
+    out["data_type"] = "float64";
+  } else {
+    out["ok"] = false;
+    out["error"] = "unsupported buffer data type for JSON export";
+    return 1;
+  }
+  return 0;
 }
 } // namespace server
 } // namespace instserver

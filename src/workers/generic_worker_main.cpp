@@ -4,16 +4,44 @@
 #include "instrument-script-server/plugin/PluginLoader.hpp"
 #include <chrono>
 #include <csignal>
+#include <cstdio>
 #include <iostream>
 #include <string>
+#include <unistd.h>
 
 using namespace instserver;
 
 static volatile bool g_running = true;
 
+// Stored at startup so async signal handlers can log the instrument name.
+static char g_instrument_name_buf[256] = {};
+
 void signal_handler(int sig) {
   (void)sig;
   g_running = false;
+}
+
+// Handler for fatal signals (SIGSEGV, SIGABRT, SIGFPE). Writes a brief
+// async-signal-safe message to stderr (which the ISS daemon redirects to
+// /tmp/iss-daemon.log), flushes the spdlog file sink, then re-raises so the
+// OS can produce a core dump as normal.
+void crash_signal_handler(int sig) {
+  // Use only async-signal-safe calls here.
+  char buf[256];
+  int n = snprintf(buf, sizeof(buf),
+                   "[instrument-worker] CRASH signal %d in worker '%s'\n",
+                   sig, g_instrument_name_buf);
+  if (n > 0)
+    write(STDERR_FILENO, buf, static_cast<size_t>(n));
+
+  // Try to flush the file logger so the last LOG_* entries land on disk.
+  // Not strictly async-signal-safe but acceptable for a debug build.
+  if (auto logger = spdlog::get("instrument"))
+    logger->flush();
+
+  // Re-raise so the default handler runs (core dump, correct exit status).
+  std::signal(sig, SIG_DFL);
+  raise(sig);
 }
 
 static PluginCommand to_plugin_command(const SerializedCommand &cmd) {
@@ -173,7 +201,19 @@ private:
   }
 
   bool connect_ipc_queue() {
-    ipc_queue_ = ipc::SharedQueue::create_worker_queue(instrument_name_);
+    try {
+      ipc_queue_ = ipc::SharedQueue::create_worker_queue(instrument_name_);
+    } catch (const std::exception &ex) {
+      LOG_ERROR(instrument_name_, "WORKER_MAIN",
+                "Exception opening IPC queues: {}", ex.what());
+      plugin_.shutdown();
+      return false;
+    } catch (...) {
+      LOG_ERROR(instrument_name_, "WORKER_MAIN",
+                "Unknown exception opening IPC queues");
+      plugin_.shutdown();
+      return false;
+    }
     if (!ipc_queue_ || !ipc_queue_->is_valid()) {
       LOG_ERROR(instrument_name_, "WORKER_MAIN", "Failed to create IPC queue");
       plugin_.shutdown();
@@ -184,14 +224,34 @@ private:
   }
 
   void main_loop() {
+    uint64_t iteration = 0;
     while (g_running) {
+      LOG_DEBUG(instrument_name_, "WORKER_MAIN", "main_loop iter={} begin",
+                iteration);
+
+      LOG_DEBUG(instrument_name_, "WORKER_MAIN",
+                "main_loop iter={} heartbeat check", iteration);
       send_heartbeat_if_needed();
+
+      LOG_DEBUG(instrument_name_, "WORKER_MAIN",
+                "main_loop iter={} waiting for message", iteration);
       auto msg_opt = ipc_queue_->receive(IPC_RECV_TIMEOUT);
-      if (!msg_opt)
+
+      if (!msg_opt) {
+        LOG_DEBUG(instrument_name_, "WORKER_MAIN",
+                  "main_loop iter={} receive timeout (no message)", iteration);
+        ++iteration;
         continue;
+      }
+
+      LOG_DEBUG(instrument_name_, "WORKER_MAIN",
+                "main_loop iter={} got message type={}", iteration,
+                static_cast<uint32_t>(msg_opt->type));
       process_message(*msg_opt);
+      ++iteration;
     }
-    LOG_INFO(instrument_name_, "WORKER_MAIN", "Shutting down");
+    LOG_INFO(instrument_name_, "WORKER_MAIN", "Shutting down after {} iters",
+             iteration);
   }
 
   void send_heartbeat_if_needed() {
@@ -355,13 +415,27 @@ int main(int argc, char **argv) {
   LOG_INFO(instrument_name, "WORKER_MAIN", "Worker starting");
   LOG_INFO(instrument_name, "WORKER_MAIN", "Plugin:  {}", plugin_path);
 
+  // Copy name into global buffer so crash_signal_handler can print it.
+  strncpy(g_instrument_name_buf, instrument_name.c_str(),
+          sizeof(g_instrument_name_buf) - 1);
+
   std::signal(SIGINT, signal_handler);
   std::signal(SIGTERM, signal_handler);
+  std::signal(SIGSEGV, crash_signal_handler);
+  std::signal(SIGABRT, crash_signal_handler);
+  std::signal(SIGFPE, crash_signal_handler);
 
   try {
     return Instrument(instrument_name, plugin_path).run();
   } catch (const std::exception &e) {
-    LOG_ERROR(instrument_name, "WORKER_MAIN", "Fatal error: {}", e.what());
+    LOG_ERROR(instrument_name, "WORKER_MAIN", "Fatal error (std::exception): {}",
+              e.what());
+    if (auto logger = spdlog::get("instrument")) logger->flush();
+    return 1;
+  } catch (...) {
+    LOG_ERROR(instrument_name, "WORKER_MAIN",
+              "Fatal error: unknown exception type escaped main()");
+    if (auto logger = spdlog::get("instrument")) logger->flush();
     return 1;
   }
 }

@@ -406,6 +406,8 @@ void HttpRpcServer::run_loop(uint16_t port) {
         rc = server::handle_job_list(params, resp);
       } else if (command == "job_cancel") {
         rc = server::handle_job_cancel(params, resp);
+      } else if (command == "read_buffer") {
+        rc = server::handle_read_buffer(params, resp);
       } else {
         resp["ok"] = false;
         resp["error"] = "unknown command";
