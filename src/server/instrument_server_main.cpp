@@ -34,6 +34,11 @@ void print_usage() {
   std::cout << "  test <config> <verb> [params]      Test command\n";
   std::cout << "  discover [paths...]                Discover plugins\n";
   std::cout << "  plugins                            List available plugins\n";
+  std::cout << "\nBuffer Management:\n";
+  std::cout << "  list-buffers                       List all active shared memory buffers\n";
+  std::cout << "  buffer-metadata <id>               Show metadata for a shared memory buffer\n";
+  std::cout << "  read-buffer <id> [--json]          Read data contents of a shared memory buffer\n";
+  std::cout << "  release-buffer <id>                Deallocate/free a shared memory buffer\n";
   std::cout << "\nOptions:\n";
   std::cout << "  --plugin <path>      Custom plugin (. so/. dll)\n";
   std::cout << "  --log-level <level>  Log level (default: info)\n";
@@ -321,6 +326,102 @@ int main(int argc, char **argv) {
                       << p["path"].get<std::string>() << "\n";
           }
         }
+      }
+    }
+  } else if (command == "list-buffers") {
+    nlohmann::json params;
+    nlohmann::json out;
+    int rc = server::handle_list_buffers(params, out);
+    if (!out.is_null()) {
+      if (!out.value("ok", false)) {
+        std::cerr << out.value("error", "Failed to list buffers") << "\n";
+      } else if (out.contains("buffers")) {
+        auto arr = out["buffers"];
+        if (arr.empty()) {
+          std::cout << "No active shared memory buffers\n";
+        } else {
+          std::cout << "Active Shared Memory Buffers:\n";
+          for (auto &buf_id : arr) {
+            nlohmann::json meta_params, meta_out;
+            meta_params["buffer_id"] = buf_id.get<std::string>();
+            if (server::handle_get_buffer_metadata(meta_params, meta_out) == 0 && meta_out.value("ok", false)) {
+              std::cout << "  - " << buf_id.get<std::string>() << " ("
+                        << meta_out.value("element_count", 0ULL) << " elements, "
+                        << meta_out.value("data_type", "") << ")\n";
+            } else {
+              std::cout << "  - " << buf_id.get<std::string>() << "\n";
+            }
+          }
+        }
+      }
+    }
+    return rc;
+  } else if (command == "buffer-metadata") {
+    if (argc < 3) {
+      std::cerr << "Error: buffer-metadata requires buffer ID\n";
+      std::cerr << "Usage: instrument-script-server buffer-metadata <buffer_id>\n";
+      return 1;
+    }
+    nlohmann::json params;
+    params["buffer_id"] = argv[2];
+    nlohmann::json out;
+    int rc = server::handle_get_buffer_metadata(params, out);
+    if (!out.is_null()) {
+      if (!out.value("ok", false)) {
+        std::cerr << out.value("error", "Failed to get buffer metadata") << "\n";
+      } else {
+        std::cout << "Buffer Metadata:\n";
+        std::cout << "  ID: " << argv[2] << "\n";
+        std::cout << "  Elements: " << out.value("element_count", 0ULL) << "\n";
+        std::cout << "  Type: " << out.value("data_type", "") << "\n";
+        std::cout << "  Size: " << out.value("bytes", 0ULL) << " bytes\n";
+      }
+    }
+    return rc;
+  } else if (command == "read-buffer") {
+    if (argc < 3) {
+      std::cerr << "Error: read-buffer requires buffer ID\n";
+      std::cerr << "Usage: instrument-script-server read-buffer <buffer_id> [--json]\n";
+      return 1;
+    }
+    nlohmann::json params;
+    params["buffer_id"] = argv[2];
+    bool json_output = false;
+    for (int i = 3; i < argc; ++i) {
+      if (std::string(argv[i]) == "--json") {
+        json_output = true;
+      }
+    }
+    nlohmann::json out;
+    int rc = server::handle_read_buffer(params, out);
+    if (!out.is_null()) {
+      if (!out.value("ok", false)) {
+        std::cerr << out.value("error", "Failed to read buffer") << "\n";
+      } else if (json_output) {
+        std::cout << out.dump(2) << "\n";
+      } else if (out.contains("data")) {
+        auto data = out["data"];
+        for (size_t i = 0; i < data.size(); ++i) {
+          std::cout << "[" << i << "] " << data[i] << "\n";
+        }
+      }
+    }
+    return rc;
+  } else if (command == "release-buffer") {
+    if (argc < 3) {
+      std::cerr << "Error: release-buffer requires buffer ID\n";
+      std::cerr << "Usage: instrument-script-server release-buffer <buffer_id>\n";
+      return 1;
+    }
+    nlohmann::json params;
+    params["buffer_id"] = argv[2];
+    nlohmann::json out;
+    int rc = server::handle_release_buffer(params, out);
+    if (!out.is_null()) {
+      if (!out.value("ok", false)) {
+        std::cerr << out.value("error", "Failed to release buffer") << "\n";
+      } else {
+        std::cout << "Released buffer: " << argv[2] << "\n";
       }
     }
     return rc;
