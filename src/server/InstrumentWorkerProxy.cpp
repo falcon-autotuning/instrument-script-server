@@ -245,7 +245,13 @@ void InstrumentWorkerProxy::response_listener_loop() {
     auto msg_opt = ipc_queue_->receive(std::chrono::milliseconds(100));
     if (!msg_opt)
       continue;
-    handle_ipc_message(*msg_opt);
+    try {
+      handle_ipc_message(*msg_opt);
+    } catch (const std::exception &e) {
+      LOG_ERROR(instrument_name_, "PROXY", "Exception in response listener loop for message ID {}: {}", msg_opt->id, e.what());
+    } catch (...) {
+      LOG_ERROR(instrument_name_, "PROXY", "Unknown exception in response listener loop for message ID {}", msg_opt->id);
+    }
   }
   LOG_INFO(instrument_name_, "PROXY", "Response listener stopped");
 }
@@ -256,7 +262,30 @@ void InstrumentWorkerProxy::handle_ipc_message(const ipc::IPCMessage &msg) {
     get_process_manager().update_heartbeat(worker_pid_);
     break;
   case ipc::IPCMessage::Type::RESPONSE:
-    handle_response_message(msg);
+    try {
+      handle_response_message(msg);
+    } catch (const std::exception &e) {
+      LOG_ERROR(instrument_name_, "PROXY", "Failed to process response message ID {}: {}", msg.id, e.what());
+      
+      // Fulfill pending promise with error so the caller thread doesn't hang
+      std::lock_guard<std::mutex> lock(pending_mutex_);
+      auto it = pending_responses_.find(msg.id);
+      if (it != pending_responses_.end()) {
+        CommandResponse err_resp;
+        err_resp.command_id = fmt::format("{}-{}", instrument_name_, msg.id);
+        err_resp.instrument_name = instrument_name_;
+        err_resp.success = false;
+        err_resp.error_message = std::string("Malformed response payload: ") + e.what();
+        
+        try {
+          it->second.set_value(std::move(err_resp));
+        } catch (...) {}
+        pending_responses_.erase(it);
+        
+        std::lock_guard<std::mutex> stats_lock(stats_mutex_);
+        stats_.commands_failed++;
+      }
+    }
     break;
   case ipc::IPCMessage::Type::SYNC_ACK:
     handle_sync_ack_message(msg);

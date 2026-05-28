@@ -311,7 +311,27 @@ private:
   }
 
   void handle_command(const ipc::IPCMessage &msg) {
-    SerializedCommand cmd = deserialize_command_from_msg(msg);
+    SerializedCommand cmd;
+    try {
+      cmd = deserialize_command_from_msg(msg);
+    } catch (const std::exception &e) {
+      LOG_ERROR(instrument_name_, "WORKER_MAIN", "Failed to deserialize command from message ID {}: {}", msg.id, e.what());
+      
+      PluginResponse plugin_resp = {};
+      plugin_resp.success = false;
+      std::strncpy(plugin_resp.command_id, "unknown", PLUGIN_MAX_STRING_LEN - 1);
+      std::strncpy(plugin_resp.instrument_name, instrument_name_.c_str(), PLUGIN_MAX_STRING_LEN - 1);
+      std::strncpy(plugin_resp.error_message, (std::string("Malformed command JSON: ") + e.what()).c_str(), PLUGIN_MAX_STRING_LEN - 1);
+      
+      SerializedCommand stub_cmd;
+      stub_cmd.id = "unknown";
+      stub_cmd.instrument_name = instrument_name_;
+      stub_cmd.verb = "unknown";
+      
+      send_command_response(msg, stub_cmd, plugin_resp);
+      return;
+    }
+
     LOG_INFO(instrument_name_, "WORKER_MAIN", "Received command: {} (id={}, sync={})",
              cmd.verb, cmd.id, cmd.sync_token.value_or(0));
 

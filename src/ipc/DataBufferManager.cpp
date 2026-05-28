@@ -247,7 +247,7 @@ std::string DataBufferManager::create_buffer(const std::string &instrument_name,
   }
 
   void *raw_data = nullptr;
-  gchar *c_id = data_manager_create_buffer_zero_copy(
+  char *c_id = data_manager_create_buffer_zero_copy(
       instrument_name.c_str(),
       command_id.c_str(),
       map_data_type(data_type),
@@ -260,7 +260,7 @@ std::string DataBufferManager::create_buffer(const std::string &instrument_name,
   }
 
   std::string buffer_id(c_id);
-  g_free(c_id);
+  free(c_id);
 
   if (data != nullptr && raw_data != nullptr) {
     std::memcpy(raw_data, data, element_count * element_size);
@@ -283,7 +283,7 @@ std::string DataBufferManager::create_buffer_with_metadata(
 std::shared_ptr<DataBuffer>
 DataBufferManager::get_buffer(const std::string &buffer_id) {
   SharedMetadata c_meta;
-  if (data_manager_get_metadata(buffer_id.c_str(), &c_meta) == FALSE) {
+  if (!data_manager_get_metadata(buffer_id.c_str(), &c_meta)) {
     return nullptr;
   }
 
@@ -306,7 +306,7 @@ DataBufferManager::get_buffer(const std::string &buffer_id) {
 std::optional<DataBufferMetadata>
 DataBufferManager::get_metadata(const std::string &buffer_id) const {
   SharedMetadata c_meta;
-  if (data_manager_get_metadata(buffer_id.c_str(), &c_meta) == FALSE) {
+  if (!data_manager_get_metadata(buffer_id.c_str(), &c_meta)) {
     return std::nullopt;
   }
 
@@ -330,46 +330,46 @@ void DataBufferManager::release_buffer(const std::string &buffer_id) {
 
 std::vector<std::string> DataBufferManager::list_buffers() const {
   size_t count = 0;
-  gchar **list = data_manager_list_buffers(&count);
+  char **list = data_manager_list_buffers(&count);
   std::vector<std::string> result;
   if (list) {
     for (size_t i = 0; i < count; ++i) {
       if (list[i]) {
         result.push_back(list[i]);
-        g_free(list[i]);
+        free(list[i]);
       }
     }
-    g_free(list);
+    free(list);
   }
   return result;
 }
 
 size_t DataBufferManager::total_memory_usage() const {
-  return data_manager_total_local_memory();
+  return data_manager_total_memory_usage();
 }
 
 void DataBufferManager::clear_all() {
   size_t count = 0;
-  gchar **list = data_manager_list_buffers(&count);
+  char **list = data_manager_list_buffers(&count);
   if (list) {
     for (size_t i = 0; i < count; ++i) {
       if (list[i]) {
         data_manager_release_buffer(list[i]);
-        g_free(list[i]);
+        free(list[i]);
       }
     }
-    g_free(list);
+    free(list);
   }
 }
 
 bool DataBufferManager::add_offset(const std::string &buffer_id,
                                    double offset) {
-  return data_manager_add_offset(buffer_id.c_str(), offset) == TRUE;
+  return data_manager_add_offset(buffer_id.c_str(), offset);
 }
 
 bool DataBufferManager::multiply_gain(const std::string &buffer_id,
                                       double gain) {
-  return data_manager_multiply_gain(buffer_id.c_str(), gain) == TRUE;
+  return data_manager_multiply_gain(buffer_id.c_str(), gain);
 }
 
 } // namespace instserver::ipc
