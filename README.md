@@ -15,12 +15,6 @@ Our [documentation](https://falcon-autotuning.github.io/instrument-script-server
 ## Quick Start
 
 ```bash
-# Install dependencies (Ubuntu 22.04)
-sudo make setup-ubuntu
-
-# Or for Arch Linux
-sudo make setup-arch
-
 # Build and install
 make build
 sudo make install
