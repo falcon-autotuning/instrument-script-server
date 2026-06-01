@@ -24,7 +24,7 @@ void signal_handler(int sig) {
 
 // Handler for fatal signals (SIGSEGV, SIGABRT, SIGFPE). Writes a brief
 // async-signal-safe message to stderr (which the ISS daemon redirects to
-// /tmp/iss-daemon.log), flushes the spdlog file sink, then re-raises so the
+// tests/hub/logiss-daemon.log), flushes the spdlog file sink, then re-raises so the
 // OS can produce a core dump as normal.
 void crash_signal_handler(int sig) {
   // Use only async-signal-safe calls here.
@@ -422,7 +422,19 @@ private:
     std::memcpy(resp_msg.payload.data(), resp_payload.data(),
                 resp_msg.payload_size);
 
-    ipc_queue_->send(resp_msg, IPC_SEND_TIMEOUT);
+    LOG_DEBUG(instrument_name_, cmd.id,
+              "send_command_response: sending response msg_id={} verb='{}' success={}",
+              msg.id, cmd.verb, plugin_resp.success);
+    bool resp_sent = ipc_queue_->send(resp_msg, IPC_SEND_TIMEOUT);
+    if (!resp_sent) {
+      LOG_WARN(instrument_name_, cmd.id,
+               "send_command_response: DROPPED response for msg_id={} verb='{}' (resp queue full or timed out)",
+               msg.id, cmd.verb);
+    } else {
+      LOG_DEBUG(instrument_name_, cmd.id,
+                "send_command_response: response msg_id={} sent successfully",
+                msg.id);
+    }
   }
 
   void send_sync_ack(const ipc::IPCMessage &msg, uint64_t sync_token) {

@@ -98,8 +98,12 @@ bool instserver::ipc::SharedQueue::send(const IPCMessage &msg,
     bool sent = queue->timed_send(&msg, sizeof(msg), 0, abs_time);
 
     if (!sent) {
-      LOG_WARN("IPC", "SEND_TIMEOUT", "Send timeout on queue: {}",
-               request_queue_name_);
+      const std::string &queue_name =
+          is_server_ ? request_queue_name_ : response_queue_name_;
+      LOG_WARN("IPC", "SEND_TIMEOUT",
+               "Send timeout ({}ms) on queue '{}' msg_id={} type={}",
+               timeout.count(), queue_name, msg.id,
+               static_cast<uint32_t>(msg.type));
     }
 
     return sent;

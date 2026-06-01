@@ -159,7 +159,7 @@ InstrumentWorkerProxy::execute(SerializedCommand cmd) {
   uint64_t msg_id = next_message_id_++;
   cmd.id = fmt::format("{}-{}", instrument_name_, msg_id);
 
-  LOG_DEBUG(instrument_name_, cmd.id, "Enqueueing command:  {} (sync={})",
+  LOG_INFO(instrument_name_, cmd.id, "Enqueueing command:  {} (sync={})",
             cmd.verb, cmd.sync_token.value_or(0));
 
   // Store promise for response
@@ -178,8 +178,13 @@ InstrumentWorkerProxy::execute(SerializedCommand cmd) {
   msg.payload_size = std::min(payload.size(), sizeof(msg.payload));
   std::memcpy(msg.payload.data(), payload.data(), msg.payload_size);
 
+  LOG_INFO(instrument_name_, cmd.id,
+            "execute: sending msg_id={} verb='{}' to req queue",
+            msg_id, cmd.verb);
+
   if (!ipc_queue_->send(msg, cmd.timeout)) {
-    LOG_ERROR(instrument_name_, cmd.id, "Failed to send command");
+    LOG_ERROR(instrument_name_, cmd.id, "Failed to send command msg_id={} verb='{}' (req queue send timed out)",
+              msg_id, cmd.verb);
 
     // Fulfill promise with error
     CommandResponse error_resp;
@@ -205,13 +210,26 @@ InstrumentWorkerProxy::execute(SerializedCommand cmd) {
 CommandResponse
 InstrumentWorkerProxy::execute_sync(SerializedCommand cmd,
                                     std::chrono::milliseconds timeout) {
+  // Capture identifying info before the move consumes cmd
+  const std::string verb = cmd.verb;
+  const std::string instrument = cmd.instrument_name;
+
   auto future = execute(std::move(cmd));
 
+  LOG_INFO(instrument_name_, "PROXY",
+            "execute_sync: waiting for response verb='{}' timeout={}ms",
+            verb, timeout.count());
+
   if (future.wait_for(timeout) == std::future_status::ready) {
+    LOG_INFO(instrument_name_, "PROXY",
+              "execute_sync: response received for verb='{}'", verb);
     return future.get();
   } else {
+    LOG_WARN(instrument_name_, "PROXY",
+             "execute_sync TIMED OUT after {}ms waiting for verb='{}' on '{}'",
+             timeout.count(), verb, instrument);
+
     CommandResponse timeout_resp;
-    timeout_resp.command_id = cmd.id;
     timeout_resp.instrument_name = instrument_name_;
     timeout_resp.success = false;
     timeout_resp.error_message = "Command timeout";
@@ -300,10 +318,14 @@ void InstrumentWorkerProxy::handle_response_message(
     const ipc::IPCMessage &msg) {
   std::string payload(msg.payload.data(), msg.payload_size);
   CommandResponse resp = ipc::deserialize_response(payload);
-  LOG_DEBUG(instrument_name_, resp.command_id, "Received response: success={}",
-            resp.success);
+  LOG_DEBUG(instrument_name_, resp.command_id,
+            "Received response msg_id={} success={}",
+            msg.id, resp.success);
 
   std::lock_guard<std::mutex> lock(pending_mutex_);
+  LOG_DEBUG(instrument_name_, "PROXY",
+            "handle_response_message: looking up msg_id={} in pending_responses_ (size={})",
+            msg.id, pending_responses_.size());
   auto it = pending_responses_.find(msg.id);
   if (it != pending_responses_.end()) {
     try {
@@ -318,6 +340,10 @@ void InstrumentWorkerProxy::handle_response_message(
     } else {
       stats_.commands_failed++;
     }
+  } else {
+    LOG_WARN(instrument_name_, "PROXY",
+             "handle_response_message: no pending promise for msg_id={} (pending_responses_ size={}); response discarded",
+             msg.id, pending_responses_.size());
   }
 }
 

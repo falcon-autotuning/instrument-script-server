@@ -201,7 +201,7 @@ sol::object RuntimeContext::call(const std::string &func_name,
                                  sol::variadic_args args, sol::this_state s) {
   sol::state_view lua(s);
 
-  LOG_DEBUG("LUA_CONTEXT", "CALL", "Calling function: {}", func_name);
+  LOG_INFO("LUA_CONTEXT", "CALL", "Calling function: {}", func_name);
 
   size_t dot_pos = func_name.find('.');
   if (dot_pos == std::string::npos) {
@@ -519,11 +519,16 @@ CommandResponse RuntimeContext::send_command(
   cmd.created_at = std::chrono::steady_clock::now();
   cmd.expects_response = expects_response;
 
-  LOG_DEBUG("LUA_CONTEXT", "SEND",
+  LOG_INFO("LUA_CONTEXT", "SEND",
             "Sending command {}.{} (expects_response={})", instrument_id, verb,
             expects_response);
 
-  return worker->execute_sync(std::move(cmd), std::chrono::milliseconds(5000));
+  auto resp = worker->execute_sync(std::move(cmd), std::chrono::milliseconds(5000));
+  LOG_INFO("LUA_CONTEXT", "SEND",
+            "Command {}.{} returned: success={} error='{}'",
+            instrument_id, verb, resp.success,
+            resp.success ? "" : resp.error_message);
+  return resp;
 }
 
 void RuntimeContext::process_tokens_and_wait() {

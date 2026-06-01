@@ -765,6 +765,9 @@ __context_schema_version = nil
 
     // Get collected results
     const auto &results = ctx_shared->get_results();
+    LOG_INFO("SERVER", "MEASURE",
+             "Lua script done. Serializing {} results into HTTP response",
+             results.size());
     out["ok"] = true;
     out["script"] = std::filesystem::path(script_path).filename().string();
     out["results"] = json::array();
@@ -827,6 +830,8 @@ __context_schema_version = nil
       out["results"].push_back(result_json);
     }
 
+    LOG_INFO("SERVER", "MEASURE",
+             "Serialization complete. Returning to HTTP handler to send response");
     return 0;
   } catch (const std::exception &e) {
     out["ok"] = false;
