@@ -1,7 +1,7 @@
 #include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/SerializedCommand.hpp"
-#include "instrument-script-server/ipc/SharedQueue.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
+#include "instrument-script-server/ipc/SharedQueue.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
 #include <chrono>
 #include <csignal>
@@ -24,14 +24,14 @@ void signal_handler(int sig) {
 
 // Handler for fatal signals (SIGSEGV, SIGABRT, SIGFPE). Writes a brief
 // async-signal-safe message to stderr (which the ISS daemon redirects to
-// tests/hub/logiss-daemon.log), flushes the spdlog file sink, then re-raises so the
-// OS can produce a core dump as normal.
+// tests/hub/logiss-daemon.log), flushes the spdlog file sink, then re-raises so
+// the OS can produce a core dump as normal.
 void crash_signal_handler(int sig) {
   // Use only async-signal-safe calls here.
   char buf[256];
   int n = snprintf(buf, sizeof(buf),
-                   "[instrument-worker] CRASH signal %d in worker '%s'\n",
-                   sig, g_instrument_name_buf);
+                   "[instrument-worker] CRASH signal %d in worker '%s'\n", sig,
+                   g_instrument_name_buf);
   if (n > 0)
     write(STDERR_FILENO, buf, static_cast<size_t>(n));
 
@@ -113,8 +113,8 @@ static CommandResponse from_plugin_response(const PluginResponse &presp) {
   if (presp.has_large_data) {
     resp.buffer_id = presp.data_buffer_id;
     resp.element_count = presp.data_element_count;
-
-    // Convert data type enum to string
+    //  Convert data type enum to string, matching instrument-data library
+    //  ArrayType
     switch (presp.data_type) {
     case 0:
       resp.data_type = "float32";
@@ -127,6 +127,15 @@ static CommandResponse from_plugin_response(const PluginResponse &presp) {
       break;
     case 3:
       resp.data_type = "int64";
+      break;
+    case 4:
+      resp.data_type = "uint32";
+      break;
+    case 5:
+      resp.data_type = "uint64";
+      break;
+    case 6:
+      resp.data_type = "unit8";
       break;
     default:
       resp.data_type = "unknown";
@@ -315,25 +324,32 @@ private:
     try {
       cmd = deserialize_command_from_msg(msg);
     } catch (const std::exception &e) {
-      LOG_ERROR(instrument_name_, "WORKER_MAIN", "Failed to deserialize command from message ID {}: {}", msg.id, e.what());
-      
+      LOG_ERROR(instrument_name_, "WORKER_MAIN",
+                "Failed to deserialize command from message ID {}: {}", msg.id,
+                e.what());
+
       PluginResponse plugin_resp = {};
       plugin_resp.success = false;
-      std::strncpy(plugin_resp.command_id, "unknown", PLUGIN_MAX_STRING_LEN - 1);
-      std::strncpy(plugin_resp.instrument_name, instrument_name_.c_str(), PLUGIN_MAX_STRING_LEN - 1);
-      std::strncpy(plugin_resp.error_message, (std::string("Malformed command JSON: ") + e.what()).c_str(), PLUGIN_MAX_STRING_LEN - 1);
-      
+      std::strncpy(plugin_resp.command_id, "unknown",
+                   PLUGIN_MAX_STRING_LEN - 1);
+      std::strncpy(plugin_resp.instrument_name, instrument_name_.c_str(),
+                   PLUGIN_MAX_STRING_LEN - 1);
+      std::strncpy(plugin_resp.error_message,
+                   (std::string("Malformed command JSON: ") + e.what()).c_str(),
+                   PLUGIN_MAX_STRING_LEN - 1);
+
       SerializedCommand stub_cmd;
       stub_cmd.id = "unknown";
       stub_cmd.instrument_name = instrument_name_;
       stub_cmd.verb = "unknown";
-      
+
       send_command_response(msg, stub_cmd, plugin_resp);
       return;
     }
 
-    LOG_INFO(instrument_name_, "WORKER_MAIN", "Received command: {} (id={}, sync={})",
-             cmd.verb, cmd.id, cmd.sync_token.value_or(0));
+    LOG_INFO(instrument_name_, "WORKER_MAIN",
+             "Received command: {} (id={}, sync={})", cmd.verb, cmd.id,
+             cmd.sync_token.value_or(0));
 
     PluginResponse plugin_resp = {};
     int32_t exec_result = 0;
@@ -350,13 +366,14 @@ private:
       std::strncpy(plugin_resp.text_response, "BARRIER_NOP",
                    PLUGIN_MAX_PAYLOAD - 1);
     } else if (cmd.verb == "__RELEASE_BUFFER__") {
-      // Internal release command to free worker creator's ownership of the buffer
+      // Internal release command to free worker creator's ownership of the
+      // buffer
       plugin_resp.success = true;
       std::strncpy(plugin_resp.command_id, cmd.id.c_str(),
                    PLUGIN_MAX_STRING_LEN - 1);
       std::strncpy(plugin_resp.instrument_name, cmd.instrument_name.c_str(),
                    PLUGIN_MAX_STRING_LEN - 1);
-      
+
       std::string buffer_id = "";
       auto it = cmd.params.find("buffer_id");
       if (it != cmd.params.end()) {
@@ -366,12 +383,15 @@ private:
       }
 
       if (!buffer_id.empty()) {
-        LOG_INFO(instrument_name_, "WORKER_MAIN", "Executing __RELEASE_BUFFER__ for buffer: {}", buffer_id);
+        LOG_INFO(instrument_name_, "WORKER_MAIN",
+                 "Executing __RELEASE_BUFFER__ for buffer: {}", buffer_id);
         ipc::DataBufferManager::instance().release_buffer(buffer_id);
-        std::strncpy(plugin_resp.text_response, "RELEASED", PLUGIN_MAX_PAYLOAD - 1);
+        std::strncpy(plugin_resp.text_response, "RELEASED",
+                     PLUGIN_MAX_PAYLOAD - 1);
       } else {
         plugin_resp.success = false;
-        std::strncpy(plugin_resp.error_message, "Missing buffer_id param", PLUGIN_MAX_STRING_LEN - 1);
+        std::strncpy(plugin_resp.error_message, "Missing buffer_id param",
+                     PLUGIN_MAX_STRING_LEN - 1);
       }
     } else {
       // Normal plugin execution
@@ -423,12 +443,14 @@ private:
                 resp_msg.payload_size);
 
     LOG_DEBUG(instrument_name_, cmd.id,
-              "send_command_response: sending response msg_id={} verb='{}' success={}",
+              "send_command_response: sending response msg_id={} verb='{}' "
+              "success={}",
               msg.id, cmd.verb, plugin_resp.success);
     bool resp_sent = ipc_queue_->send(resp_msg, IPC_SEND_TIMEOUT);
     if (!resp_sent) {
       LOG_WARN(instrument_name_, cmd.id,
-               "send_command_response: DROPPED response for msg_id={} verb='{}' (resp queue full or timed out)",
+               "send_command_response: DROPPED response for msg_id={} "
+               "verb='{}' (resp queue full or timed out)",
                msg.id, cmd.verb);
     } else {
       LOG_DEBUG(instrument_name_, cmd.id,
@@ -485,14 +507,16 @@ int main(int argc, char **argv) {
   try {
     return Instrument(instrument_name, plugin_path).run();
   } catch (const std::exception &e) {
-    LOG_ERROR(instrument_name, "WORKER_MAIN", "Fatal error (std::exception): {}",
-              e.what());
-    if (auto logger = spdlog::get("instrument")) logger->flush();
+    LOG_ERROR(instrument_name, "WORKER_MAIN",
+              "Fatal error (std::exception): {}", e.what());
+    if (auto logger = spdlog::get("instrument"))
+      logger->flush();
     return 1;
   } catch (...) {
     LOG_ERROR(instrument_name, "WORKER_MAIN",
               "Fatal error: unknown exception type escaped main()");
-    if (auto logger = spdlog::get("instrument")) logger->flush();
+    if (auto logger = spdlog::get("instrument"))
+      logger->flush();
     return 1;
   }
 }
