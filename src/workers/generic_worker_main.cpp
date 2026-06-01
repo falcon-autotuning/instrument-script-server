@@ -6,6 +6,7 @@
 #include <chrono>
 #include <csignal>
 #include <cstdio>
+#include <instrument-data.h>
 #include <iostream>
 #include <string>
 #include <unistd.h>
@@ -211,7 +212,7 @@ private:
   }
 
   bool connect_ipc_queue() {
-    try {
+    InstrumentWorker try {
       ipc_queue_ = ipc::SharedQueue::create_worker_queue(instrument_name_);
     } catch (const std::exception &ex) {
       LOG_ERROR(instrument_name_, "WORKER_MAIN",
@@ -284,6 +285,9 @@ private:
     case ipc::IPCMessage::Type::SYNC_CONTINUE:
       handle_sync_continue(msg);
       break;
+    case ipc::IPCMessage::Type::BUFFER_ACK:
+      handle_buffer_ack(msg);
+      break;
     case ipc::IPCMessage::Type::COMMAND:
       if (!waiting_sync_token_) {
         handle_command(msg);
@@ -316,6 +320,17 @@ private:
       LOG_WARN(instrument_name_, "WORKER_MAIN",
                "Unexpected SYNC_CONTINUE token={} (waiting={})", msg.sync_token,
                waiting_sync_token_.value_or(0));
+    }
+  }
+
+  void handle_buffer_ack(const ipc::IPCMessage &msg) {
+    try {
+      LOG_INFO(instrument_name_, "WORKER_MAIN",
+               "Received buffer ack for buffer {}", msg.data_buffer_id);
+      data_manager_release_buffer(&msg.data_buffer_id);
+    } catch (const std::exception &e) {
+      LOG_ERROR(instrument_name_, "WORKER_MAIN", "Failed to relase buffer {}",
+                msg.data_buffer_id, e.what());
     }
   }
 
