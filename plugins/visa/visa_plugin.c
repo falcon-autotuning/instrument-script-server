@@ -8,7 +8,7 @@
 
 // NI-VISA includes
 #ifdef _WIN32
-#include <visa. h>
+#include <visa.h>
 #else
 #include <visa.h>
 #endif
