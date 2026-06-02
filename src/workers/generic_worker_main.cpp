@@ -212,7 +212,7 @@ private:
   }
 
   bool connect_ipc_queue() {
-    InstrumentWorker try {
+    try {
       ipc_queue_ = ipc::SharedQueue::create_worker_queue(instrument_name_);
     } catch (const std::exception &ex) {
       LOG_ERROR(instrument_name_, "WORKER_MAIN",
@@ -327,7 +327,7 @@ private:
     try {
       LOG_INFO(instrument_name_, "WORKER_MAIN",
                "Received buffer ack for buffer {}", msg.data_buffer_id);
-      data_manager_release_buffer(&msg.data_buffer_id);
+      data_manager_release_buffer(msg.data_buffer_id);
     } catch (const std::exception &e) {
       LOG_ERROR(instrument_name_, "WORKER_MAIN", "Failed to relase buffer {}",
                 msg.data_buffer_id, e.what());

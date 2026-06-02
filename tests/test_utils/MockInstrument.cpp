@@ -1,5 +1,4 @@
 #include "MockInstrument.hpp"
-#include "instrument-script-server/plugin/PluginInterface.h"
 #include <cstring>
 #include <memory>
 #include <thread>

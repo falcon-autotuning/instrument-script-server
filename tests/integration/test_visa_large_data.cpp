@@ -1,7 +1,7 @@
 #include "PlatformPaths.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
-#include "instrument-script-server/plugin/PluginInterface.h"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
+#include <instrument-plugin.h>
 
 // CRITICAL: Define this BEFORE including <cmath> to get M_PI on Windows
 #define _USE_MATH_DEFINES

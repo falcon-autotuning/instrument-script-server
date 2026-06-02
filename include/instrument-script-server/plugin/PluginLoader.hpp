@@ -1,9 +1,7 @@
 #pragma once
 #include "instrument-script-server/export.h"
 
-#include "PluginInterface.h"
-
-#include <string>
+#include <instrument-plugin.h>
 
 #ifdef _WIN32
 #include "instrument-script-server/compat/WinSock.hpp"

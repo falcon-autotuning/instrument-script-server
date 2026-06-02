@@ -1,9 +1,9 @@
 #pragma once
 #include "instrument-script-server/export.h"
-
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <instrument-plugin.h>
 
 namespace instserver::ipc {
 

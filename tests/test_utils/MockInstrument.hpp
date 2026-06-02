@@ -1,5 +1,5 @@
 #pragma once
-#include "instrument-script-server/plugin/PluginInterface.h"
+#include <instrument-plugin.h>
 
 #include <atomic>
 #include <chrono>

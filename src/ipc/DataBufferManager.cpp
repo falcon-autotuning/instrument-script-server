@@ -1,9 +1,9 @@
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/Logger.hpp"
-#include <instrument-data.h>
 #include <chrono>
 #include <cstring>
 #include <fstream>
+#include <instrument-data.h>
 #include <sstream>
 
 #ifdef _WIN32
@@ -29,17 +29,17 @@ DataBuffer::DataBuffer(const std::string &buffer_id, void *data,
                        size_t byte_size, DataType data_type,
                        size_t element_count, void *c_buf)
     : buffer_id_(buffer_id), data_(data), byte_size_(byte_size),
-      element_count_(element_count), data_type_(data_type),
-      owns_memory_(true), c_buf_(c_buf) {
-}
+      element_count_(element_count), data_type_(data_type), owns_memory_(true),
+      c_buf_(c_buf) {}
 
 DataBuffer::~DataBuffer() {
   if (owns_memory_ && !buffer_id_.empty()) {
-    LOG_DEBUG("DATA_BUFFER", "DESTRUCT", "Releasing shared handle for buffer {}", buffer_id_);
+    LOG_DEBUG("DATA_BUFFER", "DESTRUCT",
+              "Releasing shared handle for buffer {}", buffer_id_);
     data_manager_release_buffer(buffer_id_.c_str());
   } else if (!owns_memory_ && c_buf_) {
     // Non-owning peek: balance the process-local ref count in the C library
-    data_buffer_unref(static_cast<::DataBuffer*>(c_buf_));
+    data_buffer_unref(static_cast<::DataBuffer *>(c_buf_));
   }
 }
 
@@ -59,7 +59,7 @@ DataBuffer &DataBuffer::operator=(DataBuffer &&other) noexcept {
     if (owns_memory_ && !buffer_id_.empty()) {
       data_manager_release_buffer(buffer_id_.c_str());
     } else if (!owns_memory_ && c_buf_) {
-      data_buffer_unref(static_cast<::DataBuffer*>(c_buf_));
+      data_buffer_unref(static_cast<::DataBuffer *>(c_buf_));
     }
 
     buffer_id_ = std::move(other.buffer_id_);
@@ -247,20 +247,16 @@ std::string DataBufferManager::create_buffer(const std::string &instrument_name,
   }
 
   void *raw_data = nullptr;
-  char *c_id = data_manager_create_buffer_zero_copy(
-      instrument_name.c_str(),
-      command_id.c_str(),
-      map_data_type(data_type),
-      element_count,
-      &raw_data
-  );
+  const char *c_id = data_manager_create_buffer_zero_copy(
+      instrument_name.c_str(), command_id.c_str(), map_data_type(data_type),
+      element_count, &raw_data);
   if (c_id == nullptr) {
-    LOG_ERROR("DATA_BUFFER", "CREATE", "Failed to create shared memory buffer via instrument-data");
+    LOG_ERROR("DATA_BUFFER", "CREATE",
+              "Failed to create shared memory buffer via instrument-data");
     return "";
   }
 
   std::string buffer_id(c_id);
-  free(c_id);
 
   if (data != nullptr && raw_data != nullptr) {
     std::memcpy(raw_data, data, element_count * element_size);
@@ -268,8 +264,8 @@ std::string DataBufferManager::create_buffer(const std::string &instrument_name,
 
   size_t bytes = element_count * element_size;
   LOG_INFO("DATA_BUFFER", "CREATE",
-           "Created shared buffer {} for {}. {} ({} elements, {} bytes)", buffer_id,
-           instrument_name, command_id, element_count, bytes);
+           "Created shared buffer {} for {}. {} ({} elements, {} bytes)",
+           buffer_id, instrument_name, command_id, element_count, bytes);
 
   return buffer_id;
 }
@@ -298,7 +294,8 @@ DataBufferManager::get_buffer(const std::string &buffer_id) {
   size_t element_count = c_meta.element_count;
 
   // Non-owning wrapper: lifetime is managed by the caller + release_buffer().
-  auto buffer = std::make_shared<DataBuffer>(buffer_id, raw_data, bytes, dtype, element_count, c_buf);
+  auto buffer = std::make_shared<DataBuffer>(buffer_id, raw_data, bytes, dtype,
+                                             element_count, c_buf);
   buffer->set_non_owning();
   return buffer;
 }
