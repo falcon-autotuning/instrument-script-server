@@ -392,6 +392,31 @@ void InstrumentWorkerProxy::send_sync_continue(uint64_t sync_token) {
   }
 }
 
+void InstrumentWorkerProxy::send_buffer_ack(const std::string &buffer_id) {
+  if (!ipc_queue_ || !ipc_queue_->is_valid()) {
+    LOG_WARN(instrument_name_, "PROXY",
+             "Cannot send BUFFER_ACK, queue invalid");
+    return;
+  }
+
+  ipc::IPCMessage msg;
+  msg.type = ipc::IPCMessage::Type::BUFFER_ACK;
+  msg.id = 0;
+  msg.sync_token = 0;
+  msg.payload_size = 0;
+  std::strncpy(msg.data_buffer_id, buffer_id.c_str(), sizeof(msg.data_buffer_id) - 1);
+
+  bool sent = ipc_queue_->send(msg, std::chrono::milliseconds(1000));
+
+  if (sent) {
+    LOG_DEBUG(instrument_name_, "PROXY", "Sent BUFFER_ACK for buffer {}",
+              buffer_id);
+  } else {
+    LOG_ERROR(instrument_name_, "PROXY",
+              "Failed to send BUFFER_ACK for buffer {}", buffer_id);
+  }
+}
+
 void InstrumentWorkerProxy::handle_worker_death() {
   LOG_ERROR(instrument_name_, "PROXY", "Worker process died unexpectedly");
 

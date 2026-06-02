@@ -129,18 +129,21 @@ TEST_F(DataBufferManagerTest, Referencecounting) {
   EXPECT_NE(buffer2, nullptr);
   EXPECT_NE(buffer3, nullptr);
 
-  // Release once - buffer should still exist
+  // Release the global buffer (decrements global owners, but process-local stays alive while wrappers are alive)
   manager_->release_buffer(buffer_id);
+
+  // We can still access the buffer via active wrappers or get_buffer (since process-local is alive)
   auto buffer4 = manager_->get_buffer(buffer_id);
   EXPECT_NE(buffer4, nullptr);
 
-  // Release until count reaches zero
-  manager_->release_buffer(buffer_id);
-  manager_->release_buffer(buffer_id);
-  manager_->release_buffer(buffer_id);
-  manager_->release_buffer(buffer_id);
+  // Reset the C++ shared pointers to release the process-local references
+  buffer1 = nullptr;
+  buffer2 = nullptr;
+  buffer3 = nullptr;
+  buffer4 = nullptr;
 
-  // Buffer should be gone
+  // Now that all C++ wrappers are gone, the process-local map entry is destroyed
+  // And since the global buffer was released, trying to get it again should return nullptr
   auto buffer5 = manager_->get_buffer(buffer_id);
   EXPECT_EQ(buffer5, nullptr);
 }

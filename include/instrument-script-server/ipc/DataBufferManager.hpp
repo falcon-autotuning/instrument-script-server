@@ -5,6 +5,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -178,6 +179,9 @@ public:
 
 private:
   DataBufferManager() = default;
+
+  mutable std::mutex mutex_;
+  std::list<std::pair<std::string, size_t>> active_buffers_;
 };
 
 } // namespace instserver::ipc

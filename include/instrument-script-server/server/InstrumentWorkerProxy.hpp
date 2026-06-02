@@ -57,6 +57,9 @@ public:
   /// Send SYNC_CONTINUE message to worker
   void send_sync_continue(uint64_t sync_token);
 
+  /// Send BUFFER_ACK message to worker
+  void send_buffer_ack(const std::string &buffer_id);
+
 private:
   std::string instrument_name_;
   std::string plugin_path_;

@@ -316,19 +316,13 @@ sol::object RuntimeContext::call(const std::string &func_name,
     //    so the worker releases its local creator reference, leaving the server as the sole owner.
     auto worker = registry_.get_instrument(instrument_id);
     if (worker) {
-      SerializedCommand release_cmd;
-      release_cmd.instrument_name = instrument_id;
-      release_cmd.verb = "__RELEASE_BUFFER__";
-      release_cmd.params["buffer_id"] = resp.buffer_id;
-      release_cmd.expects_response = true;
-      release_cmd.id = fmt::format("release-{}-{}", resp.buffer_id,
-          std::chrono::steady_clock::now().time_since_epoch().count());
-
       try {
-        LOG_INFO("LUA_CONTEXT", "HANDOFF", "Sending __RELEASE_BUFFER__ to worker for buffer: {}", resp.buffer_id);
-        worker->execute_sync(release_cmd, std::chrono::milliseconds(1000));
+        LOG_INFO("LUA_CONTEXT", "HANDOFF",
+                 "Sending BUFFER_ACK to worker for buffer: {}", resp.buffer_id);
+        worker->send_buffer_ack(resp.buffer_id);
       } catch (const std::exception &e) {
-        LOG_ERROR("LUA_CONTEXT", "HANDOFF", "Failed to send __RELEASE_BUFFER__ to worker: {}", e.what());
+        LOG_ERROR("LUA_CONTEXT", "HANDOFF",
+                  "Failed to send BUFFER_ACK to worker: {}", e.what());
       }
     }
 

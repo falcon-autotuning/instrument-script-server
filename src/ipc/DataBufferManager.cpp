@@ -11,6 +11,7 @@
 #define getpid _getpid
 #else
 #include <unistd.h>
+#include <sys/mman.h>
 #endif
 
 namespace instserver::ipc {
@@ -36,10 +37,15 @@ DataBuffer::~DataBuffer() {
   if (owns_memory_ && !buffer_id_.empty()) {
     LOG_DEBUG("DATA_BUFFER", "DESTRUCT",
               "Releasing shared handle for buffer {}", buffer_id_);
+    SharedMetadata c_meta;
+    bool has_meta = data_manager_get_metadata(buffer_id_.c_str(), &c_meta);
     data_manager_release_buffer(buffer_id_.c_str());
-  } else if (!owns_memory_ && c_buf_) {
-    // Non-owning peek: balance the process-local ref count in the C library
-    data_buffer_unref(static_cast<::DataBuffer *>(c_buf_));
+    if (has_meta && c_meta.global_ref_count <= 1) {
+#ifndef _WIN32
+      ::shm_unlink(("/shm_data_" + buffer_id_).c_str());
+      ::shm_unlink(("/shm_meta_" + buffer_id_).c_str());
+#endif
+    }
   }
 }
 
@@ -57,9 +63,15 @@ DataBuffer::DataBuffer(DataBuffer &&other) noexcept
 DataBuffer &DataBuffer::operator=(DataBuffer &&other) noexcept {
   if (this != &other) {
     if (owns_memory_ && !buffer_id_.empty()) {
+      SharedMetadata c_meta;
+      bool has_meta = data_manager_get_metadata(buffer_id_.c_str(), &c_meta);
       data_manager_release_buffer(buffer_id_.c_str());
-    } else if (!owns_memory_ && c_buf_) {
-      data_buffer_unref(static_cast<::DataBuffer *>(c_buf_));
+      if (has_meta && c_meta.global_ref_count <= 1) {
+#ifndef _WIN32
+        ::shm_unlink(("/shm_data_" + buffer_id_).c_str());
+        ::shm_unlink(("/shm_meta_" + buffer_id_).c_str());
+#endif
+      }
     }
 
     buffer_id_ = std::move(other.buffer_id_);
@@ -267,6 +279,11 @@ std::string DataBufferManager::create_buffer(const std::string &instrument_name,
            "Created shared buffer {} for {}. {} ({} elements, {} bytes)",
            buffer_id, instrument_name, command_id, element_count, bytes);
 
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    active_buffers_.push_back({buffer_id, bytes});
+  }
+
   return buffer_id;
 }
 
@@ -293,10 +310,23 @@ DataBufferManager::get_buffer(const std::string &buffer_id) {
   size_t bytes = c_meta.byte_size;
   size_t element_count = c_meta.element_count;
 
-  // Non-owning wrapper: lifetime is managed by the caller + release_buffer().
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    bool found = false;
+    for (const auto &pair : active_buffers_) {
+      if (pair.first == buffer_id) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      active_buffers_.push_back({buffer_id, bytes});
+    }
+  }
+
+  // Owning wrapper: when destroyed, it calls data_manager_release_buffer, balancing the get_buffer call.
   auto buffer = std::make_shared<DataBuffer>(buffer_id, raw_data, bytes, dtype,
-                                             element_count, c_buf);
-  buffer->set_non_owning();
+                                             element_count);
   return buffer;
 }
 
@@ -322,40 +352,75 @@ DataBufferManager::get_metadata(const std::string &buffer_id) const {
 }
 
 void DataBufferManager::release_buffer(const std::string &buffer_id) {
+  SharedMetadata c_meta;
+  bool has_meta = data_manager_get_metadata(buffer_id.c_str(), &c_meta);
+  
   data_manager_release_buffer(buffer_id.c_str());
+  
+  if (has_meta && c_meta.global_ref_count <= 1) {
+#ifndef _WIN32
+    ::shm_unlink(("/shm_data_" + buffer_id).c_str());
+    ::shm_unlink(("/shm_meta_" + buffer_id).c_str());
+#endif
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (auto it = active_buffers_.begin(); it != active_buffers_.end(); ++it) {
+      if (it->first == buffer_id) {
+        active_buffers_.erase(it);
+        break;
+      }
+    }
+  }
 }
 
 std::vector<std::string> DataBufferManager::list_buffers() const {
-  size_t count = 0;
-  char **list = data_manager_list_buffers(&count);
+  std::lock_guard<std::mutex> lock(mutex_);
   std::vector<std::string> result;
-  if (list) {
-    for (size_t i = 0; i < count; ++i) {
-      if (list[i]) {
-        result.push_back(list[i]);
-        free(list[i]);
-      }
-    }
-    free(list);
+  result.reserve(active_buffers_.size());
+  for (const auto &pair : active_buffers_) {
+    result.push_back(pair.first);
   }
   return result;
 }
 
 size_t DataBufferManager::total_memory_usage() const {
-  return data_manager_total_memory_usage();
+  std::lock_guard<std::mutex> lock(mutex_);
+  size_t total = 0;
+  for (const auto &pair : active_buffers_) {
+    total += pair.second;
+  }
+  return total;
 }
 
 void DataBufferManager::clear_all() {
-  size_t count = 0;
-  char **list = data_manager_list_buffers(&count);
-  if (list) {
-    for (size_t i = 0; i < count; ++i) {
-      if (list[i]) {
-        data_manager_release_buffer(list[i]);
-        free(list[i]);
-      }
+  std::vector<std::pair<std::string, size_t>> to_release;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    to_release.reserve(active_buffers_.size());
+    for (const auto &pair : active_buffers_) {
+      to_release.push_back(pair);
     }
-    free(list);
+  }
+
+  for (const auto &pair : to_release) {
+    SharedMetadata c_meta;
+    bool has_meta = data_manager_get_metadata(pair.first.c_str(), &c_meta);
+    
+    data_manager_release_buffer(pair.first.c_str());
+    
+    if (has_meta && c_meta.global_ref_count <= 1) {
+#ifndef _WIN32
+      ::shm_unlink(("/shm_data_" + pair.first).c_str());
+      ::shm_unlink(("/shm_meta_" + pair.first).c_str());
+#endif
+    }
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    active_buffers_.clear();
   }
 }
 
