@@ -19,7 +19,11 @@ public:
 
   // Initialize with file and console sinks
   void init(const std::string &log_file = "instrument_server.log",
-            spdlog::level::level_enum level = spdlog::level::debug) {
+            spdlog::level::level_enum level = spdlog::level::debug,
+            std::string name = "instrument",
+            int file_size = 1024 * 1024 * 10 // 10MB,
+            int number_of_files = 3) {
+    name_ = name;
     std::lock_guard<std::mutex> lock(mutex_);
 
     // If already initialized, just update level
@@ -29,20 +33,18 @@ public:
     }
 
     try {
-      spdlog::init_thread_pool(8192, 1);
-
       auto console_sink =
           std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
       console_sink->set_level(spdlog::level::info);
 
       auto file_sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(
-          log_file, 1024 * 1024 * 10, 3); // 10MB, 3 files
+          log_file, file_size, number_of_files);
       file_sink->set_level(spdlog::level::trace);
 
       std::vector<spdlog::sink_ptr> sinks{console_sink, file_sink};
 
       logger_ = std::make_shared<spdlog::async_logger>(
-          "instrument", sinks.begin(), sinks.end(), spdlog::thread_pool(),
+          name_, sinks.begin(), sinks.end(), spdlog::thread_pool(),
           spdlog::async_overflow_policy::block // Block if queue full (prevents
                                                // message loss)
       );
@@ -52,7 +54,7 @@ public:
       logger_->flush_on(spdlog::level::info);
 
       // Don't register if already exists
-      if (!spdlog::get("instrument")) {
+      if (!spdlog::get(name_)) {
         spdlog::register_logger(logger_);
       }
     } catch (const spdlog::spdlog_ex &ex) {
@@ -74,7 +76,7 @@ public:
 
     try {
       // drop the named logger from spdlog registry
-      spdlog::drop("instrument");
+      spdlog::drop(name_);
     } catch (...) {
       // ignore drop errors
     }
@@ -150,8 +152,9 @@ private:
     }
   }
 
-  std::shared_ptr<spdlog::async_logger> logger_; // ✅ Changed to async_logger
+  std::shared_ptr<spdlog::async_logger> logger_;
   std::mutex mutex_;
+  std::string name_;
 };
 
 // Convenience macros

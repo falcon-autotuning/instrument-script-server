@@ -3,86 +3,84 @@ cmake_minimum_required(VERSION 3.20)
 project(
   VISAPlugin
   VERSION 1.0.0
-  LANGUAGES C CXX)
+  LANGUAGES C
+)
 
-# Find VISA library
-find_library(
-  VISA_LIBRARY
-  NAMES visa visa64 nivisa
-  PATHS /usr/lib /usr/local/lib /opt/ni-visa/lib
-        "C:/Program Files/IVI Foundation/VISA/WinNT/lib/msc"
-        "C:/Program Files (x86)/IVI Foundation/VISA/WinNT/lib/msc")
+find_package(instrument-plugin-api CONFIG REQUIRED)
+find_package(cJSON CONFIG REQUIRED)
 
-find_path(
-  VISA_INCLUDE_DIR
+set(VISA_PATH_HINTS)
+
+# Environment variables (user-installed VISA)
+if(DEFINED ENV{VISA_ROOT})
+  list(APPEND VISA_PATH_HINTS $ENV{VISA_ROOT})
+endif()
+
+if(DEFINED ENV{NI_VISA_ROOT})
+  list(APPEND VISA_PATH_HINTS $ENV{NI_VISA_ROOT})
+endif()
+
+# Default install locations
+if(WIN32)
+  list(APPEND VISA_PATH_HINTS
+    "C:/Program Files/IVI Foundation/VISA/Win64"
+    "C:/Program Files/IVI Foundation/VISA/WinNT"
+    "C:/Program Files (x86)/IVI Foundation/VISA/WinNT"
+  )
+else()
+  list(APPEND VISA_PATH_HINTS
+    /usr
+    /usr/local
+    /opt/ni-visa
+    /opt/visa
+  )
+endif()
+
+find_path(VISA_INCLUDE_DIR
   NAMES visa.h
-  PATHS /usr/include /usr/local/include /opt/ni-visa/include
-        "C:/Program Files/IVI Foundation/VISA/WinNT/include"
-        "C:/Program Files (x86)/IVI Foundation/VISA/WinNT/include")
+  HINTS ${VISA_PATH_HINTS}
+  PATH_SUFFIXES include
+)
 
-if(NOT VISA_LIBRARY OR NOT VISA_INCLUDE_DIR)
-  message(WARNING "NI-VISA not found.  VISA plugin will not be built.")
-  message(
-    WARNING
-      "Install NI-VISA from:  https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html"
-  )
+find_library(VISA_LIBRARY
+  NAMES visa visa64 nivisa visa32
+  HINTS ${VISA_PATH_HINTS}
+  PATH_SUFFIXES lib lib64 lib/x64 lib/msc
+)
+
+include(FindPackageHandleStandardArgs)
+
+find_package_handle_standard_args(VISA
+  REQUIRED_VARS VISA_LIBRARY VISA_INCLUDE_DIR
+)
+
+if(NOT VISA_FOUND)
+  message(WARNING "NI-VISA not found. VISA plugin will not be built.")
+  message(WARNING "Install NI-VISA: https://www.ni.com/en-us/support/downloads/drivers/download.ni-visa.html")
   return()
 endif()
 
-message(STATUS "Found VISA library:  ${VISA_LIBRARY}")
-message(STATUS "Found VISA headers: ${VISA_INCLUDE_DIR}")
+add_library(VISA::VISA UNKNOWN IMPORTED)
 
-# Find cJSON
-find_package(PkgConfig)
-if(PkgConfig_FOUND)
-  pkg_check_modules(CJSON libcjson)
-endif()
+set_target_properties(VISA::VISA PROPERTIES
+  IMPORTED_LOCATION "${VISA_LIBRARY}"
+  INTERFACE_INCLUDE_DIRECTORIES "${VISA_INCLUDE_DIR}"
+)
 
-# Fallback:  try to find cJSON manually
-if(NOT CJSON_FOUND)
-  find_library(CJSON_LIBRARY NAMES cjson)
-  find_path(CJSON_INCLUDE_DIR NAMES cjson/cJSON.h)
-
-  if(CJSON_LIBRARY AND CJSON_INCLUDE_DIR)
-    set(CJSON_LIBRARIES ${CJSON_LIBRARY})
-    set(CJSON_INCLUDE_DIRS ${CJSON_INCLUDE_DIR})
-    set(CJSON_FOUND TRUE)
-  endif()
-endif()
-
-if(NOT CJSON_FOUND)
-  message(WARNING "cJSON not found. VISA plugin will not be built.")
-  message(
-    WARNING
-      "Install cJSON:  sudo pacman -S cjson (Arch) or sudo apt install libcjson-dev (Debian/Ubuntu)"
-  )
-  return()
-endif()
-
-message(STATUS "Found cJSON library: ${CJSON_LIBRARIES}")
-message(STATUS "Found cJSON headers: ${CJSON_INCLUDE_DIRS}")
-
-# Create the plugin
-# add_library(visa_plugin SHARED visa_plugin.c)
-# target_compile_definitions(visa_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
-#
-# # Per-target include dirs, avoid global include directories
-# target_include_directories(
-#   visa_plugin PRIVATE ${CMAKE_SOURCE_DIR}/include ${VISA_INCLUDE_DIR}
-#                       ${CJSON_INCLUDE_DIRS})
-#
-# target_link_libraries(visa_plugin PRIVATE instrument-script-server-core
-#                                           ${VISA_LIBRARY})
-# set_target_properties(
-#   visa_plugin
-#   PROPERTIES PREFIX ""
-#              POSITION_INDEPENDENT_CODE ON
-#              C_VISIBILITY_PRESET default)
+message(STATUS "Found VISA include: ${VISA_INCLUDE_DIR}")
+message(STATUS "Found VISA library: ${VISA_LIBRARY}")
 
 add_instrument_plugin(visa_plugin
-  SOURCES visa_plugin.c
-  LINK_LIBRARIES instrument-script-server-core ${VISA_LIBRARY} ${CJSON_LIBRARIES}
-  INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include ${VISA_INCLUDE_DIR} ${CJSON_INCLUDE_DIRS}
+  SOURCES
+    visa_plugin.c
+  LINK_LIBRARIES
+    VISA::VISA
+    cjson
+  INCLUDE_DIRS
+    ${VISA_INCLUDE_DIR}
 )
-# Install to standard plugin directory
-install(TARGETS visa_plugin LIBRARY DESTINATION lib/instrument-plugins)
+
+install(TARGETS visa_plugin
+  LIBRARY DESTINATION lib/instrument-plugins
+  RUNTIME DESTINATION bin/instrument-plugins
+)
