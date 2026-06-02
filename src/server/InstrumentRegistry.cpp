@@ -1,8 +1,8 @@
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/ApiRefResolver.hpp"
 #include "instrument-script-server/server/InstrumentWorkerProxy.hpp"
+#include <instrument-log/inst_logging.h>
 #include <nlohmann/json.hpp>
 #include <yaml-cpp/yaml.h>
 
@@ -42,7 +42,8 @@ static nlohmann::json yaml_to_json(const YAML::Node &node) {
 }
 
 bool InstrumentRegistry::create_instrument(const std::string &config_path) {
-  LOG_INFO("REGISTRY", "CREATE", "Loading instrument from: {}", config_path);
+  LOG_INFO("REGISTRY", "CREATE", "Loading instrument from: %s",
+           config_path.c_str());
 
   try {
     YAML::Node config_yaml = YAML::LoadFile(config_path);
@@ -55,8 +56,8 @@ bool InstrumentRegistry::create_instrument(const std::string &config_path) {
       resolved_api_path = server::resolve_api_ref(api_ref, config_path);
     } catch (const std::exception &e) {
       LOG_ERROR("REGISTRY", "CREATE",
-                "Failed to resolve api_ref '{}' (from config '{}'): {}",
-                api_ref, config_path, e.what());
+                "Failed to resolve api_ref '%s' (from config '%s'): %s",
+                api_ref.c_str(), config_path.c_str(), e.what());
       return false;
     }
 
@@ -71,7 +72,7 @@ bool InstrumentRegistry::create_instrument(const std::string &config_path) {
 
     return create_instrument_from_json(name, config_json, api_def_json);
   } catch (const std::exception &ex) {
-    LOG_ERROR("REGISTRY", "CREATE", "Failed to load config: {}", ex.what());
+    LOG_ERROR("REGISTRY", "CREATE", "Failed to load config: %s", ex.what());
     return false;
   }
 }
@@ -82,7 +83,8 @@ bool InstrumentRegistry::create_instrument_from_json(
   std::lock_guard lock(mutex_);
 
   if (instruments_.count(name)) {
-    LOG_WARN("REGISTRY", "CREATE", "Instrument already exists: {}", name);
+    LOG_WARN("REGISTRY", "CREATE", "Instrument already exists: %s",
+             name.c_str());
     return false;
   }
 
@@ -105,29 +107,31 @@ bool InstrumentRegistry::create_instrument_from_json(
   std::string plugin_path = plugin_registry.get_plugin_path(protocol_type);
 
   if (plugin_path.empty()) {
-    LOG_ERROR("REGISTRY", "CREATE", "No plugin found for protocol: {}",
-              protocol_type);
+    LOG_ERROR("REGISTRY", "CREATE", "No plugin found for protocol: %s",
+              protocol_type.c_str());
     metadata_.erase(name);
     return false;
   }
 
   LOG_INFO("REGISTRY", "CREATE",
-           "Creating instrument '{}' with protocol '{}' using plugin:  {}",
-           name, protocol_type, plugin_path);
+           "Creating instrument '%s' with protocol '%s' using plugin:  %s",
+           name.c_str(), protocol_type.c_str(), plugin_path.c_str());
 
   // Create worker proxy with JSON strings
   auto proxy = std::make_shared<InstrumentWorkerProxy>(
       name, plugin_path, config_json, api_def_json, sync_coordinator_);
 
   if (!proxy->start()) {
-    LOG_ERROR("REGISTRY", "CREATE", "Failed to start worker for:  {}", name);
+    LOG_ERROR("REGISTRY", "CREATE", "Failed to start worker for:  %s",
+              name.c_str());
     metadata_.erase(name);
     return false;
   }
 
   instruments_[name] = proxy;
 
-  LOG_INFO("REGISTRY", "CREATE", "Instrument '{}' created successfully", name);
+  LOG_INFO("REGISTRY", "CREATE", "Instrument '%s' created successfully",
+           name.c_str());
   return true;
 }
 
@@ -156,21 +160,22 @@ find_command_def(const std::map<std::string, InstrumentMetadata> &metadata,
                  const std::string &instrument_name, const std::string &verb) {
   auto meta_it = metadata.find(instrument_name);
   if (meta_it == metadata.end()) {
-    LOG_WARN("REGISTRY", "API_LOOKUP", "No metadata found for instrument: {}",
-             instrument_name);
+    LOG_WARN("REGISTRY", "API_LOOKUP", "No metadata found for instrument: %s",
+             instrument_name.c_str());
     return nullptr;
   }
   const auto &api_def = meta_it->second.api_def;
   if (!api_def.contains("commands") || !api_def["commands"].is_object()) {
     LOG_WARN("REGISTRY", "API_LOOKUP",
-             "No commands section in API definition for:  {}", instrument_name);
+             "No commands section in API definition for:  %s",
+             instrument_name.c_str());
     return nullptr;
   }
   const auto &commands = api_def["commands"];
   if (!commands.contains(verb)) {
     LOG_WARN("REGISTRY", "API_LOOKUP",
-             "Command '{}' not found in API definition for instrument '{}'",
-             verb, instrument_name);
+             "Command '%s' not found in API definition for instrument '%s'",
+             verb.c_str(), instrument_name.c_str());
     return nullptr;
   }
   return &commands[verb];
@@ -248,8 +253,8 @@ InstrumentRegistry::get_response_type(const std::string &instrument_name,
   }
 
   LOG_WARN("REGISTRY", "API_LOOKUP",
-           "Output '{}' not found in io or channel_groups for instrument '{}'",
-           output_name, instrument_name);
+           "Output '%s' not found in io or channel_groups for instrument '%s'",
+           output_name.c_str(), instrument_name.c_str());
   return std::nullopt;
 }
 
@@ -265,13 +270,13 @@ void InstrumentRegistry::remove_instrument(const std::string &name) {
     it->second->stop();
     instruments_.erase(it);
     metadata_.erase(name);
-    LOG_INFO("REGISTRY", "REMOVE", "Removed instrument: {}", name);
+    LOG_INFO("REGISTRY", "REMOVE", "Removed instrument: %s", name.c_str());
   }
 }
 
 void InstrumentRegistry::stop_all() {
   std::lock_guard lock(mutex_);
-  LOG_INFO("REGISTRY", "STOP_ALL", "Stopping {} instruments",
+  LOG_INFO("REGISTRY", "STOP_ALL", "Stopping %d instruments",
            instruments_.size());
 
   std::vector<std::shared_ptr<InstrumentWorkerProxy>> proxies;
@@ -285,7 +290,7 @@ void InstrumentRegistry::stop_all() {
     try {
       proxy->stop();
     } catch (const std::exception &e) {
-      LOG_ERROR("REGISTRY", "STOP_ALL", "Error stopping instrument: {}",
+      LOG_ERROR("REGISTRY", "STOP_ALL", "Error stopping instrument: %s",
                 e.what());
     }
   }
@@ -296,7 +301,7 @@ void InstrumentRegistry::stop_all() {
 
 void InstrumentRegistry::start_all() {
   std::lock_guard lock(mutex_);
-  LOG_INFO("REGISTRY", "START_ALL", "Starting {} instruments",
+  LOG_INFO("REGISTRY", "START_ALL", "Starting %d instruments",
            instruments_.size());
 
   for (auto &[name, proxy] : instruments_) {
@@ -304,8 +309,8 @@ void InstrumentRegistry::start_all() {
       try {
         proxy->start();
       } catch (const std::exception &e) {
-        LOG_ERROR("REGISTRY", "START_ALL", "Error starting instrument {}: {}",
-                  name, e.what());
+        LOG_ERROR("REGISTRY", "START_ALL", "Error starting instrument %s: %s",
+                  name.c_str(), e.what());
       }
     }
   }

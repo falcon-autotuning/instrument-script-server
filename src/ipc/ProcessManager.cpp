@@ -1,5 +1,5 @@
 #include "instrument-script-server/ipc/ProcessManager.hpp"
-#include "instrument-script-server/Logger.hpp"
+#include <instrument-log/inst_logging.h>
 
 #include <filesystem>
 #include <sstream>
@@ -8,10 +8,10 @@
 #include <processthreadsapi.h>
 #include <windows.h>
 #else
+#include <limits.h>
 #include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <limits.h>
 extern char **environ;
 #endif
 
@@ -24,8 +24,8 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
                                        const std::string &plugin_path,
                                        const std::string &worker_executable) {
   LOG_INFO("PROCESS", "SPAWN",
-           "Spawning worker for instrument:  {} with plugin: {}",
-           instrument_name, plugin_path);
+           "Spawning worker for instrument: %s with plugin: %s",
+           instrument_name.c_str(), plugin_path.c_str());
 
   std::string resolved_worker = worker_executable;
   std::filesystem::path exe_dir;
@@ -46,7 +46,8 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
 
   if (!exe_dir.empty()) {
     std::filesystem::path candidate1 = exe_dir / worker_executable;
-    std::filesystem::path candidate2 = exe_dir.parent_path() / worker_executable;
+    std::filesystem::path candidate2 =
+        exe_dir.parent_path() / worker_executable;
     if (std::filesystem::exists(candidate1)) {
       resolved_worker = candidate1.string();
     } else if (std::filesystem::exists(candidate2)) {
@@ -58,8 +59,8 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
                                    plugin_path};
   ProcessId pid = spawn_process_impl(args);
   if (pid == 0) {
-    LOG_ERROR("PROCESS", "SPAWN", "Failed to spawn worker for:  {}",
-              instrument_name);
+    LOG_ERROR("PROCESS", "SPAWN", "Failed to spawn worker for:  %s",
+              instrument_name.c_str());
     return 0;
   }
 
@@ -96,7 +97,8 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
   }
 #endif
 
-  LOG_INFO("PROCESS", "SPAWN", "Worker spawned successfully:  PID={}", pid);
+  LOG_INFO("PROCESS", "SPAWN", "Worker spawned successfully: PID=%ld",
+           (long)pid);
 
   return pid;
 }

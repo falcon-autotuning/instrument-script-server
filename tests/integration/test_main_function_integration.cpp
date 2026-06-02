@@ -1,6 +1,5 @@
 #include "PlatformPaths.hpp"
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/CommandHandlers.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
@@ -10,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <instrument-log/inst_logging.h>
 #include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
 
@@ -31,12 +31,10 @@ protected:
     // Initialize logger
     log_path_ =
         std::filesystem::temp_directory_path() / "test_main_integration.log";
-    InstrumentLogger::instance().shutdown();
-    InstrumentLogger::instance().init(log_path_.string(), spdlog::level::debug);
-
-    if (auto l = spdlog::get("instrument")) {
-      l->flush_on(spdlog::level::debug);
-    }
+    inst_log_shutdown();
+    inst_log_init(log_path_.c_str(), INST_LOG_DEBUG, "instrument",
+                  1024 * 1024 * 10, // 10 MB
+                  3);               // rotation count
 
     // Start test instruments
     auto &registry = InstrumentRegistry::instance();
@@ -54,7 +52,8 @@ protected:
     registry.stop_all();
 
     // Clean up
-    InstrumentLogger::instance().shutdown();
+    inst_log_flush();
+    inst_log_shutdown();
     std::error_code ec;
     std::filesystem::remove_all(test_scripts_dir_, ec);
     std::filesystem::remove(log_path_, ec);
@@ -67,9 +66,7 @@ protected:
   }
 
   std::string read_log() {
-    if (auto l = spdlog::get("instrument")) {
-      l->flush();
-    }
+    inst_log_flush();
     // Increased wait time for slower systems
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
 

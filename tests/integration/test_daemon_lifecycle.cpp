@@ -1,7 +1,7 @@
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include <gtest/gtest.h>
+#include <instrument-log/inst_logging.h>
 #include <thread>
 
 using namespace instserver;
@@ -9,8 +9,11 @@ using namespace instserver;
 class DaemonLifecycleTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    InstrumentLogger::instance().init("test_daemon.log", spdlog::level::debug);
 
+    inst_log_shutdown();
+    inst_log_init("test_daemon.log", INST_LOG_DEBUG, "daemon_test",
+                  1024 * 1024, // 1 MB
+                  3);          // rotation count
     // Clean up any existing daemon
     if (ServerDaemon::is_already_running()) {
       int pid = ServerDaemon::get_daemon_pid();
@@ -34,6 +37,9 @@ protected:
       daemon.stop();
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
+
+    inst_log_flush();
+    inst_log_shutdown();
   }
 };
 

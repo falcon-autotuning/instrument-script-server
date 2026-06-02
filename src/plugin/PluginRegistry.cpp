@@ -1,9 +1,8 @@
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
-#include "instrument-script-server/Logger.hpp"
 #include <filesystem>
+#include <instrument-log/inst_logging.h>
 
-namespace instserver {
-namespace plugin {
+namespace instserver::plugin {
 
 bool PluginRegistry::load_plugin(const std::string &protocol_type,
                                  const std::string &plugin_path) {
@@ -11,7 +10,7 @@ bool PluginRegistry::load_plugin(const std::string &protocol_type,
 
   if (plugins_.count(protocol_type)) {
     LOG_WARN("PLUGIN_REGISTRY", "LOAD",
-             "Plugin already loaded for protocol: {}", protocol_type);
+             "Plugin already loaded for protocol: %s", protocol_type.c_str());
     return false;
   }
 
@@ -19,8 +18,8 @@ bool PluginRegistry::load_plugin(const std::string &protocol_type,
     auto loader = std::make_unique<PluginLoader>(plugin_path);
 
     if (!loader->is_loaded()) {
-      LOG_ERROR("PLUGIN_REGISTRY", "LOAD", "Failed to load plugin: {}",
-                loader->get_error());
+      LOG_ERROR("PLUGIN_REGISTRY", "LOAD", "Failed to load plugin: %s",
+                loader->get_error().c_str());
       return false;
     }
 
@@ -28,21 +27,21 @@ bool PluginRegistry::load_plugin(const std::string &protocol_type,
 
     if (metadata.api_version != INSTRUMENT_PLUGIN_API_VERSION) {
       LOG_ERROR("PLUGIN_REGISTRY", "LOAD",
-                "Plugin API version mismatch: {} vs {}", metadata.api_version,
+                "Plugin API version mismatch: %d vs %d", metadata.api_version,
                 INSTRUMENT_PLUGIN_API_VERSION);
       return false;
     }
 
     LOG_INFO("PLUGIN_REGISTRY", "LOAD",
-             "Loaded plugin: {} v{} for protocol: {}", metadata.name,
-             metadata.version, protocol_type);
+             "Loaded plugin: %s v%d for protocol: %s", metadata.name,
+             metadata.version, protocol_type.c_str());
 
     plugins_[protocol_type] = std::move(loader);
     plugin_paths_[protocol_type] = plugin_path;
 
     return true;
   } catch (const std::exception &ex) {
-    LOG_ERROR("PLUGIN_REGISTRY", "LOAD", "Exception loading plugin: {}",
+    LOG_ERROR("PLUGIN_REGISTRY", "LOAD", "Exception loading plugin: %s",
               ex.what());
     return false;
   }
@@ -56,17 +55,15 @@ void PluginRegistry::load_builtin_plugins() {
       {"VISA",
        {"/usr/local/lib/instrument-plugins/visa_plugin.so",
         "/usr/lib/instrument-plugins/visa_plugin.so",
-        "./plugins/visa/visa_plugin. so",
+        "./plugins/visa/visa_plugin.so",
         "./build/plugins/visa/visa_plugin.so"}},
-      // Future built-in plugins can be added here
-      // {"Serial", {"/usr/local/lib/instrument-plugins/serial_plugin.so", ...}}
   };
 
   for (const auto &[protocol, paths] : builtins) {
     // Skip if already loaded
     if (has_plugin(protocol)) {
       LOG_DEBUG("PLUGIN_REGISTRY", "BUILTIN",
-                "Protocol '{}' already has a plugin loaded", protocol);
+                "Protocol '%s' already has a plugin loaded", protocol.c_str());
       continue;
     }
 
@@ -75,12 +72,12 @@ void PluginRegistry::load_builtin_plugins() {
     for (const auto &path : paths) {
       if (std::filesystem::exists(path)) {
         LOG_INFO("PLUGIN_REGISTRY", "BUILTIN",
-                 "Attempting to load built-in {} plugin from: {}", protocol,
-                 path);
+                 "Attempting to load built-in %s plugin from: %s",
+                 protocol.c_str(), path.c_str());
         if (load_plugin(protocol, path)) {
           loaded = true;
           LOG_INFO("PLUGIN_REGISTRY", "BUILTIN",
-                   "Successfully loaded built-in {} plugin", protocol);
+                   "Successfully loaded built-in %s plugin", protocol.c_str());
           break;
         }
       }
@@ -88,10 +85,10 @@ void PluginRegistry::load_builtin_plugins() {
 
     if (!loaded) {
       LOG_WARN("PLUGIN_REGISTRY", "BUILTIN",
-               "Built-in {} plugin not found or failed to load.  "
+               "Built-in %s plugin not found or failed to load.  "
                "Instruments using this protocol will need to specify a custom "
                "plugin path.",
-               protocol);
+               protocol.c_str());
     }
   }
 }
@@ -114,8 +111,8 @@ void PluginRegistry::unload_plugin(const std::string &protocol_type) {
   std::lock_guard lock(mutex_);
   plugins_.erase(protocol_type);
   plugin_paths_.erase(protocol_type);
-  LOG_INFO("PLUGIN_REGISTRY", "UNLOAD", "Unloaded plugin for protocol: {}",
-           protocol_type);
+  LOG_INFO("PLUGIN_REGISTRY", "UNLOAD", "Unloaded plugin for protocol: %s",
+           protocol_type.c_str());
 }
 
 std::vector<std::string> PluginRegistry::list_protocols() const {
@@ -143,12 +140,12 @@ void PluginRegistry::discover_plugins(
   namespace fs = std::filesystem;
 
   LOG_INFO("PLUGIN_REGISTRY", "DISCOVER",
-           "Discovering plugins in {} directories", search_paths.size());
+           "Discovering plugins in %d directories", search_paths.size());
 
   for (const auto &search_path : search_paths) {
     if (!fs::exists(search_path) || !fs::is_directory(search_path)) {
-      LOG_WARN("PLUGIN_REGISTRY", "DISCOVER", "Invalid search path: {}",
-               search_path);
+      LOG_WARN("PLUGIN_REGISTRY", "DISCOVER", "Invalid search path: %s",
+               search_path.c_str());
       continue;
     }
 
@@ -184,7 +181,8 @@ void PluginRegistry::discover_plugins(
         }
       } catch (const std::exception &ex) {
         LOG_WARN("PLUGIN_REGISTRY", "DISCOVER",
-                 "Failed to discover plugin {}: {}", plugin_path, ex.what());
+                 "Failed to discover plugin %s: %s", plugin_path.c_str(),
+                 ex.what());
       }
     }
   }
@@ -193,5 +191,4 @@ void PluginRegistry::discover_plugins(
            "Discovery complete. {} plugins loaded", plugins_.size());
 }
 
-} // namespace plugin
-} // namespace instserver
+} // namespace instserver::plugin

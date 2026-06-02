@@ -1,6 +1,6 @@
 {
   "name": "instrument-log",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "Logging library build for the instrument-script-server processes",
   "homepage": "https://github.com/falcon-autotuning/instrument-log",
   "dependencies": [

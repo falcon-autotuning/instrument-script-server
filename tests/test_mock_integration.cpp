@@ -1,4 +1,4 @@
-#include "instrument-script-server/Logger.hpp"
+#include <instrument-log/inst_logging.h>
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
 

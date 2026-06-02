@@ -1,9 +1,9 @@
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <instrument-log/inst_logging.h>
 
 // Platform-specific includes
 #ifdef _WIN32
@@ -23,15 +23,20 @@ using namespace instserver;
 class MeasureCommandTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    InstrumentLogger::instance().init("measure_cmd_test.log",
-                                      spdlog::level::debug);
+
+    inst_log_shutdown();
+    inst_log_init("measure_cmd_test.log", INST_LOG_DEBUG, "measure_test",
+                  1024 * 1024, // 1 MB
+                  3);          // rotation count
     if (ServerDaemon::is_already_running()) {
       int pid = ServerDaemon::get_daemon_pid();
 
-      // Don't kill if PID is ourself or our parent
+      // Don't kill if PID is ourself or our
+      // parent
       int self_pid = getpid();
 #ifdef _WIN32
-      // Windows doesn't have getppid, just check if it's our own PID
+      // Windows doesn't have getppid, just
+      // check if it's our own PID
       if (pid != self_pid && pid > 0) {
         HANDLE process = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
         if (process) {
@@ -53,19 +58,22 @@ protected:
     std::filesystem::create_directories(test_dir_);
     auto script_path = test_dir_ / "test.lua";
     std::ofstream script(script_path);
-    script << "context:log('Test script running')\n";
+    script << "context:log('Test script "
+              "running')\n";
     script << "print('Output from script')\n";
     script.close();
   }
 
   void TearDown() override {
-    std::filesystem::remove_all(test_dir_);
     // Clean up after each test - use public API only
     auto &daemon = ServerDaemon::instance();
     if (daemon.is_running()) {
       daemon.stop();
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
+    inst_log_flush();
+    inst_log_shutdown();
+    std::filesystem::remove_all(test_dir_);
   }
 
 #ifdef _WIN32
@@ -191,7 +199,7 @@ protected:
         if (kill_result != 0)
           perror("[DEBUG] kill(SIGKILL) failed");
         waitpid(pid, &status, 0); // Clean up zombie
-        LOG_ERROR("TEST", "TIMEOUT", "Command timed out:  {}", cmd);
+        LOG_ERROR("TEST", "TIMEOUT", "Command timed out:  %s", cmd.c_str());
         status = -1;
       } else if (WIFEXITED(status)) {
         fprintf(stderr,

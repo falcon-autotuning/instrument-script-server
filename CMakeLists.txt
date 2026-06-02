@@ -99,11 +99,11 @@ endif()
 # Find dependencies
 find_package(Threads       REQUIRED)
 find_package(Lua           REQUIRED)
-find_package(spdlog        CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(yaml-cpp      CONFIG REQUIRED)
 find_package(sol2          CONFIG REQUIRED)
 find_package(instrument-data CONFIG REQUIRED)
+find_package(instrument-log CONFIG REQUIRED)
 
 # VISA (optional)
 if(WIN32)
@@ -148,7 +148,6 @@ configure_file(${CMAKE_SOURCE_DIR}/src/embedded_schemas.cpp.in
 add_library(
   instrument-script-server-core SHARED
   src/SchemaValidator.cpp
-  src/Logger.cpp
   src/version.cpp
   src/SerializedCommand.cpp
   src/ipc/SharedQueue.cpp
@@ -186,9 +185,14 @@ target_compile_definitions(
 
 target_link_libraries(
   instrument-script-server-core
-  PUBLIC spdlog::spdlog nlohmann_json::nlohmann_json yaml-cpp::yaml-cpp
-         instrument-data::instrument-data
-         ${PLATFORM_LIBS} ${LUA_LIBRARIES})
+  PUBLIC
+    nlohmann_json::nlohmann_json
+    yaml-cpp::yaml-cpp
+    ${PLATFORM_LIBS}
+    ${LUA_LIBRARIES}
+    instrument-log::instrument-log
+    instrument-data::instrument-data
+)
 
 # Per-target include directories (avoid global include_directories)
 target_include_directories(

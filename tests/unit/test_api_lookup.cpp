@@ -1,6 +1,6 @@
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include <instrument-log/inst_logging.h>
 
 #include <filesystem>
 #include <gtest/gtest.h>
@@ -11,7 +11,6 @@ using namespace instserver;
 class APILookupTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
-    // Load plugins first
     PluginTestFixture::SetUp();
     registry_ = &InstrumentRegistry::instance();
     test_data_dir_ = std::filesystem::current_path() / "data";
@@ -20,16 +19,20 @@ protected:
       GTEST_SKIP() << "Config not found at: " << config_path_;
     }
 
-    InstrumentLogger::instance().shutdown();
+    // Ensure clean state between tests
+    inst_log_shutdown();
     auto tmp = std::filesystem::temp_directory_path();
-    auto log_path_ = tmp / ("instrument_test.log");
-    InstrumentLogger::instance().init(log_path_.string(), spdlog::level::debug);
-    if (auto l = spdlog::get("instrument")) {
-      l->flush_on(spdlog::level::debug);
-    }
+    auto log_path = tmp / "instrument_test.log";
+    inst_log_init(log_path.string().c_str(), INST_LOG_DEBUG, "instrument_test",
+                  1024 * 1024, // 1 MB
+                  3);          // rotation count
   }
 
-  void TearDown() override { registry_->stop_all(); }
+  void TearDown() override {
+    registry_->stop_all();
+    inst_log_flush();
+    inst_log_shutdown();
+  }
 
   InstrumentRegistry *registry_;
   std::filesystem::path test_data_dir_;

@@ -1,7 +1,7 @@
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
+#include <instrument-log/inst_logging.h>
 
 #include <chrono>
 #include <filesystem>
@@ -25,13 +25,10 @@ protected:
     auto now = std::chrono::steady_clock::now().time_since_epoch().count();
     log_path_ = tmp / ("instrument_test_" + std::to_string(now) + ".log");
 
-    InstrumentLogger::instance().shutdown();
-    InstrumentLogger::instance().init(log_path_.string(), spdlog::level::debug);
-
-    if (auto l = spdlog::get("instrument")) {
-      l->flush_on(spdlog::level::debug);
-    }
-
+    inst_log_shutdown();
+    inst_log_init(log_path_.c_str(), INST_LOG_DEBUG, "instrument",
+                  1024 * 1024, // 1 MB
+                  3);          // rotation count
     lua_ = std::make_unique<sol::state>();
     lua_->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string);
     bind_runtime_context(*lua_, *registry_, *sync_coordinator_);
@@ -45,7 +42,8 @@ protected:
 
     lua_.reset();
     registry_->stop_all();
-    InstrumentLogger::instance().shutdown();
+    inst_log_flush();
+    inst_log_shutdown();
 
     std::error_code ec;
     std::filesystem::remove(log_path_, ec);

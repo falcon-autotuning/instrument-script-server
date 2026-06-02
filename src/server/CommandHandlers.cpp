@@ -1,5 +1,4 @@
 #include "instrument-script-server/server/CommandHandlers.hpp"
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/SerializedCommand.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
@@ -9,7 +8,7 @@
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
-#include "instrument-script-server/ipc/DataBufferManager.hpp"
+#include <instrument-log/inst_logging.h>
 
 #include <fstream>
 #include <sol/sol.hpp>
@@ -107,8 +106,8 @@ void preload_lua_modules_from_dir(sol::state &lua, const std::string &libroot) {
     if (!loader.valid()) {
       sol::error err = loader;
       // log and skip problematic helper file
-      LOG_ERROR("SERVER", "MEASURE", "Failed to load helper {}: {}",
-                path.string(), err.what());
+      LOG_ERROR("SERVER", "MEASURE", "Failed to load helper %s: %s",
+                path.string().c_str(), err.what());
       continue;
     }
     // Convert to protected_function (stable registry reference) before
@@ -116,27 +115,28 @@ void preload_lua_modules_from_dir(sol::state &lua, const std::string &libroot) {
     // and must not be stored directly in a table proxy.
     sol::protected_function fn = loader;
     preload[module] = fn;
-    LOG_INFO("SERVER", "MEASURE", "Preloaded Lua module '{}'", module);
+    LOG_INFO("SERVER", "MEASURE", "Preloaded Lua module '%s'", module.c_str());
   }
 }
 void load_bundle_file(sol::state &lua, const std::string &bundle_path) {
   std::string code = read_file_to_string(bundle_path);
   if (code.empty()) {
-    LOG_ERROR("SERVER", "MEASURE", "bundle file empty: {}", bundle_path);
+    LOG_ERROR("SERVER", "MEASURE", "bundle file empty: %s",
+              bundle_path.c_str());
     return;
   }
   sol::load_result loader = lua.load(code, bundle_path);
   if (!loader.valid()) {
     sol::error err = loader;
-    LOG_ERROR("SERVER", "MEASURE", "failed to load bundle {}: {}", bundle_path,
-              err.what());
+    LOG_ERROR("SERVER", "MEASURE", "failed to load bundle %s: %s",
+              bundle_path.c_str(), err.what());
     return;
   }
   sol::protected_function_result pres = loader();
   if (!pres.valid()) {
     sol::error err = pres;
-    LOG_ERROR("SERVER", "MEASURE", "bundle execution error {}: {}", bundle_path,
-              err.what());
+    LOG_ERROR("SERVER", "MEASURE", "bundle execution error %s: %s",
+              bundle_path.c_str(), err.what());
     return;
   }
   // If the bundle returned a table, register it as a Lua global under the
@@ -145,13 +145,13 @@ void load_bundle_file(sol::state &lua, const std::string &bundle_path) {
   if (pres.return_count() > 0) {
     sol::object ret = pres[0];
     if (ret.get_type() == sol::type::table) {
-      std::string stem =
-          std::filesystem::path(bundle_path).stem().string();
+      std::string stem = std::filesystem::path(bundle_path).stem().string();
       lua[stem] = ret;
-      LOG_INFO("SERVER", "MEASURE", "Registered bundle global '{}'", stem);
+      LOG_INFO("SERVER", "MEASURE", "Registered bundle global '%s'",
+               stem.c_str());
     }
   }
-  LOG_INFO("SERVER", "MEASURE", "Loaded bundle {}", bundle_path);
+  LOG_INFO("SERVER", "MEASURE", "Loaded bundle %s", bundle_path.c_str());
 }
 void load_optional_lua_libs(sol::state &lua) {
   const char *envp = std::getenv("INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB");
@@ -182,8 +182,8 @@ void load_optional_lua_libs(sol::state &lua) {
 
     std::filesystem::path p(path_str);
     if (!std::filesystem::exists(p)) {
-      LOG_WARN("SERVER", "MEASURE", "Specified helpers path does not exist: {}",
-               path_str);
+      LOG_WARN("SERVER", "MEASURE", "Specified helpers path does not exist: %s",
+               path_str.c_str());
       continue;
     }
     if (std::filesystem::is_directory(p)) {
@@ -192,8 +192,8 @@ void load_optional_lua_libs(sol::state &lua) {
       // treat as bundle file
       load_bundle_file(lua, p.string());
     } else {
-      LOG_WARN("SERVER", "MEASURE", "Helpers path not dir or file: {}",
-               path_str);
+      LOG_WARN("SERVER", "MEASURE", "Helpers path not dir or file: %s",
+               path_str.c_str());
     }
   }
 }
@@ -213,9 +213,24 @@ int handle_daemon(const json &params, json &out) {
 
   if (action == "start") {
     // Initialize logger (same default as CLI)
-    InstrumentLogger::instance().init("instrument_server.log",
-                                      spdlog::level::from_str(log_level));
+    uint8_t log_level_num;
+    if (log_level == "trace") {
+      log_level_num = INST_LOG_TRACE;
+    } else if (log_level == "debug") {
+      log_level_num = INST_LOG_DEBUG;
+    } else if (log_level == "info") {
+      log_level_num = INST_LOG_INFO;
+    } else if (log_level == "warn") {
+      log_level_num = INST_LOG_WARN;
+    } else if (log_level == "error") {
+      log_level_num = INST_LOG_ERROR;
+    } else {
+      log_level_num = INST_LOG_INFO; // default
+    }
 
+    inst_log_init("instrument_server.log", log_level_num, "instrument",
+                  10 * 1024 * 1024, // 10 MB
+                  3);               // rotation count
     // Check for RPC port configuration from environment variable
     const char *rpc_port_env = std::getenv("INSTRUMENT_SCRIPT_SERVER_RPC_PORT");
     if (rpc_port_env && rpc_port_env[0]) {
@@ -287,8 +302,24 @@ int handle_start(const json &params, json &out) {
     return 1;
   }
 
-  InstrumentLogger::instance().init("instrument_server.log",
-                                    spdlog::level::from_str(log_level));
+  uint8_t log_level_num;
+  if (log_level == "trace") {
+    log_level_num = INST_LOG_TRACE;
+  } else if (log_level == "debug") {
+    log_level_num = INST_LOG_DEBUG;
+  } else if (log_level == "info") {
+    log_level_num = INST_LOG_INFO;
+  } else if (log_level == "warn") {
+    log_level_num = INST_LOG_WARN;
+  } else if (log_level == "error") {
+    log_level_num = INST_LOG_ERROR;
+  } else {
+    log_level_num = INST_LOG_INFO; // default
+  }
+
+  inst_log_init("instrument_server.log", log_level_num, "instrument",
+                10 * 1024 * 1024, // 10 MB
+                3);               // rotation count
 
   try {
     // If a custom plugin path was provided, try to load it via PluginLoader.
@@ -403,8 +434,24 @@ int handle_measure(const json &params, json &out) {
     return 1;
   }
 
-  InstrumentLogger::instance().init("instrument_server.log",
-                                    spdlog::level::from_str(log_level));
+  uint8_t log_level_num;
+  if (log_level == "trace") {
+    log_level_num = INST_LOG_TRACE;
+  } else if (log_level == "debug") {
+    log_level_num = INST_LOG_DEBUG;
+  } else if (log_level == "info") {
+    log_level_num = INST_LOG_INFO;
+  } else if (log_level == "warn") {
+    log_level_num = INST_LOG_WARN;
+  } else if (log_level == "error") {
+    log_level_num = INST_LOG_ERROR;
+  } else {
+    log_level_num = INST_LOG_INFO; // default
+  }
+
+  inst_log_init("instrument_server.log", log_level_num, "instrument",
+                10 * 1024 * 1024, // 10 MB
+                3);               // rotation count
 
   try {
     auto &registry = InstrumentRegistry::instance();
@@ -415,7 +462,7 @@ int handle_measure(const json &params, json &out) {
       return 1;
     }
 
-    LOG_INFO("SERVER", "MEASURE", "Script: {}", script_path);
+    LOG_INFO("SERVER", "MEASURE", "Script: %s", script_path.c_str());
 
     // Setup Lua
     sol::state lua;
@@ -529,7 +576,8 @@ __context_schema_version = nil
           sol::optional<std::string> var_name = (*injected_vars)[i];
           if (var_name) {
             LOG_WARN("SERVER", "MEASURE",
-                     "Injecting global variable '{}' from spec", *var_name);
+                     "Injecting global variable '%s' from spec",
+                     var_name->c_str());
           }
         }
       }
@@ -608,8 +656,8 @@ __context_schema_version = nil
                             "type_manifest but not provided in globals)",
                             param_name);
             LOG_ERROR("SERVER", "MEASURE",
-                      "Missing required parameter '{}' for typed main function",
-                      param_name);
+                      "Missing required parameter '%s' for typed main function",
+                      param_name.c_str());
             return 1;
           }
 
@@ -618,8 +666,8 @@ __context_schema_version = nil
           args.push_back(arg);
 
           LOG_INFO("SERVER", "MEASURE",
-                   "Passing parameter '{}' to main function (type: {})",
-                   param_name, param.value("type", "unknown"));
+                   "Passing parameter '%s' to main function (type: %s)",
+                   param_name.c_str(), param.value("type", "unknown").c_str());
         }
 
         // Check for unused globals (warnings)
@@ -638,9 +686,9 @@ __context_schema_version = nil
 
             if (!found) {
               LOG_WARN("SERVER", "MEASURE",
-                       "Global variable '{}' provided but not used by typed "
+                       "Global variable '%s' provided but not used by typed "
                        "main function (injecting as global)",
-                       global_name);
+                       global_name.c_str());
               // Still inject it as global for backward compatibility
               lua[global_name] = json_to_lua(lua, it.value());
             }
@@ -766,7 +814,7 @@ __context_schema_version = nil
     // Get collected results
     const auto &results = ctx_shared->get_results();
     LOG_INFO("SERVER", "MEASURE",
-             "Lua script done. Serializing {} results into HTTP response",
+             "Lua script done. Serializing %d results into HTTP response",
              results.size());
     out["ok"] = true;
     out["script"] = std::filesystem::path(script_path).filename().string();
@@ -830,8 +878,9 @@ __context_schema_version = nil
       out["results"].push_back(result_json);
     }
 
-    LOG_INFO("SERVER", "MEASURE",
-             "Serialization complete. Returning to HTTP handler to send response");
+    LOG_INFO(
+        "SERVER", "MEASURE",
+        "Serialization complete. Returning to HTTP handler to send response");
     return 0;
   } catch (const std::exception &e) {
     out["ok"] = false;
@@ -854,8 +903,24 @@ int handle_test(const json &params, json &out) {
     return 1;
   }
 
-  InstrumentLogger::instance().init("instrument_server.log",
-                                    spdlog::level::from_str(log_level));
+  uint8_t log_level_num;
+  if (log_level == "trace") {
+    log_level_num = INST_LOG_TRACE;
+  } else if (log_level == "debug") {
+    log_level_num = INST_LOG_DEBUG;
+  } else if (log_level == "info") {
+    log_level_num = INST_LOG_INFO;
+  } else if (log_level == "warn") {
+    log_level_num = INST_LOG_WARN;
+  } else if (log_level == "error") {
+    log_level_num = INST_LOG_ERROR;
+  } else {
+    log_level_num = INST_LOG_INFO; // default
+  }
+
+  inst_log_init("instrument_server.log", log_level_num, "instrument",
+                10 * 1024 * 1024, // 10 MB
+                3);               // rotation count
 
   try {
     // If a custom plugin path was provided, try to load it via PluginLoader.

@@ -1,7 +1,7 @@
 #include "instrument-script-server/server/RuntimeContext.hpp"
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include <fmt/format.h>
+#include <instrument-log/inst_logging.h>
 #include <set>
 #include <variant>
 
@@ -32,7 +32,8 @@ BufferHandle::BufferHandle(const std::string &buffer_id, uint64_t element_count,
                            const std::string &data_type)
     : buffer_id_(buffer_id), element_count_(element_count),
       data_type_(data_type) {
-  // Graceful ownership transfer: attach to the buffer in the server process to claim ownership
+  // Graceful ownership transfer: attach to the buffer in the server process to
+  // claim ownership
   ipc::DataBufferManager::instance().get_buffer(buffer_id_);
 }
 
@@ -109,8 +110,8 @@ MeasurementResponse::add_offset(double offset) const {
     return std::make_shared<MeasurementResponse>(instrument_, verb_, buffer_);
   }
 
-  LOG_WARN("LUA_CONTEXT", "MATH", "add_offset called on non-numeric type: {}",
-           type_);
+  LOG_WARN("LUA_CONTEXT", "MATH", "add_offset called on non-numeric type: %s",
+           type_.c_str());
   // Return a copy of self for non-numeric types
   if (type_ == "string") {
     return std::make_shared<MeasurementResponse>(instrument_, verb_,
@@ -137,7 +138,7 @@ MeasurementResponse::multiply_gain(double gain) const {
   }
 
   LOG_WARN("LUA_CONTEXT", "MATH",
-           "multiply_gain called on non-numeric type: {}", type_);
+           "multiply_gain called on non-numeric type: %s", type_.c_str());
   // Return a copy of self for non-numeric types
   if (type_ == "string") {
     return std::make_shared<MeasurementResponse>(instrument_, verb_,
@@ -201,12 +202,12 @@ sol::object RuntimeContext::call(const std::string &func_name,
                                  sol::variadic_args args, sol::this_state s) {
   sol::state_view lua(s);
 
-  LOG_INFO("LUA_CONTEXT", "CALL", "Calling function: {}", func_name);
+  LOG_INFO("LUA_CONTEXT", "CALL", "Calling function: %s", func_name.c_str());
 
   size_t dot_pos = func_name.find('.');
   if (dot_pos == std::string::npos) {
-    LOG_ERROR("LUA_CONTEXT", "CALL", "Invalid function name format: {}",
-              func_name);
+    LOG_ERROR("LUA_CONTEXT", "CALL", "Invalid function name format: %s",
+              func_name.c_str());
     return sol::nil;
   }
 
@@ -221,8 +222,8 @@ sol::object RuntimeContext::call(const std::string &func_name,
     try {
       channel = std::stoi(instrument_spec.substr(colon_pos + 1));
     } catch (const std::exception &e) {
-      LOG_ERROR("LUA_CONTEXT", "CALL", "Invalid channel number in:  {}",
-                func_name);
+      LOG_ERROR("LUA_CONTEXT", "CALL", "Invalid channel number in: %s",
+                func_name.c_str());
       return sol::nil;
     }
   }
@@ -277,8 +278,8 @@ sol::object RuntimeContext::call(const std::string &func_name,
     cmd.created_at = std::chrono::steady_clock::now();
 
     parallel_buffer_.push_back(std::move(cmd));
-    LOG_DEBUG("LUA_CONTEXT", "PARALLEL", "Buffered parallel command: {}.{}",
-              instrument_id, verb);
+    LOG_DEBUG("LUA_CONTEXT", "PARALLEL", "Buffered parallel command: %s.%s",
+              instrument_id.c_str(), verb.c_str());
     return sol::nil;
   }
 
@@ -297,7 +298,8 @@ sol::object RuntimeContext::call(const std::string &func_name,
   collected_results_.push_back(cr);
 
   if (!resp.success) {
-    LOG_ERROR("LUA_CONTEXT", "CALL", "Command failed: {}", resp.error_message);
+    LOG_ERROR("LUA_CONTEXT", "CALL", "Command failed: %s",
+              resp.error_message.c_str());
     return sol::nil;
   }
 
@@ -311,18 +313,22 @@ sol::object RuntimeContext::call(const std::string &func_name,
         resp.buffer_id, resp.element_count, resp.data_type);
 
     // Hand-off/Ownership Transfer:
-    // 1. Server process has now attached to the buffer via BufferHandle's constructor (which calls get_buffer).
-    // 2. Since the server safely owns the buffer, we can now send a release command to the worker
-    //    so the worker releases its local creator reference, leaving the server as the sole owner.
+    // 1. Server process has now attached to the buffer via BufferHandle's
+    // constructor (which calls get_buffer).
+    // 2. Since the server safely owns the buffer, we can now send a release
+    // command to the worker
+    //    so the worker releases its local creator reference, leaving the server
+    //    as the sole owner.
     auto worker = registry_.get_instrument(instrument_id);
     if (worker) {
       try {
         LOG_INFO("LUA_CONTEXT", "HANDOFF",
-                 "Sending BUFFER_ACK to worker for buffer: {}", resp.buffer_id);
+                 "Sending BUFFER_ACK to worker for buffer: %s",
+                 resp.buffer_id.c_str());
         worker->send_buffer_ack(resp.buffer_id);
       } catch (const std::exception &e) {
         LOG_ERROR("LUA_CONTEXT", "HANDOFF",
-                  "Failed to send BUFFER_ACK to worker: {}", e.what());
+                  "Failed to send BUFFER_ACK to worker: %s", e.what());
       }
     }
 
@@ -361,7 +367,8 @@ sol::object RuntimeContext::call(const std::string &func_name,
 
     // Handoff: since the server itself created the buffer (refcount = 1),
     // and the BufferHandle constructor attached to it (refcount = 2),
-    // the server's creator role is done, so we release the initial creator reference.
+    // the server's creator role is done, so we release the initial creator
+    // reference.
     buf_mgr.release_buffer(buffer_id);
 
     auto response =
@@ -387,7 +394,7 @@ void RuntimeContext::parallel(sol::function block) {
   try {
     block();
   } catch (const std::exception &e) {
-    LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Error in parallel block:  {}",
+    LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Error in parallel block: %s",
               e.what());
     in_parallel_block_ = false;
     parallel_buffer_.clear();
@@ -428,8 +435,8 @@ void RuntimeContext::execute_parallel_buffer() {
 
     auto worker = registry_.get_instrument(cmd.instrument_name);
     if (!worker) {
-      LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Instrument not found: {}",
-                cmd.instrument_name);
+      LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Instrument not found: %s",
+                cmd.instrument_name.c_str());
       continue;
     }
 
@@ -439,13 +446,15 @@ void RuntimeContext::execute_parallel_buffer() {
 
     LOG_DEBUG(
         "LUA_CONTEXT", "PARALLEL",
-        "Dispatching sync command:  {} to {} (token={}, expects_response={})",
-        cmd.verb, cmd.instrument_name, sync_token, cmd.expects_response);
+        "Dispatching sync command:  %s to %s (token=%llu, expects_response=%s)",
+        cmd.verb.c_str(), cmd.instrument_name.c_str(),
+        (unsigned long long)sync_token,
+        cmd.expects_response ? "true" : "false");
 
     futures.push_back(worker->execute(std::move(cmd)));
   }
 
-  LOG_DEBUG("LUA_CONTEXT", "PARALLEL", "Waiting for {} futures",
+  LOG_DEBUG("LUA_CONTEXT", "PARALLEL", "Waiting for %d futures",
             futures.size());
 
   // Wait for futures first, populate results
@@ -457,11 +466,11 @@ void RuntimeContext::execute_parallel_buffer() {
       cr.executed_at = std::chrono::steady_clock::now();
       collected_results_.push_back(cr);
       if (!resp.success) {
-        LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Parallel command failed: {}",
-                  resp.error_message);
+        LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Parallel command failed: %s",
+                  resp.error_message.c_str());
       }
     } catch (const std::exception &e) {
-      LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Future exception: {}", e.what());
+      LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Future exception: %s", e.what());
     }
   }
 
@@ -471,24 +480,25 @@ void RuntimeContext::execute_parallel_buffer() {
     if (worker) {
       worker->send_sync_continue(sync_token);
       LOG_DEBUG("LUA_CONTEXT", "PARALLEL",
-                "Sent SYNC_CONTINUE to {} for token={}", inst_name, sync_token);
+                "Sent SYNC_CONTINUE to %s for token=%llu", inst_name.c_str(),
+                (unsigned long long)sync_token);
     }
   }
 
   sync_coordinator_.clear_barrier(sync_token);
 
-  LOG_INFO("LUA_CONTEXT", "PARALLEL", "Parallel block complete (token={})",
-           sync_token);
+  LOG_INFO("LUA_CONTEXT", "PARALLEL", "Parallel block complete (token=%llu)",
+           (unsigned long long)sync_token);
 }
 
 void RuntimeContext::log(const std::string &msg) {
-  LOG_INFO("LUA_SCRIPT", "USER", "{}", msg);
+  LOG_INFO("LUA_SCRIPT", "USER", "%s", msg.c_str());
 }
 
 void RuntimeContext::error(const std::string &msg) {
   has_error_ = true;
   error_message_ = msg;
-  LOG_ERROR("LUA_SCRIPT", "USER_ERROR", "{}", msg);
+  LOG_ERROR("LUA_SCRIPT", "USER_ERROR", "%s", msg.c_str());
 }
 
 CommandResponse RuntimeContext::send_command(
@@ -513,15 +523,16 @@ CommandResponse RuntimeContext::send_command(
   cmd.created_at = std::chrono::steady_clock::now();
   cmd.expects_response = expects_response;
 
-  LOG_INFO("LUA_CONTEXT", "SEND",
-            "Sending command {}.{} (expects_response={})", instrument_id, verb,
-            expects_response);
+  LOG_INFO("LUA_CONTEXT", "SEND", "Sending command %s.%s (expects_response=%s)",
+           instrument_id.c_str(), verb.c_str(),
+           expects_response ? "true" : "false");
 
-  auto resp = worker->execute_sync(std::move(cmd), std::chrono::milliseconds(5000));
+  auto resp =
+      worker->execute_sync(std::move(cmd), std::chrono::milliseconds(5000));
   LOG_INFO("LUA_CONTEXT", "SEND",
-            "Command {}.{} returned: success={} error='{}'",
-            instrument_id, verb, resp.success,
-            resp.success ? "" : resp.error_message);
+           "Command %s.%s returned: success=%s error='%s'",
+           instrument_id.c_str(), verb.c_str(), resp.success ? "true" : "false",
+           resp.success ? "" : resp.error_message.c_str());
   return resp;
 }
 
@@ -549,8 +560,8 @@ void RuntimeContext::process_tokens_and_wait() {
           cr.executed_at = std::chrono::steady_clock::now();
         } catch (const std::exception &e) {
           LOG_ERROR("LUA_CONTEXT", "TOKEN",
-                    "Exception waiting future for token {}: {}", token,
-                    e.what());
+                    "Exception waiting future for token %llu: %s",
+                    (unsigned long long)token, e.what());
         }
       }
     }
@@ -563,7 +574,8 @@ void RuntimeContext::process_tokens_and_wait() {
         if (worker) {
           worker->send_sync_continue(token);
           LOG_DEBUG("LUA_CONTEXT", "TOKEN",
-                    "Sent SYNC_CONTINUE for token {} to {}", token, inst);
+                    "Sent SYNC_CONTINUE for token %llu to %s",
+                    (unsigned long long)token, inst.c_str());
         }
       }
     }
@@ -572,7 +584,8 @@ void RuntimeContext::process_tokens_and_wait() {
       sync_coordinator_.clear_barrier(token);
     } catch (...) {
       LOG_WARN("LUA_CONTEXT", "TOKEN",
-               "Exception clearing barrier for token {}", token);
+               "Exception clearing barrier for token %llu",
+               (unsigned long long)token);
     }
   }
 

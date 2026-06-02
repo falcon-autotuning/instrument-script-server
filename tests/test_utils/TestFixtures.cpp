@@ -1,12 +1,15 @@
 #include "TestFixtures.hpp"
-#include "instrument-script-server/Logger.hpp"
+#include <instrument-log/inst_logging.h>
 
 #include <filesystem>
 
 namespace instserver::test {
 
 void InstrumentServerTest::SetUp() {
-  InstrumentLogger::instance().init("test.log", spdlog::level::debug);
+  inst_log_shutdown();
+  inst_log_init("test.log", INST_LOG_DEBUG, "instrument",
+                1024 * 1024, // 1 MB
+                3);          // rotation count
   registry_ = &InstrumentRegistry::instance();
   sync_coordinator_ = new SyncCoordinator();
 }
@@ -14,11 +17,15 @@ void InstrumentServerTest::SetUp() {
 void InstrumentServerTest::TearDown() {
   registry_->stop_all();
   delete sync_coordinator_;
+  inst_log_flush();
+  inst_log_shutdown();
 }
 
 void IntegrationTest::SetUp() {
-  InstrumentLogger::instance().init("integration_test.log",
-                                    spdlog::level::debug);
+  inst_log_shutdown();
+  inst_log_init("integrationtest.log", INST_LOG_DEBUG, "instrument",
+                1024 * 1024, // 1 MB
+                3);          // rotation count
 
   // Find test data directory
   test_data_dir_ =
@@ -37,6 +44,8 @@ void IntegrationTest::SetUp() {
 void IntegrationTest::TearDown() {
   auto &registry = InstrumentRegistry::instance();
   registry.stop_all();
+  inst_log_flush();
+  inst_log_shutdown();
 }
 
 } // namespace instserver::test

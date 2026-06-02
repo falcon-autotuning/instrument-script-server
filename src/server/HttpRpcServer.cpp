@@ -1,6 +1,6 @@
 #include "instrument-script-server/server/HttpRpcServer.hpp"
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/server/CommandHandlers.hpp"
+#include <instrument-log/inst_logging.h>
 #include <nlohmann/json.hpp>
 
 #ifdef _WIN32
@@ -191,15 +191,15 @@ void HttpRpcServer::run_loop(uint16_t port) {
 #ifdef _WIN32
   listen_fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (listen_fd_ == INVALID_SOCKET) {
-    LOG_ERROR("RPC", "SOCKET", "Failed to create socket: {}",
-              WSAGetLastError());
+    LOG_ERROR("RPC", "SOCKET", "Failed to create socket: %s",
+              WSAGetLastError().c_str());
     running_ = false;
     return;
   }
 #else
   listen_fd_ = socket(AF_INET, SOCK_STREAM, 0);
   if (listen_fd_ < 0) {
-    LOG_ERROR("RPC", "SOCKET", "Failed to create socket: {}", strerror(errno));
+    LOG_ERROR("RPC", "SOCKET", "Failed to create socket: %s", strerror(errno));
     running_ = false;
     return;
   }
@@ -228,7 +228,7 @@ void HttpRpcServer::run_loop(uint16_t port) {
   }
 #else
   if (inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr) != 1) {
-    LOG_ERROR("RPC", "ADDR", "inet_pton failed: {}", strerror(errno));
+    LOG_ERROR("RPC", "ADDR", "inet_pton failed: %s", strerror(errno));
     // handle error
     running_ = false;
     return;
@@ -238,10 +238,10 @@ void HttpRpcServer::run_loop(uint16_t port) {
   if (bind(listen_fd_, reinterpret_cast<struct sockaddr *>(&addr),
            sizeof(addr)) < 0) {
 #ifdef _WIN32
-    LOG_ERROR("RPC", "BIND", "bind failed: {}", WSAGetLastError());
+    LOG_ERROR("RPC", "BIND", "bind failed: %s", WSAGetLastError());
     closesocket(listen_fd_);
 #else
-    LOG_ERROR("RPC", "BIND", "bind failed: {}", strerror(errno));
+    LOG_ERROR("RPC", "BIND", "bind failed: %s", strerror(errno));
     close(listen_fd_);
 #endif
     listen_fd_ = -1;
@@ -274,7 +274,7 @@ void HttpRpcServer::run_loop(uint16_t port) {
     bound_port_ = port;
   }
 
-  LOG_INFO("RPC", "START", "HTTP RPC server listening on 127.0.0.1:{}",
+  LOG_INFO("RPC", "START", "HTTP RPC server listening on 127.0.0.1:%d",
            bound_port_);
 
   // Accept loop
@@ -290,7 +290,7 @@ void HttpRpcServer::run_loop(uint16_t port) {
       int err = WSAGetLastError();
       if (!running_)
         break;
-      LOG_WARN("RPC", "ACCEPT", "accept failed: {}", err);
+      LOG_WARN("RPC", "ACCEPT", "accept failed: %d", err);
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
       continue;
     }
@@ -302,7 +302,7 @@ void HttpRpcServer::run_loop(uint16_t port) {
     if (client_socket < 0) {
       if (!running_)
         break;
-      LOG_WARN("RPC", "ACCEPT", "accept failed: {}", strerror(errno));
+      LOG_WARN("RPC", "ACCEPT", "accept failed: %s", strerror(errno));
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
       continue;
     }
@@ -332,7 +332,8 @@ void HttpRpcServer::run_loop(uint16_t port) {
       rl >> method >> path >> proto;
     }
 
-    LOG_DEBUG("RPC", "REQUEST", "Method: {}, Path: {}", method, path);
+    LOG_DEBUG("RPC", "REQUEST", "Method: %s, Path: %s", method.c_str(),
+              path.c_str());
 
     int content_len = parse_content_length(headers);
 

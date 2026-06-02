@@ -1,7 +1,7 @@
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
+#include <instrument-log/inst_logging.h>
 
 #include <chrono>
 #include <filesystem>
@@ -29,11 +29,10 @@ protected:
 
     // Ensure any previous instrument logger state is fully cleared so init()
     // will recreate sinks that write to our test file.
-    InstrumentLogger::instance().shutdown();
-
-    // Initialize logging to our temp file and set level to debug so tests see
-    // messages.
-    InstrumentLogger::instance().init(log_path_.string(), spdlog::level::debug);
+    inst_log_shutdown();
+    inst_log_init(log_path_.string().c_str(), INST_LOG_DEBUG, "instrument",
+                  1024 * 1024, // 1 MB
+                  3);          // rotation count
 
     // Ensure debug/info messages are flushed promptly
     if (auto l = spdlog::get("instrument")) {
@@ -58,8 +57,8 @@ protected:
     lua_.reset();
     registry_->stop_all();
 
-    // Shutdown logger to allow clean re-init in other tests
-    InstrumentLogger::instance().shutdown();
+    inst_log_flush();
+    inst_log_shutdown();
 
     // Remove the temporary log file (with non-throwing error_code)
     std::error_code ec;

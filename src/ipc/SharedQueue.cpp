@@ -1,7 +1,7 @@
 #include "instrument-script-server/ipc/SharedQueue.hpp"
-#include "instrument-script-server/Logger.hpp"
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/interprocess/creation_tags.hpp>
+#include <instrument-log/inst_logging.h>
 #include <memory>
 #include <string>
 
@@ -33,14 +33,14 @@ SharedQueue::create_server_queue(const std::string &instrument_name) {
     auto resp_queue = std::make_unique<message_queue>(
         create_only, resp_name.c_str(), 100, sizeof(IPCMessage));
 
-    LOG_INFO("IPC", "QUEUE_CREATE", "Created queues for instrument: {}",
-             instrument_name);
+    LOG_INFO("IPC", "QUEUE_CREATE", "Created queues for instrument: %s",
+             instrument_name.c_str());
 
     // SERVER:   sends on request, receives on response
     return std::make_unique<SharedQueue>(
         std::move(req_queue), std::move(resp_queue), req_name, resp_name, true);
   } catch (const interprocess_exception &ex) {
-    LOG_ERROR("IPC", "QUEUE_CREATE", "Failed to create queues:  {}", ex.what());
+    LOG_ERROR("IPC", "QUEUE_CREATE", "Failed to create queues: %s", ex.what());
     throw;
   }
 }
@@ -59,15 +59,15 @@ SharedQueue::create_worker_queue(const std::string &instrument_name) {
     auto resp_queue =
         std::make_unique<message_queue>(open_only, resp_name.c_str());
 
-    LOG_INFO("IPC", "QUEUE_OPEN", "Opened queues for instrument:  {}",
-             instrument_name);
+    LOG_INFO("IPC", "QUEUE_OPEN", "Opened queues for instrument: %s",
+             instrument_name.c_str());
 
     // WORKER:  receives on request, sends on response
     return std::make_unique<SharedQueue>(std::move(req_queue),
                                          std::move(resp_queue), req_name,
                                          resp_name, false);
   } catch (const interprocess_exception &ex) {
-    LOG_ERROR("IPC", "QUEUE_OPEN", "Failed to open queues: {}", ex.what());
+    LOG_ERROR("IPC", "QUEUE_OPEN", "Failed to open queues: %s", ex.what());
     throw;
   }
 }
@@ -101,14 +101,14 @@ bool instserver::ipc::SharedQueue::send(const IPCMessage &msg,
       const std::string &queue_name =
           is_server_ ? request_queue_name_ : response_queue_name_;
       LOG_WARN("IPC", "SEND_TIMEOUT",
-               "Send timeout ({}ms) on queue '{}' msg_id={} type={}",
-               timeout.count(), queue_name, msg.id,
-               static_cast<uint32_t>(msg.type));
+               "Send timeout (%dms) on queue '%s' msg_id=%llu type=%u",
+               (int)timeout.count(), queue_name.c_str(),
+               (unsigned long long)msg.id, (unsigned int)msg.type);
     }
 
     return sent;
   } catch (const boost::interprocess::interprocess_exception &ex) {
-    LOG_ERROR("IPC", "SEND_ERROR", "Send failed: {}", ex.what());
+    LOG_ERROR("IPC", "SEND_ERROR", "Send failed: %s", ex.what());
     return false;
   }
 }
@@ -132,20 +132,20 @@ SharedQueue::receive(std::chrono::milliseconds timeout) {
                                          priority, abs_time);
 
     if (!received) {
-      LOG_TRACE("IPC", "RECV_TIMEOUT", "Receive timeout on queue: {}",
-                response_queue_name_);
+      LOG_TRACE("IPC", "RECV_TIMEOUT", "Receive timeout on queue: %s",
+                response_queue_name_.c_str());
       return std::nullopt;
     }
 
     if (received_size != sizeof(IPCMessage)) {
-      LOG_ERROR("IPC", "RECV_SIZE", "Received message size mismatch: {} vs {}",
+      LOG_ERROR("IPC", "RECV_SIZE", "Received message size mismatch: %d vs %d",
                 received_size, sizeof(IPCMessage));
       return std::nullopt;
     }
 
     return msg;
   } catch (const boost::interprocess::interprocess_exception &ex) {
-    LOG_ERROR("IPC", "RECV_ERROR", "Receive failed:  {}", ex.what());
+    LOG_ERROR("IPC", "RECV_ERROR", "Receive failed:  %s", ex.what());
     return std::nullopt;
   }
 }
@@ -159,8 +159,8 @@ void SharedQueue::cleanup(const std::string &instrument_name) {
   message_queue::remove(req_name.c_str());
   message_queue::remove(resp_name.c_str());
 
-  LOG_INFO("IPC", "QUEUE_CLEANUP", "Cleaned up queues for:   {}",
-           instrument_name);
+  LOG_INFO("IPC", "QUEUE_CLEANUP", "Cleaned up queues for: %s",
+           instrument_name.c_str());
 }
 
 } // namespace ipc

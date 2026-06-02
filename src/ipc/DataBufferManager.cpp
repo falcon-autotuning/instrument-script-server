@@ -1,17 +1,17 @@
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
-#include "instrument-script-server/Logger.hpp"
 #include <chrono>
 #include <cstring>
 #include <fstream>
 #include <instrument-data.h>
+#include <instrument-log/inst_logging.h>
 #include <sstream>
 
 #ifdef _WIN32
 #include <process.h>
 #define getpid _getpid
 #else
-#include <unistd.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #endif
 
 namespace instserver::ipc {
@@ -36,7 +36,7 @@ DataBuffer::DataBuffer(const std::string &buffer_id, void *data,
 DataBuffer::~DataBuffer() {
   if (owns_memory_ && !buffer_id_.empty()) {
     LOG_DEBUG("DATA_BUFFER", "DESTRUCT",
-              "Releasing shared handle for buffer {}", buffer_id_);
+              "Releasing shared handle for buffer %s", buffer_id_.c_str());
     SharedMetadata c_meta;
     bool has_meta = data_manager_get_metadata(buffer_id_.c_str(), &c_meta);
     data_manager_release_buffer(buffer_id_.c_str());
@@ -276,8 +276,9 @@ std::string DataBufferManager::create_buffer(const std::string &instrument_name,
 
   size_t bytes = element_count * element_size;
   LOG_INFO("DATA_BUFFER", "CREATE",
-           "Created shared buffer {} for {}. {} ({} elements, {} bytes)",
-           buffer_id, instrument_name, command_id, element_count, bytes);
+           "Created shared buffer %s for %s. %s (%d elements, %d bytes)",
+           buffer_id.c_str(), instrument_name.c_str(), command_id.c_str(),
+           element_count, bytes);
 
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -324,7 +325,8 @@ DataBufferManager::get_buffer(const std::string &buffer_id) {
     }
   }
 
-  // Owning wrapper: when destroyed, it calls data_manager_release_buffer, balancing the get_buffer call.
+  // Owning wrapper: when destroyed, it calls data_manager_release_buffer,
+  // balancing the get_buffer call.
   auto buffer = std::make_shared<DataBuffer>(buffer_id, raw_data, bytes, dtype,
                                              element_count);
   return buffer;
@@ -354,9 +356,9 @@ DataBufferManager::get_metadata(const std::string &buffer_id) const {
 void DataBufferManager::release_buffer(const std::string &buffer_id) {
   SharedMetadata c_meta;
   bool has_meta = data_manager_get_metadata(buffer_id.c_str(), &c_meta);
-  
+
   data_manager_release_buffer(buffer_id.c_str());
-  
+
   if (has_meta && c_meta.global_ref_count <= 1) {
 #ifndef _WIN32
     ::shm_unlink(("/shm_data_" + buffer_id).c_str());
@@ -407,9 +409,9 @@ void DataBufferManager::clear_all() {
   for (const auto &pair : to_release) {
     SharedMetadata c_meta;
     bool has_meta = data_manager_get_metadata(pair.first.c_str(), &c_meta);
-    
+
     data_manager_release_buffer(pair.first.c_str());
-    
+
     if (has_meta && c_meta.global_ref_count <= 1) {
 #ifndef _WIN32
       ::shm_unlink(("/shm_data_" + pair.first).c_str());

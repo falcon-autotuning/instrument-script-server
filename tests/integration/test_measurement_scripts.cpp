@@ -1,17 +1,17 @@
 #include "PlatformPaths.hpp"
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/Logger.hpp"
+#include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
+#include "instrument-script-server/server/CommandHandlers.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
-#include "instrument-script-server/ipc/DataBufferManager.hpp"
-#include "instrument-script-server/server/CommandHandlers.hpp"
-#include <instrument-data.h>
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <instrument-data.h>
+#include <instrument-log/inst_logging.h>
 #include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
 
@@ -161,7 +161,10 @@ class MeasurementScriptTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
     PluginTestFixture::SetUp();
-    InstrumentLogger::instance().init("script_test.log", spdlog::level::debug);
+    inst_log_shutdown();
+    inst_log_init("script_test.log", INST_LOG_DEBUG, "instrument",
+                  1024 * 1024, // 1 MB
+                  3);          // rotation count
 
     test_scripts_dir_ =
         std::filesystem::current_path() / "data" / "test_scripts";
@@ -203,13 +206,16 @@ protected:
       daemon.stop();
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
+    inst_log_flush();
+    inst_log_shutdown();
   }
 
   bool run_script(const std::string &script_name) {
     auto script_path = test_scripts_dir_ / script_name;
 
     if (!std::filesystem::exists(script_path)) {
-      LOG_ERROR("TEST", "SCRIPT", "Script not found: {}", script_path.string());
+      LOG_ERROR("TEST", "SCRIPT", "Script not found: %s",
+                script_path.string().c_str());
       return false;
     }
 
@@ -230,14 +236,14 @@ protected:
 
       if (!result.valid()) {
         sol::error err = result;
-        LOG_ERROR("TEST", "SCRIPT", "Script error: {}", err.what());
+        LOG_ERROR("TEST", "SCRIPT", "Script error: %s", err.what());
         return false;
       }
 
       return true;
 
     } catch (const std::exception &e) {
-      LOG_ERROR("TEST", "SCRIPT", "Exception: {}", e.what());
+      LOG_ERROR("TEST", "SCRIPT", "Exception: %s", e.what());
       return false;
     }
   }
@@ -246,7 +252,8 @@ protected:
     auto script_path = test_scripts_dir_ / script_name;
 
     if (!std::filesystem::exists(script_path)) {
-      LOG_ERROR("TEST", "SCRIPT", "Script not found: {}", script_path.string());
+      LOG_ERROR("TEST", "SCRIPT", "Script not found: %s",
+                script_path.string().c_str());
       return nullptr;
     }
 
@@ -269,14 +276,14 @@ protected:
 
       if (!result.valid()) {
         sol::error err = result;
-        LOG_ERROR("TEST", "SCRIPT", "Script error: {}", err.what());
+        LOG_ERROR("TEST", "SCRIPT", "Script error: %s", err.what());
         return nullptr;
       }
 
       return test_context_.get();
 
     } catch (const std::exception &e) {
-      LOG_ERROR("TEST", "SCRIPT", "Exception: {}", e.what());
+      LOG_ERROR("TEST", "SCRIPT", "Exception: %s", e.what());
       return nullptr;
     }
   }
@@ -479,8 +486,6 @@ commands:
   // Should have 3 results: 2 large buffer calls + 1 small data call
   EXPECT_EQ(results.size(), 3);
 
-
-
   // First two results should be buffer references
   if (results.size() >= 2) {
     EXPECT_TRUE(results[0].has_large_data);
@@ -504,7 +509,8 @@ commands:
   }
 
   // Robust Integration Test / Data Recovery Verification:
-  // Ensure that the output data inside the buffers is recovered successfully from the outermost context.
+  // Ensure that the output data inside the buffers is recovered successfully
+  // from the outermost context.
   if (results.size() >= 2) {
     // 1. Recover first buffer and verify integrity (sin wave)
     {
@@ -513,7 +519,8 @@ commands:
       int rc = server::handle_read_buffer(read_params, read_out);
       ASSERT_EQ(rc, 0);
       EXPECT_TRUE(read_out.value("ok", false));
-      EXPECT_EQ(read_out.value("element_count", 0ULL), results[0].element_count);
+      EXPECT_EQ(read_out.value("element_count", 0ULL),
+                results[0].element_count);
       EXPECT_EQ(read_out.value("data_type", ""), "float64");
 
       auto data = read_out["data"].get<std::vector<double>>();
@@ -531,7 +538,8 @@ commands:
       int rc = server::handle_read_buffer(read_params, read_out);
       ASSERT_EQ(rc, 0);
       EXPECT_TRUE(read_out.value("ok", false));
-      EXPECT_EQ(read_out.value("element_count", 0ULL), results[1].element_count);
+      EXPECT_EQ(read_out.value("element_count", 0ULL),
+                results[1].element_count);
 
       auto data = read_out["data"].get<std::vector<double>>();
       ASSERT_GE(data.size(), 100);
@@ -542,9 +550,10 @@ commands:
     }
 
     // 3. Ownership & Handoff validation:
-    //    We explicitly call release_buffer on the server, which should decrement the refcount to 0
-    //    (since the worker's owner reference was already gracefully transferred via our hand-off protocol),
-    //    causing the shared memory buffer to be deallocated cleanly.
+    //    We explicitly call release_buffer on the server, which should
+    //    decrement the refcount to 0 (since the worker's owner reference was
+    //    already gracefully transferred via our hand-off protocol), causing the
+    //    shared memory buffer to be deallocated cleanly.
     {
       nlohmann::json release_params, release_out;
       release_params["buffer_id"] = results[0].buffer_id;
@@ -602,7 +611,7 @@ TEST_F(MeasurementScriptTest, OuterMeasurePipelineWithMultipleBuffers) {
   auto temp_dir = std::filesystem::temp_directory_path();
   std::filesystem::path api_path = temp_dir / "mock_api_large_data.yaml";
   std::ofstream api_file(api_path);
-  
+
   std::string api_content = R"(
 api_version: "1.0.0"
 instrument:
@@ -675,10 +684,10 @@ commands:
   ASSERT_EQ(rc, 0);
   EXPECT_TRUE(out.value("ok", false));
   EXPECT_EQ(out.value("script", ""), "large_buffer_returns.lua");
-  
+
   ASSERT_TRUE(out.contains("results"));
   ASSERT_TRUE(out["results"].is_array());
-  
+
   const auto &results = out["results"];
   // Should have 3 results: 2 large buffer calls + 1 small data call
   EXPECT_EQ(results.size(), 3);
@@ -734,7 +743,8 @@ commands:
       int read_rc = server::handle_read_buffer(read_params, read_out);
       ASSERT_EQ(read_rc, 0);
       EXPECT_TRUE(read_out.value("ok", false));
-      EXPECT_EQ(read_out.value("element_count", 0ULL), results[0]["return"]["element_count"]);
+      EXPECT_EQ(read_out.value("element_count", 0ULL),
+                results[0]["return"]["element_count"]);
       EXPECT_EQ(read_out.value("data_type", ""), "float64");
 
       auto data = read_out["data"].get<std::vector<double>>();
@@ -752,7 +762,8 @@ commands:
       int read_rc = server::handle_read_buffer(read_params, read_out);
       ASSERT_EQ(read_rc, 0);
       EXPECT_TRUE(read_out.value("ok", false));
-      EXPECT_EQ(read_out.value("element_count", 0ULL), results[1]["return"]["element_count"]);
+      EXPECT_EQ(read_out.value("element_count", 0ULL),
+                results[1]["return"]["element_count"]);
 
       auto data = read_out["data"].get<std::vector<double>>();
       ASSERT_GE(data.size(), 100);
@@ -763,13 +774,15 @@ commands:
     }
 
     // 3. Ownership & Handoff validation:
-    //    We explicitly call release_buffer on the server, which should decrement the refcount to 0
-    //    (since the worker's owner reference was already gracefully transferred via our hand-off protocol),
-    //    causing the shared memory buffer to be deallocated cleanly.
+    //    We explicitly call release_buffer on the server, which should
+    //    decrement the refcount to 0 (since the worker's owner reference was
+    //    already gracefully transferred via our hand-off protocol), causing the
+    //    shared memory buffer to be deallocated cleanly.
     {
       nlohmann::json release_params, release_out;
       release_params["buffer_id"] = buf1_id;
-      int release_rc = server::handle_release_buffer(release_params, release_out);
+      int release_rc =
+          server::handle_release_buffer(release_params, release_out);
       EXPECT_EQ(release_rc, 0);
       EXPECT_TRUE(release_out.value("ok", false));
     }
@@ -777,7 +790,8 @@ commands:
     {
       nlohmann::json release_params, release_out;
       release_params["buffer_id"] = buf2_id;
-      int release_rc = server::handle_release_buffer(release_params, release_out);
+      int release_rc =
+          server::handle_release_buffer(release_params, release_out);
       EXPECT_EQ(release_rc, 0);
       EXPECT_TRUE(release_out.value("ok", false));
     }

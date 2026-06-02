@@ -1,6 +1,6 @@
 #include "instrument-script-server/server/ServerDaemon.hpp"
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/server/HttpRpcServer.hpp"
+#include <instrument-log/inst_logging.h>
 
 #include <csignal>
 #include <filesystem>
@@ -125,7 +125,7 @@ bool ServerDaemon::create_pid_file() {
   try {
     std::filesystem::create_directories(runtime_dir);
   } catch (const std::exception &e) {
-    LOG_ERROR("DAEMON", "INIT", "Failed to create runtime directory: {}",
+    LOG_ERROR("DAEMON", "INIT", "Failed to create runtime directory: %s",
               e.what());
     return false;
   }
@@ -134,15 +134,16 @@ bool ServerDaemon::create_pid_file() {
 
   std::ofstream ofs(pid_file);
   if (!ofs) {
-    LOG_ERROR("DAEMON", "INIT", "Failed to create PID file: {}", pid_file);
+    LOG_ERROR("DAEMON", "INIT", "Failed to create PID file: %s",
+              pid_file.c_str());
     return false;
   }
 
   ofs << getpid() << std::endl;
   ofs.close();
 
-  LOG_INFO("DAEMON", "INIT", "Created PID file: {} (PID: {})", pid_file,
-           getpid());
+  LOG_INFO("DAEMON", "INIT", "Created PID file: %s (PID: %ld)",
+           pid_file.c_str(), (long)getpid());
   return true;
 }
 
@@ -154,7 +155,7 @@ void ServerDaemon::remove_pid_file() {
       std::filesystem::remove(pid_file);
       LOG_INFO("DAEMON", "CLEANUP", "Removed PID file");
     } catch (const std::exception &e) {
-      LOG_WARN("DAEMON", "CLEANUP", "Failed to remove PID file: {}", e.what());
+      LOG_WARN("DAEMON", "CLEANUP", "Failed to remove PID file: %s", e.what());
     }
   }
 }
@@ -178,7 +179,7 @@ bool ServerDaemon::create_shutdown_pipe() {
     return false;
   }
 
-  LOG_INFO("DAEMON", "PIPE", "Created shutdown pipe: {}", pipe_name);
+  LOG_INFO("DAEMON", "PIPE", "Created shutdown pipe: %s", pipe_name.c_str());
   return true;
 #else
   // Create FIFO (named pipe) on Unix
@@ -196,7 +197,7 @@ bool ServerDaemon::create_shutdown_pipe() {
 
   // Create FIFO
   if (mkfifo(pipe_path.c_str(), 0600) != 0 && errno != EEXIST) {
-    LOG_ERROR("DAEMON", "PIPE", "Failed to create shutdown pipe: {}",
+    LOG_ERROR("DAEMON", "PIPE", "Failed to create shutdown pipe: %s",
               strerror(errno));
     return false;
   }
@@ -204,12 +205,12 @@ bool ServerDaemon::create_shutdown_pipe() {
   // Open for non-blocking read
   shutdown_pipe_fd_ = open(pipe_path.c_str(), O_RDONLY | O_NONBLOCK);
   if (shutdown_pipe_fd_ < 0) {
-    LOG_ERROR("DAEMON", "PIPE", "Failed to open shutdown pipe: {}",
+    LOG_ERROR("DAEMON", "PIPE", "Failed to open shutdown pipe: %s",
               strerror(errno));
     return false;
   }
 
-  LOG_INFO("DAEMON", "PIPE", "Created shutdown pipe: {}", pipe_path);
+  LOG_INFO("DAEMON", "PIPE", "Created shutdown pipe: %s", pipe_path.c_str());
   return true;
 #endif
 }
@@ -366,8 +367,8 @@ bool ServerDaemon::start() {
   // Check if another instance is running
   if (is_already_running()) {
     LOG_ERROR("DAEMON", "START",
-              "Another server instance is already running (PID: {})",
-              get_daemon_pid());
+              "Another server instance is already running (PID: %ld)",
+              (long)get_daemon_pid());
     return false;
   }
 
@@ -392,7 +393,7 @@ bool ServerDaemon::start() {
   if (rpc_port_ > 0) {
     rpc_server_ = new server::HttpRpcServer();
     if (!rpc_server_->start(rpc_port_)) {
-      LOG_ERROR("DAEMON", "RPC", "Failed to start RPC server on port {}",
+      LOG_ERROR("DAEMON", "RPC", "Failed to start RPC server on port %d",
                 rpc_port_);
       delete rpc_server_;
       rpc_server_ = nullptr;
@@ -413,7 +414,7 @@ bool ServerDaemon::start() {
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    LOG_INFO("DAEMON", "RPC", "RPC server listening on port {}",
+    LOG_INFO("DAEMON", "RPC", "RPC server listening on port %d",
              rpc_server_ ? rpc_server_->port() : 0);
   }
 
@@ -426,7 +427,8 @@ bool ServerDaemon::start() {
   shutdown_listener_thread_ =
       std::make_unique<std::thread>([this]() { shutdown_listener_loop(); });
 
-  LOG_INFO("DAEMON", "START", "Server daemon started (PID: {})", getpid());
+  LOG_INFO("DAEMON", "START", "Server daemon started (PID: %ld)",
+           (long)getpid());
 
   return true;
 }
@@ -441,8 +443,8 @@ void ServerDaemon::stop() {
     if (daemon_pid > 0) {
       try {
         LOG_INFO("DAEMON", "STOP",
-                 "Signaling daemon process (PID: {}) to stop via pipe",
-                 daemon_pid);
+                 "Signaling daemon process (PID: %ld) to stop via pipe",
+                 (long)daemon_pid);
       } catch (...) {
         // Ignore logging errors
       }

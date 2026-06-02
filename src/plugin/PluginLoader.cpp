@@ -1,6 +1,6 @@
 #include "instrument-script-server/plugin/PluginLoader.hpp"
-#include "instrument-script-server/Logger.hpp"
 #include <csignal>
+#include <instrument-log/inst_logging.h>
 #include <stdexcept>
 
 namespace instserver {
@@ -21,13 +21,13 @@ namespace plugin {
 PluginLoader::PluginLoader(const std::string &plugin_path)
     : plugin_path_(plugin_path) {
 
-  LOG_INFO("PLUGIN", "LOAD", "Loading plugin: {}", plugin_path);
+  LOG_INFO("PLUGIN", "LOAD", "Loading plugin: %s", plugin_path.c_str());
 
   handle_ = LOAD_LIBRARY(plugin_path.c_str());
 
   if (!handle_) {
     error_message_ = std::string("Failed to load library: ") + LIBRARY_ERROR();
-    LOG_ERROR("PLUGIN", "LOAD", "{}", error_message_);
+    LOG_ERROR("PLUGIN", "LOAD", "%s", error_message_.c_str());
     throw std::runtime_error(error_message_);
   }
 
@@ -36,12 +36,13 @@ PluginLoader::PluginLoader(const std::string &plugin_path)
   if (!fn_get_metadata_ || !fn_initialize_ || !fn_execute_command_ ||
       !fn_shutdown_) {
     error_message_ = "Failed to load required plugin symbols";
-    LOG_ERROR("PLUGIN", "LOAD", "{}", error_message_);
+    LOG_ERROR("PLUGIN", "LOAD", "%s", error_message_.c_str());
     unload();
     throw std::runtime_error(error_message_);
   }
 
-  LOG_INFO("PLUGIN", "LOAD", "Plugin loaded successfully:  {}", plugin_path);
+  LOG_INFO("PLUGIN", "LOAD", "Plugin loaded successfully:  %s",
+           plugin_path.c_str());
 }
 
 PluginLoader::~PluginLoader() {
@@ -130,13 +131,13 @@ int32_t PluginLoader::initialize(const PluginConfig &config) {
     return -1;
   }
 
-  LOG_INFO("PLUGIN", "INIT", "Initializing plugin for instrument: {}",
+  LOG_INFO("PLUGIN", "INIT", "Initializing plugin for instrument: %s",
            config.instrument_name);
 
   int32_t result = fn_initialize_(&config);
 
   if (result != 0) {
-    LOG_ERROR("PLUGIN", "INIT", "Plugin initialization failed with code: {}",
+    LOG_ERROR("PLUGIN", "INIT", "Plugin initialization failed with code: %d",
               result);
   }
 
@@ -154,7 +155,8 @@ int32_t PluginLoader::execute_command(const PluginCommand &command,
 
 void PluginLoader::shutdown() {
   if (fn_shutdown_) {
-    LOG_INFO("PLUGIN", "SHUTDOWN", "Shutting down plugin:  {}", plugin_path_);
+    LOG_INFO("PLUGIN", "SHUTDOWN", "Shutting down plugin: %s",
+             plugin_path_.c_str());
     fn_shutdown_();
   }
 }

@@ -1,4 +1,3 @@
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/SerializedCommand.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/ipc/SharedQueue.hpp"
@@ -7,6 +6,7 @@
 #include <csignal>
 #include <cstdio>
 #include <instrument-data.h>
+#include <instrument-log/inst_logging.h>
 #include <iostream>
 #include <string>
 #include <unistd.h>
@@ -27,22 +27,18 @@ void signal_handler(int sig) {
 // async-signal-safe message to stderr (which the ISS daemon redirects to
 // tests/hub/logiss-daemon.log), flushes the spdlog file sink, then re-raises so
 // the OS can produce a core dump as normal.
+
 void crash_signal_handler(int sig) {
-  // Use only async-signal-safe calls here.
   char buf[256];
   int n = snprintf(buf, sizeof(buf),
                    "[instrument-worker] CRASH signal %d in worker '%s'\n", sig,
                    g_instrument_name_buf);
-  if (n > 0)
-    write(STDERR_FILENO, buf, static_cast<size_t>(n));
+  if (n > 0) {
+    write(STDERR_FILENO, buf, (size_t)n);
+  }
 
-  // Try to flush the file logger so the last LOG_* entries land on disk.
-  // Not strictly async-signal-safe but acceptable for a debug build.
-  if (auto logger = spdlog::get("instrument"))
-    logger->flush();
-
-  // Re-raise so the default handler runs (core dump, correct exit status).
-  std::signal(sig, SIG_DFL);
+  inst_log_flush();
+  signal(sig, SIG_DFL);
   raise(sig);
 }
 
@@ -164,11 +160,11 @@ public:
     if (!connect_ipc_queue())
       return 1;
 
-    LOG_INFO(instrument_name_, "WORKER_MAIN", "Entering main loop");
+    LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN", "Entering main loop");
     main_loop();
 
     cleanup();
-    LOG_INFO(instrument_name_, "WORKER_MAIN", "Worker exited cleanly");
+    LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN", "Worker exited cleanly");
     return 0;
   }
 
@@ -183,7 +179,8 @@ private:
 
   bool load_and_init_plugin() {
     if (!plugin_.is_loaded()) {
-      LOG_ERROR(instrument_name_, "WORKER_MAIN", "Failed to load plugin");
+      LOG_ERROR(instrument_name_.c_str(), "WORKER_MAIN",
+                "Failed to load plugin");
       return false;
     }
     log_plugin_metadata();
@@ -195,74 +192,80 @@ private:
 
     int32_t init_result = plugin_.initialize(config);
     if (init_result != 0) {
-      LOG_ERROR(instrument_name_, "WORKER_MAIN",
-                "Plugin initialization failed: {}", init_result);
+      LOG_ERROR(instrument_name_.c_str(), "WORKER_MAIN",
+                "Plugin initialization failed: %d", init_result);
       return false;
     }
 
-    LOG_INFO(instrument_name_, "WORKER_MAIN",
+    LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN",
              "Plugin initialized successfully");
     return true;
   }
 
   void log_plugin_metadata() {
     auto metadata = plugin_.get_metadata();
-    LOG_INFO(instrument_name_, "WORKER_MAIN", "Loaded plugin:  {} v{} ({})",
-             metadata.name, metadata.version, metadata.protocol_type);
+    LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN",
+             "Loaded plugin:  %s v%s (%s)", metadata.name, metadata.version,
+             metadata.protocol_type);
   }
 
   bool connect_ipc_queue() {
     try {
       ipc_queue_ = ipc::SharedQueue::create_worker_queue(instrument_name_);
     } catch (const std::exception &ex) {
-      LOG_ERROR(instrument_name_, "WORKER_MAIN",
-                "Exception opening IPC queues: {}", ex.what());
+      LOG_ERROR(instrument_name_.c_str(), "WORKER_MAIN",
+                "Exception opening IPC queues: %s", ex.what());
       plugin_.shutdown();
       return false;
     } catch (...) {
-      LOG_ERROR(instrument_name_, "WORKER_MAIN",
+      LOG_ERROR(instrument_name_.c_str(), "WORKER_MAIN",
                 "Unknown exception opening IPC queues");
       plugin_.shutdown();
       return false;
     }
     if (!ipc_queue_ || !ipc_queue_->is_valid()) {
-      LOG_ERROR(instrument_name_, "WORKER_MAIN", "Failed to create IPC queue");
+      LOG_ERROR(instrument_name_.c_str(), "WORKER_MAIN",
+                "Failed to create IPC queue");
       plugin_.shutdown();
       return false;
     }
-    LOG_INFO(instrument_name_, "WORKER_MAIN", "IPC queue connected");
+    LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN", "IPC queue connected");
     return true;
   }
 
   void main_loop() {
     uint64_t iteration = 0;
     while (g_running) {
-      LOG_DEBUG(instrument_name_, "WORKER_MAIN", "main_loop iter={} begin",
-                iteration);
+      LOG_DEBUG(instrument_name_.c_str(), "WORKER_MAIN",
+                "main_loop iter=%llu begin", (unsigned long long)iteration);
 
-      LOG_DEBUG(instrument_name_, "WORKER_MAIN",
-                "main_loop iter={} heartbeat check", iteration);
+      LOG_DEBUG(instrument_name_.c_str(), "WORKER_MAIN",
+                "main_loop iter=%llu heartbeat check",
+                (unsigned long long)iteration);
       send_heartbeat_if_needed();
 
-      LOG_DEBUG(instrument_name_, "WORKER_MAIN",
-                "main_loop iter={} waiting for message", iteration);
+      LOG_DEBUG(instrument_name_.c_str(), "WORKER_MAIN",
+                "main_loop iter=%llu waiting for message",
+                (unsigned long long)iteration);
       auto msg_opt = ipc_queue_->receive(IPC_RECV_TIMEOUT);
 
       if (!msg_opt) {
-        LOG_DEBUG(instrument_name_, "WORKER_MAIN",
-                  "main_loop iter={} receive timeout (no message)", iteration);
+        LOG_DEBUG(instrument_name_.c_str(), "WORKER_MAIN",
+                  "main_loop iter=%llu receive timeout (no message)",
+                  (unsigned long long)iteration);
         ++iteration;
         continue;
       }
 
-      LOG_DEBUG(instrument_name_, "WORKER_MAIN",
-                "main_loop iter={} got message type={}", iteration,
-                static_cast<uint32_t>(msg_opt->type));
+      LOG_DEBUG(instrument_name_.c_str(), "WORKER_MAIN",
+                "main_loop iter=%llu got message type=%u",
+                (unsigned long long)iteration,
+                static_cast<unsigned int>(msg_opt->type));
       process_message(*msg_opt);
       ++iteration;
     }
-    LOG_INFO(instrument_name_, "WORKER_MAIN", "Shutting down after {} iters",
-             iteration);
+    LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN",
+             "Shutting down after %llu iters", (unsigned long long)iteration);
   }
 
   void send_heartbeat_if_needed() {
@@ -292,45 +295,48 @@ private:
       if (!waiting_sync_token_) {
         handle_command(msg);
       } else {
-        LOG_DEBUG(instrument_name_, "WORKER_MAIN",
-                  "Blocked on sync token={}, ignoring message",
-                  *waiting_sync_token_);
+        LOG_DEBUG(instrument_name_.c_str(), "WORKER_MAIN",
+                  "Blocked on sync token=%llu, ignoring message",
+                  (unsigned long long)*waiting_sync_token_);
       }
       break;
     default:
-      LOG_WARN(instrument_name_, "WORKER_MAIN",
-               "Received unexpected message type:  {}",
-               static_cast<uint32_t>(msg.type));
+      LOG_WARN(instrument_name_.c_str(), "WORKER_MAIN",
+               "Received unexpected message type: %u",
+               static_cast<unsigned int>(msg.type));
       break;
     }
   }
 
   void handle_shutdown() {
-    LOG_INFO(instrument_name_, "WORKER_MAIN", "Received shutdown message");
+    LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN",
+             "Received shutdown message");
     g_running = false;
   }
 
   void handle_sync_continue(const ipc::IPCMessage &msg) {
     if (waiting_sync_token_ && msg.sync_token == *waiting_sync_token_) {
-      LOG_DEBUG(instrument_name_, "WORKER_MAIN",
-                "Received SYNC_CONTINUE for token={}, proceeding",
-                msg.sync_token);
+      LOG_DEBUG(instrument_name_.c_str(), "WORKER_MAIN",
+                "Received SYNC_CONTINUE for token=%llu, proceeding",
+                (unsigned long long)msg.sync_token);
       waiting_sync_token_.reset();
     } else {
-      LOG_WARN(instrument_name_, "WORKER_MAIN",
-               "Unexpected SYNC_CONTINUE token={} (waiting={})", msg.sync_token,
-               waiting_sync_token_.value_or(0));
+      LOG_WARN(instrument_name_.c_str(), "WORKER_MAIN",
+               "Unexpected SYNC_CONTINUE token=%llu (waiting=%llu)",
+               (unsigned long long)msg.sync_token,
+               (unsigned long long)waiting_sync_token_.value_or(0));
     }
   }
 
   void handle_buffer_ack(const ipc::IPCMessage &msg) {
     try {
-      LOG_INFO(instrument_name_, "WORKER_MAIN",
-               "Received buffer ack for buffer {}", msg.data_buffer_id);
+      LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN",
+               "Received buffer ack for buffer %s", msg.data_buffer_id);
       data_manager_release_buffer(msg.data_buffer_id);
     } catch (const std::exception &e) {
-      LOG_ERROR(instrument_name_, "WORKER_MAIN", "Failed to relase buffer {}",
-                msg.data_buffer_id, e.what());
+      LOG_ERROR(instrument_name_.c_str(), "WORKER_MAIN",
+                "Failed to release buffer %s. err: %s", msg.data_buffer_id,
+                e.what());
     }
   }
 
@@ -339,9 +345,9 @@ private:
     try {
       cmd = deserialize_command_from_msg(msg);
     } catch (const std::exception &e) {
-      LOG_ERROR(instrument_name_, "WORKER_MAIN",
-                "Failed to deserialize command from message ID {}: {}", msg.id,
-                e.what());
+      LOG_ERROR(instrument_name_.c_str(), "WORKER_MAIN",
+                "Failed to deserialize command from message ID %llu: %s",
+                (unsigned long long)msg.id, e.what());
 
       PluginResponse plugin_resp = {};
       plugin_resp.success = false;
@@ -362,9 +368,9 @@ private:
       return;
     }
 
-    LOG_INFO(instrument_name_, "WORKER_MAIN",
-             "Received command: {} (id={}, sync={})", cmd.verb, cmd.id,
-             cmd.sync_token.value_or(0));
+    LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN",
+             "Received command: %s (id=%s, sync=%llu)", cmd.verb.c_str(),
+             cmd.id.c_str(), (unsigned long long)cmd.sync_token.value_or(0));
 
     PluginResponse plugin_resp = {};
     int32_t exec_result = 0;
@@ -398,8 +404,9 @@ private:
       }
 
       if (!buffer_id.empty()) {
-        LOG_INFO(instrument_name_, "WORKER_MAIN",
-                 "Executing __RELEASE_BUFFER__ for buffer: {}", buffer_id);
+        LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN",
+                 "Executing __RELEASE_BUFFER__ for buffer: %s",
+                 buffer_id.c_str());
         ipc::DataBufferManager::instance().release_buffer(buffer_id);
         std::strncpy(plugin_resp.text_response, "RELEASED",
                      PLUGIN_MAX_PAYLOAD - 1);
@@ -414,26 +421,33 @@ private:
           plugin_.execute_command(to_plugin_command(cmd), plugin_resp);
     }
 
-    LOG_DEBUG(instrument_name_, cmd.id,
-              "Command executed:  result={} success={}", exec_result,
-              plugin_resp.success);
+    LOG_DEBUG(instrument_name_.c_str(), cmd.id.c_str(),
+              "Command executed: result=%d success=%s", exec_result,
+              plugin_resp.success ? "true" : "false");
 
     send_command_response(msg, cmd, plugin_resp);
 
     if (cmd.sync_token) {
-      send_sync_ack(msg, *cmd.sync_token);
-      // Only block the worker after the final command for this token
-      // (is_sync_barrier).
+      uint64_t token = *cmd.sync_token;
+
+      send_sync_ack(msg, token);
+
       if (cmd.is_sync_barrier) {
         waiting_sync_token_ = cmd.sync_token;
-        LOG_DEBUG(instrument_name_, cmd.id,
-                  "Now waiting for SYNC_CONTINUE token={}",
-                  *waiting_sync_token_);
+
+        LOG_DEBUG(instrument_name_.c_str(), cmd.id.c_str(),
+                  "Now waiting for SYNC_CONTINUE token=%llu",
+                  (unsigned long long)token);
+
       } else {
-        LOG_DEBUG(instrument_name_, cmd.id,
-                  "Received sync command (token={}), not final; continuing",
-                  *cmd.sync_token);
+        LOG_DEBUG(instrument_name_.c_str(), cmd.id.c_str(),
+                  "Received sync command (token=%llu), not final; continuing",
+                  (unsigned long long)token);
       }
+
+    } else {
+      LOG_WARN(instrument_name_.c_str(), cmd.id.c_str(),
+               "Received sync command but token was missing");
     }
   }
 
@@ -457,26 +471,28 @@ private:
     std::memcpy(resp_msg.payload.data(), resp_payload.data(),
                 resp_msg.payload_size);
 
-    LOG_DEBUG(instrument_name_, cmd.id,
-              "send_command_response: sending response msg_id={} verb='{}' "
-              "success={}",
-              msg.id, cmd.verb, plugin_resp.success);
+    LOG_DEBUG(instrument_name_.c_str(), cmd.id.c_str(),
+              "send_command_response: sending response msg_id=%llu verb='%s' "
+              "success=%s",
+              (unsigned long long)msg.id, cmd.verb.c_str(),
+              plugin_resp.success ? "true" : "false");
     bool resp_sent = ipc_queue_->send(resp_msg, IPC_SEND_TIMEOUT);
     if (!resp_sent) {
-      LOG_WARN(instrument_name_, cmd.id,
-               "send_command_response: DROPPED response for msg_id={} "
-               "verb='{}' (resp queue full or timed out)",
-               msg.id, cmd.verb);
+      LOG_WARN(instrument_name_.c_str(), cmd.id.c_str(),
+               "send_command_response: DROPPED response for msg_id=%llu "
+               "verb='%s' (resp queue full or timed out)",
+               (unsigned long long)msg.id, cmd.verb.c_str());
     } else {
-      LOG_DEBUG(instrument_name_, cmd.id,
-                "send_command_response: response msg_id={} sent successfully",
-                msg.id);
+      LOG_DEBUG(instrument_name_.c_str(), cmd.id.c_str(),
+                "send_command_response: response msg_id=%llu sent successfully",
+                (unsigned long long)msg.id);
     }
   }
 
   void send_sync_ack(const ipc::IPCMessage &msg, uint64_t sync_token) {
-    LOG_DEBUG(instrument_name_, std::to_string(msg.id),
-              "Sending SYNC_ACK for token={}", sync_token);
+    LOG_DEBUG(instrument_name_.c_str(), std::to_string(msg.id).c_str(),
+              "Sending SYNC_ACK for token=%llu",
+              (unsigned long long)sync_token);
 
     ipc::IPCMessage ack_msg;
     ack_msg.type = ipc::IPCMessage::Type::SYNC_ACK;
@@ -503,15 +519,16 @@ int main(int argc, char **argv) {
   std::string instrument_name = argv[1];
   std::string plugin_path = argv[2];
 
-  // Setup logging for this worker
   std::string log_file = "worker_" + instrument_name + ".log";
-  InstrumentLogger::instance().init(log_file, spdlog::level::debug);
-  LOG_INFO(instrument_name, "WORKER_MAIN", "Worker starting");
-  LOG_INFO(instrument_name, "WORKER_MAIN", "Plugin:  {}", plugin_path);
-
-  // Copy name into global buffer so crash_signal_handler can print it.
+  inst_log_init(log_file.c_str(), INST_LOG_DEBUG, "instrument",
+                10 * 1024 * 1024, // 10 MB
+                3);               // rotate 3 files
+  LOG_INFO(instrument_name.c_str(), "WORKER_MAIN", "Worker starting");
+  LOG_INFO(instrument_name.c_str(), "WORKER_MAIN", "Plugin: %s",
+           plugin_path.c_str());
   strncpy(g_instrument_name_buf, instrument_name.c_str(),
           sizeof(g_instrument_name_buf) - 1);
+  g_instrument_name_buf[sizeof(g_instrument_name_buf) - 1] = '\0';
 
   std::signal(SIGINT, signal_handler);
   std::signal(SIGTERM, signal_handler);
@@ -520,18 +537,26 @@ int main(int argc, char **argv) {
   std::signal(SIGFPE, crash_signal_handler);
 
   try {
-    return Instrument(instrument_name, plugin_path).run();
+    int rc = Instrument(instrument_name, plugin_path).run();
+
+    LOG_INFO(instrument_name.c_str(), "WORKER_MAIN",
+             "Worker exited with code %d", rc);
+
+    inst_log_flush();
+    return rc;
+
   } catch (const std::exception &e) {
-    LOG_ERROR(instrument_name, "WORKER_MAIN",
-              "Fatal error (std::exception): {}", e.what());
-    if (auto logger = spdlog::get("instrument"))
-      logger->flush();
+    LOG_ERROR(instrument_name.c_str(), "WORKER_MAIN",
+              "Fatal error (std::exception): %s", e.what());
+
+    inst_log_flush();
     return 1;
+
   } catch (...) {
-    LOG_ERROR(instrument_name, "WORKER_MAIN",
+    LOG_ERROR(instrument_name.c_str(), "WORKER_MAIN",
               "Fatal error: unknown exception type escaped main()");
-    if (auto logger = spdlog::get("instrument"))
-      logger->flush();
+
+    inst_log_flush();
     return 1;
   }
 }

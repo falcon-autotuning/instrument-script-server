@@ -1,10 +1,10 @@
 #include "instrument-script-server/server/JobManager.hpp"
-#include "instrument-script-server/Logger.hpp"
-#include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/CommandHandlers.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/server/RuntimeContext.hpp"
 #include <algorithm>
 #include <chrono>
+#include <instrument-log/inst_logging.h>
 #include <sol/sol.hpp>
 #include <sstream>
 #include <thread>
@@ -66,7 +66,8 @@ std::string JobManager::submit_job(const std::string &job_type,
   }
   cv_.notify_one();
 
-  LOG_INFO("JOB", "SUBMIT", "Submitted job {} type={}", info.id, job_type);
+  LOG_INFO("JOB", "SUBMIT", "Submitted job %s type=%s", info.id.c_str(),
+           job_type.c_str());
   return info.id;
 }
 
@@ -152,7 +153,7 @@ void JobManager::worker_loop() {
     if (jid.empty())
       continue;
 
-    LOG_INFO("JOB", "RUN", "Starting job {}", jid);
+    LOG_INFO("JOB", "RUN", "Starting job %s", jid.c_str());
 
     // Execute based on job type
     bool success = false;
@@ -204,8 +205,9 @@ void JobManager::worker_loop() {
           throw std::runtime_error("missing script_path");
         }
 
-        // Prepare Lua state and runtime context (blocking mode - enqueue_mode=false)
-        // This allows users to perform math on measurement results in Lua
+        // Prepare Lua state and runtime context (blocking mode -
+        // enqueue_mode=false) This allows users to perform math on measurement
+        // results in Lua
         sol::state lua;
         lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::table,
                            sol::lib::string, sol::lib::io, sol::lib::os);
@@ -221,88 +223,104 @@ void JobManager::worker_loop() {
         auto load_result = lua.safe_script_file(script_path);
         if (!load_result.valid()) {
           sol::error err = load_result;
-          throw std::runtime_error(std::string("Script load error: ") + err.what());
+          throw std::runtime_error(std::string("Script load error: ") +
+                                   err.what());
         }
 
         // Check if the script defined a main function (new format)
         sol::optional<sol::function> main_func = lua["main"];
-        
+
         if (main_func) {
           // New format: call main function with context
-          LOG_INFO("JOB", "MEASURE", "Executing script with main function (new format)");
-          
+          LOG_INFO("JOB", "MEASURE",
+                   "Executing script with main function (new format)");
+
           // Check if type_manifest is provided (Teal static typing support)
           if (run_info.params.contains("type_manifest")) {
             const auto &manifest = run_info.params["type_manifest"];
-            
+
             // Validate manifest structure
-            if (!manifest.contains("parameters") || !manifest["parameters"].is_array()) {
-              throw std::runtime_error("Invalid type_manifest: missing or invalid 'parameters' array");
+            if (!manifest.contains("parameters") ||
+                !manifest["parameters"].is_array()) {
+              throw std::runtime_error("Invalid type_manifest: missing or "
+                                       "invalid 'parameters' array");
             }
-            
+
             // Build arguments based on manifest
             std::vector<sol::object> args;
-            args.push_back(sol::make_object(lua, ctx.get())); // First arg is always context
-            
+            args.push_back(sol::make_object(
+                lua, ctx.get())); // First arg is always context
+
             const auto &param_defs = manifest["parameters"];
-            for (size_t i = 1; i < param_defs.size(); ++i) { // Skip first (context)
+            for (size_t i = 1; i < param_defs.size();
+                 ++i) { // Skip first (context)
               const auto &param = param_defs[i];
-              
+
               if (!param.contains("name") || !param["name"].is_string()) {
-                throw std::runtime_error(fmt::format("Invalid type_manifest: parameter {} missing 'name'", i));
+                throw std::runtime_error(fmt::format(
+                    "Invalid type_manifest: parameter {} missing 'name'", i));
               }
-              
+
               std::string param_name = param["name"];
-              
+
               // Check if this parameter exists in globals
-              if (!run_info.params.contains("globals") || !run_info.params["globals"].contains(param_name)) {
-                std::string error_msg = fmt::format(
-                    "Missing required parameter '{}' (declared in type_manifest but not provided in globals)", 
-                    param_name);
-                LOG_ERROR("JOB", "MEASURE", 
-                          "Missing required parameter '{}' for typed main function", param_name);
+              if (!run_info.params.contains("globals") ||
+                  !run_info.params["globals"].contains(param_name)) {
+                std::string error_msg =
+                    fmt::format("Missing required parameter '{}' (declared in "
+                                "type_manifest but not provided in globals)",
+                                param_name);
+                LOG_ERROR(
+                    "JOB", "MEASURE",
+                    "Missing required parameter '%s' for typed main function",
+                    param_name.c_str());
                 throw std::runtime_error(error_msg);
               }
-              
+
               // Convert JSON value to Lua object
-              sol::object arg = json_to_lua(lua, run_info.params["globals"][param_name]);
+              sol::object arg =
+                  json_to_lua(lua, run_info.params["globals"][param_name]);
               args.push_back(arg);
-              
-              LOG_INFO("JOB", "MEASURE", 
-                       "Passing parameter '{}' to main function (type: {})", 
-                       param_name, 
-                       param.value("type", "unknown"));
+
+              LOG_INFO("JOB", "MEASURE",
+                       "Passing parameter '%s' to main function (type: %s)",
+                       param_name.c_str(),
+                       param.value("type", "unknown").c_str());
             }
-            
+
             // Check for unused globals (warnings)
             if (run_info.params.contains("globals")) {
-              for (auto it = run_info.params["globals"].begin(); it != run_info.params["globals"].end(); ++it) {
+              for (auto it = run_info.params["globals"].begin();
+                   it != run_info.params["globals"].end(); ++it) {
                 std::string global_name = it.key();
                 bool found = false;
-                
+
                 for (size_t i = 1; i < param_defs.size(); ++i) {
                   if (param_defs[i]["name"] == global_name) {
                     found = true;
                     break;
                   }
                 }
-                
+
                 if (!found) {
                   LOG_WARN("JOB", "MEASURE",
-                           "Global variable '{}' provided but not used by typed main function (injecting as global)", 
-                           global_name);
+                           "Global variable '%s' provided but not used by "
+                           "typed main function (injecting as global)",
+                           global_name.c_str());
                   // Still inject it as global for backward compatibility
                   lua[global_name] = json_to_lua(lua, it.value());
                 }
               }
             }
-            
+
             // Call main with unpacked arguments
-            sol::protected_function_result main_result = (*main_func)(sol::as_args(args));
-            
+            sol::protected_function_result main_result =
+                (*main_func)(sol::as_args(args));
+
             if (!main_result.valid()) {
               sol::error err = main_result;
-              std::string error_msg = std::string("Script execution error: ") + err.what();
+              std::string error_msg =
+                  std::string("Script execution error: ") + err.what();
               if (ctx->has_error()) {
                 error_msg = ctx->get_error() + " (Runtime: " + err.what() + ")";
               }
@@ -310,11 +328,13 @@ void JobManager::worker_loop() {
             }
           } else {
             // Legacy: call main with just context parameter
-            sol::protected_function_result main_result = (*main_func)(ctx.get());
-            
+            sol::protected_function_result main_result =
+                (*main_func)(ctx.get());
+
             if (!main_result.valid()) {
               sol::error err = main_result;
-              std::string error_msg = std::string("Script execution error: ") + err.what();
+              std::string error_msg =
+                  std::string("Script execution error: ") + err.what();
               // If context:error() was also called, include both messages
               if (ctx->has_error()) {
                 error_msg = ctx->get_error() + " (Runtime: " + err.what() + ")";
@@ -324,9 +344,10 @@ void JobManager::worker_loop() {
           }
         } else {
           // Old format: script executed at load time (backward compatibility)
-          LOG_WARN("JOB", "MEASURE",
-                   "DEPRECATED: Script uses compatibility mode (no main function). "
-                   "Please migrate to new format with main(ctx) function.");
+          LOG_WARN(
+              "JOB", "MEASURE",
+              "DEPRECATED: Script uses compatibility mode (no main function). "
+              "Please migrate to new format with main(ctx) function.");
         }
 
         // Check for explicit errors from context:error()
@@ -366,7 +387,8 @@ void JobManager::worker_loop() {
       }
     }
 
-    LOG_INFO("JOB", "DONE", "Job {} dispatched (type={})", jid, run_info.type);
+    LOG_INFO("JOB", "DONE", "Job %s dispatched (type=%s)", jid.c_str(),
+             run_info.type.c_str());
   }
 }
 

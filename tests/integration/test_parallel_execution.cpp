@@ -1,7 +1,7 @@
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
 #include <algorithm>
 #include <gtest/gtest.h>
+#include <instrument-log/inst_logging.h>
 #include <spdlog/common.h>
 #include <thread>
 
@@ -10,9 +10,16 @@ using namespace instserver;
 class ParallelExecutionTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    InstrumentLogger::instance().init("parallel_test.log",
-                                      spdlog::level::debug);
+    inst_log_init("parallel_test.log", INST_LOG_DEBUG, "parallel_test",
+                  1024 * 1024, // 1 MB per file
+                  3);          // 2 rotated files
+
     sync_ = std::make_unique<SyncCoordinator>();
+  }
+
+  void TearDown() override {
+    inst_log_flush();
+    inst_log_shutdown();
   }
 
   std::unique_ptr<SyncCoordinator> sync_;

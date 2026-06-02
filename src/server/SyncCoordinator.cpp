@@ -1,5 +1,5 @@
 #include "instrument-script-server/server/SyncCoordinator.hpp"
-#include "instrument-script-server/Logger.hpp"
+#include <instrument-log/inst_logging.h>
 
 namespace instserver {
 
@@ -35,16 +35,17 @@ bool SyncCoordinator::handle_ack(uint64_t sync_token,
   if (barrier.expected_instruments.find(instrument_name) ==
       barrier.expected_instruments.end()) {
     LOG_WARN("SYNC", "ACK",
-             "Unexpected ACK from {} for token {} (not in expected set)",
-             instrument_name, sync_token);
+             "Unexpected ACK from %s for token %d (not in expected set)",
+             instrument_name.c_str(), sync_token);
     return false;
   }
 
   // Record acknowledgment
   barrier.acked_instruments.insert(instrument_name);
 
-  LOG_DEBUG("SYNC", "ACK", "Instrument {} ACKed token {} ({}/{})",
-            instrument_name, sync_token, barrier.acked_instruments.size(),
+  LOG_DEBUG("SYNC", "ACK", "Instrument %s ACKed token %d (%d/%d)",
+            instrument_name.c_str(), sync_token,
+            barrier.acked_instruments.size(),
             barrier.expected_instruments.size());
 
   // Check if all instruments have acknowledged
@@ -52,10 +53,10 @@ bool SyncCoordinator::handle_ack(uint64_t sync_token,
 
   if (complete) {
     LOG_INFO("SYNC", "COMPLETE",
-             "Barrier {} complete, all {} instruments ACKed", sync_token,
+             "Barrier %d complete, all %d instruments ACKed", sync_token,
              barrier.expected_instruments.size());
     barriers_.erase(it);
-    LOG_DEBUG("SYNC", "AUTO_CLEAR", "Auto-cleared completed barrier token={}",
+    LOG_DEBUG("SYNC", "AUTO_CLEAR", "Auto-cleared completed barrier token=%d",
               sync_token);
   }
 

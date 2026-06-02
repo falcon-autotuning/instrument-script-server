@@ -1,10 +1,10 @@
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/Logger.hpp"
 #include "instrument-script-server/server/CommandHandlers.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
+#include <instrument-log/inst_logging.h>
 
 #include <chrono>
 #include <filesystem>
@@ -24,7 +24,10 @@ protected:
   void SetUp() override {
     log_path_ = std::filesystem::current_path() / "script_test.log";
     PluginTestFixture::SetUp();
-    InstrumentLogger::instance().init(log_path_.string(), spdlog::level::debug);
+    inst_log_shutdown();
+    inst_log_init(log_path_.string().c_str(), INST_LOG_DEBUG, "instrument",
+                  1024 * 1024, // 1 MB
+                  3);          // rotation count
 
     test_scripts_dir_ =
         std::filesystem::current_path() / "data" / "test_scripts";
@@ -74,8 +77,8 @@ protected:
     std::error_code ec;
     std::filesystem::remove(log_path_, ec);
 
-    // Shutdown logger to allow next test to create new log file
-    InstrumentLogger::instance().shutdown();
+    inst_log_flush();
+    inst_log_shutdown();
     // Clean up after each test - use public API only
     auto &daemon = ServerDaemon::instance();
     if (daemon.is_running()) {
