@@ -247,11 +247,7 @@ endforeach()
 
 # VISA built-in plugin (optional)
 if(HAVE_VISA)
-  add_library(visa_builtin MODULE src/workers/visa_builtin.cpp)
-  target_link_libraries(visa_builtin PRIVATE instrument-script-server-core
-                                             ${VISA_LIBRARY})
-  set_target_properties(visa_builtin PROPERTIES PREFIX "" OUTPUT_NAME
-                                                          "visa_builtin")
+  add_subdirectory(plugins/visa)
 endif()
 
 # Example plugins (FIXED: only build if InstrumentServer is already installed OR
@@ -262,7 +258,6 @@ if(BUILD_EXAMPLES)
 endif()
 
 # Build built-in plugins
-add_subdirectory(plugins/visa)
 
 # Tests
 if(BUILD_TESTS)
