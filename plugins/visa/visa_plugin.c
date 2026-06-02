@@ -1,6 +1,6 @@
 #include <cjson/cJSON.h>
-#include <instrument-script-server/ipc/DataBufferManager_c_api.h>
-#include <instrument-script-server/plugin/PluginInterface.h>
+#include <instrument-data.h>
+#include <instrument-plugin.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
