@@ -552,7 +552,7 @@ void RuntimeContext::process_tokens_and_wait() {
             result_index = it_inds->second[i];
           } else {
             result_index = collected_results_.size();
-            collected_results_.push_back(CallResult());
+            collected_results_.emplace_back();
           }
 
           auto &cr = collected_results_[result_index];

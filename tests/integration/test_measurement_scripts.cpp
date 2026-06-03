@@ -517,7 +517,13 @@ commands:
       nlohmann::json read_params, read_out;
       read_params["buffer_id"] = results[0].buffer_id;
       int rc = server::handle_read_buffer(read_params, read_out);
-      ASSERT_EQ(rc, 0);
+      if (rc != 0) {
+        std::string error_msg = read_out.contains("error")
+                                    ? read_out["error"].dump()
+                                    : "No error key found";
+        FAIL() << "handle_read_buffer failed with rc=" << rc
+               << ". Details: " << error_msg;
+      }
       EXPECT_TRUE(read_out.value("ok", false));
       EXPECT_EQ(read_out.value("element_count", 0ULL),
                 results[0].element_count);

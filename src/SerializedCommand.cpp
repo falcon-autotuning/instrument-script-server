@@ -1,8 +1,7 @@
 #include "instrument-script-server/SerializedCommand.hpp"
 #include <nlohmann/json.hpp>
 
-namespace instserver {
-namespace ipc {
+namespace instserver::ipc {
 
 std::string serialize_command(const SerializedCommand &cmd) {
   nlohmann::json j;
@@ -19,15 +18,15 @@ std::string serialize_command(const SerializedCommand &cmd) {
   // Serialize params
   nlohmann::json params_json = nlohmann::json::object();
   for (const auto &[key, value] : cmd.params) {
-    if (auto d = std::get_if<double>(&value)) {
+    if (const auto *d = std::get_if<double>(&value)) {
       params_json[key] = *d;
-    } else if (auto i = std::get_if<int64_t>(&value)) {
+    } else if (const auto *i = std::get_if<int64_t>(&value)) {
       params_json[key] = *i;
-    } else if (auto s = std::get_if<std::string>(&value)) {
+    } else if (const auto *s = std::get_if<std::string>(&value)) {
       params_json[key] = *s;
-    } else if (auto b = std::get_if<bool>(&value)) {
+    } else if (const auto *b = std::get_if<bool>(&value)) {
       params_json[key] = *b;
-    } else if (auto arr = std::get_if<std::vector<double>>(&value)) {
+    } else if (const auto *arr = std::get_if<std::vector<double>>(&value)) {
       params_json[key] = *arr;
     }
   }
@@ -36,8 +35,16 @@ std::string serialize_command(const SerializedCommand &cmd) {
   return j.dump();
 }
 
+// Assuming SerializedCommand and its fields are defined elsewhere
 SerializedCommand deserialize_command(const std::string &json) {
-  auto j = nlohmann::json::parse(json);
+  nlohmann::json j;
+
+  try {
+    j = nlohmann::json::parse(json);
+  } catch (const nlohmann::json::parse_error &e) {
+    throw std::runtime_error("Failed to parse JSON command: " +
+                             std::string(e.what()));
+  }
 
   SerializedCommand cmd;
   cmd.id = j["id"];
@@ -51,19 +58,19 @@ SerializedCommand deserialize_command(const std::string &json) {
     cmd.sync_token = j["sync_token"];
   }
 
-  // Deserialize params
+  // Deserialize params with move semantics optimization
   if (j.contains("params") && j["params"].is_object()) {
-    for (auto &[key, value] : j["params"].items()) {
+    for (const auto &[key, value] : j["params"].items()) {
       if (value.is_number_float()) {
         cmd.params[key] = value.get<double>();
       } else if (value.is_number_integer()) {
         cmd.params[key] = value.get<int64_t>();
       } else if (value.is_string()) {
-        cmd.params[key] = value.get<std::string>();
+        cmd.params[key] = std::move(value.get<std::string>());
       } else if (value.is_boolean()) {
         cmd.params[key] = value.get<bool>();
       } else if (value.is_array()) {
-        cmd.params[key] = value.get<std::vector<double>>();
+        cmd.params[key] = std::move(value.get<std::vector<double>>());
       }
     }
   }
@@ -82,19 +89,19 @@ std::string serialize_response(const CommandResponse &resp) {
 
   // Serialize return value
   if (resp.return_value) {
-    if (auto d = std::get_if<double>(&*resp.return_value)) {
+    if (const auto *d = std::get_if<double>(&*resp.return_value)) {
       j["return_value"] = *d;
       j["return_type"] = "double";
-    } else if (auto i = std::get_if<int64_t>(&*resp.return_value)) {
+    } else if (const auto *i = std::get_if<int64_t>(&*resp.return_value)) {
       j["return_value"] = *i;
       j["return_type"] = "int64";
-    } else if (auto s = std::get_if<std::string>(&*resp.return_value)) {
+    } else if (const auto *s = std::get_if<std::string>(&*resp.return_value)) {
       j["return_value"] = *s;
       j["return_type"] = "string";
-    } else if (auto b = std::get_if<bool>(&*resp.return_value)) {
+    } else if (const auto *b = std::get_if<bool>(&*resp.return_value)) {
       j["return_value"] = *b;
       j["return_type"] = "bool";
-    } else if (auto arr =
+    } else if (const auto *arr =
                    std::get_if<std::vector<double>>(&*resp.return_value)) {
       j["return_value"] = *arr;
       j["return_type"] = "array";
@@ -152,5 +159,4 @@ CommandResponse deserialize_response(const std::string &json) {
   return resp;
 }
 
-} // namespace ipc
-} // namespace instserver
+} // namespace instserver::ipc

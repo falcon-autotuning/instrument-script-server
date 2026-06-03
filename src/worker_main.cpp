@@ -466,7 +466,8 @@ private:
     }
   }
 
-  SerializedCommand deserialize_command_from_msg(const ipc::IPCMessage &msg) {
+  static SerializedCommand
+  deserialize_command_from_msg(const ipc::IPCMessage &msg) {
     std::string payload(msg.payload.data(), msg.payload_size);
     return ipc::deserialize_command(payload);
   }

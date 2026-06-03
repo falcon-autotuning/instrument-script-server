@@ -1299,15 +1299,16 @@ int handle_read_buffer(const json &params, json &out) {
   out["buffer_id"] = buffer_id;
   out["element_count"] = n;
   // Return data as a JSON array of doubles (upcast float32 as needed)
-  if (buf->as_float64()) {
+  if (buf->as_float64() != nullptr) {
     const double *d = buf->as_float64();
     out["data"] = std::vector<double>(d, d + n);
     out["data_type"] = "float64";
-  } else if (buf->as_float32()) {
+  } else if (buf->as_float32() != nullptr) {
     const float *f = buf->as_float32();
     std::vector<double> converted(n);
-    for (size_t i = 0; i < n; ++i)
+    for (size_t i = 0; i < n; ++i) {
       converted[i] = static_cast<double>(f[i]);
+    }
     out["data"] = converted;
     out["data_type"] = "float64";
   } else {
