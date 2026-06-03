@@ -191,8 +191,8 @@ void HttpRpcServer::run_loop(uint16_t port) {
 #ifdef _WIN32
   listen_fd_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (listen_fd_ == INVALID_SOCKET) {
-    LOG_ERROR("RPC", "SOCKET", "Failed to create socket: %s",
-              WSAGetLastError().c_str());
+    LOG_ERROR("RPC", "SOCKET", "Failed to create socket: %d",
+              WSAGetLastError());
     running_ = false;
     return;
   }
