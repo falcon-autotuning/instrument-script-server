@@ -26,7 +26,7 @@ protected:
     log_path_ = tmp / ("instrument_test_" + std::to_string(now) + ".log");
 
     inst_log_shutdown();
-    inst_log_init(log_path_.c_str(), INST_LOG_DEBUG, "instrument",
+    inst_log_init(log_path_.string().c_str(), INST_LOG_DEBUG, "instrument",
                   1024 * 1024, // 1 MB
                   3);          // rotation count
     lua_ = std::make_unique<sol::state>();
