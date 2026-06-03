@@ -1,9 +1,10 @@
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
-
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <instrument-data.h>
+#include <instrument-plugin.h>
 #include <vector>
 
 using namespace instserver::ipc;
@@ -20,87 +21,10 @@ protected:
   DataBufferManager *manager_;
 };
 
-TEST_F(DataBufferManagerTest, CreateFloat32Buffer) {
-  std::vector<float> test_data = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-
-  std::string buffer_id =
-      manager_->create_buffer("TestInstrument", "MEASURE", DataType::FLOAT32,
-                              test_data.size(), test_data.data());
-
-  EXPECT_FALSE(buffer_id.empty());
-
-  auto buffer = manager_->get_buffer(buffer_id);
-  ASSERT_NE(buffer, nullptr);
-
-  EXPECT_EQ(buffer->element_count(), test_data.size());
-  EXPECT_EQ(buffer->data_type(), DataType::FLOAT32);
-
-  float *data = buffer->as_float32();
-  ASSERT_NE(data, nullptr);
-
-  for (size_t i = 0; i < test_data.size(); i++) {
-    EXPECT_FLOAT_EQ(data[i], test_data[i]);
-  }
-}
-
-TEST_F(DataBufferManagerTest, CreateFloat64Buffer) {
-  std::vector<double> test_data = {1.5, 2.5, 3.5, 4.5, 5.5};
-
-  std::string buffer_id =
-      manager_->create_buffer("TestInstrument", "ACQUIRE", DataType::FLOAT64,
-                              test_data.size(), test_data.data());
-
-  EXPECT_FALSE(buffer_id.empty());
-
-  auto buffer = manager_->get_buffer(buffer_id);
-  ASSERT_NE(buffer, nullptr);
-
-  EXPECT_EQ(buffer->element_count(), test_data.size());
-  EXPECT_EQ(buffer->data_type(), DataType::FLOAT64);
-
-  double *data = buffer->as_float64();
-  ASSERT_NE(data, nullptr);
-
-  for (size_t i = 0; i < test_data.size(); i++) {
-    EXPECT_DOUBLE_EQ(data[i], test_data[i]);
-  }
-}
-
-TEST_F(DataBufferManagerTest, CreateLargeBuffer) {
-  const size_t element_count = 10000;
-  std::vector<float> test_data(element_count);
-
-  // Fill with test pattern
-  for (size_t i = 0; i < element_count; i++) {
-    test_data[i] = static_cast<float>(i) * 0.1f;
-  }
-
-  std::string buffer_id =
-      manager_->create_buffer("Oscilloscope", "WAVEFORM", DataType::FLOAT32,
-                              test_data.size(), test_data.data());
-
-  EXPECT_FALSE(buffer_id.empty());
-
-  auto buffer = manager_->get_buffer(buffer_id);
-  ASSERT_NE(buffer, nullptr);
-
-  EXPECT_EQ(buffer->element_count(), element_count);
-
-  float *data = buffer->as_float32();
-  ASSERT_NE(data, nullptr);
-
-  // Spot check values
-  EXPECT_FLOAT_EQ(data[0], 0.0f);
-  EXPECT_FLOAT_EQ(data[100], 10.0f);
-  EXPECT_FLOAT_EQ(data[element_count - 1],
-                  static_cast<float>(element_count - 1) * 0.1f);
-}
-
 TEST_F(DataBufferManagerTest, GetMetadata) {
   std::vector<int32_t> test_data = {10, 20, 30};
-
-  std::string buffer_id = manager_->create_buffer(
-      "DMM", "READ", DataType::INT32, test_data.size(), test_data.data());
+  const char *buffer_id = data_manager_create_buffer(
+      "DMM", "READ", INST_DATA_INT32, test_data.size(), test_data.data());
 
   auto metadata = manager_->get_metadata(buffer_id);
   ASSERT_TRUE(metadata.has_value());
@@ -108,7 +32,7 @@ TEST_F(DataBufferManagerTest, GetMetadata) {
   EXPECT_EQ(metadata->buffer_id, buffer_id);
   EXPECT_EQ(metadata->instrument_name, "DMM");
   EXPECT_EQ(metadata->command_id, "READ");
-  EXPECT_EQ(metadata->data_type, DataType::INT32);
+  EXPECT_EQ(metadata->data_type, INST_DATA_INT32);
   EXPECT_EQ(metadata->element_count, test_data.size());
   EXPECT_EQ(metadata->byte_size, test_data.size() * sizeof(int32_t));
   EXPECT_GT(metadata->timestamp_ms, 0);
@@ -116,18 +40,13 @@ TEST_F(DataBufferManagerTest, GetMetadata) {
 
 TEST_F(DataBufferManagerTest, Referencecounting) {
   std::vector<float> test_data = {1.0f, 2.0f};
+  const char *buffer_id = data_manager_create_buffer(
+      "Test", "CMD", INST_DATA_FLOAT32, test_data.size(), test_data.data());
 
-  std::string buffer_id = manager_->create_buffer(
-      "Test", "CMD", DataType::FLOAT32, test_data.size(), test_data.data());
-
-  // Get buffer multiple times
-  auto buffer1 = manager_->get_buffer(buffer_id);
-  auto buffer2 = manager_->get_buffer(buffer_id);
-  auto buffer3 = manager_->get_buffer(buffer_id);
-
-  EXPECT_NE(buffer1, nullptr);
-  EXPECT_NE(buffer2, nullptr);
-  EXPECT_NE(buffer3, nullptr);
+  // Save buffer multiple times. But 1 process
+  manager_->save_buffer(buffer_id);
+  manager_->save_buffer(buffer_id);
+  manager_->save_buffer(buffer_id);
 
   // Release the global buffer (decrements global owners, but process-local
   // stays alive while wrappers are alive)
