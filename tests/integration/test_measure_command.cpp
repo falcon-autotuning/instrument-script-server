@@ -25,7 +25,7 @@ protected:
   void SetUp() override {
 
     inst_log_shutdown();
-    inst_log_init("measure_cmd_test.log", INST_LOG_DEBUG, "measure_test",
+    inst_log_init("measure_cmd_test.log", INST_LOG_DEBUG, "instrument",
                   1024 * 1024, // 1 MB
                   3);          // rotation count
     if (ServerDaemon::is_already_running()) {

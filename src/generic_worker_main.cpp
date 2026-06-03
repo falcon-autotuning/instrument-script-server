@@ -9,7 +9,6 @@
 #include <instrument-log/inst_logging.h>
 #include <iostream>
 #include <string>
-#include <unistd.h>
 
 using namespace instserver;
 
@@ -155,10 +154,12 @@ public:
         plugin_(plugin_path) {}
 
   int run() {
-    if (!load_and_init_plugin())
+    if (!load_and_init_plugin()) {
       return 1;
-    if (!connect_ipc_queue())
+    }
+    if (!connect_ipc_queue()) {
       return 1;
+    }
 
     LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN", "Entering main loop");
     main_loop();
@@ -177,6 +178,15 @@ private:
   std::chrono::steady_clock::time_point last_heartbeat_ =
       std::chrono::steady_clock::now();
 
+  // NOLINTBEGIN(hicpp-avoid-c-arrays,
+  // cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
+  template <size_t N> void copy_cstr(char (&dest)[N], const std::string &src) {
+    size_t size = std::min(src.size(), N - 1);
+    std::memcpy(dest, src.data(), size);
+    dest[size] = '\0';
+  }
+  // NOLINTEND(hicpp-avoid-c-arrays,
+  // cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
   bool load_and_init_plugin() {
     if (!plugin_.is_loaded()) {
       LOG_ERROR(instrument_name_.c_str(), "WORKER_MAIN",
@@ -186,9 +196,8 @@ private:
     log_plugin_metadata();
 
     PluginConfig config = {};
-    strncpy(config.instrument_name, instrument_name_.c_str(),
-            PLUGIN_MAX_STRING_LEN - 1);
-    strncpy(config.connection_json, "{}", PLUGIN_MAX_STRING_LEN - 1);
+    copy_cstr(config.instrument_name, instrument_name_);
+    copy_cstr(config.connection_json, "{}");
 
     int32_t init_result = plugin_.initialize(config);
     if (init_result != 0) {

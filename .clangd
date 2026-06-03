@@ -1,5 +1,4 @@
 CompileFlags:
-  CompilationDatabase: build/debug
   Add:
     - -I./vcpkg_installed/x64-linux-dynamic/include
     - -I./include
