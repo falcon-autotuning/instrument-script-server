@@ -224,7 +224,7 @@ if(ENABLE_PCH)
 endif()
 
 add_executable(instrument-script-server src/server/instrument_server_main.cpp)
-add_executable(instrument-worker src/generic_worker_main.cpp)
+add_executable(instrument-worker src/worker_main.cpp)
 add_executable(validate-instrument-api src/instrument_api_validator_main.cpp)
 add_executable(validate-instrument-config
                  src/instrument_config_validator_main.cpp)

@@ -358,7 +358,7 @@ bool SyncCoordinator::handle_ack(uint64_t sync_token,
 
 ### Worker Process (Worker Side)
 
-**File**: `src/generic_worker_main.cpp`
+**File**: `src/worker_main.cpp`
 
 #### Worker State
 

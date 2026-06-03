@@ -168,7 +168,7 @@ registry.create_instrument() → fork() → load plugin → IPC loop
 registry.remove_instrument() ← cleanup ← shutdown ← SIGTERM
 ```
 
-**Implementation**: `src/generic_worker_main.cpp`
+**Implementation**: `src/worker_main.cpp`
 
 ### Command Processes
 

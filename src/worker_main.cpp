@@ -10,6 +10,11 @@
 #include <iostream>
 #include <string>
 
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 using namespace instserver;
 
 static volatile bool g_running = true;
