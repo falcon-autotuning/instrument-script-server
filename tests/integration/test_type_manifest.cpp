@@ -45,32 +45,28 @@ protected:
     // Start mock instruments
     auto &registry = InstrumentRegistry::instance();
 
-    std::string config1 =
-        (test_configs_dir_ / "mock_instrument1.yaml").string();
-    std::string config2 =
-        (test_configs_dir_ / "mock_instrument2.yaml").string();
-    std::string config3 =
-        (test_configs_dir_ / "mock_instrument3.yaml").string();
+    std::filesystem::path config1 = test_configs_dir_ / "mock_instrument1.yaml";
+    std::filesystem::path config2 = test_configs_dir_ / "mock_instrument2.yaml";
+    std::filesystem::path config3 = test_configs_dir_ / "mock_instrument3.yaml";
 
-    if (std::filesystem::exists(config1))
-      registry.create_instrument(config1);
-    if (std::filesystem::exists(config2))
-      registry.create_instrument(config2);
-    if (std::filesystem::exists(config3))
-      registry.create_instrument(config3);
+    if (std::filesystem::exists(config1)) {
+      registry.create_instrument(config1.string());
+    }
+    if (std::filesystem::exists(config2)) {
+      registry.create_instrument(config2.string());
+    }
+    if (std::filesystem::exists(config3)) {
+      registry.create_instrument(config3.string());
+    }
 
     // Create temp directory for test scripts
-    std::filesystem::path tmp = std::filesystem::temp_directory_path();
-    tmp / "test_type_manifest_scripts";
-    std::filesystem::create_directories(test_scripts_dir_);
+    std::filesystem::path tmp =
+        std::filesystem::temp_directory_path() / "test_type_manifest_scripts";
+    std::filesystem::create_directories(tmp);
   }
 
   void TearDown() override {
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-    if (auto l = spdlog::get("instrument")) {
-      l->flush();
-    }
-
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     auto &registry = InstrumentRegistry::instance();
     registry.stop_all();
 
@@ -103,16 +99,17 @@ protected:
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
       std::ifstream ifs(log_path_, std::ios::in | std::ios::binary);
       if (ifs && ifs.peek() != std::ifstream::traits_type::eof()) {
-        return std::string((std::istreambuf_iterator<char>(ifs)),
-                           (std::istreambuf_iterator<char>()));
+        return {std::istreambuf_iterator<char>(ifs),
+                std::istreambuf_iterator<char>()};
       }
     }
     // Final attempt
     std::ifstream ifs(log_path_, std::ios::in | std::ios::binary);
-    if (!ifs)
+    if (!ifs) {
       return "";
-    return std::string((std::istreambuf_iterator<char>(ifs)),
-                       (std::istreambuf_iterator<char>()));
+    }
+    return {std::istreambuf_iterator<char>(ifs),
+            std::istreambuf_iterator<char>()};
   }
 
   std::filesystem::path log_path_;

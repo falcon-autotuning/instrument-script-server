@@ -136,7 +136,7 @@ protected:
       TerminateProcess(pi.hProcess, 1);
       WaitForSingleObject(pi.hProcess, 1000); // Wait up to 1s for termination
 
-      LOG_ERROR("TEST", "TIMEOUT", "Command timed out:  {}", cmd);
+      LOG_ERROR("TEST", "TIMEOUT", "Command timed out:  %s", cmd.c_str());
       status = -1;
     } else {
       fprintf(stderr, "[DEBUG] WaitForSingleObject failed: %lu\n",

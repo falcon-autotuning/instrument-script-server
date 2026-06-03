@@ -1,11 +1,7 @@
-#include "PlatformPaths.hpp"
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/CommandHandlers.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
-#include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
-#include "instrument-script-server/server/SyncCoordinator.hpp"
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
@@ -32,7 +28,7 @@ protected:
     log_path_ =
         std::filesystem::temp_directory_path() / "test_main_integration.log";
     inst_log_shutdown();
-    inst_log_init(log_path_.c_str(), INST_LOG_DEBUG, "instrument",
+    inst_log_init(log_path_.string().c_str(), INST_LOG_DEBUG, "instrument",
                   1024 * 1024 * 10, // 10 MB
                   3);               // rotation count
 

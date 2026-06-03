@@ -14,7 +14,7 @@
 #include <instrument-log/inst_logging.h>
 #include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
-
+constexpr double PI = 3.14159265358979323846;
 using namespace instserver;
 using namespace instserver::test;
 using json = nlohmann::json;
@@ -526,7 +526,7 @@ commands:
       auto data = read_out["data"].get<std::vector<double>>();
       ASSERT_GE(data.size(), 100);
       for (size_t i = 0; i < 100; ++i) {
-        double expected = std::sin(2.0 * M_PI * i / 100.0);
+        double expected = std::sin(2.0 * PI * i / 100.0);
         EXPECT_NEAR(data[i], expected, 0.01);
       }
     }
@@ -544,7 +544,7 @@ commands:
       auto data = read_out["data"].get<std::vector<double>>();
       ASSERT_GE(data.size(), 100);
       for (size_t i = 0; i < 100; ++i) {
-        double expected = std::sin(2.0 * M_PI * i / 100.0);
+        double expected = std::sin(2.0 * PI * i / 100.0);
         EXPECT_NEAR(data[i], expected, 0.01);
       }
     }
@@ -750,7 +750,7 @@ commands:
       auto data = read_out["data"].get<std::vector<double>>();
       ASSERT_GE(data.size(), 100);
       for (size_t i = 0; i < 100; ++i) {
-        double expected = std::sin(2.0 * M_PI * i / 100.0);
+        double expected = std::sin(2.0 * PI * i / 100.0);
         EXPECT_NEAR(data[i], expected, 0.01);
       }
     }
@@ -768,7 +768,7 @@ commands:
       auto data = read_out["data"].get<std::vector<double>>();
       ASSERT_GE(data.size(), 100);
       for (size_t i = 0; i < 100; ++i) {
-        double expected = std::sin(2.0 * M_PI * i / 100.0);
+        double expected = std::sin(2.0 * PI * i / 100.0);
         EXPECT_NEAR(data[i], expected, 0.01);
       }
     }

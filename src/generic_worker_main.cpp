@@ -26,17 +26,18 @@ void signal_handler(int sig) {
 // async-signal-safe message to stderr (which the ISS daemon redirects to
 // tests/hub/logiss-daemon.log), flushes the spdlog file sink, then re-raises so
 // the OS can produce a core dump as normal.
-
 void crash_signal_handler(int sig) {
   char buf[256];
   int n = snprintf(buf, sizeof(buf),
                    "[instrument-worker] CRASH signal %d in worker '%s'\n", sig,
                    g_instrument_name_buf);
   if (n > 0) {
+#ifdef _WIN32
+    _write(_fileno(stderr), buf, (size_t)n);
+#else
     write(STDERR_FILENO, buf, (size_t)n);
+#endif
   }
-
-  inst_log_flush();
   signal(sig, SIG_DFL);
   raise(sig);
 }
