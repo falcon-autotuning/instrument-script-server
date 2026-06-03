@@ -1,7 +1,9 @@
 #include "PlatformPaths.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
+#include <algorithm>
 #include <instrument-plugin.h>
+#include <string_view>
 
 // CRITICAL: Define this BEFORE including <cmath> to get M_PI on Windows
 #define _USE_MATH_DEFINES
@@ -14,7 +16,19 @@
 
 #include <filesystem>
 #include <gtest/gtest.h>
-
+// Helper to safely fill a fixed C-array from a C++ string literal
+namespace {
+template <typename T>
+inline void safe_c_str_copy(T &dest, std::string_view src) {
+  constexpr size_t N = sizeof(dest);
+  const size_t bytes_to_copy = std::min(src.size(), N - 1);
+  char *raw_dest = static_cast<char *>(std::addressof(dest[0]));
+  std::copy_n(src.begin(), bytes_to_copy, raw_dest);
+  const char null_terminator = '\0';
+  std::copy_n(&null_terminator, 1,
+              std::next(raw_dest, static_cast<std::ptrdiff_t>(bytes_to_copy)));
+}
+} // namespace
 using namespace instserver;
 using namespace instserver::test;
 
@@ -25,7 +39,6 @@ protected:
     auto &manager = ipc::DataBufferManager::instance();
     manager.clear_all();
 
-    // FIXED: Use cross-platform plugin path helper
     plugin_path_ = get_test_plugin_path("mock_visa_large_data_plugin");
 
     if (!std::filesystem::exists(plugin_path_)) {
@@ -47,18 +60,17 @@ TEST_F(VISALargeDataTest, SmallDataInResponse) {
 
   // Use a more complete configuration
   PluginConfig config{};
-  strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(config.connection_json, "{\"address\":\"mock://test\"}",
-          PLUGIN_MAX_PAYLOAD - 1);
-  strncpy(config.api_definition_json, "{}", PLUGIN_MAX_PAYLOAD - 1);
+  safe_c_str_copy(config.instrument_name, "TestScope");
+  safe_c_str_copy(config.connection_json, R"({"address":"mock://test"})");
+  safe_c_str_copy(config.api_definition_json, "{}");
 
   ASSERT_EQ(loader.initialize(config), 0);
 
   // Request small data (should fit in response)
   PluginCommand cmd{};
-  strncpy(cmd.id, "cmd_001", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(cmd.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(cmd.verb, "GET_SMALL_DATA", PLUGIN_MAX_STRING_LEN - 1);
+  safe_c_str_copy(cmd.id, "cmd_001");
+  safe_c_str_copy(cmd.instrument_name, "TestScope");
+  safe_c_str_copy(cmd.verb, "GET_SMALL_DATA");
   cmd.expects_response = true;
   cmd.param_count = 0;
 
@@ -75,17 +87,16 @@ TEST_F(VISALargeDataTest, LargeDataInBuffer) {
   ASSERT_TRUE(loader.is_loaded());
 
   PluginConfig config{};
-  strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(config.connection_json, "{\"address\":\"mock://test\"}",
-          PLUGIN_MAX_PAYLOAD - 1);
+  safe_c_str_copy(config.instrument_name, "TestScope");
+  safe_c_str_copy(config.connection_json, R"({"address":"mock://test"})");
 
   ASSERT_EQ(loader.initialize(config), 0);
 
   // Request large data (should use buffer)
   PluginCommand cmd{};
-  strncpy(cmd.id, "cmd_002", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(cmd.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(cmd.verb, "GET_LARGE_DATA", PLUGIN_MAX_STRING_LEN - 1);
+  safe_c_str_copy(cmd.id, "cmd_002");
+  safe_c_str_copy(cmd.instrument_name, "TestScope");
+  safe_c_str_copy(cmd.verb, "GET_LARGE_DATA");
   cmd.expects_response = true;
   cmd.param_count = 0;
 
