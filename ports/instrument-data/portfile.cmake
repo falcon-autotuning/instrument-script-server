@@ -6,8 +6,6 @@ vcpkg_from_github(
     HEAD_REF main
 )
 
-# Create a stub embed_bundle.cmake to fix a missing file in the upstream release
-file(WRITE "${SOURCE_PATH}/cmake/embed_bundle.cmake" "# Stub embed_bundle.cmake\n")
 
 # Patch manager.c
 #
@@ -15,11 +13,6 @@ file(WRITE "${SOURCE_PATH}/cmake/embed_bundle.cmake" "# Stub embed_bundle.cmake\
 #    mutex 'lock' could be uninitialized on first release.
 # 2. Add timestamp tracking and fix the double reference count bug on creation.
 file(READ "${SOURCE_PATH}/src/manager.c" MANAGER_C_CONTENT)
-
-string(REPLACE
-    "void data_manager_release_buffer(const char *id) {"
-    "void data_manager_release_buffer(const char *id) {\n  init();"
-    MANAGER_C_CONTENT "${MANAGER_C_CONTENT}")
 
 string(REPLACE
     "#include \"internal/util.h\""

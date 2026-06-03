@@ -321,7 +321,7 @@ DataBufferManager::get_buffer(const std::string &buffer_id) {
       }
     }
     if (!found) {
-      active_buffers_.push_back({buffer_id, bytes});
+      active_buffers_.emplace_back(buffer_id, bytes);
     }
   }
 
