@@ -1,6 +1,6 @@
-#include <instrument-script-server/ipc/DataBufferManager_c_api.h>
+#include <instrument-data.h>
+#include <instrument-log/inst_logging.h>
 #include <instrument-plugin.h>
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,8 +24,8 @@ PluginMetadata plugin_get_metadata(void) {
 }
 
 int32_t plugin_initialize(const PluginConfig *config) {
-  fprintf(stderr, "[MockVISALargeData] Initializing for %s\n",
-          config->instrument_name);
+  LOG_INFO("Plugin", "MOCKVISALargeData", "Initializing for %s\n",
+           config->instrument_name);
   g_initialized = 1;
   return 0;
 }
@@ -64,6 +64,8 @@ int32_t plugin_execute_command(const PluginCommand *cmd, PluginResponse *resp) {
 
     if (!waveform) {
       resp->success = false;
+      LOG_ERROR("Plugin", "MOCKVISALargeData",
+                "Failed to allocate waveform data\n");
       strncpy(resp->error_message, "Failed to allocate waveform data",
               PLUGIN_MAX_STRING_LEN - 1);
       return -1;
@@ -75,15 +77,15 @@ int32_t plugin_execute_command(const PluginCommand *cmd, PluginResponse *resp) {
     }
 
     // Create buffer
-    char buffer_id[PLUGIN_MAX_STRING_LEN];
-    int result = data_buffer_create(cmd->instrument_name, cmd->id,
-                                    0, // FLOAT32
-                                    num_points, waveform, buffer_id);
+    const char *buffer_id = data_manager_create_buffer(
+        cmd->instrument_name, cmd->id, INST_DATA_FLOAT32, num_points, waveform);
 
     free(waveform);
 
-    if (result != 0) {
+    if (buffer_id == NULL) {
       resp->success = false;
+      LOG_ERROR("Plugin", "MOCKVISALargeData",
+                "Failed to create data buffer\n");
       strncpy(resp->error_message, "Failed to create data buffer",
               PLUGIN_MAX_STRING_LEN - 1);
       return -1;
@@ -94,14 +96,13 @@ int32_t plugin_execute_command(const PluginCommand *cmd, PluginResponse *resp) {
     resp->has_large_data = true;
     strncpy(resp->data_buffer_id, buffer_id, PLUGIN_MAX_STRING_LEN - 1);
     resp->data_element_count = num_points;
-    resp->data_type = 0; // FLOAT32
+    resp->data_type = INST_DATA_FLOAT32;
 
     snprintf(resp->text_response, PLUGIN_MAX_PAYLOAD,
              "Large waveform data: %zu points in buffer %s", num_points,
              buffer_id);
-
-    fprintf(stderr, "[MockVISALargeData] Created buffer %s with %zu points\n",
-            buffer_id, num_points);
+    LOG_INFO("Plugin", "MOCKVISALargeData",
+             "Created buffer %s with %zu points\n", buffer_id, num_points);
 
     return 0;
   }
@@ -114,6 +115,7 @@ int32_t plugin_execute_command(const PluginCommand *cmd, PluginResponse *resp) {
 }
 
 void plugin_shutdown(void) {
-  fprintf(stderr, "[MockVISALargeData] Shutting down\n");
+  LOG_INFO("Plugin", "MOCKVISALargeData",
+           "[MockVISALargeData] Shutting down\n");
   g_initialized = 0;
 }

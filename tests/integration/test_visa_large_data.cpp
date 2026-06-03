@@ -198,7 +198,7 @@ TEST_F(VISALargeDataTest, MultipleBuffers) {
 
   PluginConfig config{};
   strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(config.connection_json, "{\"address\": \"mock://test\"}",
+  strncpy(config.connection_json, R"({"address": "mock://test"})",
           PLUGIN_MAX_PAYLOAD - 1);
 
   ASSERT_EQ(loader.initialize(config), 0);
@@ -219,7 +219,7 @@ TEST_F(VISALargeDataTest, MultipleBuffers) {
     ASSERT_EQ(loader.execute_command(cmd, resp), 0);
     ASSERT_TRUE(resp.has_large_data);
 
-    buffer_ids.push_back(resp.data_buffer_id);
+    buffer_ids.emplace_back(resp.data_buffer_id);
   }
 
   // Verify all buffers exist

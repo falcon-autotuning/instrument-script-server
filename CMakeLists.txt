@@ -153,7 +153,6 @@ add_library(
   src/ipc/SharedQueue.cpp
   src/ipc/ProcessManager.cpp
   src/ipc/DataBufferManager.cpp
-  src/ipc/DataBufferManager_c_api.cpp
   src/plugin/PluginLoader.cpp
   src/plugin/PluginRegistry.cpp
   src/server/InstrumentRegistry.cpp
