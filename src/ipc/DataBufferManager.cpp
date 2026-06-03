@@ -3,6 +3,7 @@
 #include <cstring>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
+#include <optional>
 
 #ifdef _WIN32
 #include <process.h>
@@ -14,7 +15,8 @@
 
 namespace instserver::ipc {
 
-bool DataBufferManager::contains_buffer_unsafe(const std::string &buffer_id) {
+bool DataBufferManager::contains_buffer_unsafe(
+    const std::string &buffer_id) const {
   return std::any_of(
       active_buffers_.begin(), active_buffers_.end(),
       [&buffer_id](const auto &pair) { return pair.first == buffer_id; });
@@ -59,7 +61,13 @@ void DataBufferManager::save_buffer(const std::string &buffer_id) {
 }
 
 std::optional<DataBufferMetadata>
-DataBufferManager::get_metadata(const std::string &buffer_id) {
+DataBufferManager::get_metadata(const std::string &buffer_id) const {
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!contains_buffer_unsafe(buffer_id)) {
+      return std::nullopt;
+    }
+  }
   SharedMetadata c_meta;
   if (!data_manager_get_metadata(buffer_id.c_str(), &c_meta)) {
     LOG_ERROR("DataBufferManager", buffer_id.c_str(),

@@ -36,8 +36,8 @@ public:
   void save_buffer(const std::string &buffer_id);
 
   /// Get buffer metadata
-  static std::optional<DataBufferMetadata>
-  get_metadata(const std::string &buffer_id);
+  std::optional<DataBufferMetadata>
+  get_metadata(const std::string &buffer_id) const;
 
   /// Release buffer (decrements ref count)
   void release_buffer(const std::string &buffer_id);
@@ -61,7 +61,7 @@ public:
 
 private:
   DataBufferManager() = default;
-  bool contains_buffer_unsafe(const std::string &buffer_id);
+  bool contains_buffer_unsafe(const std::string &buffer_id) const;
 
   mutable std::mutex mutex_;
   std::list<std::pair<std::string, size_t>> active_buffers_;
