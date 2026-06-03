@@ -15,9 +15,7 @@ Our [documentation](https://falcon-autotuning.github.io/instrument-script-server
 ## Quick Start
 
 ```bash
-# Build and install
 make build
-sudo make install
 
 # Start the server daemon
 instrument-script-server daemon start
@@ -42,6 +40,7 @@ instrument-script-server daemon stop
 ## Documentation Guide
 
 ### Getting Started
+
 Start here if you're new to the Instrument Script Server:
 
 - **[CLI Usage](CLI_USAGE.md)** - Complete command-line interface reference
@@ -128,6 +127,7 @@ end
 ```
 
 **MeasurementResponse Structure:**
+
 - `instrument()` - Returns instrument name
 - `verb()` - Returns command name
 - `type()` - Returns value type ("float", "integer", "string", "boolean", "buffer")
@@ -188,6 +188,7 @@ instrument-script-server measure measurement.lua \
 ```
 
 **Benefits:**
+
 - ✓ Compile-time type checking with Teal
 - ✓ Runtime parameter validation
 - ✓ Clear parameter contracts
@@ -198,6 +199,7 @@ instrument-script-server measure measurement.lua \
 See [TEAL_TYPE_MANIFEST.md](docs/TEAL_TYPE_MANIFEST.md) for complete documentation.
 
 **Key features:**
+
 - **Context parameter**: The `main(ctx)` function signature receives the runtime context
 - **Typed parameters**: Additional parameters can be passed with type validation
 - **Global variables**: Spec variables are injected as globals (with warnings)
@@ -208,6 +210,7 @@ See [TEAL_TYPE_MANIFEST.md](docs/TEAL_TYPE_MANIFEST.md) for complete documentati
 ### Backward Compatibility
 
 Scripts without a `main` function continue to work using the old format:
+
 ```lua
 -- Old format: executes at script load time
 context:log("Starting measurement")
