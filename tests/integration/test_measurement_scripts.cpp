@@ -702,31 +702,33 @@ commands:
   std::string buf2_id;
 
   if (results.size() >= 2) {
-    // Validate first buffer response from the outermost return payload
-    const auto &r0 = results[0];
-    EXPECT_EQ(r0.value("index", -1), 0);
-    EXPECT_EQ(r0.value("instrument", ""), "TestScope");
-    EXPECT_EQ(r0.value("verb", ""), "GET_LARGE_DATA");
-    ASSERT_TRUE(r0.contains("return"));
-    EXPECT_EQ(r0["return"].value("type", ""), "buffer");
-    EXPECT_FALSE(r0["return"].value("buffer_id", "").empty());
-    EXPECT_GT(r0["return"].value("element_count", 0ULL), 0ULL);
-    EXPECT_EQ(r0["return"].value("data_type", ""), "float32");
-    buf1_id = r0["return"]["buffer_id"];
+    // Helper lambda to validate outer buffer structure and extract its ID
+    auto validate_outer_buffer =
+        [](const nlohmann::json &result, int expected_index,
+           const std::string &step_name) -> std::string {
+      SCOPED_TRACE("Failure during payload validation: " + step_name);
 
-    // Validate second buffer response
-    const auto &r1 = results[1];
-    EXPECT_EQ(r1.value("index", -1), 1);
-    EXPECT_EQ(r1.value("instrument", ""), "TestScope");
-    EXPECT_EQ(r1.value("verb", ""), "GET_LARGE_DATA");
-    ASSERT_TRUE(r1.contains("return"));
-    EXPECT_EQ(r1["return"].value("type", ""), "buffer");
-    EXPECT_FALSE(r1["return"].value("buffer_id", "").empty());
-    EXPECT_GT(r1["return"].value("element_count", 0ULL), 0ULL);
-    EXPECT_EQ(r1["return"].value("data_type", ""), "float32");
-    buf2_id = r1["return"]["buffer_id"];
+      EXPECT_EQ(result.value("index", -1), expected_index);
+      EXPECT_EQ(result.value("instrument", ""), "TestScope");
+      EXPECT_EQ(result.value("verb", ""), "GET_LARGE_DATA");
 
-    EXPECT_NE(buf1_id, buf2_id);
+      EXPECT_TRUE(result.contains("return"));
+      const auto &ret = result["return"];
+
+      EXPECT_EQ(ret.value("type", ""), "buffer");
+      EXPECT_FALSE(ret.value("buffer_id", "").empty());
+      EXPECT_GT(ret.value("element_count", 0ULL), 0ULL);
+      EXPECT_EQ(ret.value("data_type", ""), "float32");
+
+      return ret.value("buffer_id", "");
+    };
+
+    // Extract and validate both buffers cleanly
+    buf1_id = validate_outer_buffer(results[0], 0, "Buffer 0 Payload");
+    buf2_id = validate_outer_buffer(results[1], 1, "Buffer 1 Payload");
+
+    EXPECT_NE(buf1_id, buf2_id)
+        << "Error: Both results returned identical buffer IDs!";
   }
 
   if (results.size() >= 3) {
@@ -739,68 +741,63 @@ commands:
     EXPECT_EQ(r2["return"].value("type", ""), "float");
     EXPECT_TRUE(r2["return"].contains("value"));
   }
+  // Helper lambda for clean, reusable buffer checking with detailed error
+  // logging
+  auto verify_buffer = [](const auto &result, uint64_t expected_count,
+                          const std::string &step_name) {
+    SCOPED_TRACE("Failure context during step: " + step_name);
+
+    nlohmann::json read_params, read_out;
+    read_params["buffer_id"] = result;
+
+    int rc = server::handle_read_buffer(read_params, read_out);
+
+    // If this assertion fails, SCOPED_TRACE will dump the step_name and the
+    // JSON error context automatically
+    ASSERT_EQ(rc, 0) << "handle_read_buffer failed! JSON details: "
+                     << read_out.value("error", "No error key found");
+
+    EXPECT_TRUE(read_out.value("ok", false));
+    EXPECT_EQ(read_out.value("element_count", 0ULL), expected_count);
+    EXPECT_EQ(read_out.value("data_type", ""), "float64");
+
+    auto data = read_out["data"].template get<std::vector<double>>();
+    ASSERT_GE(data.size(), 100);
+    for (size_t i = 0; i < 100; ++i) {
+      double expected = std::sin(2.0 * PI * i / 100.0);
+      EXPECT_NEAR(data[i], expected, 0.01);
+    }
+  };
+  // Helper lambda for clean, reusable buffer release and verification
+  auto release_and_verify = [](const std::string &buffer_id,
+                               const std::string &step_name) {
+    SCOPED_TRACE("Failure context during release: " + step_name);
+
+    nlohmann::json release_params, release_out;
+    release_params["buffer_id"] = buffer_id;
+
+    int release_rc = server::handle_release_buffer(release_params, release_out);
+
+    ASSERT_EQ(release_rc, 0)
+        << "handle_release_buffer failed! Details: "
+        << release_out.value("error", "No error key found");
+    EXPECT_TRUE(release_out.value("ok", false));
+  };
 
   // Recover data and verify contents from the outermost context
   if (!buf1_id.empty() && !buf2_id.empty()) {
-    // 1. Recover first buffer and verify integrity (sin wave)
-    {
-      nlohmann::json read_params, read_out;
-      read_params["buffer_id"] = buf1_id;
-      int read_rc = server::handle_read_buffer(read_params, read_out);
-      ASSERT_EQ(read_rc, 0);
-      EXPECT_TRUE(read_out.value("ok", false));
-      EXPECT_EQ(read_out.value("element_count", 0ULL),
-                results[0]["return"]["element_count"]);
-      EXPECT_EQ(read_out.value("data_type", ""), "float64");
-
-      auto data = read_out["data"].get<std::vector<double>>();
-      ASSERT_GE(data.size(), 100);
-      for (size_t i = 0; i < 100; ++i) {
-        double expected = std::sin(2.0 * PI * i / 100.0);
-        EXPECT_NEAR(data[i], expected, 0.01);
-      }
-    }
-
-    // 2. Recover second buffer and verify integrity
-    {
-      nlohmann::json read_params, read_out;
-      read_params["buffer_id"] = buf2_id;
-      int read_rc = server::handle_read_buffer(read_params, read_out);
-      ASSERT_EQ(read_rc, 0);
-      EXPECT_TRUE(read_out.value("ok", false));
-      EXPECT_EQ(read_out.value("element_count", 0ULL),
-                results[1]["return"]["element_count"]);
-
-      auto data = read_out["data"].get<std::vector<double>>();
-      ASSERT_GE(data.size(), 100);
-      for (size_t i = 0; i < 100; ++i) {
-        double expected = std::sin(2.0 * PI * i / 100.0);
-        EXPECT_NEAR(data[i], expected, 0.01);
-      }
-    }
+    verify_buffer(buf1_id, results[0]["return"]["element_count"],
+                  "First Buffer Verification");
+    verify_buffer(buf2_id, results[1]["return"]["element_count"],
+                  "Second Buffer Verification");
 
     // 3. Ownership & Handoff validation:
     //    We explicitly call release_buffer on the server, which should
     //    decrement the refcount to 0 (since the worker's owner reference was
     //    already gracefully transferred via our hand-off protocol), causing the
     //    shared memory buffer to be deallocated cleanly.
-    {
-      nlohmann::json release_params, release_out;
-      release_params["buffer_id"] = buf1_id;
-      int release_rc =
-          server::handle_release_buffer(release_params, release_out);
-      EXPECT_EQ(release_rc, 0);
-      EXPECT_TRUE(release_out.value("ok", false));
-    }
-
-    {
-      nlohmann::json release_params, release_out;
-      release_params["buffer_id"] = buf2_id;
-      int release_rc =
-          server::handle_release_buffer(release_params, release_out);
-      EXPECT_EQ(release_rc, 0);
-      EXPECT_TRUE(release_out.value("ok", false));
-    }
+    release_and_verify(buf1_id, "Release Buffer 1");
+    release_and_verify(buf2_id, "Release Buffer 2");
 
     // 4. Validate that the buffers are gone after release
     {
