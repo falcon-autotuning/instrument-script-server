@@ -1,6 +1,7 @@
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include <fmt/format.h>
+#include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
 #include <set>
 #include <variant>
@@ -31,11 +32,7 @@ namespace instserver {
 BufferHandle::BufferHandle(const std::string &buffer_id, uint64_t element_count,
                            const std::string &data_type)
     : buffer_id_(buffer_id), element_count_(element_count),
-      data_type_(data_type) {
-  // Graceful ownership transfer: attach to the buffer in the server process to
-  // claim ownership
-  ipc::DataBufferManager::instance().get_buffer(buffer_id_);
-}
+      data_type_(data_type) {}
 
 BufferHandle::~BufferHandle() {}
 
@@ -83,13 +80,17 @@ sol::object MeasurementResponse::value(sol::this_state s) const {
 
   if (type_ == "float") {
     return sol::make_object(lua, value_double_);
-  } else if (type_ == "integer") {
+  }
+  if (type_ == "integer") {
     return sol::make_object(lua, value_int_);
-  } else if (type_ == "string") {
+  }
+  if (type_ == "string") {
     return sol::make_object(lua, value_str_);
-  } else if (type_ == "boolean") {
+  }
+  if (type_ == "boolean") {
     return sol::make_object(lua, value_bool_);
-  } else if (type_ == "buffer") {
+  }
+  if (type_ == "buffer") {
     return sol::make_object(lua, buffer_);
   }
 
@@ -101,10 +102,12 @@ MeasurementResponse::add_offset(double offset) const {
   if (type_ == "float") {
     return std::make_shared<MeasurementResponse>(instrument_, verb_,
                                                  value_double_ + offset);
-  } else if (type_ == "integer") {
+  }
+  if (type_ == "integer") {
     return std::make_shared<MeasurementResponse>(
         instrument_, verb_, static_cast<int64_t>(value_int_ + offset));
-  } else if (type_ == "buffer" && buffer_) {
+  }
+  if (type_ == "buffer" && buffer_) {
     // For buffers, apply the offset to the underlying data
     buffer_->add_offset(offset);
     return std::make_shared<MeasurementResponse>(instrument_, verb_, buffer_);
@@ -116,7 +119,8 @@ MeasurementResponse::add_offset(double offset) const {
   if (type_ == "string") {
     return std::make_shared<MeasurementResponse>(instrument_, verb_,
                                                  value_str_);
-  } else if (type_ == "boolean") {
+  }
+  if (type_ == "boolean") {
     return std::make_shared<MeasurementResponse>(instrument_, verb_,
                                                  value_bool_);
   }
@@ -128,10 +132,12 @@ MeasurementResponse::multiply_gain(double gain) const {
   if (type_ == "float") {
     return std::make_shared<MeasurementResponse>(instrument_, verb_,
                                                  value_double_ * gain);
-  } else if (type_ == "integer") {
+  }
+  if (type_ == "integer") {
     return std::make_shared<MeasurementResponse>(
         instrument_, verb_, static_cast<int64_t>(value_int_ * gain));
-  } else if (type_ == "buffer" && buffer_) {
+  }
+  if (type_ == "buffer" && buffer_) {
     // For buffers, apply the gain to the underlying data
     buffer_->multiply_gain(gain);
     return std::make_shared<MeasurementResponse>(instrument_, verb_, buffer_);
@@ -143,7 +149,8 @@ MeasurementResponse::multiply_gain(double gain) const {
   if (type_ == "string") {
     return std::make_shared<MeasurementResponse>(instrument_, verb_,
                                                  value_str_);
-  } else if (type_ == "boolean") {
+  }
+  if (type_ == "boolean") {
     return std::make_shared<MeasurementResponse>(instrument_, verb_,
                                                  value_bool_);
   }
@@ -173,18 +180,20 @@ static void populate_callresult_from_response(CallResult &cr,
     // Copy value and map variant type to a textual type name the rest of the
     // code/tests expect.
     cr.return_value = resp.return_value;
-    if (std::get_if<double>(&*resp.return_value)) {
+    if (std::get_if<double>(&*resp.return_value) != nullptr) {
       cr.return_type = "float";
-    } else if (std::get_if<int64_t>(&*resp.return_value)) {
+    } else if (std::get_if<int64_t>(&*resp.return_value) != nullptr) {
       cr.return_type = "integer";
-    } else if (std::get_if<std::string>(&*resp.return_value)) {
+    } else if (std::get_if<std::string>(&*resp.return_value) != nullptr) {
       cr.return_type = "string";
-    } else if (std::get_if<bool>(&*resp.return_value)) {
+    } else if (std::get_if<bool>(&*resp.return_value) != nullptr) {
       cr.return_type = "boolean";
-    } else if (std::get_if<std::vector<double>>(&*resp.return_value)) {
+    } else if (std::get_if<std::vector<double>>(&*resp.return_value) !=
+               nullptr) {
       cr.return_type = "array";
       // Provide small array metadata in the CallResult for consumers/tests
-      if (auto arr = std::get_if<std::vector<double>>(&*resp.return_value)) {
+      if (const auto *arr =
+              std::get_if<std::vector<double>>(&*resp.return_value)) {
         cr.element_count = static_cast<uint64_t>(arr->size());
         cr.data_type = "float";
       }
@@ -303,8 +312,9 @@ sol::object RuntimeContext::call(const std::string &func_name,
     return sol::nil;
   }
 
-  if (!resp.return_value && !resp.has_large_data)
+  if (!resp.return_value && !resp.has_large_data) {
     return sol::nil;
+  }
 
   // Always return MeasurementResponse objects (not raw values)
   if (resp.has_large_data) {
@@ -342,34 +352,31 @@ sol::object RuntimeContext::call(const std::string &func_name,
     auto response =
         std::make_shared<MeasurementResponse>(instrument_spec, verb, *d);
     return sol::make_object(lua, response);
-  } else if (auto i = std::get_if<int64_t>(&*resp.return_value)) {
+  }
+  if (auto i = std::get_if<int64_t>(&*resp.return_value)) {
     auto response =
         std::make_shared<MeasurementResponse>(instrument_spec, verb, *i);
     return sol::make_object(lua, response);
-  } else if (auto s = std::get_if<std::string>(&*resp.return_value)) {
+  }
+  if (auto s = std::get_if<std::string>(&*resp.return_value)) {
     auto response =
         std::make_shared<MeasurementResponse>(instrument_spec, verb, *s);
     return sol::make_object(lua, response);
-  } else if (auto b = std::get_if<bool>(&*resp.return_value)) {
+  }
+  if (auto b = std::get_if<bool>(&*resp.return_value)) {
     auto response =
         std::make_shared<MeasurementResponse>(instrument_spec, verb, *b);
     return sol::make_object(lua, response);
-  } else if (auto arr = std::get_if<std::vector<double>>(&*resp.return_value)) {
+  }
+  if (auto arr = std::get_if<std::vector<double>>(&*resp.return_value)) {
     // Always use buffers for arrays (new behavior)
     // Create a buffer and return MeasurementResponse wrapping BufferHandle
     auto &buf_mgr = ipc::DataBufferManager::instance();
-    std::string buffer_id =
-        buf_mgr.create_buffer(instrument_id, cr.command_id,
-                              ipc::DataType::FLOAT64, arr->size(), arr->data());
-
+    const char *buffer_id =
+        data_manager_create_buffer(instrument_id.c_str(), cr.command_id.c_str(),
+                                   INST_DATA_FLOAT64, arr->size(), arr->data());
     auto handle =
         std::make_shared<BufferHandle>(buffer_id, arr->size(), "float64");
-
-    // Handoff: since the server itself created the buffer (refcount = 1),
-    // and the BufferHandle constructor attached to it (refcount = 2),
-    // the server's creator role is done, so we release the initial creator
-    // reference.
-    buf_mgr.release_buffer(buffer_id);
 
     auto response =
         std::make_shared<MeasurementResponse>(instrument_spec, verb, handle);
@@ -458,9 +465,9 @@ void RuntimeContext::execute_parallel_buffer() {
             futures.size());
 
   // Wait for futures first, populate results
-  for (size_t i = 0; i < futures.size(); ++i) {
+  for (auto &future : futures) {
     try {
-      auto resp = futures[i].get();
+      auto resp = future.get();
       CallResult cr;
       populate_callresult_from_response(cr, resp);
       cr.executed_at = std::chrono::steady_clock::now();
@@ -611,13 +618,13 @@ nlohmann::json RuntimeContext::collect_results_json() const {
                      {"element_count", cr.element_count},
                      {"data_type", cr.data_type}};
     } else if (cr.return_value) {
-      if (auto d = std::get_if<double>(&*cr.return_value)) {
+      if (const auto *d = std::get_if<double>(&*cr.return_value)) {
         j["return"] = {{"type", "float"}, {"value", *d}};
-      } else if (auto i = std::get_if<int64_t>(&*cr.return_value)) {
+      } else if (const auto *i = std::get_if<int64_t>(&*cr.return_value)) {
         j["return"] = {{"type", "integer"}, {"value", *i}};
-      } else if (auto s = std::get_if<std::string>(&*cr.return_value)) {
+      } else if (const auto *s = std::get_if<std::string>(&*cr.return_value)) {
         j["return"] = {{"type", "string"}, {"value", *s}};
-      } else if (auto b = std::get_if<bool>(&*cr.return_value)) {
+      } else if (const auto *b = std::get_if<bool>(&*cr.return_value)) {
         j["return"] = {{"type", "boolean"}, {"value", *b}};
       } else {
         j["return"] = {{"type", "void"}};

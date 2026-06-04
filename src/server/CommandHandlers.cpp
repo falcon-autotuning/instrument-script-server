@@ -8,64 +8,36 @@
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
+#include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
 
 #include <fstream>
+#include <instrument-plugin.h>
 #include <sol/sol.hpp>
 #include <string>
 #include <vector>
 
 using json = nlohmann::json;
-
-namespace instserver {
-namespace server {
-
-// The environment variable INSTRUMENT_SCRIPT_SERVER_RPC_PORT can be used to set
-// this port from outside.
-constexpr int DEFAULT_PORT = 8555;
-
-sol::object json_to_lua(sol::state_view lua, const json &json_value) {
-  switch (json_value.type()) {
-  case json::value_t::null:
-    return sol::make_object(lua, sol::nil);
-  case json::value_t::boolean:
-    return sol::make_object(lua, json_value.get<bool>());
-  case json::value_t::number_integer:
-    return sol::make_object(lua, json_value.get<int64_t>());
-  case json::value_t::number_unsigned:
-    return sol::make_object(lua, json_value.get<uint64_t>());
-  case json::value_t::number_float:
-    return sol::make_object(lua, json_value.get<double>());
-  case json::value_t::string:
-    return sol::make_object(lua, json_value.get<std::string>());
-  case json::value_t::array: {
-    sol::table t = lua.create_table();
-    std::size_t idx = 1;
-    for (const auto &elem : json_value) {
-      t[idx++] = json_to_lua(lua, elem);
-    }
-    return sol::make_object(lua, t);
-  }
-  case json::value_t::object: {
-    sol::table t = lua.create_table();
-    for (auto it = json_value.begin(); it != json_value.end(); ++it) {
-      t[it.key()] = json_to_lua(lua, it.value());
-    }
-    return sol::make_object(lua, t);
-  }
-  default:
-    // fallback: stringify
-    return sol::make_object(lua, json_value.dump());
-  }
+namespace {
+template <typename T> std::vector<T> make_vector(const void *data, size_t n) {
+  const T *ptr = static_cast<const T *>(data);
+  return std::vector<T>(ptr, ptr + n);
 }
+struct Json {
+  std::map<std::string,
+           std::variant<bool, size_t, std::string, std::vector<double>>>
+      obj;
 
+  auto &operator[](const std::string &key) { return obj[key]; }
+};
 // read entire file into a string for use with LUA library loading
-static std::string read_file_to_string(const std::filesystem::path &p) {
+std::string read_file_to_string(const std::filesystem::path &p) {
   std::ifstream ifs(p, std::ios::in | std::ios::binary);
-  if (!ifs)
+  if (!ifs) {
     return "";
-  return std::string((std::istreambuf_iterator<char>(ifs)),
-                     std::istreambuf_iterator<char>());
+  }
+  return {std::istreambuf_iterator<char>(ifs),
+          std::istreambuf_iterator<char>()};
 }
 void preload_lua_modules_from_dir(sol::state &lua, const std::string &libroot) {
   namespace fs = std::filesystem;
@@ -82,24 +54,29 @@ void preload_lua_modules_from_dir(sol::state &lua, const std::string &libroot) {
   // Walk libroot and preload .lua files. Convert e.g. lib/foo/bar.lua ->
   // "foo.bar"
   for (auto const &entry : fs::recursive_directory_iterator(libroot)) {
-    if (!entry.is_regular_file())
+    if (!entry.is_regular_file()) {
       continue;
-    auto path = entry.path();
-    if (path.extension() != ".lua")
+    }
+    const auto &path = entry.path();
+    if (path.extension() != ".lua") {
       continue;
+    }
     // compute module name relative to libroot
     fs::path rel = fs::relative(path, libroot);
     // strip extension
     rel = rel.replace_extension("");
     // convert path separators to dots
     std::string module = rel.generic_string(); // uses '/' separators
-    for (auto &c : module)
-      if (c == '/')
+    for (auto &c : module) {
+      if (c == '/') {
         c = '.';
+      }
+    }
     // read file
     std::string code = read_file_to_string(path);
-    if (code.empty())
+    if (code.empty()) {
       continue;
+    }
     // load the module code as a chunk with module filename for meaningful
     // errors
     sol::load_result loader = lua.load(code, path.string());
@@ -153,9 +130,52 @@ void load_bundle_file(sol::state &lua, const std::string &bundle_path) {
   }
   LOG_INFO("SERVER", "MEASURE", "Loaded bundle %s", bundle_path.c_str());
 }
+} // namespace
+
+namespace instserver::server {
+
+// The environment variable INSTRUMENT_SCRIPT_SERVER_RPC_PORT can be used to set
+// this port from outside.
+constexpr int DEFAULT_PORT = 8555;
+
+sol::object json_to_lua(sol::state_view lua, const json &json_value) {
+  switch (json_value.type()) {
+  case json::value_t::null:
+    return sol::make_object(lua, sol::nil);
+  case json::value_t::boolean:
+    return sol::make_object(lua, json_value.get<bool>());
+  case json::value_t::number_integer:
+    return sol::make_object(lua, json_value.get<int64_t>());
+  case json::value_t::number_unsigned:
+    return sol::make_object(lua, json_value.get<uint64_t>());
+  case json::value_t::number_float:
+    return sol::make_object(lua, json_value.get<double>());
+  case json::value_t::string:
+    return sol::make_object(lua, json_value.get<std::string>());
+  case json::value_t::array: {
+    sol::table t = lua.create_table();
+    std::size_t idx = 1;
+    for (const auto &elem : json_value) {
+      t[idx++] = json_to_lua(lua, elem);
+    }
+    return sol::make_object(lua, t);
+  }
+  case json::value_t::object: {
+    sol::table t = lua.create_table();
+    for (auto it = json_value.begin(); it != json_value.end(); ++it) {
+      t[it.key()] = json_to_lua(lua, it.value());
+    }
+    return sol::make_object(lua, t);
+  }
+  default:
+    // fallback: stringify
+    return sol::make_object(lua, json_value.dump());
+  }
+}
+
 void load_optional_lua_libs(sol::state &lua) {
   const char *envp = std::getenv("INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB");
-  if (!envp) {
+  if (envp == nullptr) {
     LOG_INFO("SERVER", "MEASURE",
              "No external Lua helpers path set "
              "(INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB)");
@@ -177,8 +197,9 @@ void load_optional_lua_libs(sol::state &lua) {
 
   // Load each path
   for (const auto &path_str : paths) {
-    if (path_str.empty())
+    if (path_str.empty()) {
       continue;
+    }
 
     std::filesystem::path p(path_str);
     if (!std::filesystem::exists(p)) {
@@ -213,7 +234,7 @@ int handle_daemon(const json &params, json &out) {
 
   if (action == "start") {
     // Initialize logger (same default as CLI)
-    uint8_t log_level_num;
+    uint8_t log_level_num = 0;
     if (log_level == "trace") {
       log_level_num = INST_LOG_TRACE;
     } else if (log_level == "debug") {
@@ -233,7 +254,7 @@ int handle_daemon(const json &params, json &out) {
                   3);               // rotation count
     // Check for RPC port configuration from environment variable
     const char *rpc_port_env = std::getenv("INSTRUMENT_SCRIPT_SERVER_RPC_PORT");
-    if (rpc_port_env && rpc_port_env[0]) {
+    if ((rpc_port_env != nullptr) && (rpc_port_env[0] != 0)) {
       try {
         int port = std::stoi(rpc_port_env);
         if (port > 0 && port <= 65535) {
@@ -261,7 +282,8 @@ int handle_daemon(const json &params, json &out) {
     }
 
     return 0;
-  } else if (action == "stop") {
+  }
+  if (action == "stop") {
     if (!ServerDaemon::is_already_running()) {
       out["ok"] = true;
       out["message"] = "daemon not running";
@@ -271,7 +293,8 @@ int handle_daemon(const json &params, json &out) {
     out["ok"] = true;
     out["message"] = "daemon stopped";
     return 0;
-  } else if (action == "status") {
+  }
+  if (action == "status") {
     bool running = ServerDaemon::is_already_running();
     out["ok"] = true;
     out["running"] = running;
@@ -302,7 +325,7 @@ int handle_start(const json &params, json &out) {
     return 1;
   }
 
-  uint8_t log_level_num;
+  uint8_t log_level_num = 0;
   if (log_level == "trace") {
     log_level_num = INST_LOG_TRACE;
   } else if (log_level == "debug") {
@@ -351,8 +374,9 @@ int handle_start(const json &params, json &out) {
     }
 
     auto instruments = registry.list_instruments();
-    if (!instruments.empty())
+    if (!instruments.empty()) {
       out["instrument"] = instruments.back();
+    }
 
     return 0;
   } catch (const std::exception &e) {
@@ -434,7 +458,7 @@ int handle_measure(const json &params, json &out) {
     return 1;
   }
 
-  uint8_t log_level_num;
+  uint8_t log_level_num = 0;
   if (log_level == "trace") {
     log_level_num = INST_LOG_TRACE;
   } else if (log_level == "debug") {
@@ -765,16 +789,21 @@ __context_schema_version = nil
           const auto &key = kv.first;
           const auto &value = kv.second;
           params_json[key] = [&value]() -> json {
-            if (auto d = std::get_if<double>(&value))
+            if (const auto *d = std::get_if<double>(&value)) {
               return *d;
-            if (auto i = std::get_if<int64_t>(&value))
+            }
+            if (const auto *i = std::get_if<int64_t>(&value)) {
               return *i;
-            if (auto s = std::get_if<std::string>(&value))
+            }
+            if (const auto *s = std::get_if<std::string>(&value)) {
               return *s;
-            if (auto b = std::get_if<bool>(&value))
+            }
+            if (const auto *b = std::get_if<bool>(&value)) {
               return *b;
-            if (auto arr = std::get_if<std::vector<double>>(&value))
+            }
+            if (const auto *arr = std::get_if<std::vector<double>>(&value)) {
               return *arr;
+            }
             return nullptr;
           }();
         }
@@ -794,14 +823,16 @@ __context_schema_version = nil
           return_json["data_type"] = r.data_type;
         } else if (r.return_value) {
           return_json["type"] = r.return_type;
-          if (auto d = std::get_if<double>(&*r.return_value))
+          if (const auto *d = std::get_if<double>(&*r.return_value)) {
             return_json["value"] = *d;
-          else if (auto i = std::get_if<int64_t>(&*r.return_value))
+          } else if (const auto *i = std::get_if<int64_t>(&*r.return_value)) {
             return_json["value"] = *i;
-          else if (auto s = std::get_if<std::string>(&*r.return_value))
+          } else if (const auto *s =
+                         std::get_if<std::string>(&*r.return_value)) {
             return_json["value"] = *s;
-          else if (auto b = std::get_if<bool>(&*r.return_value))
+          } else if (const auto *b = std::get_if<bool>(&*r.return_value)) {
             return_json["value"] = *b;
+          }
         }
         result_json["return"] = return_json;
 
@@ -833,16 +864,21 @@ __context_schema_version = nil
         const auto &key = kv.first;
         const auto &value = kv.second;
         params_json[key] = [&value]() -> json {
-          if (auto d = std::get_if<double>(&value))
+          if (const auto *d = std::get_if<double>(&value)) {
             return *d;
-          if (auto i = std::get_if<int64_t>(&value))
+          }
+          if (const auto *i = std::get_if<int64_t>(&value)) {
             return *i;
-          if (auto s = std::get_if<std::string>(&value))
+          }
+          if (const auto *s = std::get_if<std::string>(&value)) {
             return *s;
-          if (auto b = std::get_if<bool>(&value))
+          }
+          if (const auto *b = std::get_if<bool>(&value)) {
             return *b;
-          if (auto arr = std::get_if<std::vector<double>>(&value))
+          }
+          if (const auto *arr = std::get_if<std::vector<double>>(&value)) {
             return *arr;
+          }
           return nullptr;
         }();
       }
@@ -864,14 +900,15 @@ __context_schema_version = nil
         return_json["data_type"] = r.data_type;
       } else if (r.return_value) {
         return_json["type"] = r.return_type;
-        if (auto d = std::get_if<double>(&*r.return_value))
+        if (const auto *d = std::get_if<double>(&*r.return_value)) {
           return_json["value"] = *d;
-        else if (auto i = std::get_if<int64_t>(&*r.return_value))
+        } else if (const auto *i = std::get_if<int64_t>(&*r.return_value)) {
           return_json["value"] = *i;
-        else if (auto s = std::get_if<std::string>(&*r.return_value))
+        } else if (const auto *s = std::get_if<std::string>(&*r.return_value)) {
           return_json["value"] = *s;
-        else if (auto b = std::get_if<bool>(&*r.return_value))
+        } else if (const auto *b = std::get_if<bool>(&*r.return_value)) {
           return_json["value"] = *b;
+        }
       }
       result_json["return"] = return_json;
 
@@ -903,7 +940,7 @@ int handle_test(const json &params, json &out) {
     return 1;
   }
 
-  uint8_t log_level_num;
+  uint8_t log_level_num = 0;
   if (log_level == "trace") {
     log_level_num = INST_LOG_TRACE;
   } else if (log_level == "debug") {
@@ -960,7 +997,7 @@ int handle_test(const json &params, json &out) {
       return 1;
     }
 
-    std::string instrument_name = instruments.back();
+    const std::string &instrument_name = instruments.back();
     auto proxy = registry.get_instrument(instrument_name);
     if (!proxy) {
       out["ok"] = false;
@@ -1002,14 +1039,16 @@ int handle_test(const json &params, json &out) {
     out["text_response"] = resp.text_response;
     if (resp.success && resp.return_value) {
       // return_value is std::variant - we will only serialize a few types
-      if (std::holds_alternative<double>(resp.return_value.value()))
+      if (std::holds_alternative<double>(resp.return_value.value())) {
         out["return_value"] = std::get<double>(resp.return_value.value());
-      else if (std::holds_alternative<int64_t>(resp.return_value.value()))
+      } else if (std::holds_alternative<int64_t>(resp.return_value.value())) {
         out["return_value"] = std::get<int64_t>(resp.return_value.value());
-      else if (std::holds_alternative<std::string>(resp.return_value.value()))
+      } else if (std::holds_alternative<std::string>(
+                     resp.return_value.value())) {
         out["return_value"] = std::get<std::string>(resp.return_value.value());
-      else if (std::holds_alternative<bool>(resp.return_value.value()))
+      } else if (std::holds_alternative<bool>(resp.return_value.value())) {
         out["return_value"] = std::get<bool>(resp.return_value.value());
+      }
     }
 
     // cleanup instrument
@@ -1027,8 +1066,9 @@ int handle_discover(const json &params, json &out) {
   out = json::object();
   std::vector<std::string> search_paths;
   if (params.contains("paths") && params["paths"].is_array()) {
-    for (auto &p : params["paths"])
+    for (const auto &p : params["paths"]) {
       search_paths.push_back(p.get<std::string>());
+    }
   } else {
     search_paths = {"/usr/local/lib/instrument-plugins",
                     "/usr/lib/instrument-plugins", "./plugins", "."};
@@ -1172,8 +1212,9 @@ int handle_job_result(const json &params, json &out) {
       out["ok"] = false;
       out["error"] = "job not completed";
       out["status"] = info.status;
-      if (!info.error.empty())
+      if (!info.error.empty()) {
         out["error_detail"] = info.error;
+      }
       return 1;
     }
     // otherwise missing result
@@ -1215,8 +1256,9 @@ int handle_job_cancel(const json &params, json &out) {
   }
   bool ok = JobManager::instance().cancel_job(jid);
   out["ok"] = ok;
-  if (!ok)
+  if (!ok) {
     out["error"] = "failed to cancel job (maybe already finished)";
+  }
   return ok ? 0 : 1;
 }
 
@@ -1282,41 +1324,55 @@ int handle_get_buffer_metadata(const json &params, json &out) {
 
 int handle_read_buffer(const json &params, json &out) {
   out = json::object();
+
   std::string buffer_id = params.value("buffer_id", "");
   if (buffer_id.empty()) {
     out["ok"] = false;
     out["error"] = "missing buffer_id";
     return 1;
   }
-  auto buf = ipc::DataBufferManager::instance().get_buffer(buffer_id);
-  if (!buf) {
+
+  DataBuffer *buf = data_manager_get_buffer(buffer_id.c_str());
+  if (buf == nullptr) {
     out["ok"] = false;
     out["error"] = "buffer not found: " + buffer_id;
     return 1;
   }
-  size_t n = buf->element_count();
+
+  void *data = data_buffer_data(buf);
+  size_t n = data_buffer_element_count(buf);
+
   out["ok"] = true;
   out["buffer_id"] = buffer_id;
   out["element_count"] = n;
-  // Return data as a JSON array of doubles (upcast float32 as needed)
-  if (buf->as_float64() != nullptr) {
-    const double *d = buf->as_float64();
-    out["data"] = std::vector<double>(d, d + n);
-    out["data_type"] = "float64";
-  } else if (buf->as_float32() != nullptr) {
-    const float *f = buf->as_float32();
-    std::vector<double> converted(n);
-    for (size_t i = 0; i < n; ++i) {
-      converted[i] = static_cast<double>(f[i]);
-    }
-    out["data"] = converted;
-    out["data_type"] = "float64";
+
+  // get metadata (since as_floatXX is gone)
+  auto meta_opt = ipc::DataBufferManager::instance().get_metadata(buffer_id);
+  if (!meta_opt) {
+    out["ok"] = false;
+    out["error"] = "metadata not found";
+    return 1;
+  }
+
+  const auto &meta = *meta_opt;
+
+  if (meta.data_type == INST_DATA_FLOAT64) {
+    out["data"] = make_vector<double>(data, n);
+    out["data_type"] = INST_DATA_FLOAT64;
+
+  } else if (meta.data_type == INST_DATA_FLOAT32) {
+    auto fvec = make_vector<float>(data, n);
+
+    std::vector<double> converted(fvec.begin(), fvec.end());
+    out["data"] = std::move(converted);
+    out["data_type"] = INST_DATA_FLOAT64;
+
   } else {
     out["ok"] = false;
     out["error"] = "unsupported buffer data type for JSON export";
     return 1;
   }
+
   return 0;
 }
-} // namespace server
-} // namespace instserver
+} // namespace instserver::server

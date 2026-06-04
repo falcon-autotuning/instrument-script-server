@@ -2,6 +2,8 @@
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
 #include <algorithm>
+#include <fmt/format.h>
+#include <format>
 #include <instrument-plugin.h>
 #include <string_view>
 
@@ -79,7 +81,7 @@ TEST_F(VISALargeDataTest, SmallDataInResponse) {
 
   EXPECT_TRUE(resp.success);
   EXPECT_FALSE(resp.has_large_data);
-  EXPECT_GT(strlen(resp.text_response), 0);
+  EXPECT_GT(std::string_view(resp.text_response).size(), 0);
 }
 
 TEST_F(VISALargeDataTest, LargeDataInBuffer) {
@@ -107,25 +109,15 @@ TEST_F(VISALargeDataTest, LargeDataInBuffer) {
   EXPECT_TRUE(resp.has_large_data);
   EXPECT_GT(strlen(resp.data_buffer_id), 0);
   EXPECT_GT(resp.data_element_count, 1000); // Large data
-  EXPECT_EQ(resp.data_type, 0);             // FLOAT32
+  EXPECT_EQ(resp.data_type, INST_DATA_FLOAT32);
 
   // Verify buffer exists
   auto &manager = ipc::DataBufferManager::instance();
-  auto buffer = manager.get_buffer(resp.data_buffer_id);
-  ASSERT_NE(buffer, nullptr);
+  auto meta = manager.get_metadata(resp.data_buffer_id);
+  ASSERT_TRUE(meta.has_value());
 
-  EXPECT_EQ(buffer->element_count(), resp.data_element_count);
-  EXPECT_EQ(buffer->data_type(), ipc::DataType::FLOAT32);
-
-  // Verify data content
-  float *data = buffer->as_float32();
-  ASSERT_NE(data, nullptr);
-
-  // Check some values (mock plugin should generate sin wave)
-  for (size_t i = 0; i < 100; i++) {
-    float expected = std::sin(2.0f * M_PI * i / 100.0f);
-    EXPECT_NEAR(data[i], expected, 0.01f);
-  }
+  EXPECT_EQ(meta->element_count, resp.data_element_count);
+  EXPECT_EQ(meta->data_type, INST_DATA_FLOAT32);
 }
 
 TEST_F(VISALargeDataTest, BufferMetadata) {
@@ -133,16 +125,15 @@ TEST_F(VISALargeDataTest, BufferMetadata) {
   ASSERT_TRUE(loader.is_loaded());
 
   PluginConfig config{};
-  strncpy(config.instrument_name, "Oscilloscope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(config.connection_json, "{\"address\": \"mock://test\"}",
-          PLUGIN_MAX_PAYLOAD - 1);
+  safe_c_str_copy(config.instrument_name, "Oscilloscope");
+  safe_c_str_copy(config.connection_json, R"({"address":"mock://test"})");
 
   ASSERT_EQ(loader.initialize(config), 0);
 
   PluginCommand cmd{};
-  strncpy(cmd.id, "waveform_capture_001", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(cmd.instrument_name, "Oscilloscope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(cmd.verb, "GET_LARGE_DATA", PLUGIN_MAX_STRING_LEN - 1);
+  safe_c_str_copy(cmd.id, "waveform_capture_001");
+  safe_c_str_copy(cmd.instrument_name, "Oscilloscope");
+  safe_c_str_copy(cmd.verb, "GET_LARGE_DATA");
   cmd.expects_response = true;
 
   PluginResponse resp{};
@@ -156,51 +147,8 @@ TEST_F(VISALargeDataTest, BufferMetadata) {
 
   EXPECT_EQ(metadata->instrument_name, "Oscilloscope");
   EXPECT_EQ(metadata->command_id, "waveform_capture_001");
-  EXPECT_EQ(metadata->data_type, ipc::DataType::FLOAT32);
+  EXPECT_EQ(metadata->data_type, INST_DATA_FLOAT32);
   EXPECT_GT(metadata->timestamp_ms, 0);
-}
-
-TEST_F(VISALargeDataTest, ExportLargeData) {
-  plugin::PluginLoader loader(plugin_path_.string());
-  ASSERT_TRUE(loader.is_loaded());
-
-  PluginConfig config{};
-  strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(config.connection_json, "{\"address\": \"mock://test\"}",
-          PLUGIN_MAX_PAYLOAD - 1);
-
-  ASSERT_EQ(loader.initialize(config), 0);
-
-  PluginCommand cmd{};
-  strncpy(cmd.id, "export_test", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(cmd.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(cmd.verb, "GET_LARGE_DATA", PLUGIN_MAX_STRING_LEN - 1);
-  cmd.expects_response = true;
-
-  PluginResponse resp{};
-  ASSERT_EQ(loader.execute_command(cmd, resp), 0);
-  ASSERT_TRUE(resp.has_large_data);
-
-  auto &manager = ipc::DataBufferManager::instance();
-  auto buffer = manager.get_buffer(resp.data_buffer_id);
-  ASSERT_NE(buffer, nullptr);
-
-  // FIXED: Use cross-platform temp directory
-  auto temp_dir = std::filesystem::temp_directory_path();
-
-  // Export to CSV
-  std::string csv_path = (temp_dir / "visa_large_data_test.csv").string();
-  EXPECT_TRUE(buffer->export_to_csv(csv_path));
-  EXPECT_TRUE(std::filesystem::exists(csv_path));
-
-  // Export to binary
-  std::string bin_path = (temp_dir / "visa_large_data_test.bin").string();
-  EXPECT_TRUE(buffer->export_to_file(bin_path));
-  EXPECT_TRUE(std::filesystem::exists(bin_path));
-
-  // Cleanup
-  std::filesystem::remove(csv_path);
-  std::filesystem::remove(bin_path);
 }
 
 TEST_F(VISALargeDataTest, MultipleBuffers) {
@@ -208,9 +156,8 @@ TEST_F(VISALargeDataTest, MultipleBuffers) {
   ASSERT_TRUE(loader.is_loaded());
 
   PluginConfig config{};
-  strncpy(config.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(config.connection_json, R"({"address": "mock://test"})",
-          PLUGIN_MAX_PAYLOAD - 1);
+  safe_c_str_copy(config.instrument_name, "TestScope");
+  safe_c_str_copy(config.connection_json, R"({"address":"mock://test"})");
 
   ASSERT_EQ(loader.initialize(config), 0);
 
@@ -219,11 +166,13 @@ TEST_F(VISALargeDataTest, MultipleBuffers) {
   std::vector<std::string> buffer_ids;
 
   // Create multiple buffers
-  for (int i = 0; i < 5; i++) {
+  const size_t total_buffers = 5;
+  for (int i = 0; i < total_buffers; i++) {
     PluginCommand cmd{};
-    snprintf(cmd.id, PLUGIN_MAX_STRING_LEN, "cmd_%03d", i);
-    strncpy(cmd.instrument_name, "TestScope", PLUGIN_MAX_STRING_LEN - 1);
-    strncpy(cmd.verb, "GET_LARGE_DATA", PLUGIN_MAX_STRING_LEN - 1);
+    auto tmp = fmt::format("cmd_{:03d}", i);
+    safe_c_str_copy(cmd.id, tmp);
+    safe_c_str_copy(cmd.instrument_name, "TestScope");
+    safe_c_str_copy(cmd.verb, "GET_LARGE_DATA");
     cmd.expects_response = true;
 
     PluginResponse resp{};

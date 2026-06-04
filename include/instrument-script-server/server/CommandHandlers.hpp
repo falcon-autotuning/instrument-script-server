@@ -16,43 +16,43 @@ INSTRUMENT_SERVER_API void load_optional_lua_libs(sol::state &lua);
 /// Each handler accepts a JSON `params` object (mirrors CLI args) and fills
 /// `out` with a JSON response. Handlers return an integer exit code (0 success,
 /// non-zero failure) for compatibility with the CLI.
-int INSTRUMENT_SERVER_API handle_daemon(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_daemon(const nlohmann::json &params,
                                         nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_start(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_start(const nlohmann::json &params,
                                        nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_stop(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_stop(const nlohmann::json &params,
                                       nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_status(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_status(const nlohmann::json &params,
                                         nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_list(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_list(const nlohmann::json &params,
                                       nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_measure(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_measure(const nlohmann::json &params,
                                          nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_test(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_test(const nlohmann::json &params,
                                       nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_discover(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_discover(const nlohmann::json &params,
                                           nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_plugins(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_plugins(const nlohmann::json &params,
                                          nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_submit_job(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_submit_job(const nlohmann::json &params,
                                             nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_submit_measure(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_submit_measure(const nlohmann::json &params,
                                                 nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_job_status(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_job_status(const nlohmann::json &params,
                                             nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_job_result(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_job_result(const nlohmann::json &params,
                                             nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_job_list(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_job_list(const nlohmann::json &params,
                                           nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_job_cancel(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_job_cancel(const nlohmann::json &params,
                                             nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_list_buffers(const nlohmann::json &params,
-                                             nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_release_buffer(const nlohmann::json &params,
-                                               nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_get_buffer_metadata(const nlohmann::json &params,
-                                                     nlohmann::json &out);
-int INSTRUMENT_SERVER_API handle_read_buffer(const nlohmann::json &params,
+INSTRUMENT_SERVER_API int handle_list_buffers(const nlohmann::json &params,
+                                              nlohmann::json &out);
+INSTRUMENT_SERVER_API int handle_release_buffer(const nlohmann::json &params,
+                                                nlohmann::json &out);
+INSTRUMENT_SERVER_API int
+handle_get_buffer_metadata(const nlohmann::json &params, nlohmann::json &out);
+INSTRUMENT_SERVER_API int handle_read_buffer(const nlohmann::json &params,
                                              nlohmann::json &out);
 
 } // namespace instserver::server
