@@ -21,7 +21,7 @@ TEST_F(DataBufferManagerTest, GetMetadata) {
   std::vector<int32_t> test_data = {10, 20, 30};
   const char *buffer_id = data_manager_create_buffer(
       "DMM", "READ", INST_DATA_INT32, test_data.size(), test_data.data());
-
+  manager_->save_buffer(buffer_id);
   auto metadata = manager_->get_metadata(buffer_id);
   ASSERT_TRUE(metadata.has_value());
 

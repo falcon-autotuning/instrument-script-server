@@ -145,7 +145,7 @@ public:
 
   /// Log message from script
   /// Usage: context:log("message")
-  static void log(const std::string &msg);
+  void log(const std::string &msg);
 
   /// Report an error from the script
   /// Usage: context:error("error message")
