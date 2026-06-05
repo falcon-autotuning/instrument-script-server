@@ -99,7 +99,7 @@ struct INSTRUMENT_SERVER_API CallResult {
   std::string instrument_name;
   std::string verb;
   std::array<Param, PLUGIN_MAX_PARAMS> params;
-  uint8_t param_count;
+  uint8_t param_count{0};
   std::chrono::steady_clock::time_point executed_at;
 
   // Either a direct return value...
