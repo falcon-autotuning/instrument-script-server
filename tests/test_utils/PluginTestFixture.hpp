@@ -19,11 +19,11 @@ protected:
         plugin_reg.load_plugin("VISA", plugin_path.string());
       } catch (const std::exception &e) {
         std::cerr << "Failed to load VISA plugin from " << plugin_path << ": "
-                  << e.what() << std::endl;
+                  << e.what() << '\n';
         GTEST_FAIL() << "Failed to load VISA plugin: " << e.what();
       }
     } else {
-      std::cerr << "VISA plugin not found at " << plugin_path << std::endl;
+      std::cerr << "VISA plugin not found at " << plugin_path << '\n';
       GTEST_FAIL() << "VISA plugin not found at: " << plugin_path;
     }
   }

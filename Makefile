@@ -49,7 +49,7 @@ clean:
 	rm -rf build vcpkg_installed
 	@echo "✓ Clean complete"
 
-TEST_BIN := ./build/$(PRESET)/tests/EndToEndPerformanceTest
+TEST_BIN := ./build/$(PRESET)/tests/perf_tests
 PERF_TEST ?= EndToEndPerformanceTest.SingleCommandOverhead
 
 profile: build
@@ -57,7 +57,7 @@ profile: build
 	@if [ "$(PRESET)" != "linux-gcc-prof" ]; then \
 			echo "⚠️  Warning: profiling is recommended with PRESET=linux-gcc-prof"; \
 	fi
-	timeout 10s perf record -e cpu-clock -F 99 -g -- \
+	perf record -e cpu-clock -F 99 -g -- \
 		$(TEST_BIN) --gtest_filter=$(PERF_TEST)
 
 flamegraph:
