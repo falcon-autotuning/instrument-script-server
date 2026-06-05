@@ -5,8 +5,7 @@
 #include <memory>
 #include <string>
 
-namespace instserver {
-namespace ipc {
+namespace instserver::ipc {
 
 static std::string make_queue_name(const std::string &instrument_name,
                                    const std::string &suffix) {
@@ -86,8 +85,9 @@ instserver::ipc::SharedQueue::~SharedQueue() {
 
 bool instserver::ipc::SharedQueue::send(const IPCMessage &msg,
                                         std::chrono::milliseconds timeout) {
-  if (!is_valid())
+  if (!is_valid()) {
     return false;
+  }
 
   try {
     auto abs_time = boost::posix_time::microsec_clock::universal_time() +
@@ -115,13 +115,14 @@ bool instserver::ipc::SharedQueue::send(const IPCMessage &msg,
 
 std::optional<IPCMessage>
 SharedQueue::receive(std::chrono::milliseconds timeout) {
-  if (!is_valid())
+  if (!is_valid()) {
     return std::nullopt;
+  }
 
   try {
     IPCMessage msg;
-    size_t received_size;
-    unsigned int priority;
+    size_t received_size = 0;
+    unsigned int priority = 0;
 
     auto abs_time = boost::posix_time::microsec_clock::universal_time() +
                     boost::posix_time::milliseconds(timeout.count());
@@ -163,5 +164,50 @@ void SharedQueue::cleanup(const std::string &instrument_name) {
            instrument_name.c_str());
 }
 
-} // namespace ipc
-} // namespace instserver
+bool SharedQueue::receive_blocking(IPCMessage &msg) {
+  if (!is_valid()) {
+    return false;
+  }
+
+  try {
+    size_t received_size = 0;
+    unsigned int priority = 0;
+
+    // Server receives on response queue, worker receives on request queue
+    auto *queue = is_server_ ? response_queue_.get() : request_queue_.get();
+
+    queue->receive(&msg, sizeof(msg), received_size, priority);
+
+    if (received_size != sizeof(IPCMessage)) {
+      LOG_ERROR("IPC", "RECV_SIZE",
+                "Received message size mismatch: %zu vs %zu", received_size,
+                sizeof(IPCMessage));
+      return false;
+    }
+
+    return true;
+
+  } catch (const boost::interprocess::interprocess_exception &ex) {
+    LOG_ERROR("IPC", "RECV_ERROR", "Receive failed: %s", ex.what());
+    return false;
+  }
+}
+bool SharedQueue::send_to_response_queue(const IPCMessage &msg,
+                                         std::chrono::milliseconds timeout) {
+  if (!is_valid()) {
+    return false;
+  }
+
+  try {
+    auto abs_time = boost::posix_time::microsec_clock::universal_time() +
+                    boost::posix_time::milliseconds(timeout.count());
+
+    return response_queue_->timed_send(&msg, sizeof(msg), 0, abs_time);
+
+  } catch (const boost::interprocess::interprocess_exception &ex) {
+    LOG_ERROR("IPC", "SEND_ERROR", "Send failed: %s", ex.what());
+    return false;
+  }
+}
+
+} // namespace instserver::ipc

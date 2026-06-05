@@ -347,27 +347,27 @@ sol::object RuntimeContext::call(const std::string &func_name,
   }
 
   // Map return types into MeasurementResponse objects
-  if (auto d = std::get_if<double>(&*resp.return_value)) {
+  if (auto *d = std::get_if<double>(&*resp.return_value)) {
     auto response =
         std::make_shared<MeasurementResponse>(instrument_spec, verb, *d);
     return sol::make_object(lua, response);
   }
-  if (auto i = std::get_if<int64_t>(&*resp.return_value)) {
+  if (auto *i = std::get_if<int64_t>(&*resp.return_value)) {
     auto response =
         std::make_shared<MeasurementResponse>(instrument_spec, verb, *i);
     return sol::make_object(lua, response);
   }
-  if (auto s = std::get_if<std::string>(&*resp.return_value)) {
+  if (auto *s = std::get_if<std::string>(&*resp.return_value)) {
     auto response =
         std::make_shared<MeasurementResponse>(instrument_spec, verb, *s);
     return sol::make_object(lua, response);
   }
-  if (auto b = std::get_if<bool>(&*resp.return_value)) {
+  if (auto *b = std::get_if<bool>(&*resp.return_value)) {
     auto response =
         std::make_shared<MeasurementResponse>(instrument_spec, verb, *b);
     return sol::make_object(lua, response);
   }
-  if (auto arr = std::get_if<std::vector<double>>(&*resp.return_value)) {
+  if (auto *arr = std::get_if<std::vector<double>>(&*resp.return_value)) {
     // Always use buffers for arrays (new behavior)
     // Create a buffer and return MeasurementResponse wrapping BufferHandle
     auto &buf_mgr = ipc::DataBufferManager::instance();

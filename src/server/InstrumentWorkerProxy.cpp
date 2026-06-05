@@ -68,16 +68,45 @@ bool InstrumentWorkerProxy::start() {
 }
 
 void InstrumentWorkerProxy::stop() {
-  if (!running_.exchange(false))
+  if (!running_.exchange(false)) {
     return;
+  }
+
   LOG_INFO(instrument_name_.c_str(), "PROXY", "Stopping worker proxy");
 
   send_shutdown_message();
-  stop_worker_process();
-  join_response_thread_with_timeout();
+  if (ipc_queue_ && ipc_queue_->is_valid()) {
+    ipc::IPCMessage wake_msg;
+    wake_msg.type = ipc::IPCMessage::Type::HEARTBEAT;
+    wake_msg.id = 0;
+    wake_msg.sync_token = 0;
+    wake_msg.payload_size = 0;
+
+    ipc_queue_->send_to_response_queue(wake_msg, std::chrono::milliseconds(50));
+  }
+
+  if (worker_pid_ != 0) {
+    if (!get_process_manager().wait_for_exit(worker_pid_,
+                                             std::chrono::milliseconds(200))) {
+      LOG_WARN(instrument_name_.c_str(), "PROXY",
+               "Worker did not exit gracefully, forcing kill");
+      get_process_manager().kill_process(worker_pid_, true);
+    }
+  }
+  if (response_thread_.joinable()) {
+    try {
+      response_thread_.join();
+      LOG_DEBUG(instrument_name_.c_str(), "PROXY",
+                "Response thread joined successfully");
+    } catch (...) {
+      LOG_WARN(instrument_name_.c_str(), "PROXY",
+               "Exception joining response thread, detaching");
+      response_thread_.detach();
+    }
+  }
+
   cleanup_pending_promises();
   cleanup_ipc();
-
   LOG_INFO(instrument_name_.c_str(), "PROXY", "Worker proxy stopped");
 }
 
@@ -93,12 +122,13 @@ void InstrumentWorkerProxy::send_shutdown_message() {
 }
 
 void InstrumentWorkerProxy::stop_worker_process() {
-  if (worker_pid_ != 0) {
-    if (!get_process_manager().wait_for_exit(worker_pid_,
-                                             std::chrono::milliseconds(1000))) {
-      LOG_WARN(instrument_name_.c_str(), "PROXY", "Force killing worker");
-      get_process_manager().kill_process(worker_pid_, true);
-    }
+  if (worker_pid_ == 0) {
+    return;
+  }
+  if (!get_process_manager().wait_for_exit(
+          worker_pid_, std::chrono::milliseconds(PROCESS_KILL_TIMEOUT_MS))) {
+    LOG_WARN(instrument_name_.c_str(), "PROXY", "Force killing worker");
+    get_process_manager().kill_process(worker_pid_, true);
   }
 }
 
@@ -229,26 +259,26 @@ InstrumentWorkerProxy::execute_sync(SerializedCommand cmd,
     LOG_INFO(instrument_name_.c_str(), "PROXY",
              "execute_sync: response received for verb='%s'", verb.c_str());
     return future.get();
-  } else {
-    LOG_WARN(instrument_name_.c_str(), "PROXY",
-             "execute_sync TIMED OUT after %dms waiting for verb='%s' on '%s'",
-             timeout.count(), verb.c_str(), instrument.c_str());
-
-    CommandResponse timeout_resp;
-    timeout_resp.instrument_name = instrument_name_;
-    timeout_resp.success = false;
-    timeout_resp.error_message = "Command timeout";
-
-    std::lock_guard lock(stats_mutex_);
-    stats_.commands_timeout++;
-
-    return timeout_resp;
   }
+  LOG_WARN(instrument_name_.c_str(), "PROXY",
+           "execute_sync TIMED OUT after %dms waiting for verb='%s' on '%s'",
+           timeout.count(), verb.c_str(), instrument.c_str());
+
+  CommandResponse timeout_resp;
+  timeout_resp.instrument_name = instrument_name_;
+  timeout_resp.success = false;
+  timeout_resp.error_message = "Command timeout";
+
+  std::lock_guard lock(stats_mutex_);
+  stats_.commands_timeout++;
+
+  return timeout_resp;
 }
 
 bool InstrumentWorkerProxy::is_alive() const {
-  if (worker_pid_ == 0)
+  if (worker_pid_ == 0) {
     return false;
+  }
   return get_process_manager().is_alive(worker_pid_);
 }
 
@@ -259,25 +289,32 @@ InstrumentWorkerProxy::Stats InstrumentWorkerProxy::get_stats() const {
 
 void InstrumentWorkerProxy::response_listener_loop() {
   LOG_INFO(instrument_name_.c_str(), "PROXY", "Response listener started");
-  while (running_.load(std::memory_order_relaxed)) {
+  while (true) {
     if (!ipc_queue_ || !ipc_queue_->is_valid()) {
       LOG_WARN(instrument_name_.c_str(), "PROXY",
                "IPC queue invalid, exiting listener");
       break;
     }
-    auto msg_opt = ipc_queue_->receive(std::chrono::milliseconds(100));
-    if (!msg_opt)
+    ipc::IPCMessage msg;
+
+    if (!ipc_queue_->receive_blocking(msg)) {
       continue;
+    }
+    // Exit immediately if stopping
+    if (!running_.load(std::memory_order_relaxed)) {
+      break;
+    }
+
     try {
-      handle_ipc_message(*msg_opt);
+      handle_ipc_message(msg);
     } catch (const std::exception &e) {
       LOG_ERROR(instrument_name_.c_str(), "PROXY",
-                "Exception in response listener loop for message ID %d: %s",
-                msg_opt->id, e.what());
+                "Exception processing message ID %llu: %s",
+                (unsigned long long)msg.id, e.what());
     } catch (...) {
       LOG_ERROR(instrument_name_.c_str(), "PROXY",
-                "Unknown exception in response listener loop for message ID %d",
-                msg_opt->id);
+                "Unknown exception processing message ID %llu",
+                (unsigned long long)msg.id);
     }
   }
   LOG_INFO(instrument_name_.c_str(), "PROXY", "Response listener stopped");

@@ -1,4 +1,4 @@
-.PHONY: help configure build test clean install vcpkg-bootstrap docker-up docker-down
+.PHONY: help configure build test clean install vcpkg-bootstrap docker-up docker-down profile flamegraph perf-all
 
 # Build preset (user can override: make build PRESET=linux-gcc-release)
 PRESET ?= linux-clang-release
@@ -48,3 +48,20 @@ clean:
 	@echo "Cleaning all build artifacts..."
 	rm -rf build vcpkg_installed
 	@echo "✓ Clean complete"
+
+TEST_BIN := ./build/$(PRESET)/tests/EndToEndPerformanceTest
+PERF_TEST ?= EndToEndPerformanceTest.SingleCommandOverhead
+
+profile: build
+	@echo "Running perf profile for $(PRESET)..."
+	@if [ "$(PRESET)" != "linux-gcc-prof" ]; then \
+			echo "⚠️  Warning: profiling is recommended with PRESET=linux-gcc-prof"; \
+	fi
+	timeout 10s perf record -e cpu-clock -F 99 -g -- \
+		$(TEST_BIN) --gtest_filter=$(PERF_TEST)
+
+flamegraph:
+	@echo "Generating flamegraph..."
+	perf script | stackcollapse-perf.pl > out.folded
+
+perf-all: profile flamegraph

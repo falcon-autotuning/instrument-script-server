@@ -12,6 +12,10 @@
 #include <unordered_map>
 #include <vector>
 
+const int HEARTBEAT_TIMEOUT_MS = 1000;
+const int PROCESS_KILL_TIMEOUT_MS = 2000;
+const int PROCESS_KILL_POLL_INTERVAL_MS = 100;
+const int INITIAL_PATH_BUFFER_SIZE = 256;
 namespace instserver::ipc {
 
 /// Manages worker process lifecycle
@@ -44,7 +48,7 @@ public:
   bool kill_process(ProcessId pid, bool force = false);
 
   /// Wait for process to exit (with timeout)
-  bool wait_for_exit(ProcessId pid, std::chrono::milliseconds timeout);
+  bool wait_for_exit(ProcessId pid, std::chrono::milliseconds timeout) const;
 
   /// Get process info
   const ProcessInfo *get_process_info(ProcessId pid) const;
@@ -77,10 +81,7 @@ private:
 
   void heartbeat_monitor_loop();
 
-  // Platform-specific helpers
   ProcessId spawn_process_impl(const std::vector<std::string> &args);
-  bool kill_process_impl(ProcessHandle handle, bool force);
-  bool is_alive_impl(ProcessHandle handle) const;
 };
 
 } // namespace instserver::ipc

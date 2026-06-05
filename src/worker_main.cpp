@@ -2,6 +2,7 @@
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/ipc/SharedQueue.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
+#include <atomic>
 #include <chrono>
 #include <csignal>
 #include <cstdio>
@@ -9,6 +10,7 @@
 #include <instrument-log/inst_logging.h>
 #include <iostream>
 #include <string>
+#include <thread>
 
 #ifdef _WIN32
 #include <io.h>
@@ -17,7 +19,7 @@
 #endif
 using namespace instserver;
 
-static volatile bool g_running = true;
+std::atomic<bool> g_running{true};
 
 // Stored at startup so async signal handlers can log the instrument name.
 static char g_instrument_name_buf[256] = {};
@@ -150,7 +152,6 @@ static CommandResponse from_plugin_response(const PluginResponse &presp) {
 namespace {
 constexpr auto HEARTBEAT_INTERVAL = std::chrono::milliseconds(500);
 constexpr auto IPC_SEND_TIMEOUT = std::chrono::milliseconds(1000);
-constexpr auto IPC_RECV_TIMEOUT = std::chrono::milliseconds(100);
 constexpr auto HEARTBEAT_SEND_TIMEOUT = std::chrono::milliseconds(100);
 
 class Instrument {
@@ -166,6 +167,7 @@ public:
     if (!connect_ipc_queue()) {
       return 1;
     }
+    start_heartbeat_thread();
 
     LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN", "Entering main loop");
     main_loop();
@@ -178,6 +180,7 @@ public:
 private:
   std::string instrument_name_;
   std::string plugin_path_;
+  std::thread heartbeat_thread_;
   plugin::PluginLoader plugin_;
   std::unique_ptr<ipc::SharedQueue> ipc_queue_;
   std::optional<uint64_t> waiting_sync_token_;
@@ -250,49 +253,37 @@ private:
 
   void main_loop() {
     uint64_t iteration = 0;
+
     while (g_running) {
-      LOG_DEBUG(instrument_name_.c_str(), "WORKER_MAIN",
-                "main_loop iter=%llu begin", (unsigned long long)iteration);
+      instserver::ipc::IPCMessage msg;
 
-      LOG_DEBUG(instrument_name_.c_str(), "WORKER_MAIN",
-                "main_loop iter=%llu heartbeat check",
-                (unsigned long long)iteration);
-      send_heartbeat_if_needed();
-
-      LOG_DEBUG(instrument_name_.c_str(), "WORKER_MAIN",
-                "main_loop iter=%llu waiting for message",
-                (unsigned long long)iteration);
-      auto msg_opt = ipc_queue_->receive(IPC_RECV_TIMEOUT);
-
-      if (!msg_opt) {
-        LOG_DEBUG(instrument_name_.c_str(), "WORKER_MAIN",
-                  "main_loop iter=%llu receive timeout (no message)",
-                  (unsigned long long)iteration);
-        ++iteration;
+      if (!ipc_queue_->receive_blocking(msg)) {
         continue;
       }
 
       LOG_DEBUG(instrument_name_.c_str(), "WORKER_MAIN",
-                "main_loop iter=%llu got message type=%u",
-                (unsigned long long)iteration,
-                static_cast<unsigned int>(msg_opt->type));
-      process_message(*msg_opt);
+                "Received message type=%u",
+                static_cast<unsigned int>(msg.type));
+
+      process_message(msg);
       ++iteration;
     }
+
     LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN",
              "Shutting down after %llu iters", (unsigned long long)iteration);
   }
 
-  void send_heartbeat_if_needed() {
-    auto now = std::chrono::steady_clock::now();
-    if (now - last_heartbeat_ >= HEARTBEAT_INTERVAL) {
-      ipc::IPCMessage heartbeat;
-      heartbeat.type = ipc::IPCMessage::Type::HEARTBEAT;
-      heartbeat.id = 0;
-      heartbeat.payload_size = 0;
-      ipc_queue_->send(heartbeat, HEARTBEAT_SEND_TIMEOUT);
-      last_heartbeat_ = now;
-    }
+  void start_heartbeat_thread() {
+    heartbeat_thread_ = std::thread([this]() {
+      while (g_running) {
+        ipc::IPCMessage heartbeat;
+        heartbeat.type = ipc::IPCMessage::Type::HEARTBEAT;
+        heartbeat.id = 0;
+        heartbeat.payload_size = 0;
+        ipc_queue_->send(heartbeat, HEARTBEAT_SEND_TIMEOUT);
+        std::this_thread::sleep_for(HEARTBEAT_INTERVAL);
+      }
+    });
   }
 
   void process_message(ipc::IPCMessage &msg) {
@@ -520,6 +511,12 @@ private:
   }
 
   void cleanup() {
+    g_running = false;
+
+    if (heartbeat_thread_.joinable()) {
+      heartbeat_thread_.join();
+    }
+
     plugin_.shutdown();
     ipc_queue_.reset();
   }

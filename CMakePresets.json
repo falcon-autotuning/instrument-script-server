@@ -115,6 +115,15 @@
         "DENABLE_DEBUG_LOGS": true,
         "ASAN_OPTIONS": "detect_leaks=1"
       }
+    },
+    {
+      "name": "linux-gcc-prof",
+      "description": "Linux GCC profiling build (for perf/flamegraphs)",
+      "inherits": "linux-gcc-release",
+      "cacheVariables": {
+        "CMAKE_C_FLAGS": "-O3 -g -fno-omit-frame-pointer -DINST_LOGGING_DISABLED",
+        "CMAKE_CXX_FLAGS": "-O3 -g -fno-omit-frame-pointer -DINST_LOGGING_DISABLED"
+      }
     }
   ],
   "buildPresets": [
@@ -136,6 +145,11 @@
     {
       "name": "linux-gcc-release",
       "configurePreset": "linux-gcc-release",
+      "jobs": 0
+    },
+    {
+      "name": "linux-gcc-prof",
+      "configurePreset": "linux-gcc-prof",
       "jobs": 0
     },
     {
@@ -170,6 +184,10 @@
     {
       "name": "linux-gcc-release",
       "configurePreset": "linux-gcc-release"
+    },
+    {
+      "name": "linux-gcc-prof",
+      "configurePreset": "linux-gcc-prof"
     },
     {
       "name": "windows-clang-cl-debug",

@@ -15,6 +15,7 @@ TEST(SyncPerformance, BarrierOverhead) {
 
   for (int i = 0; i < num_iterations; i++) {
     std::vector<std::string> instruments;
+    instruments.reserve(instruments_per_barrier);
     for (int j = 0; j < instruments_per_barrier; j++) {
       instruments.push_back("Inst" + std::to_string(j));
     }

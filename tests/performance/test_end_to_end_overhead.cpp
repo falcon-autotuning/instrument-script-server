@@ -62,7 +62,7 @@ TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   }
 
   // Measure
-  const int num_calls = 1000;
+  const int num_calls = 1000000;
   auto start = high_resolution_clock::now();
 
   for (int i = 0; i < num_calls; i++) {

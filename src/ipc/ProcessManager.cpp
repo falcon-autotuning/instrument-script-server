@@ -2,21 +2,56 @@
 #include <instrument-log/inst_logging.h>
 
 #include <filesystem>
-#include <sstream>
 
 #ifdef _WIN32
 #include <processthreadsapi.h>
 #include <windows.h>
 #else
-#include <limits.h>
 #include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
-extern char **environ;
-#endif
 
-namespace instserver {
-namespace ipc {
+#endif
+namespace {
+std::filesystem::path get_executable_dir() {
+  std::vector<char> buffer(INITIAL_PATH_BUFFER_SIZE);
+  auto try_get_path = [&](char *data, size_t size) -> size_t {
+#ifdef _WIN32
+    DWORD len = GetModuleFileNameA(nullptr, data, static_cast<DWORD>(size));
+    return len == 0 ? 0 : static_cast<size_t>(len);
+#else
+    ssize_t count = readlink("/proc/self/exe", data, size);
+    return count == -1 ? 0 : static_cast<size_t>(count);
+#endif
+  };
+  while (true) {
+    size_t length = try_get_path(buffer.data(), buffer.size());
+    if (length == 0) {
+      return {};
+    }
+    if (length < buffer.size()) {
+      return std::filesystem::path(std::string_view(buffer.data(), length))
+          .parent_path();
+    }
+    buffer.resize(buffer.size() * 2);
+  }
+}
+
+bool is_alive_impl(ProcessHandle handle) {
+#ifdef _WIN32
+  DWORD exit_code;
+  if (!GetExitCodeProcess(handle, &exit_code)) {
+    return false;
+  }
+  return exit_code == STILL_ACTIVE;
+#else
+  int status = 0;
+  pid_t result = waitpid(handle, &status, WNOHANG);
+  return result == 0;
+#endif
+}
+} // namespace
+namespace instserver::ipc {
 
 ProcessManager::~ProcessManager() { cleanup_all(); }
 
@@ -27,39 +62,28 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
            "Spawning worker for instrument: %s with plugin: %s",
            instrument_name.c_str(), plugin_path.c_str());
 
+  // Resolve executable path
   std::string resolved_worker = worker_executable;
-  std::filesystem::path exe_dir;
-
-#ifdef _WIN32
-  char path[MAX_PATH];
-  DWORD length = GetModuleFileNameA(NULL, path, MAX_PATH);
-  if (length > 0) {
-    exe_dir = std::filesystem::path(std::string(path, length)).parent_path();
-  }
-#else
-  char path[PATH_MAX];
-  ssize_t count = readlink("/proc/self/exe", path, PATH_MAX);
-  if (count != -1) {
-    exe_dir = std::filesystem::path(std::string(path, count)).parent_path();
-  }
-#endif
+  std::filesystem::path exe_dir = get_executable_dir();
 
   if (!exe_dir.empty()) {
-    std::filesystem::path candidate1 = exe_dir / worker_executable;
-    std::filesystem::path candidate2 =
-        exe_dir.parent_path() / worker_executable;
-    if (std::filesystem::exists(candidate1)) {
-      resolved_worker = candidate1.string();
-    } else if (std::filesystem::exists(candidate2)) {
-      resolved_worker = candidate2.string();
+    const std::vector<std::filesystem::path> candidates = {
+        exe_dir / worker_executable, exe_dir.parent_path() / worker_executable};
+
+    for (const auto &candidate : candidates) {
+      if (std::filesystem::exists(candidate)) {
+        resolved_worker = candidate.string();
+        break;
+      }
     }
   }
 
   std::vector<std::string> args = {resolved_worker, instrument_name,
                                    plugin_path};
+
   ProcessId pid = spawn_process_impl(args);
   if (pid == 0) {
-    LOG_ERROR("PROCESS", "SPAWN", "Failed to spawn worker for:  %s",
+    LOG_ERROR("PROCESS", "SPAWN", "Failed to spawn worker for: %s",
               instrument_name.c_str());
     return 0;
   }
@@ -68,87 +92,64 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
   auto now = std::chrono::steady_clock::now();
   auto last_heartbeat = now.time_since_epoch().count();
 
-#ifdef _WIN32
-  // On Windows, update the pre-created entry
   {
     std::lock_guard lock(mutex_);
-    auto it = processes_.find(pid);
-    if (it != processes_.end()) {
-      it->second->instrument_name = instrument_name;
-      it->second->plugin_path = plugin_path;
-      it->second->started_at = now;
-      it->second->is_alive = true;
-      it->second->last_heartbeat = last_heartbeat;
+    auto &entry = processes_[pid];
+    if (!entry) {
+      entry = std::make_unique<ProcessInfo>();
     }
-  }
-#else
-  // On Unix, create and insert the entry
-  auto info = std::make_unique<ProcessInfo>();
-  info->pid = pid;
-  info->handle = pid; // On Unix, pid is the handle
-  info->instrument_name = instrument_name;
-  info->plugin_path = plugin_path;
-  info->started_at = now;
-  info->is_alive = true;
-  info->last_heartbeat = last_heartbeat;
-  {
-    std::lock_guard lock(mutex_);
-    processes_[pid] = std::move(info);
-  }
+    entry->pid = pid;
+    entry->instrument_name = instrument_name;
+    entry->plugin_path = plugin_path;
+    entry->started_at = now;
+    entry->is_alive = true;
+    entry->last_heartbeat = last_heartbeat;
+#ifndef _WIN32
+    entry->handle = pid;
 #endif
+  }
 
   LOG_INFO("PROCESS", "SPAWN", "Worker spawned successfully: PID=%ld",
-           (long)pid);
+           static_cast<long>(pid));
 
   return pid;
 }
 
 bool ProcessManager::is_alive(ProcessId pid) const {
   std::lock_guard lock(mutex_);
-  auto it = processes_.find(pid);
-  if (it == processes_.end())
+  auto loc = processes_.find(pid);
+  if (loc == processes_.end()) {
     return false;
+  }
 
-  return is_alive_impl(it->second->handle);
+  return is_alive_impl(loc->second->handle);
 }
 
 bool ProcessManager::kill_process(ProcessId pid, bool force) {
   std::lock_guard lock(mutex_);
-  auto it = processes_.find(pid);
-  if (it == processes_.end())
+  auto loc = processes_.find(pid);
+  if (loc == processes_.end()) {
     return false;
-
+  }
   LOG_INFO("PROCESS", "KILL", "Killing process: PID={} (force={})", pid, force);
-
-  bool result = kill_process_impl(it->second->handle, force);
-
+#ifdef _WIN32
+  bool result = TerminateProcess(loc->second->handle, force ? 1 : 0) != 0;
+#else
+  bool result = kill(loc->second->handle, force ? SIGKILL : SIGTERM) == 0;
+#endif
   if (result) {
-    it->second->is_alive = false;
+    loc->second->is_alive = false;
   }
-
   return result;
-}
-
-bool ProcessManager::wait_for_exit(ProcessId pid,
-                                   std::chrono::milliseconds timeout) {
-  auto deadline = std::chrono::steady_clock::now() + timeout;
-
-  while (std::chrono::steady_clock::now() < deadline) {
-    if (!is_alive(pid)) {
-      return true;
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
-
-  return false;
 }
 
 const ProcessManager::ProcessInfo *
 ProcessManager::get_process_info(ProcessId pid) const {
   std::lock_guard lock(mutex_);
   auto it = processes_.find(pid);
-  if (it == processes_.end())
+  if (it == processes_.end()) {
     return nullptr;
+  }
   return it->second.get();
 }
 
@@ -162,42 +163,81 @@ std::vector<ProcessId> ProcessManager::list_processes() const {
   return pids;
 }
 
+bool ProcessManager::wait_for_exit(ProcessId pid,
+                                   std::chrono::milliseconds timeout) const {
+  auto deadline = std::chrono::steady_clock::now() + timeout;
+
+  while (std::chrono::steady_clock::now() < deadline) {
+    if (!is_alive(pid)) {
+      return true;
+    }
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(PROCESS_KILL_POLL_INTERVAL_MS));
+  }
+
+  return false;
+}
 void ProcessManager::cleanup_all() {
   LOG_INFO("PROCESS", "CLEANUP", "Cleaning up all worker processes");
-
   std::vector<ProcessId> pids;
   {
     std::lock_guard lock(mutex_);
+    pids.reserve(processes_.size());
     for (const auto &[pid, _] : processes_) {
       pids.push_back(pid);
     }
   }
-
   for (ProcessId pid : pids) {
     kill_process(pid, true);
-    wait_for_exit(pid, std::chrono::milliseconds(2000));
+  }
+  auto deadline = std::chrono::steady_clock::now() +
+                  std::chrono::milliseconds(PROCESS_KILL_TIMEOUT_MS);
+
+  while (std::chrono::steady_clock::now() < deadline) {
+    bool all_exited = true;
+    for (ProcessId pid : pids) {
+      if (is_alive(pid)) {
+        all_exited = false;
+        break;
+      }
+    }
+    if (all_exited) {
+      break;
+    }
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(PROCESS_KILL_POLL_INTERVAL_MS));
   }
 
 #ifdef _WIN32
-  // Close all process handles on Windows
+  std::vector<ProcessHandle> handles;
+
   {
     std::lock_guard lock(mutex_);
+    handles.reserve(processes_.size());
     for (auto &[pid, info] : processes_) {
       if (info->handle != nullptr) {
-        CloseHandle(info->handle);
+        handles.push_back(info->handle);
       }
     }
   }
+
+  for (auto handle : handles) {
+    CloseHandle(handle);
+  }
 #endif
 
-  processes_.clear();
+  {
+    std::lock_guard lock(mutex_);
+    processes_.clear();
+  }
 }
 
 void ProcessManager::start_heartbeat_monitor(
     std::chrono::milliseconds interval,
     std::function<void(ProcessId)> on_dead_callback) {
-  if (monitor_running_)
+  if (monitor_running_) {
     return;
+  }
 
   dead_callback_ = std::move(on_dead_callback);
   heartbeat_timeout_ = interval * 2; // Allow 2 missed heartbeats
@@ -209,56 +249,71 @@ void ProcessManager::start_heartbeat_monitor(
 }
 
 void ProcessManager::stop_heartbeat_monitor() {
-  if (!monitor_running_)
+  if (!monitor_running_) {
     return;
-
+  }
   monitor_running_ = false;
   if (monitor_thread_.joinable()) {
     monitor_thread_.join();
   }
-
   LOG_INFO("PROCESS", "MONITOR", "Stopped heartbeat monitor");
 }
 
 void ProcessManager::update_heartbeat(ProcessId pid) {
+  const auto now = std::chrono::steady_clock::now().time_since_epoch().count();
   std::lock_guard lock(mutex_);
-  auto it = processes_.find(pid);
-  if (it != processes_.end()) {
-    it->second->last_heartbeat =
-        std::chrono::steady_clock::now().time_since_epoch().count();
+  auto loc = processes_.find(pid);
+  if (loc != processes_.end()) {
+    loc->second->last_heartbeat = now;
   }
 }
 
 void ProcessManager::heartbeat_monitor_loop() {
+  struct DeadInfo {
+    ProcessId pid;
+    ProcessHandle handle;
+    long long elapsed_ms;
+  };
+  using namespace std::chrono;
   while (monitor_running_) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-    auto now = std::chrono::steady_clock::now().time_since_epoch().count();
-    std::vector<ProcessId> dead_pids;
-
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(HEARTBEAT_TIMEOUT_MS));
+    const auto now = steady_clock::now();
+    std::vector<DeadInfo> dead_candidates;
     {
       std::lock_guard lock(mutex_);
+
       for (auto &[pid, info] : processes_) {
-        auto elapsed = now - info->last_heartbeat.load();
-        auto elapsed_ms = std::chrono::nanoseconds(elapsed);
-
-        if (elapsed_ms > heartbeat_timeout_) {
-          LOG_WARN(
-              "PROCESS", "HEARTBEAT", "Process {} missed heartbeat ({}ms)", pid,
-              std::chrono::duration_cast<std::chrono::milliseconds>(elapsed_ms)
-                  .count());
-
-          if (!is_alive_impl(info->handle)) {
-            dead_pids.push_back(pid);
-            info->is_alive = false;
-          }
+        const auto last =
+            steady_clock::time_point(nanoseconds(info->last_heartbeat.load()));
+        const auto elapsed = now - last;
+        if (elapsed <= heartbeat_timeout_) {
+          continue;
+        }
+        dead_candidates.push_back(
+            {pid, info->handle, duration_cast<milliseconds>(elapsed).count()});
+      }
+    }
+    std::vector<ProcessId> confirmed_dead;
+    for (const auto &d : dead_candidates) {
+      LOG_WARN("PROCESS", "HEARTBEAT", "Process %d missed heartbeat (%lld ms)",
+               d.pid, d.elapsed_ms);
+      if (!is_alive_impl(d.handle)) {
+        confirmed_dead.push_back(d.pid);
+      }
+    }
+    {
+      std::lock_guard lock(mutex_);
+      for (ProcessId pid : confirmed_dead) {
+        auto it = processes_.find(pid);
+        if (it != processes_.end()) {
+          it->second->is_alive = false;
         }
       }
     }
+    for (ProcessId pid : confirmed_dead) {
+      LOG_ERROR("PROCESS", "DEAD", "Worker process died: PID=%d", pid);
 
-    // Notify callback of dead processes
-    for (ProcessId pid : dead_pids) {
-      LOG_ERROR("PROCESS", "DEAD", "Worker process died: PID={}", pid);
       if (dead_callback_) {
         dead_callback_(pid);
       }
@@ -266,98 +321,78 @@ void ProcessManager::heartbeat_monitor_loop() {
   }
 }
 
-// Platform-specific implementations
-
-#ifdef _WIN32
-
 ProcessId
 ProcessManager::spawn_process_impl(const std::vector<std::string> &args) {
+  ProcessId pid = 0;
+  ProcessHandle handle{};
+
+#ifdef _WIN32
+  // Build command line (Windows)
   std::ostringstream cmdline;
   for (size_t i = 0; i < args.size(); ++i) {
     if (i > 0)
-      cmdline << " ";
-    cmdline << "\"" << args[i] << "\"";
+      cmdline << ' ';
+    cmdline << '"' << args[i] << '"';
   }
 
-  STARTUPINFOA si = {sizeof(si)};
-  PROCESS_INFORMATION pi = {};
+  std::string cmd = cmdline.str();
 
-  std::string cmdline_str = cmdline.str();
+  STARTUPINFOA si{};
+  si.cb = sizeof(si);
+  PROCESS_INFORMATION pi{};
 
-  if (!CreateProcessA(nullptr, const_cast<char *>(cmdline_str.c_str()), nullptr,
-                      nullptr, FALSE, 0, nullptr, nullptr, &si, &pi)) {
+  if (!CreateProcessA(nullptr, cmd.data(), nullptr, nullptr, FALSE, 0, nullptr,
+                      nullptr, &si, &pi)) {
     LOG_ERROR("PROCESS", "SPAWN", "CreateProcess failed: {}", GetLastError());
     return 0;
   }
 
-  CloseHandle(pi.hThread); // Don't need thread handle
+  CloseHandle(pi.hThread);
 
-  ProcessId pid = pi.dwProcessId;
+  pid = static_cast<ProcessId>(pi.dwProcessId);
+  handle = pi.hProcess;
 
-  // Store process info with the handle
-  auto info = std::make_unique<ProcessInfo>();
-  info->pid = pid;
-  info->handle = pi.hProcess; // Store the process handle
-  info->is_alive = true;
-  info->last_heartbeat =
-      std::chrono::steady_clock::now().time_since_epoch().count();
-
-  {
-    std::lock_guard lock(mutex_);
-    processes_[pid] = std::move(info);
-  }
-
-  return pid;
-}
-
-bool ProcessManager::kill_process_impl(ProcessHandle handle, bool force) {
-  UINT exit_code = force ? 1 : 0;
-  return TerminateProcess(handle, exit_code) != 0;
-}
-
-bool ProcessManager::is_alive_impl(ProcessHandle handle) const {
-  DWORD exit_code;
-  if (!GetExitCodeProcess(handle, &exit_code)) {
-    return false;
-  }
-  return exit_code == STILL_ACTIVE;
-}
-
-#else // POSIX
-
-ProcessId
-ProcessManager::spawn_process_impl(const std::vector<std::string> &args) {
+#else
+  // Build argv (POSIX)
+  std::vector<std::string> args_copy = args;
   std::vector<char *> argv;
-  for (const auto &arg : args) {
-    argv.push_back(const_cast<char *>(arg.c_str()));
+  argv.reserve(args_copy.size() + 1);
+
+  for (auto &arg : args_copy) {
+    argv.push_back(arg.data());
   }
   argv.push_back(nullptr);
 
-  pid_t pid;
+  pid_t child_pid = 0;
   int status =
-      posix_spawnp(&pid, argv[0], nullptr, nullptr, argv.data(), environ);
+      posix_spawnp(&child_pid, argv[0], nullptr, nullptr, argv.data(), environ);
 
   if (status != 0) {
-    LOG_ERROR("PROCESS", "SPAWN", "posix_spawn failed: {} with arg {}",
-              strerror(status), argv[0]);
+    LOG_ERROR("PROCESS", "SPAWN", "posix_spawn failed: {}", strerror(status));
     return 0;
+  }
+
+  pid = static_cast<ProcessId>(child_pid);
+  handle = static_cast<ProcessHandle>(child_pid);
+#endif
+
+  auto now = std::chrono::steady_clock::now();
+
+  {
+    std::lock_guard lock(mutex_);
+
+    auto &entry = processes_[pid];
+    if (!entry) {
+      entry = std::make_unique<ProcessInfo>();
+    }
+
+    entry->pid = pid;
+    entry->handle = handle;
+    entry->is_alive = true;
+    entry->last_heartbeat = now.time_since_epoch().count();
   }
 
   return pid;
 }
 
-bool ProcessManager::kill_process_impl(ProcessHandle handle, bool force) {
-  int signal = force ? SIGKILL : SIGTERM;
-  return kill(handle, signal) == 0;
-}
-
-bool ProcessManager::is_alive_impl(ProcessHandle handle) const {
-  int status;
-  pid_t result = waitpid(handle, &status, WNOHANG);
-  return result == 0; // 0 means still running
-}
-
-#endif
-
-} // namespace ipc
-} // namespace instserver
+} // namespace instserver::ipc

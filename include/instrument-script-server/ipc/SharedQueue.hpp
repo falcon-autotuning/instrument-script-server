@@ -36,10 +36,13 @@ public:
   send(const IPCMessage &msg,
        std::chrono::milliseconds timeout = std::chrono::milliseconds(1000));
 
+  bool send_to_response_queue(const IPCMessage &msg,
+                              std::chrono::milliseconds timeout);
   /// Receive message (blocking with timeout)
   std::optional<IPCMessage>
   receive(std::chrono::milliseconds timeout = std::chrono::milliseconds(5000));
-
+  // A special form of blocking receive
+  bool receive_blocking(IPCMessage &msg);
   /// Check if queue is valid
   [[nodiscard]] bool is_valid() const {
     return request_queue_ != nullptr && response_queue_ != nullptr;

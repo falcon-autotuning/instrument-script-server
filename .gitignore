@@ -8,3 +8,5 @@ site/
 .cache/
 vcpkg_installed/
 .nuget-credentials
+out.folded
+perf.*
