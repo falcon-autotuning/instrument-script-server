@@ -131,7 +131,8 @@ bool ProcessManager::kill_process(ProcessId pid, bool force) {
   if (loc == processes_.end()) {
     return false;
   }
-  LOG_INFO("PROCESS", "KILL", "Killing process: PID={} (force={})", pid, force);
+  LOG_INFO("PROCESS", "KILL", "Killing process: PID=%d (force=%s)", pid,
+           force ? "true" : "false");
 #ifdef _WIN32
   bool result = TerminateProcess(loc->second->handle, force ? 1 : 0) != 0;
 #else

@@ -3,25 +3,29 @@
 #include <fmt/format.h>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
-#include <set>
-#include <variant>
 
 using namespace instserver;
 
 // Helper to map stored ParamValue to the external return_type string tests
 // expect
 static std::string param_value_type_name(const ParamValue &val) {
-  if (std::get_if<double>(&val)) {
+  switch (val.type) {
+  case ipc::IPCParamValue::Type::DOUBLE:
     return "float";
-  } else if (std::get_if<int64_t>(&val)) {
+
+  case ipc::IPCParamValue::Type::INT64:
     return "integer";
-  } else if (std::get_if<std::string>(&val)) {
+
+  case ipc::IPCParamValue::Type::STRING:
     return "string";
-  } else if (std::get_if<bool>(&val)) {
+
+  case ipc::IPCParamValue::Type::BOOL:
     return "boolean";
-  } else if (std::get_if<std::vector<double>>(&val)) {
+
+  case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
     return "array";
   }
+
   return "unknown";
 }
 
@@ -169,42 +173,30 @@ RuntimeContext::RuntimeContext(InstrumentRegistry &registry,
 
 static void populate_callresult_from_response(CallResult &cr,
                                               const CommandResponse &resp) {
+
   cr.command_id = resp.command_id;
   cr.success = resp.success;
   cr.error_message = resp.error_message;
+
   if (resp.has_large_data) {
     cr.has_large_data = true;
     cr.buffer_id = resp.buffer_id;
     cr.element_count = resp.element_count;
     cr.data_type = resp.data_type;
     cr.return_type = "buffer";
-  } else if (resp.return_value) {
-    // Copy value and map variant type to a textual type name the rest of the
-    // code/tests expect.
-    cr.return_value = resp.return_value;
-    if (std::get_if<double>(&*resp.return_value) != nullptr) {
-      cr.return_type = "float";
-    } else if (std::get_if<int64_t>(&*resp.return_value) != nullptr) {
-      cr.return_type = "integer";
-    } else if (std::get_if<std::string>(&*resp.return_value) != nullptr) {
-      cr.return_type = "string";
-    } else if (std::get_if<bool>(&*resp.return_value) != nullptr) {
-      cr.return_type = "boolean";
-    } else if (std::get_if<std::vector<double>>(&*resp.return_value) !=
-               nullptr) {
-      cr.return_type = "array";
-      // Provide small array metadata in the CallResult for consumers/tests
-      if (const auto *arr =
-              std::get_if<std::vector<double>>(&*resp.return_value)) {
-        cr.element_count = static_cast<uint64_t>(arr->size());
-        cr.data_type = "float";
-      }
-    } else {
-      cr.return_type = "unknown";
+    return;
+  }
+
+  if (resp.return_value) {
+    const auto &v = *resp.return_value;
+    cr.return_value = v;
+    cr.return_type = param_value_type_name(v);
+    if (v.type == ipc::IPCParamValue::Type::DOUBLE_ARRAY) {
+      cr.element_count = static_cast<uint64_t>(v.arr.size());
+      cr.data_type = "float";
     }
+
   } else {
-    // No return value and not a large-data buffer: set a default to avoid
-    // empty return_type in collected results (tests check non-empty).
     cr.return_type = "void";
   }
 }
@@ -239,41 +231,108 @@ sol::object RuntimeContext::call(const std::string &func_name,
     }
   }
 
-  std::unordered_map<std::string, ParamValue> params;
+  std::array<Param, PLUGIN_MAX_PARAMS> params;
+  uint8_t param_count = 0;
 
-  if (args.size() == 1 && args[0].is<sol::table>()) {
-    sol::table tbl = args[0].as<sol::table>();
+  // Table-style parameters
+  if (args.size() == 1 && args[0].get_type() == sol::type::table) {
+    sol::table tbl = args[0];
+
     for (auto &[k, v] : tbl) {
-      std::string param_name = k.as<std::string>();
-      if (v.is<double>()) {
-        params[param_name] = v.as<double>();
-      } else if (v.is<int>()) {
-        params[param_name] = static_cast<int64_t>(v.as<int>());
-      } else if (v.is<std::string>()) {
-        params[param_name] = v.as<std::string>();
-      } else if (v.is<bool>()) {
-        params[param_name] = v.as<bool>();
+      if (param_count >= PLUGIN_MAX_PARAMS) {
+        LOG_WARN("LUA_CONTEXT", "CALL", "Exceeded the max allowed params");
+        break;
       }
+
+      auto &p = params[param_count];
+      p.name = k.as<std::string>();
+      auto t = v.get_type();
+      switch (t) {
+      case sol::type::number: {
+        // Lua numbers are double — but you may want int detection
+        double d = v.as<double>();
+        if (std::floor(d) == d) {
+          p.value.type = ipc::IPCParamValue::Type::INT64;
+          p.value.i = static_cast<int64_t>(d);
+        } else {
+          p.value.type = ipc::IPCParamValue::Type::DOUBLE;
+          p.value.d = d;
+        }
+        break;
+      }
+      case sol::type::string:
+        p.value.type = ipc::IPCParamValue::Type::STRING;
+        p.value.str = v.as<std::string>();
+        break;
+      case sol::type::boolean:
+        p.value.type = ipc::IPCParamValue::Type::BOOL;
+        p.value.b = v.as<bool>();
+        break;
+      default:
+        continue; // skip unsupported
+      }
+      ++param_count;
     }
   } else {
-    for (size_t i = 0; i < args.size(); ++i) {
-      auto arg = args[i];
-      std::string key = "arg" + std::to_string(i);
-
-      if (arg.is<double>()) {
-        params[key] = arg.as<double>();
-      } else if (arg.is<int>()) {
-        params[key] = static_cast<int64_t>(arg.as<int>());
-      } else if (arg.is<std::string>()) {
-        params[key] = arg.as<std::string>();
-      } else if (arg.is<bool>()) {
-        params[key] = arg.as<bool>();
+    // Positional arguments
+    size_t arg_count = args.size();
+    static const auto ARG_KEYS = [] {
+      std::array<std::string, PLUGIN_MAX_PARAMS> keys;
+      for (size_t i = 0; i < PLUGIN_MAX_PARAMS; ++i) {
+        keys[i] = "arg" + std::to_string(i);
       }
+      return keys;
+    }();
+
+    for (size_t i = 0; i < arg_count; ++i) {
+      if (param_count >= PLUGIN_MAX_PARAMS) {
+        LOG_WARN("LUA_CONTEXT", "CALL",
+                 "Exceeded the max allowed positional params");
+        break;
+      }
+      auto arg = args[i];
+      auto &p = params[param_count];
+
+      if (i < PLUGIN_MAX_PARAMS) {
+        p.name = ARG_KEYS[i];
+      } else {
+        p.name = "arg" + std::to_string(i); // fallback (rare)
+      }
+
+      auto t = arg.get_type();
+      switch (t) {
+      case sol::type::number: {
+        double d = arg.as<double>();
+        if (std::floor(d) == d) {
+          p.value.type = ipc::IPCParamValue::Type::INT64;
+          p.value.i = static_cast<int64_t>(d);
+        } else {
+          p.value.type = ipc::IPCParamValue::Type::DOUBLE;
+          p.value.d = d;
+        }
+        break;
+      }
+      case sol::type::string:
+        p.value.type = ipc::IPCParamValue::Type::STRING;
+        p.value.str = arg.as<std::string>();
+        break;
+      case sol::type::boolean:
+        p.value.type = ipc::IPCParamValue::Type::BOOL;
+        p.value.b = arg.as<bool>();
+        break;
+      default:
+        continue; // skip unsupported
+      }
+
+      ++param_count;
     }
   }
 
-  if (channel) {
-    params["channel"] = static_cast<int64_t>(*channel);
+  // Channel injection
+  if (channel && param_count < PLUGIN_MAX_PARAMS) {
+    auto &p = params[param_count++];
+    p.name = "channel";
+    p.value.i = static_cast<int64_t>(*channel);
   }
 
   bool expects_response =
@@ -296,7 +355,7 @@ sol::object RuntimeContext::call(const std::string &func_name,
 
   // Synchronous (blocking) path - execute and return result to Lua
   CommandResponse resp =
-      send_command(instrument_id, verb, params, expects_response);
+      send_command(instrument_id, verb, params, param_count, expects_response);
 
   CallResult cr;
   populate_callresult_from_response(cr, resp);
@@ -347,41 +406,40 @@ sol::object RuntimeContext::call(const std::string &func_name,
   }
 
   // Map return types into MeasurementResponse objects
-  if (auto *d = std::get_if<double>(&*resp.return_value)) {
+  const auto &v = *resp.return_value;
+  switch (v.type) {
+  case ipc::IPCParamValue::Type::DOUBLE: {
     auto response =
-        std::make_shared<MeasurementResponse>(instrument_spec, verb, *d);
+        std::make_shared<MeasurementResponse>(instrument_spec, verb, v.d);
     return sol::make_object(lua, response);
   }
-  if (auto *i = std::get_if<int64_t>(&*resp.return_value)) {
+  case ipc::IPCParamValue::Type::INT64: {
     auto response =
-        std::make_shared<MeasurementResponse>(instrument_spec, verb, *i);
+        std::make_shared<MeasurementResponse>(instrument_spec, verb, v.i);
     return sol::make_object(lua, response);
   }
-  if (auto *s = std::get_if<std::string>(&*resp.return_value)) {
+  case ipc::IPCParamValue::Type::STRING: {
     auto response =
-        std::make_shared<MeasurementResponse>(instrument_spec, verb, *s);
+        std::make_shared<MeasurementResponse>(instrument_spec, verb, v.str);
     return sol::make_object(lua, response);
   }
-  if (auto *b = std::get_if<bool>(&*resp.return_value)) {
+  case ipc::IPCParamValue::Type::BOOL: {
     auto response =
-        std::make_shared<MeasurementResponse>(instrument_spec, verb, *b);
+        std::make_shared<MeasurementResponse>(instrument_spec, verb, v.b);
     return sol::make_object(lua, response);
   }
-  if (auto *arr = std::get_if<std::vector<double>>(&*resp.return_value)) {
-    // Always use buffers for arrays (new behavior)
-    // Create a buffer and return MeasurementResponse wrapping BufferHandle
-    auto &buf_mgr = ipc::DataBufferManager::instance();
-    const char *buffer_id =
-        data_manager_create_buffer(instrument_id.c_str(), cr.command_id.c_str(),
-                                   INST_DATA_FLOAT64, arr->size(), arr->data());
+  case ipc::IPCParamValue::Type::DOUBLE_ARRAY: {
+    // Always use buffers for arrays
+    const char *buffer_id = data_manager_create_buffer(
+        instrument_id.c_str(), cr.command_id.c_str(), INST_DATA_FLOAT64,
+        v.arr.size(), v.arr.data());
     auto handle =
-        std::make_shared<BufferHandle>(buffer_id, arr->size(), "float64");
-
+        std::make_shared<BufferHandle>(buffer_id, v.arr.size(), "float64");
     auto response =
         std::make_shared<MeasurementResponse>(instrument_spec, verb, handle);
     return sol::make_object(lua, response);
   }
-
+  }
   return sol::nil;
 }
 
@@ -450,12 +508,12 @@ void RuntimeContext::execute_parallel_buffer() {
         "{}-{}", cmd.instrument_name,
         std::chrono::steady_clock::now().time_since_epoch().count());
 
-    LOG_DEBUG(
-        "LUA_CONTEXT", "PARALLEL",
-        "Dispatching sync command:  %s to %s (token=%llu, expects_response=%s)",
-        cmd.verb.c_str(), cmd.instrument_name.c_str(),
-        (unsigned long long)sync_token,
-        cmd.expects_response ? "true" : "false");
+    LOG_DEBUG("LUA_CONTEXT", "PARALLEL",
+              "Dispatching sync command:  %s to %s (token=%llu, "
+              "expects_response=%s)",
+              cmd.verb.c_str(), cmd.instrument_name.c_str(),
+              (unsigned long long)sync_token,
+              cmd.expects_response ? "true" : "false");
 
     futures.push_back(worker->execute(std::move(cmd)));
   }
@@ -507,10 +565,11 @@ void RuntimeContext::error(const std::string &msg) {
   LOG_ERROR("LUA_SCRIPT", "USER_ERROR", "%s", msg.c_str());
 }
 
-CommandResponse RuntimeContext::send_command(
-    const std::string &instrument_id, const std::string &verb,
-    const std::unordered_map<std::string, ParamValue> &params,
-    bool expects_response) {
+CommandResponse
+RuntimeContext::send_command(const std::string &instrument_id,
+                             const std::string &verb,
+                             const std::array<Param, PLUGIN_MAX_PARAMS> &params,
+                             uint8_t param_count, bool expects_response) {
   auto worker = registry_.get_instrument(instrument_id);
   if (!worker) {
     CommandResponse resp;
@@ -525,7 +584,11 @@ CommandResponse RuntimeContext::send_command(
                   std::chrono::steady_clock::now().time_since_epoch().count());
   cmd.instrument_name = instrument_id;
   cmd.verb = verb;
-  cmd.params = params;
+  cmd.param_count = param_count;
+
+  for (uint8_t i = 0; i < param_count; ++i) {
+    cmd.params[i] = params[i];
+  }
   cmd.created_at = std::chrono::steady_clock::now();
   cmd.expects_response = expects_response;
 
@@ -616,17 +679,29 @@ nlohmann::json RuntimeContext::collect_results_json() const {
                      {"buffer_id", cr.buffer_id},
                      {"element_count", cr.element_count},
                      {"data_type", cr.data_type}};
+
     } else if (cr.return_value) {
-      if (const auto *d = std::get_if<double>(&*cr.return_value)) {
-        j["return"] = {{"type", "float"}, {"value", *d}};
-      } else if (const auto *i = std::get_if<int64_t>(&*cr.return_value)) {
-        j["return"] = {{"type", "integer"}, {"value", *i}};
-      } else if (const auto *s = std::get_if<std::string>(&*cr.return_value)) {
-        j["return"] = {{"type", "string"}, {"value", *s}};
-      } else if (const auto *b = std::get_if<bool>(&*cr.return_value)) {
-        j["return"] = {{"type", "boolean"}, {"value", *b}};
-      } else {
+      const auto &v = *cr.return_value;
+
+      switch (v.type) {
+      case ipc::IPCParamValue::Type::DOUBLE:
+        j["return"] = {{"type", "float"}, {"value", v.d}};
+        break;
+      case ipc::IPCParamValue::Type::INT64:
+        j["return"] = {{"type", "integer"}, {"value", v.i}};
+        break;
+      case ipc::IPCParamValue::Type::STRING:
+        j["return"] = {{"type", "string"}, {"value", v.str}};
+        break;
+      case ipc::IPCParamValue::Type::BOOL:
+        j["return"] = {{"type", "boolean"}, {"value", v.b}};
+        break;
+      case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
+        j["return"] = {{"type", "array"}, {"value", v.arr}};
+        break;
+      default:
         j["return"] = {{"type", "void"}};
+        break;
       }
     } else {
       j["return"] = {{"type", "void"}};
@@ -636,6 +711,7 @@ nlohmann::json RuntimeContext::collect_results_json() const {
     }
     out.push_back(j);
   }
+
   return out;
 }
 

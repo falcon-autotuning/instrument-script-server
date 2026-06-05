@@ -1,23 +1,34 @@
 #pragma once
 #include "instrument-script-server/export.h"
-
+#include "instrument-script-server/ipc/IPCMessage.hpp"
+#include <array>
 #include <chrono>
 #include <optional>
 #include <string>
-#include <unordered_map>
-#include <variant>
 #include <vector>
 
 namespace instserver {
+using ParamType = ipc::IPCParamValue::Type;
+struct ParamValue {
+  ParamType type;
 
-using ParamValue =
-    std::variant<double, int64_t, std::string, bool, std::vector<double>>;
+  double d{};
+  int64_t i{};
+  bool b{};
+  std::string str;
+  std::vector<double> arr;
+};
+struct INSTRUMENT_SERVER_API Param {
+  std::string name;
+  ParamValue value;
+};
 
 struct INSTRUMENT_SERVER_API SerializedCommand {
   std::string id;
   std::string instrument_name;
   std::string verb;
-  std::unordered_map<std::string, ParamValue> params;
+  std::array<Param, PLUGIN_MAX_PARAMS> params;
+  uint8_t param_count{0};
   bool expects_response{false};
   std::chrono::milliseconds timeout{5000};
   std::chrono::steady_clock::time_point created_at;
@@ -49,20 +60,14 @@ struct INSTRUMENT_SERVER_API CommandResponse {
 
 namespace instserver::ipc {
 
-/// Serialize command to JSON string
-INSTRUMENT_SERVER_API std::string
-serialize_command(const SerializedCommand &cmd);
+// Command conversions
+void INSTRUMENT_SERVER_API fill_ipc_command(IPCCommand &out,
+                                            const SerializedCommand &in);
+SerializedCommand INSTRUMENT_SERVER_API from_ipc_command(const IPCCommand &in);
 
-/// Deserialize command from JSON string
-INSTRUMENT_SERVER_API SerializedCommand
-deserialize_command(const std::string &json);
-
-/// Serialize response to JSON string
-INSTRUMENT_SERVER_API std::string
-serialize_response(const CommandResponse &resp);
-
-/// Deserialize response from JSON string
-INSTRUMENT_SERVER_API CommandResponse
-deserialize_response(const std::string &json);
+// Response conversions
+void INSTRUMENT_SERVER_API fill_ipc_response(IPCResponse &out,
+                                             const CommandResponse &in);
+CommandResponse INSTRUMENT_SERVER_API from_ipc_response(const IPCResponse &in);
 
 } // namespace instserver::ipc

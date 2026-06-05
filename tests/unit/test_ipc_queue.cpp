@@ -1,7 +1,6 @@
 #include "instrument-script-server/ipc/SharedQueue.hpp"
 
 #include <gtest/gtest.h>
-#include <thread>
 
 using namespace instserver::ipc;
 
@@ -30,8 +29,6 @@ TEST(IPCQueue, SendReceive) {
   msg.type = IPCMessage::Type::COMMAND;
   msg.id = 42;
   msg.sync_token = 0;
-  msg.payload_size = 5;
-  std::memcpy(msg.payload.data(), "test", 5);
 
   bool sent = server_queue->send(msg, std::chrono::milliseconds(1000));
   ASSERT_TRUE(sent);
@@ -41,7 +38,6 @@ TEST(IPCQueue, SendReceive) {
   ASSERT_TRUE(received.has_value());
   EXPECT_EQ(received->type, IPCMessage::Type::COMMAND);
   EXPECT_EQ(received->id, 42);
-  EXPECT_EQ(std::string(received->payload.data()), "test");
 
   SharedQueue::cleanup(name);
 }

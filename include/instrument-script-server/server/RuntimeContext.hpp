@@ -9,7 +9,6 @@
 #include <memory>
 #include <set>
 #include <sol/sol.hpp>
-#include <unordered_map>
 #include <vector>
 
 namespace instserver {
@@ -99,7 +98,8 @@ struct INSTRUMENT_SERVER_API CallResult {
   std::string command_id;
   std::string instrument_name;
   std::string verb;
-  std::unordered_map<std::string, ParamValue> params;
+  std::array<Param, PLUGIN_MAX_PARAMS> params;
+  uint8_t param_count;
   std::chrono::steady_clock::time_point executed_at;
 
   // Either a direct return value...
@@ -213,8 +213,8 @@ protected:
   // Helper to send command to instrument (synchronous path)
   CommandResponse
   send_command(const std::string &instrument_id, const std::string &verb,
-               const std::unordered_map<std::string, ParamValue> &params,
-               bool expects_response);
+               const std::array<Param, PLUGIN_MAX_PARAMS> &params,
+               uint8_t param_count, bool expects_response);
 
   // Execute buffered parallel commands with sync (used only when not
   // enqueue_mode)

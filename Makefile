@@ -57,11 +57,6 @@ profile: build
 	@if [ "$(PRESET)" != "linux-gcc-prof" ]; then \
 			echo "⚠️  Warning: profiling is recommended with PRESET=linux-gcc-prof"; \
 	fi
-	perf record -e cpu-clock -F 99 -g -- \
+	perf record -e cycles --call-graph lbr -F 99 -- \
 		$(TEST_BIN) --gtest_filter=$(PERF_TEST)
-
-flamegraph:
-	@echo "Generating flamegraph..."
-	perf script | stackcollapse-perf.pl > out.folded
-
-perf-all: profile flamegraph
+	perf script -i perf.data | stackcollapse-perf.pl > out.folded

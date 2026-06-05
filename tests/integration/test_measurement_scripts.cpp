@@ -839,15 +839,29 @@ TEST_F(MeasurementScriptTest, JSONOutputValidation) {
 
     // Add params
     json params_json = json::object();
-    for (const auto &[key, value] : r.params) {
-      if (std::holds_alternative<double>(value)) {
-        params_json[key] = std::get<double>(value);
-      } else if (std::holds_alternative<int64_t>(value)) {
-        params_json[key] = std::get<int64_t>(value);
-      } else if (std::holds_alternative<std::string>(value)) {
-        params_json[key] = std::get<std::string>(value);
-      } else if (std::holds_alternative<bool>(value)) {
-        params_json[key] = std::get<bool>(value);
+
+    for (uint8_t j = 0; j < r.param_count; ++j) {
+      const auto &p = r.params[j];
+      const auto &value = p.value;
+      switch (value.type) {
+      case ipc::IPCParamValue::Type::DOUBLE:
+        params_json[p.name] = value.d;
+        break;
+      case ipc::IPCParamValue::Type::INT64:
+        params_json[p.name] = value.i;
+        break;
+      case ipc::IPCParamValue::Type::STRING:
+        params_json[p.name] = value.str;
+        break;
+      case ipc::IPCParamValue::Type::BOOL:
+        params_json[p.name] = value.b;
+        break;
+      case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
+        params_json[p.name] = value.arr;
+        break;
+      default:
+        params_json[p.name] = nullptr;
+        break;
       }
     }
     result_json["params"] = params_json;
@@ -857,25 +871,39 @@ TEST_F(MeasurementScriptTest, JSONOutputValidation) {
 
     // Add return value
     json return_json;
+
     if (r.has_large_data) {
       return_json["type"] = "buffer";
       return_json["buffer_id"] = r.buffer_id;
       return_json["element_count"] = r.element_count;
       return_json["data_type"] = r.data_type;
+
     } else if (r.return_value) {
+      const auto &v = *r.return_value;
+
       return_json["type"] = r.return_type;
 
-      if (std::holds_alternative<double>(*r.return_value)) {
-        return_json["value"] = std::get<double>(*r.return_value);
-      } else if (std::holds_alternative<int64_t>(*r.return_value)) {
-        return_json["value"] = std::get<int64_t>(*r.return_value);
-      } else if (std::holds_alternative<std::string>(*r.return_value)) {
-        return_json["value"] = std::get<std::string>(*r.return_value);
-      } else if (std::holds_alternative<bool>(*r.return_value)) {
-        return_json["value"] = std::get<bool>(*r.return_value);
-      } else if (std::holds_alternative<std::vector<double>>(*r.return_value)) {
-        return_json["value"] = std::get<std::vector<double>>(*r.return_value);
+      switch (v.type) {
+      case ipc::IPCParamValue::Type::DOUBLE:
+        return_json["value"] = v.d;
+        break;
+      case ipc::IPCParamValue::Type::INT64:
+        return_json["value"] = v.i;
+        break;
+      case ipc::IPCParamValue::Type::STRING:
+        return_json["value"] = v.str;
+        break;
+      case ipc::IPCParamValue::Type::BOOL:
+        return_json["value"] = v.b;
+        break;
+      case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
+        return_json["value"] = v.arr;
+        break;
+      default:
+        return_json["value"] = nullptr;
+        break;
       }
+
     } else {
       return_json["type"] = r.return_type;
       return_json["value"] = nullptr;

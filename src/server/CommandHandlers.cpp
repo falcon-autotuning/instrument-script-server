@@ -785,28 +785,34 @@ __context_schema_version = nil
 
         // Convert params to JSON
         json params_json;
-        for (const auto &kv : r.params) {
-          const auto &key = kv.first;
-          const auto &value = kv.second;
-          params_json[key] = [&value]() -> json {
-            if (const auto *d = std::get_if<double>(&value)) {
-              return *d;
-            }
-            if (const auto *i = std::get_if<int64_t>(&value)) {
-              return *i;
-            }
-            if (const auto *s = std::get_if<std::string>(&value)) {
-              return *s;
-            }
-            if (const auto *b = std::get_if<bool>(&value)) {
-              return *b;
-            }
-            if (const auto *arr = std::get_if<std::vector<double>>(&value)) {
-              return *arr;
-            }
-            return nullptr;
-          }();
+
+        for (uint8_t i = 0; i < r.param_count; ++i) {
+          const auto &p = r.params[i];
+
+          const auto &key = p.name;
+          const auto &value = p.value;
+          switch (value.type) {
+          case ipc::IPCParamValue::Type::DOUBLE:
+            params_json[key] = value.d;
+            break;
+          case ipc::IPCParamValue::Type::INT64:
+            params_json[key] = value.i;
+            break;
+          case ipc::IPCParamValue::Type::STRING:
+            params_json[key] = value.str;
+            break;
+          case ipc::IPCParamValue::Type::BOOL:
+            params_json[key] = value.b;
+            break;
+          case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
+            params_json[key] = value.arr;
+            break;
+          default:
+            params_json[key] = nullptr;
+            break;
+          }
         }
+
         result_json["params"] = params_json;
 
         auto ms_since_epoch =
@@ -821,19 +827,40 @@ __context_schema_version = nil
           return_json["buffer_id"] = r.buffer_id;
           return_json["element_count"] = r.element_count;
           return_json["data_type"] = r.data_type;
+
         } else if (r.return_value) {
-          return_json["type"] = r.return_type;
-          if (const auto *d = std::get_if<double>(&*r.return_value)) {
-            return_json["value"] = *d;
-          } else if (const auto *i = std::get_if<int64_t>(&*r.return_value)) {
-            return_json["value"] = *i;
-          } else if (const auto *s =
-                         std::get_if<std::string>(&*r.return_value)) {
-            return_json["value"] = *s;
-          } else if (const auto *b = std::get_if<bool>(&*r.return_value)) {
-            return_json["value"] = *b;
+          const auto &v = *r.return_value;
+
+          switch (v.type) {
+          case ipc::IPCParamValue::Type::DOUBLE:
+            return_json["value"] = v.d;
+            return_json["type"] = "float";
+            break;
+          case ipc::IPCParamValue::Type::INT64:
+            return_json["value"] = v.i;
+            return_json["type"] = "integer";
+            break;
+          case ipc::IPCParamValue::Type::STRING:
+            return_json["value"] = v.str;
+            return_json["type"] = "string";
+            break;
+          case ipc::IPCParamValue::Type::BOOL:
+            return_json["value"] = v.b;
+            return_json["type"] = "boolean";
+            break;
+          case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
+            return_json["value"] = v.arr;
+            return_json["type"] = "array";
+            break;
+          default:
+            // keep type="unknown" (or whatever helper returns)
+            break;
           }
+
+        } else {
+          return_json["type"] = "void";
         }
+
         result_json["return"] = return_json;
 
         out["results"].push_back(result_json);
@@ -860,28 +887,34 @@ __context_schema_version = nil
 
       // Convert params to JSON
       json params_json;
-      for (const auto &kv : r.params) {
-        const auto &key = kv.first;
-        const auto &value = kv.second;
-        params_json[key] = [&value]() -> json {
-          if (const auto *d = std::get_if<double>(&value)) {
-            return *d;
-          }
-          if (const auto *i = std::get_if<int64_t>(&value)) {
-            return *i;
-          }
-          if (const auto *s = std::get_if<std::string>(&value)) {
-            return *s;
-          }
-          if (const auto *b = std::get_if<bool>(&value)) {
-            return *b;
-          }
-          if (const auto *arr = std::get_if<std::vector<double>>(&value)) {
-            return *arr;
-          }
-          return nullptr;
-        }();
+
+      for (uint8_t i = 0; i < r.param_count; ++i) {
+        const auto &p = r.params[i];
+
+        const auto &key = p.name;
+        const auto &value = p.value;
+        switch (value.type) {
+        case ipc::IPCParamValue::Type::DOUBLE:
+          params_json[key] = value.d;
+          break;
+        case ipc::IPCParamValue::Type::INT64:
+          params_json[key] = value.i;
+          break;
+        case ipc::IPCParamValue::Type::STRING:
+          params_json[key] = value.str;
+          break;
+        case ipc::IPCParamValue::Type::BOOL:
+          params_json[key] = value.b;
+          break;
+        case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
+          params_json[key] = value.arr;
+          break;
+        default:
+          params_json[key] = nullptr;
+          break;
+        }
       }
+
       result_json["params"] = params_json;
 
       // Execution timestamp (ms since epoch)
@@ -898,26 +931,43 @@ __context_schema_version = nil
         return_json["buffer_id"] = r.buffer_id;
         return_json["element_count"] = r.element_count;
         return_json["data_type"] = r.data_type;
+
       } else if (r.return_value) {
-        return_json["type"] = r.return_type;
-        if (const auto *d = std::get_if<double>(&*r.return_value)) {
-          return_json["value"] = *d;
-        } else if (const auto *i = std::get_if<int64_t>(&*r.return_value)) {
-          return_json["value"] = *i;
-        } else if (const auto *s = std::get_if<std::string>(&*r.return_value)) {
-          return_json["value"] = *s;
-        } else if (const auto *b = std::get_if<bool>(&*r.return_value)) {
-          return_json["value"] = *b;
+        const auto &v = *r.return_value;
+
+        switch (v.type) {
+        case ipc::IPCParamValue::Type::DOUBLE:
+          return_json["value"] = v.d;
+          return_json["type"] = "float";
+          break;
+        case ipc::IPCParamValue::Type::INT64:
+          return_json["value"] = v.i;
+          return_json["type"] = "integer";
+          break;
+        case ipc::IPCParamValue::Type::STRING:
+          return_json["value"] = v.str;
+          return_json["type"] = "string";
+          break;
+        case ipc::IPCParamValue::Type::BOOL:
+          return_json["value"] = v.b;
+          return_json["type"] = "boolean";
+          break;
+        case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
+          return_json["value"] = v.arr;
+          return_json["type"] = "array";
+          break;
+        default:
+          // keep type="unknown" (or whatever helper returns)
+          break;
         }
       }
       result_json["return"] = return_json;
 
       out["results"].push_back(result_json);
     }
-
-    LOG_INFO(
-        "SERVER", "MEASURE",
-        "Serialization complete. Returning to HTTP handler to send response");
+    LOG_INFO("SERVER", "MEASURE",
+             "Serialization complete. Returning to HTTP handler to send "
+             "response");
     return 0;
   } catch (const std::exception &e) {
     out["ok"] = false;
@@ -960,7 +1010,8 @@ int handle_test(const json &params, json &out) {
                 3);               // rotation count
 
   try {
-    // If a custom plugin path was provided, try to load it via PluginLoader.
+    // If a custom plugin path was provided, try to load it via
+    // PluginLoader.
     if (!custom_plugin.empty()) {
       if (!std::filesystem::exists(custom_plugin)) {
         out["ok"] = false;
@@ -1013,21 +1064,40 @@ int handle_test(const json &params, json &out) {
     cmd.verb = verb;
     cmd.expects_response = true;
 
-    // params is a JSON object of key->value; attempt to convert strings to
-    // numbers where sensible
-    for (auto it = param_values.begin(); it != param_values.end(); ++it) {
-      if (it->is_number_integer()) {
-        cmd.params[it.key()] = it->get<int64_t>();
-      } else if (it->is_number_float()) {
-        cmd.params[it.key()] = it->get<double>();
-      } else if (it->is_boolean()) {
-        cmd.params[it.key()] = it->get<bool>();
-      } else if (it->is_string()) {
-        cmd.params[it.key()] = it->get<std::string>();
+    cmd.param_count = 0;
+
+    for (const auto &[key, param_value] : param_values.items()) {
+
+      if (cmd.param_count >= PLUGIN_MAX_PARAMS) {
+        break;
+      }
+
+      auto &p = cmd.params[cmd.param_count];
+      p.name = key;
+
+      if (param_value.is_number_integer()) {
+        p.value.type = ipc::IPCParamValue::Type::INT64;
+        p.value.i = param_value.get<int64_t>();
+
+      } else if (param_value.is_number_float()) {
+        p.value.type = ipc::IPCParamValue::Type::DOUBLE;
+        p.value.d = param_value.get<double>();
+
+      } else if (param_value.is_boolean()) {
+        p.value.type = ipc::IPCParamValue::Type::BOOL;
+        p.value.b = param_value.get<bool>();
+
+      } else if (param_value.is_string()) {
+        p.value.type = ipc::IPCParamValue::Type::STRING;
+        p.value.str = param_value.get<std::string>();
+
       } else {
         // fallback to string
-        cmd.params[it.key()] = it->dump();
+        p.value.type = ipc::IPCParamValue::Type::STRING;
+        p.value.str = param_value.dump();
       }
+
+      ++cmd.param_count;
     }
 
     auto resp =
@@ -1038,16 +1108,26 @@ int handle_test(const json &params, json &out) {
     out["error_message"] = resp.error_message;
     out["text_response"] = resp.text_response;
     if (resp.success && resp.return_value) {
-      // return_value is std::variant - we will only serialize a few types
-      if (std::holds_alternative<double>(resp.return_value.value())) {
-        out["return_value"] = std::get<double>(resp.return_value.value());
-      } else if (std::holds_alternative<int64_t>(resp.return_value.value())) {
-        out["return_value"] = std::get<int64_t>(resp.return_value.value());
-      } else if (std::holds_alternative<std::string>(
-                     resp.return_value.value())) {
-        out["return_value"] = std::get<std::string>(resp.return_value.value());
-      } else if (std::holds_alternative<bool>(resp.return_value.value())) {
-        out["return_value"] = std::get<bool>(resp.return_value.value());
+      const auto &v = *resp.return_value;
+      switch (v.type) {
+      case ipc::IPCParamValue::Type::DOUBLE:
+        out["return_value"] = v.d;
+        break;
+      case ipc::IPCParamValue::Type::INT64:
+        out["return_value"] = v.i;
+        break;
+      case ipc::IPCParamValue::Type::STRING:
+        out["return_value"] = v.str;
+        break;
+      case ipc::IPCParamValue::Type::BOOL:
+        out["return_value"] = v.b;
+        break;
+      case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
+        out["return_value"] = v.arr;
+        break;
+      default:
+        // ignore unsupported
+        break;
       }
     }
 
@@ -1083,8 +1163,8 @@ int handle_discover(const json &params, json &out) {
     plugin_registry.discover_plugins(search_paths);
   });
 
-  // If we haven't discovered via call_once (e.g. because paths differ), still
-  // run discover for the requested paths (idempotent).
+  // If we haven't discovered via call_once (e.g. because paths differ),
+  // still run discover for the requested paths (idempotent).
   plugin_registry.discover_plugins(search_paths);
 
   auto protocols = plugin_registry.list_protocols();

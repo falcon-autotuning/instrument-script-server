@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
+#include <instrument-plugin.h>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -56,35 +57,47 @@ static PluginCommand to_plugin_command(const SerializedCommand &cmd) {
           PLUGIN_MAX_STRING_LEN - 1);
   strncpy(pcmd.verb, cmd.verb.c_str(), PLUGIN_MAX_STRING_LEN - 1);
   pcmd.expects_response = cmd.expects_response;
-
   pcmd.param_count = 0;
-  for (const auto &[key, value] : cmd.params) {
-    if (pcmd.param_count >= PLUGIN_MAX_PARAMS)
+
+  for (uint8_t i = 0; i < cmd.param_count; ++i) {
+    const auto &src = cmd.params[i];
+
+    if (pcmd.param_count >= PLUGIN_MAX_PARAMS) {
       break;
+    }
 
     auto &param = pcmd.params[pcmd.param_count++];
-    strncpy(param.name, key.c_str(), PLUGIN_MAX_STRING_LEN - 1);
 
-    if (auto d = std::get_if<double>(&value)) {
+    strncpy(param.name, src.name.c_str(), PLUGIN_MAX_STRING_LEN - 1);
+
+    const auto &value = src.value;
+
+    switch (value.type) {
+    case ipc::IPCParamValue::Type::DOUBLE:
       param.value.type = PARAM_TYPE_DOUBLE;
-      param.value.value.d_val = *d;
-    } else if (auto i = std::get_if<int64_t>(&value)) {
+      param.value.value.d_val = value.d;
+      break;
+    case ipc::IPCParamValue::Type::INT64:
       param.value.type = PARAM_TYPE_INT64;
-      param.value.value.i64_val = *i;
-    } else if (auto s = std::get_if<std::string>(&value)) {
-      param.value.type = PARAM_TYPE_STRING;
-      strncpy(param.value.value.str_val, s->c_str(), PLUGIN_MAX_STRING_LEN - 1);
-    } else if (auto b = std::get_if<bool>(&value)) {
+      param.value.value.i64_val = value.i;
+      break;
+    case ipc::IPCParamValue::Type::BOOL:
       param.value.type = PARAM_TYPE_BOOL;
-      param.value.value.b_val = *b;
+      param.value.value.b_val = value.b;
+      break;
+    case ipc::IPCParamValue::Type::STRING:
+      param.value.type = PARAM_TYPE_STRING;
+      strncpy(param.value.value.str_val, value.str.c_str(),
+              PLUGIN_MAX_STRING_LEN - 1);
+      break;
     }
   }
-
   return pcmd;
 }
 
 static CommandResponse from_plugin_response(const PluginResponse &presp) {
   CommandResponse resp;
+
   resp.command_id = presp.command_id;
   resp.instrument_name = presp.instrument_name;
   resp.success = presp.success;
@@ -94,22 +107,34 @@ static CommandResponse from_plugin_response(const PluginResponse &presp) {
 
   // Convert return value
   if (presp.success && presp.return_value.type != PARAM_TYPE_NONE) {
+    ParamValue v;
+
     switch (presp.return_value.type) {
     case PARAM_TYPE_DOUBLE:
-      resp.return_value = presp.return_value.value.d_val;
+      v.type = ipc::IPCParamValue::Type::DOUBLE;
+      v.d = presp.return_value.value.d_val;
       break;
+
     case PARAM_TYPE_INT64:
-      resp.return_value = presp.return_value.value.i64_val;
+      v.type = ipc::IPCParamValue::Type::INT64;
+      v.i = presp.return_value.value.i64_val;
       break;
+
     case PARAM_TYPE_STRING:
-      resp.return_value = std::string(presp.return_value.value.str_val);
+      v.type = ipc::IPCParamValue::Type::STRING;
+      v.str = presp.return_value.value.str_val;
       break;
+
     case PARAM_TYPE_BOOL:
-      resp.return_value = presp.return_value.value.b_val;
+      v.type = ipc::IPCParamValue::Type::BOOL;
+      v.b = presp.return_value.value.b_val;
       break;
+
     default:
-      break;
+      return resp; // unknown type → leave return_value unset
     }
+
+    resp.return_value = std::move(v);
   }
 
   // Copy large data buffer fields
@@ -279,7 +304,6 @@ private:
         ipc::IPCMessage heartbeat;
         heartbeat.type = ipc::IPCMessage::Type::HEARTBEAT;
         heartbeat.id = 0;
-        heartbeat.payload_size = 0;
         ipc_queue_->send(heartbeat, HEARTBEAT_SEND_TIMEOUT);
         std::this_thread::sleep_for(HEARTBEAT_INTERVAL);
       }
@@ -336,20 +360,24 @@ private:
 
   void handle_buffer_ack(const ipc::IPCMessage &msg) {
     try {
+      const char *buffer_id = msg.buffer_ack.buffer_id;
+
       LOG_INFO(instrument_name_.c_str(), "WORKER_MAIN",
-               "Received buffer ack for buffer %s", msg.data_buffer_id);
-      data_manager_release_buffer(msg.data_buffer_id);
+               "Received buffer ack for buffer %s", buffer_id);
+
+      data_manager_release_buffer(buffer_id);
+
     } catch (const std::exception &e) {
       LOG_ERROR(instrument_name_.c_str(), "WORKER_MAIN",
-                "Failed to release buffer %s. err: %s", msg.data_buffer_id,
-                e.what());
+                "Failed to release buffer %s. err: %s",
+                msg.buffer_ack.buffer_id, e.what());
     }
   }
 
   void handle_command(const ipc::IPCMessage &msg) {
     SerializedCommand cmd;
     try {
-      cmd = deserialize_command_from_msg(msg);
+      cmd = ipc::from_ipc_command(msg.command);
     } catch (const std::exception &e) {
       LOG_ERROR(instrument_name_.c_str(), "WORKER_MAIN",
                 "Failed to deserialize command from message ID %llu: %s",
@@ -401,11 +429,16 @@ private:
       std::strncpy(plugin_resp.instrument_name, cmd.instrument_name.c_str(),
                    PLUGIN_MAX_STRING_LEN - 1);
 
-      std::string buffer_id = "";
-      auto it = cmd.params.find("buffer_id");
-      if (it != cmd.params.end()) {
-        if (auto s = std::get_if<std::string>(&it->second)) {
-          buffer_id = *s;
+      std::string buffer_id;
+
+      for (uint8_t i = 0; i < cmd.param_count; ++i) {
+        const auto &p = cmd.params[i];
+
+        if (p.name == "buffer_id") {
+          if (p.value.type == ipc::IPCParamValue::Type::STRING) {
+            buffer_id = p.value.str;
+          }
+          break; // found it, stop
         }
       }
 
@@ -457,26 +490,17 @@ private:
     }
   }
 
-  static SerializedCommand
-  deserialize_command_from_msg(const ipc::IPCMessage &msg) {
-    std::string payload(msg.payload.data(), msg.payload_size);
-    return ipc::deserialize_command(payload);
-  }
-
   void send_command_response(const ipc::IPCMessage &msg,
                              const SerializedCommand &cmd,
                              const PluginResponse &plugin_resp) {
     CommandResponse resp = from_plugin_response(plugin_resp);
-    std::string resp_payload = ipc::serialize_response(resp);
 
-    ipc::IPCMessage resp_msg;
+    ipc::IPCMessage resp_msg{};
     resp_msg.type = ipc::IPCMessage::Type::RESPONSE;
     resp_msg.id = msg.id;
     resp_msg.sync_token = cmd.sync_token.value_or(0);
-    resp_msg.payload_size =
-        std::min(resp_payload.size(), sizeof(resp_msg.payload));
-    std::memcpy(resp_msg.payload.data(), resp_payload.data(),
-                resp_msg.payload_size);
+
+    ipc::fill_ipc_response(resp_msg.response, resp);
 
     LOG_DEBUG(instrument_name_.c_str(), cmd.id.c_str(),
               "send_command_response: sending response msg_id=%llu verb='%s' "
@@ -505,7 +529,6 @@ private:
     ack_msg.type = ipc::IPCMessage::Type::SYNC_ACK;
     ack_msg.id = msg.id;
     ack_msg.sync_token = sync_token;
-    ack_msg.payload_size = 0;
 
     ipc_queue_->send(ack_msg, IPC_SEND_TIMEOUT);
   }

@@ -1,162 +1,253 @@
 #include "instrument-script-server/SerializedCommand.hpp"
-#include <nlohmann/json.hpp>
+#include "instrument-script-server/ipc/IPCMessage.hpp"
+
+#include <cstring>
 
 namespace instserver::ipc {
 
-std::string serialize_command(const SerializedCommand &cmd) {
-  nlohmann::json j;
-  j["id"] = cmd.id;
-  j["instrument_name"] = cmd.instrument_name;
-  j["verb"] = cmd.verb;
-  j["expects_response"] = cmd.expects_response;
-  j["timeout_ms"] = cmd.timeout.count();
+// =========================
+// Helpers
+// =========================
 
-  if (cmd.sync_token) {
-    j["sync_token"] = *cmd.sync_token;
-  }
-
-  // Serialize params
-  nlohmann::json params_json = nlohmann::json::object();
-  for (const auto &[key, value] : cmd.params) {
-    if (const auto *d = std::get_if<double>(&value)) {
-      params_json[key] = *d;
-    } else if (const auto *i = std::get_if<int64_t>(&value)) {
-      params_json[key] = *i;
-    } else if (const auto *s = std::get_if<std::string>(&value)) {
-      params_json[key] = *s;
-    } else if (const auto *b = std::get_if<bool>(&value)) {
-      params_json[key] = *b;
-    } else if (const auto *arr = std::get_if<std::vector<double>>(&value)) {
-      params_json[key] = *arr;
-    }
-  }
-  j["params"] = params_json;
-
-  return j.dump();
+static void copy_string(char *dst, size_t dst_size, const std::string &src) {
+  std::strncpy(dst, src.c_str(), dst_size - 1);
+  dst[dst_size - 1] = '\0';
+}
+static std::string safe_string(const char *src, size_t max_len) {
+  return {src, strnlen(src, max_len)};
 }
 
-// Assuming SerializedCommand and its fields are defined elsewhere
-SerializedCommand deserialize_command(const std::string &json) {
-  nlohmann::json j;
+void fill_ipc_command(IPCCommand &out, const SerializedCommand &in) {
+  std::memset(&out, 0, sizeof(IPCCommand));
 
-  try {
-    j = nlohmann::json::parse(json);
-  } catch (const nlohmann::json::parse_error &e) {
-    throw std::runtime_error("Failed to parse JSON command: " +
-                             std::string(e.what()));
-  }
+  copy_string(out.command_id, sizeof(out.command_id), in.id);
+  copy_string(out.instrument_name, sizeof(out.instrument_name),
+              in.instrument_name);
+  copy_string(out.verb, sizeof(out.verb), in.verb);
 
-  SerializedCommand cmd;
-  cmd.id = j["id"];
-  cmd.instrument_name = j["instrument_name"];
-  cmd.verb = j["verb"];
-  cmd.expects_response = j["expects_response"];
-  cmd.timeout = std::chrono::milliseconds(j["timeout_ms"]);
-  cmd.created_at = std::chrono::steady_clock::now();
+  out.expects_response = in.expects_response;
+  out.timeout_ms = static_cast<uint32_t>(in.timeout.count());
+  out.sync_token = in.sync_token.value_or(0);
 
-  if (j.contains("sync_token")) {
-    cmd.sync_token = j["sync_token"];
-  }
+  out.param_count = 0;
+  for (uint8_t i = 0; i < in.param_count; ++i) {
+    const auto &src = in.params[i];
 
-  // Deserialize params with move semantics optimization
-  if (j.contains("params") && j["params"].is_object()) {
-    for (const auto &[key, value] : j["params"].items()) {
-      if (value.is_number_float()) {
-        cmd.params[key] = value.get<double>();
-      } else if (value.is_number_integer()) {
-        cmd.params[key] = value.get<int64_t>();
-      } else if (value.is_string()) {
-        cmd.params[key] = std::move(value.get<std::string>());
-      } else if (value.is_boolean()) {
-        cmd.params[key] = value.get<bool>();
-      } else if (value.is_array()) {
-        cmd.params[key] = std::move(value.get<std::vector<double>>());
+    if (out.param_count >= PLUGIN_MAX_PARAMS) {
+      break;
+    }
+
+    auto &dst = out.params[out.param_count++];
+
+    copy_string(dst.name, sizeof(dst.name), src.name);
+
+    const auto &value = src.value;
+
+    dst.value.type = static_cast<IPCParamValue::Type>(value.type);
+
+    switch (value.type) {
+    case ipc::IPCParamValue::Type::DOUBLE:
+      dst.value.d = value.d;
+      break;
+    case ipc::IPCParamValue::Type::INT64:
+      dst.value.i = value.i;
+      break;
+    case ipc::IPCParamValue::Type::BOOL:
+      dst.value.b = value.b;
+      break;
+    case ipc::IPCParamValue::Type::STRING:
+      copy_string(dst.value.str, sizeof(dst.value.str), value.str);
+      break;
+    case ipc::IPCParamValue::Type::DOUBLE_ARRAY: {
+      size_t n = std::min(value.arr.size(), (size_t)PLUGIN_MAX_ARRAY_LEN);
+      dst.value.arr.size = static_cast<uint32_t>(n);
+      for (size_t j = 0; j < n; ++j) {
+        dst.value.arr.data[j] = value.arr[j];
       }
+      break;
+    }
     }
   }
-
-  return cmd;
 }
 
-std::string serialize_response(const CommandResponse &resp) {
-  nlohmann::json j;
-  j["command_id"] = resp.command_id;
-  j["instrument_name"] = resp.instrument_name;
-  j["success"] = resp.success;
-  j["error_code"] = resp.error_code;
-  j["error_message"] = resp.error_message;
-  j["text_response"] = resp.text_response;
+SerializedCommand from_ipc_command(const IPCCommand &in) {
+  SerializedCommand out;
 
-  // Serialize return value
-  if (resp.return_value) {
-    if (const auto *d = std::get_if<double>(&*resp.return_value)) {
-      j["return_value"] = *d;
-      j["return_type"] = "double";
-    } else if (const auto *i = std::get_if<int64_t>(&*resp.return_value)) {
-      j["return_value"] = *i;
-      j["return_type"] = "int64";
-    } else if (const auto *s = std::get_if<std::string>(&*resp.return_value)) {
-      j["return_value"] = *s;
-      j["return_type"] = "string";
-    } else if (const auto *b = std::get_if<bool>(&*resp.return_value)) {
-      j["return_value"] = *b;
-      j["return_type"] = "bool";
-    } else if (const auto *arr =
-                   std::get_if<std::vector<double>>(&*resp.return_value)) {
-      j["return_value"] = *arr;
-      j["return_type"] = "array";
+  out.id = safe_string(in.command_id, PLUGIN_MAX_STRING_LEN);
+  out.instrument_name = safe_string(in.instrument_name, PLUGIN_MAX_STRING_LEN);
+  out.verb = safe_string(in.verb, PLUGIN_MAX_STRING_LEN);
+
+  out.expects_response = in.expects_response;
+  out.timeout = std::chrono::milliseconds(in.timeout_ms);
+  out.created_at = std::chrono::steady_clock::now();
+
+  if (in.sync_token != 0) {
+    out.sync_token = in.sync_token;
+  }
+
+  out.param_count = 0;
+
+  uint8_t count = std::min<uint8_t>(in.param_count, PLUGIN_MAX_PARAMS);
+
+  for (uint8_t i = 0; i < count; ++i) {
+    const auto &src = in.params[i];
+
+    if (src.value.type > IPCParamValue::Type::DOUBLE_ARRAY) {
+      continue;
+    }
+
+    std::string key = safe_string(src.name, PLUGIN_MAX_STRING_LEN);
+    if (key.empty()) {
+      continue;
+    }
+
+    if (out.param_count >= PLUGIN_MAX_PARAMS) {
+      break;
+    }
+
+    auto &dst = out.params[out.param_count++];
+
+    dst.name = std::move(key);
+
+    dst.value.type = src.value.type;
+
+    switch (src.value.type) {
+    case IPCParamValue::Type::DOUBLE:
+      dst.value.d = src.value.d;
+      break;
+    case IPCParamValue::Type::INT64:
+      dst.value.i = src.value.i;
+      break;
+    case IPCParamValue::Type::BOOL:
+      dst.value.b = src.value.b;
+      break;
+    case IPCParamValue::Type::STRING:
+      dst.value.str = safe_string(src.value.str, PLUGIN_MAX_STRING_LEN);
+      break;
+    case IPCParamValue::Type::DOUBLE_ARRAY: {
+      uint32_t n = std::min<uint32_t>(src.value.arr.size, PLUGIN_MAX_ARRAY_LEN);
+      dst.value.arr.assign(src.value.arr.data, src.value.arr.data + n);
+      break;
+    }
     }
   }
 
-  // Serialize large data buffer fields
-  j["has_large_data"] = resp.has_large_data;
-  if (resp.has_large_data) {
-    j["buffer_id"] = resp.buffer_id;
-    j["element_count"] = resp.element_count;
-    j["data_type"] = resp.data_type;
-  }
-
-  return j.dump();
+  return out;
 }
 
-CommandResponse deserialize_response(const std::string &json) {
-  auto j = nlohmann::json::parse(json);
+void fill_ipc_response(IPCResponse &out, const CommandResponse &in) {
+  std::memset(&out, 0, sizeof(IPCResponse));
 
-  CommandResponse resp;
-  resp.command_id = j["command_id"];
-  resp.instrument_name = j["instrument_name"];
-  resp.success = j["success"];
-  resp.error_code = j["error_code"];
-  resp.error_message = j["error_message"];
-  resp.text_response = j["text_response"];
+  copy_string(out.command_id, sizeof(out.command_id), in.command_id);
+  copy_string(out.instrument_name, sizeof(out.instrument_name),
+              in.instrument_name);
 
-  // Deserialize return value
-  if (j.contains("return_value") && j.contains("return_type")) {
-    std::string type = j["return_type"];
-    if (type == "double") {
-      resp.return_value = j["return_value"].get<double>();
-    } else if (type == "int64") {
-      resp.return_value = j["return_value"].get<int64_t>();
-    } else if (type == "string") {
-      resp.return_value = j["return_value"].get<std::string>();
-    } else if (type == "bool") {
-      resp.return_value = j["return_value"].get<bool>();
-    } else if (type == "array") {
-      resp.return_value = j["return_value"].get<std::vector<double>>();
+  out.success = in.success;
+  out.error_code = in.error_code;
+
+  copy_string(out.error_message, sizeof(out.error_message), in.error_message);
+  copy_string(out.text_response, sizeof(out.text_response), in.text_response);
+
+  // Return value
+  out.has_return_value = in.return_value.has_value();
+
+  if (in.return_value) {
+    const auto &v = *in.return_value;
+
+    out.return_value.type = static_cast<IPCParamValue::Type>(v.type);
+
+    switch (v.type) {
+    case ipc::IPCParamValue::Type::DOUBLE:
+      out.return_value.d = v.d;
+      break;
+    case ipc::IPCParamValue::Type::INT64:
+      out.return_value.i = v.i;
+      break;
+    case ipc::IPCParamValue::Type::BOOL:
+      out.return_value.b = v.b;
+      break;
+    case ipc::IPCParamValue::Type::STRING:
+      copy_string(out.return_value.str, sizeof(out.return_value.str), v.str);
+      break;
+    case ipc::IPCParamValue::Type::DOUBLE_ARRAY: {
+      size_t n = std::min(v.arr.size(), (size_t)PLUGIN_MAX_ARRAY_LEN);
+      out.return_value.arr.size = static_cast<uint32_t>(n);
+      for (size_t i = 0; i < n; ++i) {
+        out.return_value.arr.data[i] = v.arr[i];
+      }
+      break;
+    }
     }
   }
 
-  // Deserialize large data buffer fields
-  if (j.contains("has_large_data")) {
-    resp.has_large_data = j["has_large_data"];
-    if (resp.has_large_data) {
-      resp.buffer_id = j["buffer_id"];
-      resp.element_count = j["element_count"];
-      resp.data_type = j["data_type"];
+  // Large data fields
+  out.has_large_data = in.has_large_data;
+
+  if (in.has_large_data) {
+    copy_string(out.buffer_id, sizeof(out.buffer_id), in.buffer_id);
+    out.element_count = static_cast<uint32_t>(in.element_count);
+    copy_string(out.data_type, sizeof(out.data_type), in.data_type);
+  }
+}
+
+CommandResponse from_ipc_response(const IPCResponse &in) {
+  CommandResponse out;
+
+  out.command_id = safe_string(in.command_id, PLUGIN_MAX_STRING_LEN);
+  out.instrument_name = safe_string(in.instrument_name, PLUGIN_MAX_STRING_LEN);
+
+  out.success = in.success;
+  out.error_code = in.error_code;
+
+  out.error_message = safe_string(in.error_message, PLUGIN_MAX_STRING_LEN);
+  out.text_response = safe_string(in.text_response, PLUGIN_MAX_STRING_LEN);
+
+  if (in.has_return_value) {
+    if (in.return_value.type > IPCParamValue::Type::DOUBLE_ARRAY) {
+      return out; // invalid → ignore
     }
+
+    ParamValue v;
+    v.type = static_cast<ParamType>(in.return_value.type);
+
+    switch (in.return_value.type) {
+    case IPCParamValue::Type::DOUBLE:
+      v.d = in.return_value.d;
+      break;
+
+    case IPCParamValue::Type::INT64:
+      v.i = in.return_value.i;
+      break;
+
+    case IPCParamValue::Type::BOOL:
+      v.b = in.return_value.b;
+      break;
+
+    case IPCParamValue::Type::STRING:
+      v.str = safe_string(in.return_value.str, PLUGIN_MAX_STRING_LEN);
+      break;
+
+    case IPCParamValue::Type::DOUBLE_ARRAY: {
+      uint32_t n =
+          std::min<uint32_t>(in.return_value.arr.size, PLUGIN_MAX_ARRAY_LEN);
+
+      v.arr.assign(in.return_value.arr.data, in.return_value.arr.data + n);
+      break;
+    }
+    }
+
+    out.return_value = std::move(v);
   }
 
-  return resp;
+  out.has_large_data = in.has_large_data;
+
+  if (in.has_large_data) {
+    out.buffer_id = safe_string(in.buffer_id, PLUGIN_MAX_STRING_LEN);
+    out.data_type = safe_string(in.data_type, sizeof(in.data_type));
+    out.element_count = in.element_count;
+  }
+
+  return out;
 }
 
 } // namespace instserver::ipc

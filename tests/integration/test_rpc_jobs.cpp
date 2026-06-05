@@ -39,7 +39,7 @@ static bool send_http_post(const std::string &host, int port,
     return false;
   }
 
-  struct sockaddr_in serv_addr;
+  struct sockaddr_in serv_addr{};
   memset(&serv_addr, 0, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
   serv_addr.sin_port = htons(static_cast<uint16_t>(port));
@@ -121,7 +121,7 @@ protected:
   }
   void TearDown() override {
     // Clean up after each test - use public API only
-    auto &daemon = ServerDaemon::instance();
+    auto &daemon = instserver::ServerDaemon::instance();
     if (daemon.is_running()) {
       daemon.stop();
       std::this_thread::sleep_for(std::chrono::milliseconds(200));

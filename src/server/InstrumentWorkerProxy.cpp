@@ -80,7 +80,6 @@ void InstrumentWorkerProxy::stop() {
     wake_msg.type = ipc::IPCMessage::Type::HEARTBEAT;
     wake_msg.id = 0;
     wake_msg.sync_token = 0;
-    wake_msg.payload_size = 0;
 
     ipc_queue_->send_to_response_queue(wake_msg, std::chrono::milliseconds(50));
   }
@@ -116,7 +115,6 @@ void InstrumentWorkerProxy::send_shutdown_message() {
     shutdown_msg.type = ipc::IPCMessage::Type::SHUTDOWN;
     shutdown_msg.id = 0;
     shutdown_msg.sync_token = 0;
-    shutdown_msg.payload_size = 0;
     ipc_queue_->send(shutdown_msg, std::chrono::milliseconds(100));
   }
 }
@@ -202,14 +200,11 @@ InstrumentWorkerProxy::execute(SerializedCommand cmd) {
   }
 
   // Serialize and send command
-  std::string payload = ipc::serialize_command(cmd);
-
   ipc::IPCMessage msg;
   msg.type = ipc::IPCMessage::Type::COMMAND;
   msg.id = msg_id;
   msg.sync_token = cmd.sync_token.value_or(0);
-  msg.payload_size = std::min(payload.size(), sizeof(msg.payload));
-  std::memcpy(msg.payload.data(), payload.data(), msg.payload_size);
+  ipc::fill_ipc_command(msg.command, cmd);
 
   LOG_INFO(instrument_name_.c_str(), cmd.id.c_str(),
            "execute: sending msg_id=%d verb='%s' to req queue", msg_id,
@@ -366,8 +361,7 @@ void InstrumentWorkerProxy::handle_ipc_message(const ipc::IPCMessage &msg) {
 
 void InstrumentWorkerProxy::handle_response_message(
     const ipc::IPCMessage &msg) {
-  std::string payload(msg.payload.data(), msg.payload_size);
-  CommandResponse resp = ipc::deserialize_response(payload);
+  CommandResponse resp = ipc::from_ipc_response(msg.response);
   LOG_DEBUG(instrument_name_.c_str(), resp.command_id.c_str(),
             "Received response msg_id=%d success=%d", msg.id,
             resp.success ? 1 : 0);
@@ -431,7 +425,6 @@ void InstrumentWorkerProxy::send_sync_continue(uint64_t sync_token) {
   msg.type = ipc::IPCMessage::Type::SYNC_CONTINUE;
   msg.id = 0;
   msg.sync_token = sync_token;
-  msg.payload_size = 0;
 
   bool sent = ipc_queue_->send(msg, std::chrono::milliseconds(1000));
 
@@ -451,13 +444,14 @@ void InstrumentWorkerProxy::send_buffer_ack(const std::string &buffer_id) {
     return;
   }
 
-  ipc::IPCMessage msg;
+  ipc::IPCMessage msg{};
   msg.type = ipc::IPCMessage::Type::BUFFER_ACK;
   msg.id = 0;
   msg.sync_token = 0;
-  msg.payload_size = 0;
-  std::strncpy(msg.data_buffer_id, buffer_id.c_str(),
-               sizeof(msg.data_buffer_id) - 1);
+
+  std::strncpy(msg.buffer_ack.buffer_id, buffer_id.c_str(),
+               sizeof(msg.buffer_ack.buffer_id) - 1);
+  msg.buffer_ack.buffer_id[sizeof(msg.buffer_ack.buffer_id) - 1] = '\0';
 
   bool sent = ipc_queue_->send(msg, std::chrono::milliseconds(1000));
 

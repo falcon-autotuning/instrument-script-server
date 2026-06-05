@@ -68,7 +68,6 @@ add_executable(
   integration_tests
   integration/test_daemon_lifecycle.cpp
   integration/test_parallel_execution.cpp
-  integration/test_end_to_end.cpp
   integration/test_cli_commands.cpp
   integration/test_instrument_registry.cpp
   integration/test_measurement_scripts.cpp

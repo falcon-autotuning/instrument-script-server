@@ -21,7 +21,6 @@ TEST(IPCPerformance, Throughput) {
       IPCMessage msg;
       msg.type = IPCMessage::Type::COMMAND;
       msg.id = i;
-      msg.payload_size = 0;
       server_queue->send(msg, std::chrono::seconds(1));
     }
   });
