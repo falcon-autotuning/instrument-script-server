@@ -67,8 +67,9 @@ protected:
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     std::ifstream ifs(log_path_, std::ios::in | std::ios::binary);
-    if (!ifs)
+    if (!ifs) {
       return "";
+    }
     return std::string((std::istreambuf_iterator<char>(ifs)),
                        (std::istreambuf_iterator<char>()));
   }

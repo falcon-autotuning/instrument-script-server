@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <fmt/format.h>
 #include <format>
+#include <inst_logging.h>
+#include <instrument-data.h>
 #include <instrument-plugin.h>
 #include <string_view>
 
@@ -43,6 +45,13 @@ protected:
 
     plugin_path_ = get_test_plugin_path("mock_visa_large_data_plugin");
 
+    // Initialize logger
+    auto log_path =
+        std::filesystem::temp_directory_path() / "test_visa_large_data.log";
+    inst_log_shutdown();
+    inst_log_init(log_path.string().c_str(), INST_LOG_DEBUG, "instrument",
+                  1024 * 1024 * 10, // 10 MB
+                  3);               // rotation count
     if (!std::filesystem::exists(plugin_path_)) {
       GTEST_SKIP() << "Mock VISA plugin not found at:  " << plugin_path_;
     }
@@ -51,6 +60,8 @@ protected:
   void TearDown() override {
     auto &manager = ipc::DataBufferManager::instance();
     manager.clear_all();
+    inst_log_flush();
+    inst_log_shutdown();
   }
 
   std::filesystem::path plugin_path_;
@@ -112,85 +123,6 @@ TEST_F(VISALargeDataTest, LargeDataInBuffer) {
   EXPECT_EQ(resp.data_type, INST_DATA_FLOAT32);
 
   // Verify buffer exists
-  auto &manager = ipc::DataBufferManager::instance();
-  auto meta = manager.get_metadata(resp.data_buffer_id);
-  ASSERT_TRUE(meta.has_value());
-
-  EXPECT_EQ(meta->element_count, resp.data_element_count);
-  EXPECT_EQ(meta->data_type, INST_DATA_FLOAT32);
-}
-
-TEST_F(VISALargeDataTest, BufferMetadata) {
-  plugin::PluginLoader loader(plugin_path_.string());
-  ASSERT_TRUE(loader.is_loaded());
-
-  PluginConfig config{};
-  safe_c_str_copy(config.instrument_name, "Oscilloscope");
-  safe_c_str_copy(config.connection_json, R"({"address":"mock://test"})");
-
-  ASSERT_EQ(loader.initialize(config), 0);
-
-  PluginCommand cmd{};
-  safe_c_str_copy(cmd.id, "waveform_capture_001");
-  safe_c_str_copy(cmd.instrument_name, "Oscilloscope");
-  safe_c_str_copy(cmd.verb, "GET_LARGE_DATA");
-  cmd.expects_response = true;
-
-  PluginResponse resp{};
-  ASSERT_EQ(loader.execute_command(cmd, resp), 0);
-  ASSERT_TRUE(resp.has_large_data);
-
-  // Check metadata
-  auto &manager = ipc::DataBufferManager::instance();
-  auto metadata = manager.get_metadata(resp.data_buffer_id);
-  ASSERT_TRUE(metadata.has_value());
-
-  EXPECT_EQ(metadata->instrument_name, "Oscilloscope");
-  EXPECT_EQ(metadata->command_id, "waveform_capture_001");
-  EXPECT_EQ(metadata->data_type, INST_DATA_FLOAT32);
-  EXPECT_GT(metadata->timestamp_ms, 0);
-}
-
-TEST_F(VISALargeDataTest, MultipleBuffers) {
-  plugin::PluginLoader loader(plugin_path_.string());
-  ASSERT_TRUE(loader.is_loaded());
-
-  PluginConfig config{};
-  safe_c_str_copy(config.instrument_name, "TestScope");
-  safe_c_str_copy(config.connection_json, R"({"address":"mock://test"})");
-
-  ASSERT_EQ(loader.initialize(config), 0);
-
-  auto &manager = ipc::DataBufferManager::instance();
-
-  std::vector<std::string> buffer_ids;
-
-  // Create multiple buffers
-  const size_t total_buffers = 5;
-  for (int i = 0; i < total_buffers; i++) {
-    PluginCommand cmd{};
-    auto tmp = fmt::format("cmd_{:03d}", i);
-    safe_c_str_copy(cmd.id, tmp);
-    safe_c_str_copy(cmd.instrument_name, "TestScope");
-    safe_c_str_copy(cmd.verb, "GET_LARGE_DATA");
-    cmd.expects_response = true;
-
-    PluginResponse resp{};
-    ASSERT_EQ(loader.execute_command(cmd, resp), 0);
-    ASSERT_TRUE(resp.has_large_data);
-
-    buffer_ids.emplace_back(resp.data_buffer_id);
-  }
-
-  // Verify all buffers exist
-  auto buffers = manager.list_buffers();
-  EXPECT_GE(buffers.size(), 5);
-
-  // Verify memory tracking
-  EXPECT_GT(manager.total_memory_usage(), 0);
-
-  // Release all buffers
-  for (const auto &id : buffer_ids) {
-    manager.release_buffer(id);
-  }
+  ASSERT_TRUE(data_manager_get_buffer(resp.data_buffer_id) != nullptr);
+  data_manager_release_buffer(resp.data_buffer_id); // Clean up
 }

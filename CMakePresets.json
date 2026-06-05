@@ -17,8 +17,7 @@
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
         "USE_CCACHE": "ON",
         "ENABLE_PCH": "ON",
-        "BUILD_TESTS": "ON",
-        "FALCON_CORE_BUILD_C_API": "ON"
+        "BUILD_TESTS": "ON"
       }
     },
     {

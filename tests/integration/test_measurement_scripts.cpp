@@ -478,7 +478,7 @@ commands:
     GTEST_SKIP() << "Failed to create instrument: " << e.what();
   }
 
-  auto ctx = run_script_with_context("large_buffer_returns.lua");
+  auto *ctx = run_script_with_context("large_buffer_returns.lua");
   ASSERT_NE(ctx, nullptr);
 
   const auto &results = ctx->get_results();
@@ -527,7 +527,7 @@ commands:
       EXPECT_TRUE(read_out.value("ok", false));
       EXPECT_EQ(read_out.value("element_count", 0ULL),
                 results[0].element_count);
-      EXPECT_EQ(read_out.value("data_type", ""), "float64");
+      EXPECT_EQ(read_out["data_type"], INST_DATA_FLOAT64);
 
       auto data = read_out["data"].get<std::vector<double>>();
       ASSERT_GE(data.size(), 100);
@@ -759,7 +759,7 @@ commands:
 
     EXPECT_TRUE(read_out.value("ok", false));
     EXPECT_EQ(read_out.value("element_count", 0ULL), expected_count);
-    EXPECT_EQ(read_out.value("data_type", ""), "float64");
+    EXPECT_EQ(read_out["data_type"], INST_DATA_FLOAT64);
 
     auto data = read_out["data"].template get<std::vector<double>>();
     ASSERT_GE(data.size(), 100);

@@ -32,7 +32,9 @@ namespace instserver {
 BufferHandle::BufferHandle(const std::string &buffer_id, uint64_t element_count,
                            const std::string &data_type)
     : buffer_id_(buffer_id), element_count_(element_count),
-      data_type_(data_type) {}
+      data_type_(data_type) {
+  ipc::DataBufferManager::instance().save_buffer(buffer_id);
+}
 
 BufferHandle::~BufferHandle() {}
 
@@ -321,14 +323,11 @@ sol::object RuntimeContext::call(const std::string &func_name,
     // Return MeasurementResponse wrapping a BufferHandle for array data
     auto handle = std::make_shared<BufferHandle>(
         resp.buffer_id, resp.element_count, resp.data_type);
-
     // Hand-off/Ownership Transfer:
     // 1. Server process has now attached to the buffer via BufferHandle's
-    // constructor (which calls get_buffer).
+    // constructor (which calls save_buffer).
     // 2. Since the server safely owns the buffer, we can now send a release
     // command to the worker
-    //    so the worker releases its local creator reference, leaving the server
-    //    as the sole owner.
     auto worker = registry_.get_instrument(instrument_id);
     if (worker) {
       try {

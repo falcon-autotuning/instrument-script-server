@@ -32,6 +32,7 @@ TEST_F(DataBufferManagerTest, GetMetadata) {
   EXPECT_EQ(metadata->element_count, test_data.size());
   EXPECT_EQ(metadata->byte_size, test_data.size() * sizeof(int32_t));
   EXPECT_GT(metadata->timestamp_ms, 0);
+  manager_->release_buffer(buffer_id);
 }
 
 TEST_F(DataBufferManagerTest, Referencecounting) {
@@ -77,6 +78,9 @@ TEST_F(DataBufferManagerTest, ListBuffers) {
   EXPECT_NE(std::find(buffers.begin(), buffers.end(), id1), buffers.end());
   EXPECT_NE(std::find(buffers.begin(), buffers.end(), id2), buffers.end());
   EXPECT_NE(std::find(buffers.begin(), buffers.end(), id3), buffers.end());
+  manager_->release_buffer(id1);
+  manager_->release_buffer(id2);
+  manager_->release_buffer(id3);
 }
 
 TEST_F(DataBufferManagerTest, TotalMemoryUsage) {
@@ -89,7 +93,7 @@ TEST_F(DataBufferManagerTest, TotalMemoryUsage) {
   std::vector<double> data2(data2_size);
   const char *id1 = data_manager_create_buffer("I1", "C1", INST_DATA_FLOAT32,
                                                data1.size(), data1.data());
-  const char *id2 = data_manager_create_buffer("I2", "C2", INST_DATA_FLOAT32,
+  const char *id2 = data_manager_create_buffer("I2", "C2", INST_DATA_FLOAT64,
                                                data2.size(), data2.data());
   manager_->save_buffer(id1);
   manager_->save_buffer(id2);
