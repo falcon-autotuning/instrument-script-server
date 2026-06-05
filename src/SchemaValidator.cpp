@@ -11,18 +11,8 @@ namespace instserver {
 // Forward declarations for embedded schemas
 extern const char *INSTRUMENT_API_SCHEMA;
 extern const char *INSTRUMENT_CONFIGURATION_SCHEMA;
-
-[[maybe_unused]] static std::string get_yaml_type(const YAML::Node &node) {
-  if (node.IsScalar())
-    return "scalar";
-  if (node.IsSequence())
-    return "sequence";
-  if (node.IsMap())
-    return "map";
-  return "unknown";
-}
-
-static std::string node_path(const std::vector<std::string> &path) {
+namespace {
+std::string node_path(const std::vector<std::string> &path) {
   std::string out;
   for (const auto &p : path) {
     out += "/" + p;
@@ -30,40 +20,35 @@ static std::string node_path(const std::vector<std::string> &path) {
   return out;
 }
 
-static void add_error(ValidationResult &result,
-                      const std::vector<std::string> &path,
-                      const std::string &msg) {
+void add_error(ValidationResult &result, const std::vector<std::string> &path,
+               const std::string &msg) {
   result.valid = false;
   result.errors.push_back({node_path(path), msg, 0, 0});
 }
 
-[[maybe_unused]] static bool has_key(const YAML::Node &node,
-                                     const std::string &key) {
-  return node[key].IsDefined();
-}
-
-static void validate_io_against_channel_groups(const YAML::Node &io,
-                                               const YAML::Node &channel_groups,
-                                               ValidationResult &result,
-                                               std::vector<std::string> path) {
-  if (!channel_groups)
+void validate_io_against_channel_groups(const YAML::Node &io,
+                                        const YAML::Node &channel_groups,
+                                        ValidationResult &result,
+                                        std::vector<std::string> path) {
+  if (!channel_groups) {
     return;
+  }
   std::set<std::string> io_names;
   for (const auto &entry : io) {
     io_names.insert(entry["name"].as<std::string>());
   }
   for (const auto &group : channel_groups) {
-    std::string group_name = group["name"].as<std::string>();
+    auto group_name = group["name"].as<std::string>();
     int min_ch = group["channel_parameter"]["min"].as<int>();
     int max_ch = group["channel_parameter"]["max"].as<int>();
-    const auto &io_types = group["io_types"];
+    auto io_types = group["io_types"];
     for (int ch = min_ch; ch <= max_ch; ++ch) {
       for (const auto &io_type : io_types) {
         std::string expected_name = group_name + std::to_string(ch) + "_" +
                                     io_type["suffix"].as<std::string>();
         if (io_names.find(expected_name) == io_names.end()) {
           std::vector<std::string> err_path = path;
-          err_path.push_back("io");
+          err_path.emplace_back("io");
           add_error(result, err_path,
                     "Missing IO entry for channel group '" + group_name +
                         "', channel " + std::to_string(ch) + ", suffix '" +
@@ -74,6 +59,7 @@ static void validate_io_against_channel_groups(const YAML::Node &io,
     }
   }
 }
+} // namespace
 
 ValidationResult
 SchemaValidator::validate_instrument_api(const std::string &yaml_path) {
@@ -95,7 +81,7 @@ SchemaValidator::validate_instrument_api(const std::string &yaml_path) {
       add_error(result, {"io"}, "IO must be a sequence");
     } else {
       for (size_t i = 0; i < doc["io"].size(); ++i) {
-        const auto &entry = doc["io"][i];
+        auto entry = doc["io"][i];
         if (!entry.IsMap()) {
           add_error(result, {"io", std::to_string(i)},
                     "IO entry must be a map");
@@ -120,7 +106,7 @@ SchemaValidator::validate_instrument_api(const std::string &yaml_path) {
                                            result, {});
         // Validate channel_group structure
         for (size_t g = 0; g < doc["channel_groups"].size(); ++g) {
-          const auto &group = doc["channel_groups"][g];
+          auto group = doc["channel_groups"][g];
           std::vector<std::string> group_path = {"channel_groups",
                                                  std::to_string(g)};
           for (const auto &req : {"name", "channel_parameter", "io_types"}) {
@@ -151,9 +137,9 @@ SchemaValidator::validate_instrument_api(const std::string &yaml_path) {
               add_error(result, group_path, "io_types must be a sequence");
             } else {
               for (size_t t = 0; t < group["io_types"].size(); ++t) {
-                const auto &io_type = group["io_types"][t];
+                auto io_type = group["io_types"][t];
                 std::vector<std::string> io_type_path = group_path;
-                io_type_path.push_back("io_types");
+                io_type_path.emplace_back("io_types");
                 io_type_path.push_back(std::to_string(t));
                 for (const auto &req : {"suffix", "type", "role"}) {
                   if (!io_type[req] || !io_type[req].IsDefined()) {
@@ -175,8 +161,8 @@ SchemaValidator::validate_instrument_api(const std::string &yaml_path) {
     } else {
       for (auto it = doc["commands"].begin(); it != doc["commands"].end();
            ++it) {
-        std::string cmd_name = it->first.as<std::string>();
-        const auto &cmd = it->second;
+        auto cmd_name = it->first.as<std::string>();
+        YAML::Node cmd = it->second;
         std::vector<std::string> cmd_path = {"commands", cmd_name};
         // Required fields
         for (const auto &req : {"template", "parameters", "outputs"}) {
@@ -204,15 +190,14 @@ SchemaValidator::validate_instrument_api(const std::string &yaml_path) {
                       "outputs must be a sequence of suffixes when "
                       "channel_group is set");
             continue;
-          } else {
-            add_error(result, cmd_path,
-                      "outputs must be a sequence of io names when "
-                      "channel_group is not set");
-            continue;
           }
+          add_error(result, cmd_path,
+                    "outputs must be a sequence of io names when "
+                    "channel_group is not set");
+          continue;
         }
         if (cmd["template"] && cmd["template"].IsScalar()) {
-          std::string tmpl = cmd["template"].as<std::string>();
+          auto tmpl = cmd["template"].as<std::string>();
           std::set<std::string> allowed_names;
 
           // Add parameter names
@@ -284,17 +269,21 @@ std::string SchemaValidator::get_instrument_configuration_schema() {
 }
 
 // Helper:  split semicolon-delimited string into vector
-static std::vector<std::string> split_semicolon(const std::string &s) {
+namespace {
+std::vector<std::string> split_semicolon(const std::string &s) {
   std::vector<std::string> out;
-  size_t start = 0, end;
+  size_t start = 0;
+  size_t end = 0;
   while ((end = s.find(';', start)) != std::string::npos) {
     out.push_back(s.substr(start, end - start));
     start = end + 1;
   }
-  if (start < s.size())
+  if (start < s.size()) {
     out.push_back(s.substr(start));
+  }
   return out;
 }
+} // namespace
 
 ValidationResult
 SchemaValidator::validate_quantum_dot_device(const std::string &yaml_path) {
@@ -316,7 +305,7 @@ SchemaValidator::validate_quantum_dot_device(const std::string &yaml_path) {
     std::map<std::string, std::vector<std::string>> global_gates;
     std::vector<std::string> all_global_gates;
     if (doc["global"]) {
-      const auto &global = doc["global"];
+      auto global = doc["global"];
       std::vector<std::string> gpath = {"global"};
       for (const auto &key : {"ScreeningGates", "PlungerGates", "Ohmics",
                               "BarrierGates", "ReservoirGates"}) {
@@ -335,13 +324,13 @@ SchemaValidator::validate_quantum_dot_device(const std::string &yaml_path) {
     // Validate groups section and check all group gates are in global
     std::set<std::string> used_gates;
     if (doc["groups"]) {
-      const auto &groups = doc["groups"];
+      auto groups = doc["groups"];
       if (!groups.IsMap()) {
         add_error(result, {"groups"}, "groups must be a map/object");
       } else {
         for (auto it = groups.begin(); it != groups.end(); ++it) {
-          std::string group_name = it->first.as<std::string>();
-          const auto &group = it->second;
+          auto group_name = it->first.as<std::string>();
+          YAML::Node group = it->second;
           std::vector<std::string> gpath = {"groups", group_name};
           for (const auto &key :
                {"Name", "NumDots", "ScreeningGates", "ReservoirGates",
@@ -406,7 +395,8 @@ SchemaValidator::validate_quantum_dot_device(const std::string &yaml_path) {
                     "Second-to-last entry in Order must be a ReservoirGate");
               }
               // Center:  barrier-plunger-barrier pattern
-              int plunger_count = 0, barrier_count = 0;
+              int plunger_count = 0;
+              int barrier_count = 0;
               for (size_t i = 2; i + 2 < n; ++i) {
                 if (i % 2 == 0) {
                   // Should be barrier
@@ -443,8 +433,9 @@ SchemaValidator::validate_quantum_dot_device(const std::string &yaml_path) {
 
     // Check all global gates are used in groups
     for (const auto &[type, gates] : global_gates) {
-      if (type == "Ohmics")
+      if (type == "Ohmics") {
         continue;
+      }
       for (const auto &gate : gates) {
         if (used_gates.find(gate) == used_gates.end()) {
           add_error(result, {"global"},
@@ -456,7 +447,7 @@ SchemaValidator::validate_quantum_dot_device(const std::string &yaml_path) {
 
     // Validate wiringDC:  must be empty or contain all global gates
     if (doc["wiringDC"]) {
-      const auto &wiring = doc["wiringDC"];
+      auto wiring = doc["wiringDC"];
       if (!wiring.IsMap()) {
         add_error(result, {"wiringDC"}, "wiringDC must be a map/object");
       } else if (wiring.size() != 0 &&
@@ -466,8 +457,8 @@ SchemaValidator::validate_quantum_dot_device(const std::string &yaml_path) {
                   "global gate");
       }
       for (auto it = wiring.begin(); it != wiring.end(); ++it) {
-        std::string conn_name = it->first.as<std::string>();
-        const auto &conn = it->second;
+        auto conn_name = it->first.as<std::string>();
+        auto conn = it->second;
         std::vector<std::string> wpath = {"wiringDC", conn_name};
         for (const auto &key : {"resistance", "capacitance"}) {
           if (!conn[key] || !conn[key].IsDefined()) {
@@ -527,8 +518,8 @@ ValidationResult SchemaValidator::validate_instrument_configuration(
     } else {
       for (auto it = doc["io_config"].begin(); it != doc["io_config"].end();
            ++it) {
-        std::string io_name = it->first.as<std::string>();
-        const auto &io_entry = it->second;
+        auto io_name = it->first.as<std::string>();
+        YAML::Node io_entry = it->second;
         std::vector<std::string> io_path = {"io_config", io_name};
         // Required fields:  type, role
         for (const auto &req : {"type", "role"}) {
@@ -539,7 +530,7 @@ ValidationResult SchemaValidator::validate_instrument_configuration(
         }
         // type must be one of int, float, string, bool
         if (io_entry["type"] && io_entry["type"].IsScalar()) {
-          std::string t = io_entry["type"].as<std::string>();
+          auto t = io_entry["type"].as<std::string>();
           if (t != "int" && t != "float" && t != "string" && t != "bool") {
             add_error(result, io_path,
                       "type must be one of:  int, float, string, bool");
@@ -547,7 +538,7 @@ ValidationResult SchemaValidator::validate_instrument_configuration(
         }
         // role must be one of input, output, inout
         if (io_entry["role"] && io_entry["role"].IsScalar()) {
-          std::string r = io_entry["role"].as<std::string>();
+          auto r = io_entry["role"].as<std::string>();
           if (r != "input" && r != "output" && r != "inout") {
             add_error(result, io_path,
                       "role must be one of: input, output, inout");

@@ -97,6 +97,24 @@
         "VCPKG_TARGET_TRIPLET": "x64-win-llvm",
         "CMAKE_PREFIX_PATH": "${sourceDir}/vcpkg_installed/x64-win-llvm/share;${sourceDir}/vcpkg_installed"
       }
+    },
+    {
+      "name": "linux-clang-asan",
+      "description": "Linux Debug build with AddressSanitizer",
+      "inherits": "default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "VCPKG_TARGET_TRIPLET": "x64-linux-dynamic",
+        "CMAKE_PREFIX_PATH": "${sourceDir}/vcpkg_installed/x64-linux-dynamic/share;${sourceDir}/vcpkg_installed",
+        "CMAKE_EXE_LINKER_FLAGS": "-fuse-ld=lld -fsanitize=address",
+        "CMAKE_SHARED_LINKER_FLAGS": "-fuse-ld=lld -fsanitize=address",
+        "CMAKE_C_FLAGS": "-fsanitize=address -fno-omit-frame-pointer -g",
+        "CMAKE_CXX_FLAGS": "-fsanitize=address -fno-omit-frame-pointer -g",
+        "DENABLE_DEBUG_LOGS": true,
+        "ASAN_OPTIONS": "detect_leaks=1"
+      }
     }
   ],
   "buildPresets": [
@@ -126,6 +144,11 @@
       "jobs": 0
     },
     {
+      "name": "linux-clang-asan",
+      "configurePreset": "linux-clang-asan",
+      "jobs": 0
+    },
+    {
       "name": "windows-clang-cl-release",
       "configurePreset": "windows-clang-cl-release",
       "jobs": 0
@@ -151,6 +174,10 @@
     {
       "name": "windows-clang-cl-debug",
       "configurePreset": "windows-clang-cl-debug"
+    },
+    {
+      "name": "linux-clang-asan",
+      "configurePreset": "linux-clang-asan"
     },
     {
       "name": "windows-clang-cl-release",

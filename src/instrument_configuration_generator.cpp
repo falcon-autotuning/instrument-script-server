@@ -16,14 +16,15 @@ void generate_instrument_configuration(const std::string &api_yaml_path,
 
   YAML::Node io_config;
   for (const auto &io : api["io"]) {
-    std::string role = io["role"].as<std::string>();
+    auto role = io["role"].as<std::string>();
     if (role == "input" || role == "output" || role == "inout") {
-      std::string name = io["name"].as<std::string>();
+      auto name = io["name"].as<std::string>();
       YAML::Node io_entry;
       io_entry["type"] = io["type"].as<std::string>();
       io_entry["role"] = role;
-      if (io["unit"])
+      if (io["unit"]) {
         io_entry["unit"] = io["unit"].as<std::string>();
+      }
       io_entry["offset"] = 0;
       io_entry["scale"] = 1;
       io_config[name] = io_entry;
@@ -43,6 +44,6 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   generate_instrument_configuration(argv[1], argv[2]);
-  std::cout << "Generated instrument configuration: " << argv[2] << std::endl;
+  std::cout << "Generated instrument configuration: " << argv[2] << '\n';
   return 0;
 }

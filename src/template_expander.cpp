@@ -4,14 +4,17 @@
 #include <unordered_set>
 #include <yaml-cpp/yaml.h>
 
+namespace {
 void expand_channel_groups(YAML::Node &root) {
   auto io = root["io"];
-  if (!io)
+  if (!io) {
     io = YAML::Node(YAML::NodeType::Sequence);
-  if (!root["channel_groups"])
+  }
+  if (!root["channel_groups"]) {
     return;
+  }
   for (const auto &group : root["channel_groups"]) {
-    std::string group_name = group["name"].as<std::string>();
+    auto group_name = group["name"].as<std::string>();
     int min_ch = group["channel_parameter"]["min"].as<int>();
     int max_ch = group["channel_parameter"]["max"].as<int>();
     const auto &io_types = group["io_types"];
@@ -22,23 +25,25 @@ void expand_channel_groups(YAML::Node &root) {
                            io_type["suffix"].as<std::string>();
         io_entry["type"] = io_type["type"].as<std::string>();
         io_entry["role"] = io_type["role"].as<std::string>();
-        if (io_type["description"])
+        if (io_type["description"]) {
           io_entry["description"] = io_type["description"].as<std::string>();
-        if (io_type["unit"])
+        }
+        if (io_type["unit"]) {
           io_entry["unit"] = io_type["unit"].as<std::string>();
+        }
         root["io"].push_back(io_entry);
       }
     }
   }
 }
-
 void deduplicate_io(YAML::Node &root) {
-  if (!root["io"] || !root["io"].IsSequence())
+  if (!root["io"] || !root["io"].IsSequence()) {
     return;
+  }
   YAML::Node unique_io(YAML::NodeType::Sequence);
   std::unordered_set<std::string> seen;
   for (const auto &entry : root["io"]) {
-    std::string name = entry["name"].as<std::string>();
+    auto name = entry["name"].as<std::string>();
     if (seen.count(name) == 0) {
       unique_io.push_back(entry);
       seen.insert(name);
@@ -46,7 +51,7 @@ void deduplicate_io(YAML::Node &root) {
   }
   root["io"] = unique_io;
 }
-
+} // namespace
 int main(int argc, char *argv[]) {
   if (argc != 3) {
     std::cerr << "Usage: " << argv[0] << " <input.yaml> <output.yaml>\n";
