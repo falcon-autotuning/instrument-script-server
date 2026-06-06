@@ -887,7 +887,10 @@ __context_schema_version = nil
 
       // Convert params to JSON
       json params_json;
-
+      if (r.param_count > PLUGIN_MAX_PARAMS) {
+        LOG_ERROR("SERVER", "MEASURE", "Invalid param_count=%u, max=%u",
+                  r.param_count, PLUGIN_MAX_PARAMS);
+      }
       for (uint8_t i = 0; i < r.param_count; ++i) {
         const auto &p = r.params[i];
 
