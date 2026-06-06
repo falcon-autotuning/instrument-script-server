@@ -919,6 +919,7 @@ __context_schema_version = nil
       }
 
       result_json["params"] = params_json;
+      LOG_INFO("SERVER", "MEASURE", "Finished params for result %d", i);
 
       // Execution timestamp (ms since epoch)
       auto ms_since_epoch =
