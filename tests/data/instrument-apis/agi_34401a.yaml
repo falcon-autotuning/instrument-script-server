@@ -1,0 +1,52 @@
+api_version: "1.0.0"
+instrument:
+  vendor: "Agilent"
+  model: "34401A"
+  identifier: "API1"
+  description: "Digital Multimeter"
+protocol:
+  type: "VISA"
+io:
+  - name: voltage
+    type: float
+    role: input
+    description: "Voltage to set"
+    unit: "V"
+  - name: range
+    type: float
+    role: setting
+    description: "Measurement range"
+    unit: "V"
+  - name: measured_voltage
+    type: float
+    role: output
+    description: "Measured DC voltage"
+    unit: "V"
+commands:
+  SET_VOLTAGE:
+    template: "SOUR: VOLT {voltage}"
+    description: "Set output voltage"
+    parameters:
+      - io: voltage
+    outputs: []
+  MEASURE_VOLTAGE:
+    template: "MEAS:VOLT: DC?"
+    description: "Measure DC voltage"
+    parameters: []
+    outputs: [measured_voltage]
+  SET_RANGE:
+    template: "VOLT:RANG {range}"
+    description: "Set measurement range"
+    parameters:
+      - io: range
+    outputs: []
+  GET_VOLTAGE:
+    template: "SOUR:VOLT?"
+    description: "Get the currently set output voltage"
+    parameters: []
+    outputs: [voltage]
+  GET_RANGE:
+    template: "VOLT:RANG?"
+    description: "Get the currently set measurement range"
+    parameters: []
+    outputs: [range]

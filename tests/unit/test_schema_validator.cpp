@@ -62,13 +62,13 @@ fs::path find_executable(const std::string &exe_name) {
 /**
  * @brief Get the repository root directory
  */
-fs::path get_repo_root() {
+fs::path get_test_root() {
   fs::path test_file = fs::absolute(__FILE__);
-  debug_log("get_repo_root", "Test file: " + test_file.string());
+  debug_log("get_test_root", "Test file: " + test_file.string());
 
-  fs::path repo_root = test_file.parent_path().parent_path().parent_path();
-  debug_log("get_repo_root", "Calculated repo root: " + repo_root.string());
-  debug_log("get_repo_root",
+  fs::path repo_root = test_file.parent_path().parent_path();
+  debug_log("get_test_root", "Calculated repo root: " + repo_root.string());
+  debug_log("get_test_root",
             "Repo root exists: " +
                 std::string(fs::exists(repo_root) ? "YES" : "NO"));
 
@@ -291,9 +291,9 @@ void cleanup_temp_files() {
 TEST(SchemaValidatorTest, ValidateAgilentInstrumentDirect) {
   std::cerr << "\n======== TEST: ValidateAgilentInstrumentDirect ========\n";
 
-  fs::path repo_root = get_repo_root();
+  fs::path repo_root = get_test_root();
   fs::path yaml_path =
-      repo_root / "examples" / "instrument-apis" / "agi_34401a.yaml";
+      repo_root / "data" / "instrument-apis" / "agi_34401a.yaml";
 
   debug_log("TEST", "Full YAML path: " + yaml_path.string());
   debug_log("TEST", "File exists: " +
@@ -313,9 +313,9 @@ TEST(SchemaValidatorTest, ValidateAgilentInstrumentWithExpander) {
   std::cerr
       << "\n======== TEST: ValidateAgilentInstrumentWithExpander ========\n";
 
-  fs::path repo_root = get_repo_root();
+  fs::path repo_root = get_test_root();
   fs::path yaml_path =
-      repo_root / "examples" / "instrument-apis" / "agi_34401a.yaml";
+      repo_root / "data" / "instrument-apis" / "agi_34401a.yaml";
 
   debug_log("TEST", "Full YAML path: " + yaml_path.string());
   debug_log("TEST", "File exists: " +
@@ -342,9 +342,9 @@ TEST(SchemaValidatorTest, ValidateAgilentInstrumentWithExpander) {
 TEST(SchemaValidatorTest, ValidateKeysightInstrument) {
   std::cerr << "\n======== TEST: ValidateKeysightInstrument ========\n";
 
-  fs::path repo_root = get_repo_root();
+  fs::path repo_root = get_test_root();
   fs::path yaml_path =
-      repo_root / "examples" / "instrument-apis" / "dso9254a.yaml.tmpl";
+      repo_root / "data" / "instrument-apis" / "dso9254a.yaml.tmpl";
 
   debug_log("TEST", "Full YAML path: " + yaml_path.string());
   debug_log("TEST", "File exists: " +
@@ -371,9 +371,9 @@ TEST(SchemaValidatorTest, ValidateKeysightInstrument) {
 TEST(SchemaValidatorTest, ValidateQuantumDotDeviceConfig) {
   std::cerr << "\n======== TEST: ValidateQuantumDotDeviceConfig ========\n";
 
-  fs::path repo_root = get_repo_root();
+  fs::path repo_root = get_test_root();
   fs::path yaml_path =
-      repo_root / "examples" / "one_charge_sensor_quantum_dot_device.yaml";
+      repo_root / "data" / "one_charge_sensor_quantum_dot_device.yaml";
 
   debug_log("TEST", "Full YAML path: " + yaml_path.string());
   debug_log("TEST", "File exists: " +
@@ -393,9 +393,9 @@ TEST(SchemaValidatorTest, GenerateAndValidateAgilentInstrumentConfiguration) {
   std::cerr << "\n======== TEST: "
                "GenerateAndValidateAgilentInstrumentConfiguration ========\n";
 
-  fs::path repo_root = get_repo_root();
+  fs::path repo_root = get_test_root();
   fs::path yaml_path =
-      repo_root / "examples" / "instrument-apis" / "agi_34401a.yaml";
+      repo_root / "data" / "instrument-apis" / "agi_34401a.yaml";
 
   debug_log("TEST", "Full YAML path: " + yaml_path.string());
   debug_log("TEST", "File exists: " +
@@ -424,9 +424,9 @@ TEST(SchemaValidatorTest, GenerateAndValidateKeysightInstrumentConfiguration) {
   std::cerr << "\n======== TEST: "
                "GenerateAndValidateKeysightInstrumentConfiguration ========\n";
 
-  fs::path repo_root = get_repo_root();
+  fs::path repo_root = get_test_root();
   fs::path yaml_path =
-      repo_root / "examples" / "instrument-apis" / "dso9254a.yaml.tmpl";
+      repo_root / "data" / "instrument-apis" / "dso9254a.yaml.tmpl";
 
   debug_log("TEST", "Full YAML path: " + yaml_path.string());
   debug_log("TEST", "File exists: " +

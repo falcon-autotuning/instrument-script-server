@@ -23,10 +23,6 @@
     {
       "name": "instrument-log",
       "version>=": "1.0.5"
-    },
-    {
-      "name": "visa-plugin",
-      "version>=": "1.0.0"
     }
   ]
 }

@@ -63,7 +63,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Build Options
 option(BUILD_TESTS "Build tests" OFF)
-option(BUILD_EXAMPLES "Build example plugins" ON)
 
 # Performance options
 option(USE_CCACHE "Enable ccache or sccache if available" ON)
@@ -104,32 +103,6 @@ find_package(yaml-cpp      CONFIG REQUIRED)
 find_package(sol2          CONFIG REQUIRED)
 find_package(instrument-data CONFIG REQUIRED)
 find_package(instrument-log CONFIG REQUIRED)
-
-# VISA (optional)
-if(WIN32)
-  find_library(
-    VISA_LIBRARY
-    NAMES visa visa64
-    PATHS
-      "C:/Program Files/IVI Foundation/VISA/Win64/Bin"
-      "C:/Program Files (x86)/IVI Foundation/VISA/WinNT/Bin"
-      "C:/Windows/System32"
-      "C:/Windows/SysWOW64"
-  )
-else()
-  find_library(
-    VISA_LIBRARY
-    NAMES visa visa64
-    PATHS /usr/local/vxipnp/linux64/lib
-  )
-endif()
-if(VISA_LIBRARY)
-  message(STATUS "Found VISA library:  ${VISA_LIBRARY}")
-  set(HAVE_VISA ON)
-else()
-  message(STATUS "VISA not found, VISA built-in plugin will be disabled")
-  set(HAVE_VISA OFF)
-endif()
 
 # Platform-specific settings
 if(UNIX AND NOT APPLE)
@@ -244,20 +217,6 @@ foreach(target
   target_link_libraries(${target} PRIVATE instrument-script-server-core)
 endforeach()
 
-# VISA built-in plugin (optional)
-if(HAVE_VISA)
-  add_subdirectory(plugins/visa)
-endif()
-
-# Example plugins (FIXED: only build if InstrumentServer is already installed OR
-# during same build)
-if(BUILD_EXAMPLES)
-  # Build example plugins using local headers (not via find_package)
-  add_subdirectory(examples/plugins/simple_serial)
-endif()
-
-# Build built-in plugins
-
 # Tests
 if(BUILD_TESTS)
   enable_testing()
@@ -288,10 +247,6 @@ install(
     PATTERN "*.h"
 )
 
-if(HAVE_VISA)
-  install(TARGETS visa_builtin
-    LIBRARY DESTINATION lib)
-endif()
 
 install(
   DIRECTORY schemas/
