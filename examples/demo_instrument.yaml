@@ -1,5 +1,0 @@
-name: DemoInstrument
-api_ref: demo_api.yaml
-connection:
-  type: MockTest
-  address: "mock://demo"

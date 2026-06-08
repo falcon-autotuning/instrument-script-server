@@ -62,7 +62,7 @@ TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   }
 
   // Measure
-  const int num_calls = 1000000;
+  const int num_calls = 100000;
   auto start = high_resolution_clock::now();
 
   for (int i = 0; i < num_calls; i++) {
@@ -97,7 +97,7 @@ TEST_F(EndToEndPerformanceTest, CommandWithParametersOverhead) {
   RuntimeContext ctx(registry, sync);
   lua["context"] = &ctx;
 
-  const int num_calls = 1000;
+  const int num_calls = 100000;
   auto start = high_resolution_clock::now();
 
   for (int i = 0; i < num_calls; i++) {
@@ -128,7 +128,7 @@ TEST_F(EndToEndPerformanceTest, WorstCaseMaxPayload) {
   lua["context"] = &ctx;
 
   // Test with array return values (heavier payload)
-  const int num_calls = 100;
+  const int num_calls = 100000;
   auto start = high_resolution_clock::now();
 
   for (int i = 0; i < num_calls; i++) {
@@ -195,7 +195,7 @@ connection:
   RuntimeContext ctx(registry, sync);
   lua["context"] = &ctx;
 
-  const int calls_per_instrument = 100;
+  const int calls_per_instrument = 10000;
   auto start_exec = high_resolution_clock::now();
 
   for (int i = 0; i < calls_per_instrument; i++) {
@@ -255,7 +255,7 @@ connection:
   RuntimeContext ctx(registry, sync);
   lua["context"] = &ctx;
 
-  const int num_parallel_blocks = 100;
+  const int num_parallel_blocks = 100000;
   auto start = high_resolution_clock::now();
 
   for (int i = 0; i < num_parallel_blocks; i++) {

@@ -11,7 +11,7 @@ TEST(IPCPerformance, Throughput) {
   auto server_queue = SharedQueue::create_server_queue(name);
   auto worker_queue = SharedQueue::create_worker_queue(name);
 
-  const int num_messages = 1000;
+  const int num_messages = 100000;
 
   auto start = std::chrono::high_resolution_clock::now();
 

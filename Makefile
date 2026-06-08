@@ -50,13 +50,11 @@ clean:
 	@echo "✓ Clean complete"
 
 TEST_BIN := ./build/$(PRESET)/tests/perf_tests
-PERF_TEST ?= EndToEndPerformanceTest.SingleCommandOverhead
 
 profile: build
 	@echo "Running perf profile for $(PRESET)..."
 	@if [ "$(PRESET)" != "linux-gcc-prof" ]; then \
 			echo "⚠️  Warning: profiling is recommended with PRESET=linux-gcc-prof"; \
 	fi
-	perf record -e cycles --call-graph lbr -F 99 -- \
-		$(TEST_BIN) --gtest_filter=$(PERF_TEST)
+	perf record -e cycles --call-graph dwarf -- $(TEST_BIN)
 	perf script -i perf.data | stackcollapse-perf.pl > out.folded

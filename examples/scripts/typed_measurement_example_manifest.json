@@ -1,6 +1,0 @@
-{
-  "parameters": [
-    {"name": "ctx", "type": "RuntimeContext"},
-    {"name": "config", "type": "MeasurementConfig"}
-  ]
-}
