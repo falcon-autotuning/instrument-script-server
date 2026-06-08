@@ -2,6 +2,8 @@
 
 The entire plugin system is contained here: <https://github.com/falcon-autotuning/instrument-plugin-api>
 
+We supply a built-in plugin for basic VISA instruments here: <https://github.com/falcon-autotuning/visa-plugin>
+
 ## See Also
 
 - [Architecture](ARCHITECTURE.md) - System design
