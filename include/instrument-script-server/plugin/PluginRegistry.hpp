@@ -32,6 +32,9 @@ public:
   /// Unload plugin
   void unload_plugin(const std::string &protocol_type);
 
+  /// Unload all plugins (used for test cleanup / controlled teardown)
+  void unload_all();
+
   /// List all registered protocols
   std::vector<std::string> list_protocols() const;
 

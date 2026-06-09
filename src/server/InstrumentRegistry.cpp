@@ -275,15 +275,22 @@ void InstrumentRegistry::remove_instrument(const std::string &name) {
 }
 
 void InstrumentRegistry::stop_all() {
-  std::lock_guard lock(mutex_);
-  LOG_INFO("REGISTRY", "STOP_ALL", "Stopping %d instruments",
-           instruments_.size());
-
   std::vector<std::shared_ptr<InstrumentWorkerProxy>> proxies;
-  for (auto &[name, proxy] : instruments_) {
-    if (proxy) {
-      proxies.push_back(proxy);
+
+  {
+    std::lock_guard lock(mutex_);
+
+    LOG_INFO("REGISTRY", "STOP_ALL", "Stopping %d instruments",
+             instruments_.size());
+
+    for (auto &[name, proxy] : instruments_) {
+      if (proxy) {
+        proxies.push_back(proxy);
+      }
     }
+
+    instruments_.clear();
+    metadata_.clear();
   }
 
   for (auto &proxy : proxies) {
@@ -294,9 +301,6 @@ void InstrumentRegistry::stop_all() {
                 e.what());
     }
   }
-
-  instruments_.clear();
-  metadata_.clear();
 }
 
 void InstrumentRegistry::start_all() {

@@ -1,5 +1,6 @@
 #pragma once
 #include "instrument-script-server/export.h"
+#include <string>
 
 #include <instrument-plugin.h>
 
@@ -52,6 +53,7 @@ private:
   LibraryHandle handle_{nullptr};
   std::string plugin_path_;
   std::string error_message_;
+  bool shutdown_called_ = false;
 
   // Function pointers to plugin functions
   decltype(&plugin_get_metadata) fn_get_metadata_{nullptr};

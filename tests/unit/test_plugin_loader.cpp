@@ -1,5 +1,6 @@
 #include "PlatformPaths.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
+#include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include <gtest/gtest.h>
 #include <instrument-plugin.h>
 
@@ -14,6 +15,10 @@ protected:
     if (!std::filesystem::exists(plugin_path_)) {
       skip_tests_ = true;
     }
+  }
+  void TearDown() override {
+    auto &registry = instserver::plugin::PluginRegistry::instance();
+    registry.unload_all();
   }
 
   std::filesystem::path plugin_path_;

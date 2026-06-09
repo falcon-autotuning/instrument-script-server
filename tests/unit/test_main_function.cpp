@@ -1,10 +1,9 @@
+#include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
 #include <instrument-log/inst_logging.h>
 
-#include <chrono>
-#include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <sol/sol.hpp>
@@ -42,6 +41,8 @@ protected:
 
     lua_.reset();
     registry_->stop_all();
+    auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
+    plugin_registry.unload_all();
     inst_log_flush();
     inst_log_shutdown();
 

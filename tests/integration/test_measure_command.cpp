@@ -1,3 +1,4 @@
+#include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include <chrono>
 #include <filesystem>
@@ -67,6 +68,8 @@ protected:
   void TearDown() override {
     // Clean up after each test - use public API only
     auto &daemon = ServerDaemon::instance();
+    auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
+    plugin_registry.unload_all();
     if (daemon.is_running()) {
       daemon.stop();
       std::this_thread::sleep_for(std::chrono::milliseconds(200));

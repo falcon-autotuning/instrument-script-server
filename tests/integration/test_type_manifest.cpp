@@ -1,4 +1,5 @@
 #include "PluginTestFixture.hpp"
+#include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/CommandHandlers.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
@@ -69,6 +70,8 @@ protected:
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     auto &registry = InstrumentRegistry::instance();
     registry.stop_all();
+    auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
+    plugin_registry.unload_all();
 
     std::error_code ec;
     std::filesystem::remove(log_path_, ec);

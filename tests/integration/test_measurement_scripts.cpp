@@ -200,6 +200,8 @@ protected:
   void TearDown() override {
     auto &registry = InstrumentRegistry::instance();
     registry.stop_all();
+    auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
+    plugin_registry.unload_all();
     // Clean up after each test - use public API only
     auto &daemon = ServerDaemon::instance();
     if (daemon.is_running()) {

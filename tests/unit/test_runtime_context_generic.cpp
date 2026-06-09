@@ -1,3 +1,4 @@
+#include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
@@ -56,6 +57,8 @@ protected:
     // Clean up Lua and instruments
     lua_.reset();
     registry_->stop_all();
+    auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
+    plugin_registry.unload_all();
 
     inst_log_flush();
     inst_log_shutdown();

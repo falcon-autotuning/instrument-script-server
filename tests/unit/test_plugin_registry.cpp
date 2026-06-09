@@ -1,17 +1,34 @@
 #include "PlatformPaths.hpp"
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include <algorithm>
-#include <filesystem>
 #include <gtest/gtest.h>
+#include <instrument-log/inst_logging.h>
 
 using namespace instserver;
 using namespace instserver::test;
 
 class PluginRegistryTest : public ::testing::Test {
 protected:
-  void SetUp() override { registry_ = &plugin::PluginRegistry::instance(); }
+  void SetUp() override {
+    registry_ = &plugin::PluginRegistry::instance();
+    // Initialize logger
+    log_path_ =
+        std::filesystem::temp_directory_path() / "test_main_integration.log";
+    inst_log_shutdown();
+    inst_log_init(log_path_.string().c_str(), INST_LOG_DEBUG, "instrument",
+                  1024 * 1024 * 10, // 10 MB
+                  3);               // rotation count
+  }
 
+  void TearDown() override {
+    registry_->unload_all();
+    inst_log_flush();
+    inst_log_shutdown();
+    std::error_code ec;
+    std::filesystem::remove(log_path_, ec);
+  }
   plugin::PluginRegistry *registry_;
+  std::filesystem::path log_path_;
 };
 
 TEST_F(PluginRegistryTest, Singleton) {
@@ -26,7 +43,7 @@ TEST_F(PluginRegistryTest, DiscoverPlugins) {
       << "Plugins not found at: " << plugin_path;
 
   // Use the directory containing the plugin for discovery
-  std::vector<std::string> path_strings = {plugin_path.parent_path().string()};
+  std::vector<std::string> path_strings = {plugin_path.string()};
   registry_->discover_plugins(path_strings);
   auto protocols = registry_->list_protocols();
   // Should find at least the mock plugin protocol if it exists

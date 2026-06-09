@@ -1,35 +1,18 @@
-find_package(GTest REQUIRED)
-include(GoogleTest)
+find_package(GTest CONFIG REQUIRED)
 
-set(DLL_SEARCH_PATHS "${CMAKE_BINARY_DIR}}/tests" "${CMAKE_BINARY_DIR}")
-string(REPLACE ";" "\\;" TEST_PATH_ENV "${DLL_SEARCH_PATHS}")
-set(TEST_PATH_ENV "${TEST_PATH_ENV};$ENV{PATH}")
+add_library(test-utils STATIC
+  test_utils/MockInstrument.cpp
+  test_utils/TestFixtures.cpp
+)
 
-# Small helper for an optional PCH header inside tests/
-if(NOT DEFINED ENABLE_PCH)
-  # inherit default from parent; allow running tests/CMakeLists standalone
-  set(ENABLE_PCH
-      ON
-      CACHE BOOL "Enable PCH for tests" FORCE)
-endif()
+target_link_libraries(test-utils PUBLIC
+  instrument-script-server-core
+  GTest::gtest
+)
 
-add_library(test-utils STATIC test_utils/MockInstrument.cpp
-                              test_utils/TestFixtures.cpp)
-
-target_link_libraries(test-utils PUBLIC instrument-script-server-core GTest::gtest)
-target_include_directories(test-utils
-                           PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/test_utils)
-
-# Optional test PCH
-if(ENABLE_PCH)
-  if(EXISTS "${CMAKE_SOURCE_DIR}/include/instrument-script-server/pch.h")
-    target_precompile_headers(
-      test-utils PRIVATE "${CMAKE_SOURCE_DIR}/include/instrument-script-server/pch.h")
-  else()
-    target_precompile_headers(test-utils PRIVATE <gtest/gtest.h> <string>
-                              <vector>)
-  endif()
-endif()
+target_include_directories(test-utils PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_utils
+)
 
 add_executable(
   unit_tests
@@ -46,23 +29,13 @@ add_executable(
   unit/test_api_ref_resolution.cpp
   unit/test_plugin_registry.cpp
   unit/test_main_function.cpp)
-target_link_libraries(unit_tests PRIVATE instrument-script-server-core test-utils
-                                         GTest::gtest GTest::gtest_main)
 
-if(ENABLE_PCH)
-  # reuse pch from test-utils if available (some compilers support it)
-  if(TARGET test-utils)
-    # nothing extra required; test-utils PCH will be compiled when test-utils is
-    # built
-  endif()
-endif()
-
-add_test(NAME unit_tests COMMAND unit_tests)
-if(WIN32)
-  set_tests_properties(unit_tests PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
-else()
-  set_tests_properties(unit_tests PROPERTIES ENVIRONMENT "PATH=$<TARGET_FILE_DIR:unit_tests>/..:$<TARGET_FILE_DIR:unit_tests>:$ENV{PATH}")
-endif()
+target_link_libraries(unit_tests PRIVATE
+  instrument-script-server-core
+  test-utils
+  GTest::gtest
+  GTest::gtest_main
+)
 
 add_executable(
   integration_tests
@@ -77,83 +50,106 @@ add_executable(
   integration/test_main_function_integration.cpp
   integration/test_type_manifest.cpp)
 
-target_link_libraries(
-  integration_tests PRIVATE instrument-script-server-core test-utils GTest::gtest
-                            GTest::gtest_main)
-
-# Link math library only on Unix (Linux/macOS)
-if(UNIX)
-  target_link_libraries(integration_tests PRIVATE m)
-endif()
-
-add_test(NAME integration_tests COMMAND integration_tests)
-if(WIN32)
-  set_tests_properties(integration_tests PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
-else()
-  set_tests_properties(integration_tests PROPERTIES ENVIRONMENT "PATH=$<TARGET_FILE_DIR:integration_tests>/..:$<TARGET_FILE_DIR:integration_tests>:$ENV{PATH}")
-endif()
+target_link_libraries(integration_tests PRIVATE
+  instrument-script-server-core
+  test-utils
+  GTest::gtest
+  GTest::gtest_main
+)
 
 add_executable(
   perf_tests
-  performance/test_ipc_throughput.cpp performance/test_sync_overhead.cpp
+  performance/test_ipc_throughput.cpp
+  performance/test_sync_overhead.cpp
   performance/test_end_to_end_overhead.cpp)
-target_link_libraries(perf_tests PRIVATE instrument-script-server-core test-utils
-                                         GTest::gtest GTest::gtest_main)
 
-add_test(NAME perf_tests COMMAND perf_tests)
-if(WIN32)
-  set_tests_properties(perf_tests PROPERTIES ENVIRONMENT "PATH=${TEST_PATH_ENV}")
-else()
-  set_tests_properties(perf_tests PROPERTIES ENVIRONMENT "PATH=$<TARGET_FILE_DIR:perf_tests>/..:$<TARGET_FILE_DIR:perf_tests>:$ENV{PATH}")
-endif()
+target_link_libraries(perf_tests PRIVATE
+  instrument-script-server-core
+  test-utils
+  GTest::gtest
+  GTest::gtest_main
+)
+
+foreach(tgt unit_tests integration_tests perf_tests)
+  target_include_directories(${tgt} PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_utils
+  )
+endforeach()
+
+
+foreach(tgt unit_tests integration_tests perf_tests)
+  add_test(NAME ${tgt} COMMAND ${tgt})
+
+  # ✅ VERY IMPORTANT: run from build/tests dir
+  set_tests_properties(${tgt} PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
+  )
+
+  if(WIN32)
+    set_tests_properties(${tgt} PROPERTIES
+      ENVIRONMENT "PATH=$<TARGET_FILE_DIR:${tgt}>;$<TARGET_FILE_DIR:instrument-script-server-core>;$ENV{PATH}"
+    )
+  endif()
+endforeach()
+
 
 add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
 target_compile_definitions(mock_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
 target_link_libraries(mock_plugin PRIVATE instrument-script-server-core)
-set_target_properties(mock_plugin PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE
-                                                       ON)
 
 add_library(mock_visa_plugin SHARED mocks/mock_visa_plugin.c)
 target_compile_definitions(mock_visa_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
 target_link_libraries(mock_visa_plugin PRIVATE instrument-script-server-core)
-set_target_properties(mock_visa_plugin PROPERTIES PREFIX ""
-                                                  POSITION_INDEPENDENT_CODE ON)
 
 add_library(mock_visa_large_data_plugin SHARED
-            mocks/mock_visa_large_data_plugin.c)
+  mocks/mock_visa_large_data_plugin.c)
 target_compile_definitions(mock_visa_large_data_plugin
-                           PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
+  PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
 target_link_libraries(mock_visa_large_data_plugin
-                      PRIVATE instrument-script-server-core)
-set_target_properties(mock_visa_large_data_plugin
-                      PROPERTIES PREFIX "" POSITION_INDEPENDENT_CODE ON)
+  PRIVATE instrument-script-server-core)
 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/tests/data)
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/tests/data/test_scripts)
-set(TEST_SCRIPTS
-    simple_call.lua
-    parallel_test.lua
-    loop_measurement.lua
-    nested_parallel.lua
-    error_handling.lua
-    channel_addressing.lua
-    return_types.lua
-    table_params.lua
-    multiple_returns.lua
-    large_buffer_returns.lua)
-foreach(SCRIPT ${TEST_SCRIPTS})
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/test_scripts/${SCRIPT}
-                 ${CMAKE_BINARY_DIR}/tests/data/test_scripts/${SCRIPT} COPYONLY)
-endforeach()
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/mock_instrument1.yaml
-               ${CMAKE_BINARY_DIR}/tests/data/mock_instrument1.yaml COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/mock_instrument2.yaml
-               ${CMAKE_BINARY_DIR}/tests/data/mock_instrument2.yaml COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/mock_instrument3.yaml
-               ${CMAKE_BINARY_DIR}/tests/data/mock_instrument3.yaml COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/mock_api.yaml
-               ${CMAKE_BINARY_DIR}/tests/data/mock_api.yaml COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/test_script.lua
-               ${CMAKE_BINARY_DIR}/tests/data/test_script.lua COPYONLY)
 
-install(TARGETS mock_plugin LIBRARY DESTINATION lib/instrument-plugins)
+set(TEST_RUNTIME_TOOLS
+  instrument-worker
+  validate-instrument-api
+  validate-instrument-config
+  validate-quantum-dot-config
+  template-expander
+  generate-instrument-config
+)
+
+set(TEST_PLUGINS
+  mock_plugin
+  mock_visa_plugin
+  mock_visa_large_data_plugin
+)
+
+if(WIN32)
+  foreach(tgt unit_tests integration_tests perf_tests)
+    add_dependencies(${tgt} ${TEST_RUNTIME_TOOLS})
+    add_custom_command(TARGET ${tgt} POST_BUILD
+
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_RUNTIME_DLLS:${tgt}>
+        $<TARGET_FILE_DIR:${tgt}>
+      COMMAND_EXPAND_LISTS
+    )
+
+    foreach(tool ${TEST_RUNTIME_TOOLS})
+      add_custom_command(TARGET ${tgt} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "$<TARGET_FILE:${tool}>"
+          "$<TARGET_FILE_DIR:${tgt}>"
+      )
+    endforeach()
+
+    foreach(plugin ${TEST_PLUGINS})
+      add_custom_command(TARGET ${tgt} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "$<TARGET_FILE:${plugin}>"
+          "$<TARGET_FILE_DIR:${tgt}>"
+      )
+    endforeach()
+
+  endforeach()
+endif()

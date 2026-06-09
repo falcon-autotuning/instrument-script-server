@@ -46,20 +46,14 @@ PluginLoader::PluginLoader(const std::string &plugin_path)
 }
 
 PluginLoader::~PluginLoader() {
-  // NOTE: Do not call the logging-enabled shutdown() here. During static
-  // teardown the logging subsystem (spdlog globals/sinks/thread-pool) may
-  // already be destroyed; logging from a destructor risks use-after-free inside
-  // spdlog.
-  //
-  // Call the plugin shutdown function directly without logging, and swallow
-  // exceptions to make the destructor noexcept-safe.
-  if (fn_shutdown_ && handle_) {
+  // ✅ Only shutdown if still safe and not already done
+  if (!shutdown_called_ && fn_shutdown_ && handle_) {
     try {
-      fn_shutdown_();
+      fn_shutdown_(); // fallback only
     } catch (...) {
-      // Swallow everything — can't log safely here.
     }
   }
+
   unload();
 }
 
@@ -154,10 +148,12 @@ int32_t PluginLoader::execute_command(const PluginCommand &command,
 }
 
 void PluginLoader::shutdown() {
-  if (fn_shutdown_) {
+  if (!shutdown_called_ && fn_shutdown_) {
     LOG_INFO("PLUGIN", "SHUTDOWN", "Shutting down plugin: %s",
              plugin_path_.c_str());
+
     fn_shutdown_();
+    shutdown_called_ = true;
   }
 }
 

@@ -1,3 +1,4 @@
+#include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
 #include <algorithm>
 #include <gtest/gtest.h>
@@ -20,6 +21,8 @@ protected:
   void TearDown() override {
     inst_log_flush();
     inst_log_shutdown();
+    auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
+    plugin_registry.unload_all();
   }
 
   std::unique_ptr<SyncCoordinator> sync_;

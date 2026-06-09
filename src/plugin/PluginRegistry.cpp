@@ -108,9 +108,24 @@ bool PluginRegistry::has_plugin(const std::string &protocol_type) const {
 }
 
 void PluginRegistry::unload_plugin(const std::string &protocol_type) {
-  std::lock_guard lock(mutex_);
-  plugins_.erase(protocol_type);
-  plugin_paths_.erase(protocol_type);
+  std::unique_ptr<PluginLoader> loader;
+
+  {
+    std::lock_guard lock(mutex_);
+
+    auto it = plugins_.find(protocol_type);
+    if (it != plugins_.end()) {
+      loader = std::move(it->second);
+      plugins_.erase(it);
+    }
+
+    plugin_paths_.erase(protocol_type);
+  }
+
+  if (loader) {
+    loader->shutdown();
+  }
+
   LOG_INFO("PLUGIN_REGISTRY", "UNLOAD", "Unloaded plugin for protocol: %s",
            protocol_type.c_str());
 }
@@ -189,6 +204,32 @@ void PluginRegistry::discover_plugins(
 
   LOG_INFO("PLUGIN_REGISTRY", "DISCOVER",
            "Discovery complete. {} plugins loaded", plugins_.size());
+}
+
+void PluginRegistry::unload_all() {
+  std::vector<std::unique_ptr<PluginLoader>> loaders;
+
+  {
+    std::lock_guard lock(mutex_);
+
+    // Move all loaders out of the map
+    for (auto &[protocol, loader] : plugins_) {
+      if (loader) {
+        loaders.push_back(std::move(loader));
+      }
+    }
+
+    plugins_.clear();
+    plugin_paths_.clear();
+  }
+
+  for (auto &loader : loaders) {
+    if (loader) {
+      loader->shutdown();
+    }
+  }
+
+  LOG_INFO("PLUGIN_REGISTRY", "UNLOAD", "Unloaded all plugins");
 }
 
 } // namespace instserver::plugin

@@ -1,4 +1,5 @@
 #include "PluginTestFixture.hpp"
+#include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/CommandHandlers.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
@@ -46,6 +47,8 @@ protected:
   void TearDown() override {
     auto &registry = InstrumentRegistry::instance();
     registry.stop_all();
+    auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
+    plugin_registry.unload_all();
 
     // Clean up
     inst_log_flush();
