@@ -6,9 +6,8 @@
 
 namespace {
 void expand_channel_groups(YAML::Node &root) {
-  auto io = root["io"];
-  if (!io) {
-    io = YAML::Node(YAML::NodeType::Sequence);
+  if (!root["io"] || !root["io"].IsSequence()) {
+    root["io"] = YAML::Node(YAML::NodeType::Sequence);
   }
   if (!root["channel_groups"]) {
     return;
@@ -57,10 +56,35 @@ int main(int argc, char *argv[]) {
     std::cerr << "Usage: " << argv[0] << " <input.yaml> <output.yaml>\n";
     return 1;
   }
-  YAML::Node root = YAML::LoadFile(argv[1]);
-  expand_channel_groups(root);
-  deduplicate_io(root);
+  YAML::Node root;
+  try {
+    root = YAML::LoadFile(argv[1]);
+  } catch (const YAML::BadFile &e) {
+    std::cerr << "Error: Cannot open file: " << e.what() << "\n";
+    return 1;
+  } catch (const YAML::ParserException &e) {
+    std::cerr << "Error: Invalid YAML: " << e.what() << "\n";
+    return 1;
+  }
+  try {
+    expand_channel_groups(root);
+    deduplicate_io(root);
+  } catch (const YAML::Exception &e) {
+    std::cerr << "YAML processing error: " << e.what() << "\n";
+    return 1;
+  } catch (const std::exception &e) {
+    std::cerr << "Error: " << e.what() << "\n";
+    return 1;
+  }
   std::ofstream fout(argv[2]);
+  if (!fout) {
+    std::cerr << "Error: Cannot open output file\n";
+    return 1;
+  }
   fout << root;
+  if (!fout) {
+    std::cerr << "Error: Failed to write output file\n";
+    return 1;
+  }
   return 0;
 }
