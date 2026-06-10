@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(
   instrument-script-server
-  VERSION 1.1.6
+  VERSION 1.1.10
   LANGUAGES C CXX)
 
 # Git version detection
@@ -229,15 +229,22 @@ include(CMakePackageConfigHelpers)
 
 install(TARGETS instrument-script-server-core
   EXPORT instrument-script-server-targets
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  INCLUDES DESTINATION include
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(TARGETS instrument-script-server instrument-worker
-                  validate-instrument-api validate-instrument-config
-                  validate-quantum-dot-config template-expander
-                  generate-instrument-config RUNTIME DESTINATION bin)
+install(TARGETS
+    instrument-script-server
+    instrument-worker
+    validate-instrument-api
+    validate-instrument-config
+    validate-quantum-dot-config
+    template-expander
+    generate-instrument-config
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
 
 install(
   DIRECTORY include/instrument-script-server
