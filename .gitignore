@@ -1,5 +1,5 @@
 build/
-vcpkg/
+vcpkg
 my-vcpkg-triplets/
 *.log
 _codeql_*
