@@ -8,6 +8,7 @@
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
+#include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
 
@@ -494,6 +495,7 @@ int handle_measure(const json &params, json &out) {
                        sol::lib::string, sol::lib::io, sol::lib::os,
                        sol::lib::package);
     load_optional_lua_libs(lua);
+    register_instrument_call_stack(lua.lua_state());
 
     SyncCoordinator sync_coordinator;
     bind_runtime_context(lua, registry, sync_coordinator);
@@ -780,8 +782,9 @@ __context_schema_version = nil
         const auto &r = results[i];
         json result_json;
         result_json["index"] = i;
-        result_json["instrument"] = r.instrument_name;
-        result_json["verb"] = r.verb;
+        result_json["instrument"] =
+            instrument_call_stack_get_instrument_name(r.target.get());
+        result_json["verb"] = instrument_call_stack_get_command(r.target.get());
 
         // Convert params to JSON
         json params_json;
@@ -882,8 +885,9 @@ __context_schema_version = nil
       const auto &r = results[i];
       json result_json;
       result_json["index"] = i;
-      result_json["instrument"] = r.instrument_name;
-      result_json["verb"] = r.verb;
+      result_json["instrument"] =
+          instrument_call_stack_get_instrument_name(r.target.get());
+      result_json["verb"] = instrument_call_stack_get_command(r.target.get());
 
       // Convert params to JSON
       json params_json;

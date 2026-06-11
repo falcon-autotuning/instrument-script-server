@@ -10,6 +10,8 @@
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <instrument-call-stack/instrument-call-stack-lua.h>
+#include <instrument-call-stack/instrument-call-stack.h>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
 #include <nlohmann/json.hpp>
@@ -230,6 +232,7 @@ protected:
                          sol::lib::string, sol::lib::io, sol::lib::os);
 
       bind_runtime_context(lua, registry, sync_coordinator);
+      register_instrument_call_stack(lua.lua_state());
 
       RuntimeContext ctx(registry, sync_coordinator);
       lua["context"] = &ctx;
@@ -268,6 +271,7 @@ protected:
                          sol::lib::string, sol::lib::io, sol::lib::os);
 
       bind_runtime_context(lua, registry, sync_coordinator);
+      register_instrument_call_stack(lua.lua_state());
 
       // Use member context
       test_context_ =
@@ -342,7 +346,7 @@ TEST_F(MeasurementScriptTest, ScriptWithOutput) {
   EXPECT_TRUE(run_script("loop_measurement.lua"));
 
   // Alternative: Check that the script produced results via context
-  auto ctx = run_script_with_context("loop_measurement.lua");
+  auto *ctx = run_script_with_context("loop_measurement.lua");
   ASSERT_NE(ctx, nullptr);
 
   const auto &results = ctx->get_results();
@@ -351,7 +355,7 @@ TEST_F(MeasurementScriptTest, ScriptWithOutput) {
 }
 
 TEST_F(MeasurementScriptTest, MultipleReturns) {
-  auto ctx = run_script_with_context("multiple_returns.lua");
+  auto *ctx = run_script_with_context("multiple_returns.lua");
   ASSERT_NE(ctx, nullptr);
 
   const auto &results = ctx->get_results();
@@ -363,17 +367,19 @@ TEST_F(MeasurementScriptTest, MultipleReturns) {
 
   // Verify all results have basic metadata
   for (const auto &result : results) {
-    EXPECT_FALSE(result.instrument_name.empty());
-    EXPECT_FALSE(result.verb.empty());
+    EXPECT_NE(instrument_call_stack_get_instrument_name(result.target.get()),
+              nullptr);
+    EXPECT_NE(instrument_call_stack_get_command(result.target.get()), nullptr);
     EXPECT_FALSE(result.return_type.empty());
   }
 
   // Verify we captured returns in order - first should be GET_DOUBLE
-  EXPECT_EQ(results[0].verb, "GET_DOUBLE");
+  EXPECT_STREQ(instrument_call_stack_get_command(results[0].target.get()),
+               "GET_DOUBLE");
 }
 
 TEST_F(MeasurementScriptTest, ChannelAddressingWithReturns) {
-  auto ctx = run_script_with_context("channel_addressing.lua");
+  auto *ctx = run_script_with_context("channel_addressing.lua");
   ASSERT_NE(ctx, nullptr);
 
   const auto &results = ctx->get_results();
@@ -386,10 +392,10 @@ TEST_F(MeasurementScriptTest, ChannelAddressingWithReturns) {
   bool has_channel2 = false;
 
   for (const auto &result : results) {
-    if (result.instrument_name.find(":1") != std::string::npos) {
+    if (instrument_call_stack_get_channel(result.target.get()) == 1) {
       has_channel1 = true;
     }
-    if (result.instrument_name.find(":2") != std::string::npos) {
+    if (instrument_call_stack_get_channel(result.target.get()) == 2) {
       has_channel2 = true;
     }
   }
@@ -818,7 +824,7 @@ commands:
 
 TEST_F(MeasurementScriptTest, JSONOutputValidation) {
   // Test that JSON output conforms to the expected schema structure
-  auto ctx = run_script_with_context("multiple_returns.lua");
+  auto *ctx = run_script_with_context("multiple_returns.lua");
   ASSERT_NE(ctx, nullptr);
 
   const auto &results = ctx->get_results();
@@ -836,8 +842,9 @@ TEST_F(MeasurementScriptTest, JSONOutputValidation) {
     json result_json;
 
     result_json["index"] = i;
-    result_json["instrument"] = r.instrument_name;
-    result_json["verb"] = r.verb;
+    result_json["instrument"] =
+        instrument_call_stack_get_instrument_name(r.target.get());
+    result_json["verb"] = instrument_call_stack_get_command(r.target.get());
 
     // Add params
     json params_json = json::object();

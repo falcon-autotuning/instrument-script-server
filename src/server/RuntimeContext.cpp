@@ -1,6 +1,7 @@
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include <fmt/format.h>
+#include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
 
@@ -52,34 +53,23 @@ bool BufferHandle::multiply_gain(double gain) {
 
 // MeasurementResponse implementation
 
-MeasurementResponse::MeasurementResponse(const std::string &instrument,
-                                         const std::string &verb,
+MeasurementResponse::MeasurementResponse(CallStackPtr target,
                                          double value_double)
-    : instrument_(instrument), verb_(verb), type_("float"),
-      value_double_(value_double) {}
+    : target_(std::move(target)), type_("float"), value_double_(value_double) {}
 
-MeasurementResponse::MeasurementResponse(const std::string &instrument,
-                                         const std::string &verb,
-                                         int64_t value_int)
-    : instrument_(instrument), verb_(verb), type_("integer"),
-      value_int_(value_int) {}
+MeasurementResponse::MeasurementResponse(CallStackPtr target, int64_t value_int)
+    : target_(std::move(target)), type_("integer"), value_int_(value_int) {}
 
-MeasurementResponse::MeasurementResponse(const std::string &instrument,
-                                         const std::string &verb,
+MeasurementResponse::MeasurementResponse(CallStackPtr target,
                                          const std::string &value_str)
-    : instrument_(instrument), verb_(verb), type_("string"),
-      value_str_(value_str) {}
+    : target_(std::move(target)), type_("string"), value_str_(value_str) {}
 
-MeasurementResponse::MeasurementResponse(const std::string &instrument,
-                                         const std::string &verb,
-                                         bool value_bool)
-    : instrument_(instrument), verb_(verb), type_("boolean"),
-      value_bool_(value_bool) {}
+MeasurementResponse::MeasurementResponse(CallStackPtr target, bool value_bool)
+    : target_(std::move(target)), type_("boolean"), value_bool_(value_bool) {}
 
-MeasurementResponse::MeasurementResponse(const std::string &instrument,
-                                         const std::string &verb,
+MeasurementResponse::MeasurementResponse(CallStackPtr target,
                                          std::shared_ptr<BufferHandle> buffer)
-    : instrument_(instrument), verb_(verb), type_("buffer"), buffer_(buffer) {}
+    : target_(std::move(target)), type_("buffer"), buffer_(std::move(buffer)) {}
 
 sol::object MeasurementResponse::value(sol::this_state s) const {
   sol::state_view lua(s);
@@ -102,65 +92,86 @@ sol::object MeasurementResponse::value(sol::this_state s) const {
 
   return sol::nil;
 }
+namespace {
+CallStackPtr clone_callstack_ptr(const CallStackPtr &src) {
+  return CallStackPtr{instrument_call_stack_clone(src.get()),
+                      instrument_call_stack_free};
+}
+} // namespace
 
 std::shared_ptr<MeasurementResponse>
 MeasurementResponse::add_offset(double offset) const {
+
   if (type_ == "float") {
-    return std::make_shared<MeasurementResponse>(instrument_, verb_,
+    return std::make_shared<MeasurementResponse>(clone_callstack_ptr(target_),
                                                  value_double_ + offset);
   }
+
   if (type_ == "integer") {
     return std::make_shared<MeasurementResponse>(
-        instrument_, verb_, static_cast<int64_t>(value_int_ + offset));
+        clone_callstack_ptr(target_),
+        static_cast<int64_t>(value_int_ + offset));
   }
+
   if (type_ == "buffer" && buffer_) {
-    // For buffers, apply the offset to the underlying data
     buffer_->add_offset(offset);
-    return std::make_shared<MeasurementResponse>(instrument_, verb_, buffer_);
+    return std::make_shared<MeasurementResponse>(clone_callstack_ptr(target_),
+                                                 buffer_);
   }
 
   LOG_WARN("LUA_CONTEXT", "MATH", "add_offset called on non-numeric type: %s",
            type_.c_str());
-  // Return a copy of self for non-numeric types
+
   if (type_ == "string") {
-    return std::make_shared<MeasurementResponse>(instrument_, verb_,
+    return std::make_shared<MeasurementResponse>(clone_callstack_ptr(target_),
                                                  value_str_);
   }
+
   if (type_ == "boolean") {
-    return std::make_shared<MeasurementResponse>(instrument_, verb_,
+    return std::make_shared<MeasurementResponse>(clone_callstack_ptr(target_),
                                                  value_bool_);
   }
-  return std::make_shared<MeasurementResponse>(instrument_, verb_, 0.0);
+
+  return std::make_shared<MeasurementResponse>(clone_callstack_ptr(target_),
+                                               0.0);
 }
 
 std::shared_ptr<MeasurementResponse>
 MeasurementResponse::multiply_gain(double gain) const {
+
   if (type_ == "float") {
-    return std::make_shared<MeasurementResponse>(instrument_, verb_,
+    return std::make_shared<MeasurementResponse>(clone_callstack_ptr(target_),
                                                  value_double_ * gain);
   }
+
   if (type_ == "integer") {
     return std::make_shared<MeasurementResponse>(
-        instrument_, verb_, static_cast<int64_t>(value_int_ * gain));
+        clone_callstack_ptr(target_), static_cast<int64_t>(value_int_ * gain));
   }
+
   if (type_ == "buffer" && buffer_) {
-    // For buffers, apply the gain to the underlying data
+    // Apply gain in-place
     buffer_->multiply_gain(gain);
-    return std::make_shared<MeasurementResponse>(instrument_, verb_, buffer_);
+
+    return std::make_shared<MeasurementResponse>(clone_callstack_ptr(target_),
+                                                 buffer_);
   }
 
   LOG_WARN("LUA_CONTEXT", "MATH",
            "multiply_gain called on non-numeric type: %s", type_.c_str());
-  // Return a copy of self for non-numeric types
+
   if (type_ == "string") {
-    return std::make_shared<MeasurementResponse>(instrument_, verb_,
+    return std::make_shared<MeasurementResponse>(clone_callstack_ptr(target_),
                                                  value_str_);
   }
+
   if (type_ == "boolean") {
-    return std::make_shared<MeasurementResponse>(instrument_, verb_,
+    return std::make_shared<MeasurementResponse>(clone_callstack_ptr(target_),
                                                  value_bool_);
   }
-  return std::make_shared<MeasurementResponse>(instrument_, verb_, 0.0);
+
+  return std::make_shared<MeasurementResponse>(clone_callstack_ptr(target_),
+                                               0.0);
 }
 
 // RuntimeContext implementation
@@ -201,34 +212,34 @@ static void populate_callresult_from_response(CallResult &cr,
   }
 }
 
-sol::object RuntimeContext::call(const std::string &func_name,
-                                 sol::variadic_args args, sol::this_state s) {
+sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
+                                 sol::this_state s) {
   sol::state_view lua(s);
 
-  LOG_INFO("LUA_CONTEXT", "CALL", "Calling function: %s", func_name.c_str());
+  CallStack *cs = nullptr;
 
-  size_t dot_pos = func_name.find('.');
-  if (dot_pos == std::string::npos) {
-    LOG_ERROR("LUA_CONTEXT", "CALL", "Invalid function name format: %s",
-              func_name.c_str());
+  if (target.get_type() == sol::type::userdata) {
+    target.push(); // push onto Lua stack
+
+    cs = lua_check_callstack(lua, -1);
+
+    lua_pop(lua, 1);
+  }
+
+  if (!cs) {
+    LOG_ERROR("LUA_CONTEXT", "CALL", "Expected CallStack");
     return sol::nil;
   }
 
-  std::string instrument_spec = func_name.substr(0, dot_pos);
-  std::string verb = func_name.substr(dot_pos + 1);
+  std::string instrument_id = instrument_call_stack_get_instrument_name(cs);
+  std::string verb = instrument_call_stack_get_command(cs);
+  LOG_INFO("LUA_CONTEXT", "CALL", "Calling instrument: %s and command: %s\n",
+           instrument_id.c_str(), verb.c_str());
 
-  std::string instrument_id = instrument_spec;
+  int raw_channel = instrument_call_stack_get_channel(cs);
   std::optional<int> channel;
-  size_t colon_pos = instrument_spec.find(':');
-  if (colon_pos != std::string::npos) {
-    instrument_id = instrument_spec.substr(0, colon_pos);
-    try {
-      channel = std::stoi(instrument_spec.substr(colon_pos + 1));
-    } catch (const std::exception &e) {
-      LOG_ERROR("LUA_CONTEXT", "CALL", "Invalid channel number in: %s",
-                func_name.c_str());
-      return sol::nil;
-    }
+  if (raw_channel != -1) {
+    channel = raw_channel;
   }
 
   std::array<Param, PLUGIN_MAX_PARAMS> params;
@@ -359,13 +370,14 @@ sol::object RuntimeContext::call(const std::string &func_name,
 
   CallResult cr;
   populate_callresult_from_response(cr, resp);
-  cr.instrument_name =
-      instrument_spec; // Preserve channel addressing like "MockInstrument1:1"
-  cr.verb = verb;
+  using CallStackPtr =
+      std::unique_ptr<CallStack, decltype(&instrument_call_stack_free)>;
+  cr.target =
+      CallStackPtr{instrument_call_stack_clone(cs), instrument_call_stack_free};
   cr.params = params;
   cr.executed_at = std::chrono::steady_clock::now();
 
-  collected_results_.push_back(cr);
+  collected_results_.push_back(std::move(cr));
 
   if (!resp.success) {
     LOG_ERROR("LUA_CONTEXT", "CALL", "Command failed: %s",
@@ -400,8 +412,8 @@ sol::object RuntimeContext::call(const std::string &func_name,
       }
     }
 
-    auto response =
-        std::make_shared<MeasurementResponse>(instrument_spec, verb, handle);
+    auto response = std::make_shared<MeasurementResponse>(
+        clone_callstack_ptr(cr.target), handle);
     return sol::make_object(lua, response);
   }
 
@@ -409,23 +421,23 @@ sol::object RuntimeContext::call(const std::string &func_name,
   const auto &v = *resp.return_value;
   switch (v.type) {
   case ipc::IPCParamValue::Type::DOUBLE: {
-    auto response =
-        std::make_shared<MeasurementResponse>(instrument_spec, verb, v.d);
+    auto response = std::make_shared<MeasurementResponse>(
+        clone_callstack_ptr(cr.target), v.d);
     return sol::make_object(lua, response);
   }
   case ipc::IPCParamValue::Type::INT64: {
-    auto response =
-        std::make_shared<MeasurementResponse>(instrument_spec, verb, v.i);
+    auto response = std::make_shared<MeasurementResponse>(
+        clone_callstack_ptr(cr.target), v.i);
     return sol::make_object(lua, response);
   }
   case ipc::IPCParamValue::Type::STRING: {
-    auto response =
-        std::make_shared<MeasurementResponse>(instrument_spec, verb, v.str);
+    auto response = std::make_shared<MeasurementResponse>(
+        clone_callstack_ptr(cr.target), v.str);
     return sol::make_object(lua, response);
   }
   case ipc::IPCParamValue::Type::BOOL: {
-    auto response =
-        std::make_shared<MeasurementResponse>(instrument_spec, verb, v.b);
+    auto response = std::make_shared<MeasurementResponse>(
+        clone_callstack_ptr(cr.target), v.b);
     return sol::make_object(lua, response);
   }
   case ipc::IPCParamValue::Type::DOUBLE_ARRAY: {
@@ -435,8 +447,8 @@ sol::object RuntimeContext::call(const std::string &func_name,
         v.arr.size(), v.arr.data());
     auto handle =
         std::make_shared<BufferHandle>(buffer_id, v.arr.size(), "float64");
-    auto response =
-        std::make_shared<MeasurementResponse>(instrument_spec, verb, handle);
+    auto response = std::make_shared<MeasurementResponse>(
+        clone_callstack_ptr(cr.target), handle);
     return sol::make_object(lua, response);
   }
   }
@@ -528,7 +540,7 @@ void RuntimeContext::execute_parallel_buffer() {
       CallResult cr;
       populate_callresult_from_response(cr, resp);
       cr.executed_at = std::chrono::steady_clock::now();
-      collected_results_.push_back(cr);
+      collected_results_.push_back(std::move(cr));
       if (!resp.success) {
         LOG_ERROR("LUA_CONTEXT", "PARALLEL", "Parallel command failed: %s",
                   resp.error_message.c_str());
@@ -669,8 +681,9 @@ nlohmann::json RuntimeContext::collect_results_json() const {
   for (const auto &cr : collected_results_) {
     nlohmann::json j;
     j["command_id"] = cr.command_id;
-    j["instrument"] = cr.instrument_name;
-    j["verb"] = cr.verb;
+    j["instrument"] =
+        instrument_call_stack_get_instrument_name(cr.target.get());
+    j["verb"] = instrument_call_stack_get_command(cr.target.get());
     j["executed_at_ms"] = std::chrono::duration_cast<std::chrono::milliseconds>(
                               cr.executed_at.time_since_epoch())
                               .count();

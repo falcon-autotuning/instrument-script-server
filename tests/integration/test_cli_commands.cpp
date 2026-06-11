@@ -40,13 +40,19 @@ protected:
     search_paths.push_back(std::filesystem::current_path() /
                            "instrument-script-server.exe");
 #else
-    // Linux: Check build directory
-    search_paths.push_back(std::filesystem::current_path() / "build" /
-                           "instrument-script-server");
-    search_paths.push_back(std::filesystem::current_path() /
-                           "instrument-script-server");
-    // Also check if it's in PATH
-    search_paths.push_back("instrument-script-server");
+    auto cwd = std::filesystem::current_path();
+
+    // Typical layouts
+    search_paths.push_back(cwd / "instrument-script-server");
+    search_paths.push_back(cwd / "../instrument-script-server");
+    search_paths.push_back(cwd / "../../instrument-script-server");
+
+    // If run from repo root
+    search_paths.push_back(cwd /
+                           "build/linux-clang-debug/instrument-script-server");
+
+    // PATH fallback
+    search_paths.emplace_back("instrument-script-server");
 #endif
 
     for (const auto &path : search_paths) {

@@ -4,14 +4,18 @@
 #include "instrument-script-server/SerializedCommand.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
+#include <instrument-call-stack/instrument-call-stack.h>
 
 #include <future>
 #include <memory>
 #include <set>
+#include <sol/forward.hpp>
 #include <sol/sol.hpp>
 #include <vector>
 
 namespace instserver {
+using CallStackPtr =
+    std::unique_ptr<CallStack, decltype(&instrument_call_stack_free)>;
 
 /// Lua-accessible handle for array data buffers
 /// Provides methods for array math operations
@@ -46,22 +50,21 @@ private:
 /// Wraps scalar values with metadata and provides math operations
 class INSTRUMENT_SERVER_API MeasurementResponse {
 public:
-  MeasurementResponse(const std::string &instrument, const std::string &verb,
-                      double value_double);
-  MeasurementResponse(const std::string &instrument, const std::string &verb,
-                      int64_t value_int);
-  MeasurementResponse(const std::string &instrument, const std::string &verb,
-                      const std::string &value_str);
-  MeasurementResponse(const std::string &instrument, const std::string &verb,
-                      bool value_bool);
-  MeasurementResponse(const std::string &instrument, const std::string &verb,
-                      std::shared_ptr<BufferHandle> buffer);
+  MeasurementResponse(CallStackPtr, double value_double);
+  MeasurementResponse(CallStackPtr, int64_t value_int);
+  MeasurementResponse(CallStackPtr, const std::string &value_str);
+  MeasurementResponse(CallStackPtr, bool value_bool);
+  MeasurementResponse(CallStackPtr, std::shared_ptr<BufferHandle> buffer);
 
   /// Get the instrument name
-  [[nodiscard]] const std::string &instrument() const { return instrument_; }
+  [[nodiscard]] const char *instrument() const {
+    return instrument_call_stack_get_instrument_name(target_.get());
+  }
 
   /// Get the verb/command
-  [[nodiscard]] const std::string &verb() const { return verb_; }
+  [[nodiscard]] const char *verb() const {
+    return instrument_call_stack_get_command(target_.get());
+  }
 
   /// Get the return type
   [[nodiscard]] const std::string &type() const { return type_; }
@@ -81,8 +84,7 @@ public:
   multiply_gain(double gain) const;
 
 private:
-  std::string instrument_;
-  std::string verb_;
+  CallStackPtr target_{nullptr, instrument_call_stack_free};
   std::string type_; // "float", "integer", "string", "boolean", "buffer"
 
   // Value storage (only one is used)
@@ -96,8 +98,7 @@ private:
 /// Result of a single context:call() operation
 struct INSTRUMENT_SERVER_API CallResult {
   std::string command_id;
-  std::string instrument_name;
-  std::string verb;
+  CallStackPtr target{nullptr, instrument_call_stack_free};
   std::array<Param, PLUGIN_MAX_PARAMS> params;
   uint8_t param_count{0};
   std::chrono::steady_clock::time_point executed_at;
@@ -131,9 +132,9 @@ public:
   virtual ~RuntimeContext() = default;
 
   /// Call an instrument command
-  /// Usage: context:call("InstrumentID.CommandVerb", arg1, arg2, ...)
-  /// Usage: context:call("InstrumentID:Channel.CommandVerb", value)
-  sol::object call(const std::string &func_name, sol::variadic_args args,
+  /// Usage: context:call(CallStack, arg1, arg2, ...)
+  /// Usage: context:call(CallStack, value)
+  sol::object call(sol::object target, sol::variadic_args args,
                    sol::this_state s);
 
   /// Execute block in parallel with synchronization

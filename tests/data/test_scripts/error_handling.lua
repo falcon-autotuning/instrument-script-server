@@ -2,7 +2,11 @@
 context:log("Starting error handling test")
 
 -- This should fail gracefully
-local result = context:call("NonExistentInstrument. COMMAND")
+local cs = instrument_call_stack.new({
+	instrument = "NonExistentInstrument",
+	command = "COMMAND",
+})
+local result = context:call(cs)
 
 if not result then
 	context:log("Error handled correctly")

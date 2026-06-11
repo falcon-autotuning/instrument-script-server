@@ -2,6 +2,7 @@
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
+#include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-log/inst_logging.h>
 
 #include <chrono>
@@ -45,6 +46,7 @@ protected:
     lua_ = std::make_unique<sol::state>();
     lua_->open_libraries(sol::lib::base, sol::lib::math, sol::lib::string);
     bind_runtime_context(*lua_, *registry_, *sync_coordinator_);
+    register_instrument_call_stack(lua_->lua_state());
   }
 
   void TearDown() override {
@@ -104,10 +106,16 @@ protected:
 // Test: calling a missing instrument should produce specific log entries
 TEST_F(RuntimeContextGenericTest, CallFunctionLogsMissingInstrument) {
   lua_->script(R"(
-    result = context:call("FakeInstrument.Command")
+    local cs = instrument_call_stack.new{
+      instrument = "FakeInstrument",
+      command = "Command"
+    }
+
+    result = context:call(cs)
   )");
 
-  expect_log_contains("Calling function: FakeInstrument.Command");
+  expect_log_contains(
+      "Calling instrument: FakeInstrument and command: Command");
   expect_log_contains("No metadata found for instrument: FakeInstrument");
 }
 
@@ -139,14 +147,21 @@ TEST_F(RuntimeContextGenericTest, LogFunctionEmitsUserMessage) {
 // Test: parsing various instrument command formats should be logged
 TEST_F(RuntimeContextGenericTest, ParseInstrumentCommandFormatsAreLogged) {
   lua_->script(R"(
-    context:call("Inst1.Command")
-    context:call("Inst1:1.Command")
-    context:call("Inst1:2.Command", 5.0)
+    local cs
+
+    cs = instrument_call_stack.new{ instrument = "Inst1", command = "Command" }
+    context:call(cs)
+
+    cs = instrument_call_stack.new{ instrument = "Inst1", command = "Command1", channel = 1 }
+    context:call(cs)
+
+    cs = instrument_call_stack.new{ instrument = "Inst1", command = "Command2", channel = 2 }
+    context:call(cs, 5.0)
   )");
 
-  expect_log_contains("Calling function: Inst1.Command");
-  expect_log_contains("Calling function: Inst1:1.Command");
-  expect_log_contains("Calling function: Inst1:2.Command");
+  expect_log_contains("Calling instrument: Inst1 and command: Command");
+  expect_log_contains("Calling instrument: Inst1 and command: Command1");
+  expect_log_contains("Calling instrument: Inst1 and command: Command2");
   expect_log_contains("No metadata found for instrument: Inst1");
 }
 
@@ -158,17 +173,29 @@ TEST_F(RuntimeContextGenericTest, ParallelWithBufferingBuffersCommands) {
   (*lua_)["context"] = ctx.get();
 
   lua_->script(R"(
+    local c1 = instrument_call_stack.new{
+      instrument = "Inst1",
+      command = "Command1"
+    }
+    local c2 = instrument_call_stack.new{
+      instrument = "Inst2",
+      command = "Command2"
+    }
+    local c3 = instrument_call_stack.new{
+      instrument = "Inst3",
+      command = "Command3"
+    }
     context:parallel(function()
-      context:call("Inst1.Command1")
-      context:call("Inst2.Command2")
-      context:call("Inst3.Command3")
+      context:call(c1)
+      context:call(c2)
+      context:call(c3)
     end)
   )");
 
   // Ensure the calls were parsed (debug messages)
-  expect_log_contains("Calling function: Inst1.Command1");
-  expect_log_contains("Calling function: Inst2.Command2");
-  expect_log_contains("Calling function: Inst3.Command3");
+  expect_log_contains("Calling instrument: Inst1 and command: Command1");
+  expect_log_contains("Calling instrument: Inst2 and command: Command2");
+  expect_log_contains("Calling instrument: Inst3 and command: Command3");
 
   // Registry warns about missing instrument metadata for each instrument
   expect_log_contains("No metadata found for instrument: Inst1");

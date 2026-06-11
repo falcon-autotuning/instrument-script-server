@@ -14,6 +14,12 @@ target_include_directories(test-utils PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/test_utils
 )
 
+add_custom_target(copy_test_data ALL
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/data
+    ${CMAKE_BINARY_DIR}/tests/data
+)
+
 add_executable(
   unit_tests
   unit/test_serialization.cpp
@@ -153,3 +159,6 @@ if(WIN32)
 
   endforeach()
 endif()
+add_dependencies(unit_tests copy_test_data)
+add_dependencies(integration_tests copy_test_data)
+add_dependencies(perf_tests copy_test_data)

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(
   instrument-script-server
-  VERSION 1.1.11
+  VERSION 1.2.0
   LANGUAGES C CXX)
 
 # Git version detection
@@ -103,6 +103,7 @@ find_package(yaml-cpp      CONFIG REQUIRED)
 find_package(sol2          CONFIG REQUIRED)
 find_package(instrument-data CONFIG REQUIRED)
 find_package(instrument-log CONFIG REQUIRED)
+find_package(instrument-call-stack CONFIG REQUIRED)
 
 # Platform-specific settings
 if(UNIX AND NOT APPLE)
@@ -151,9 +152,9 @@ target_compile_definitions(instrument-script-server-core
 target_compile_definitions(
   instrument-script-server-core
   PRIVATE
-  INSTSERVER_VERSION="${INSTSERVER_VERSION}"
-  INSTSERVER_GIT_COMMIT="${INSTSERVER_GIT_COMMIT}"
-  INSTSERVER_GIT_TAG="${INSTSERVER_GIT_TAG}")
+    INSTSERVER_VERSION="${INSTSERVER_VERSION}"
+    INSTSERVER_GIT_COMMIT="${INSTSERVER_GIT_COMMIT}"
+    INSTSERVER_GIT_TAG="${INSTSERVER_GIT_TAG}")
 
 target_link_libraries(
   instrument-script-server-core
@@ -164,6 +165,8 @@ target_link_libraries(
     ${LUA_LIBRARIES}
     instrument-log::instrument-log
     instrument-data::instrument-data
+    instrument-call-stack::instrument-call-stack
+    instrument-call-stack::instrument-call-stack-lua
 )
 
 # Per-target include directories (avoid global include_directories)

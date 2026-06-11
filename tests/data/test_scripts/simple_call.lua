@@ -1,7 +1,11 @@
 -- Simple single call test
 context:log("Starting simple call test")
 
-local result = context:call("MockInstrument1.ECHO")
+local cs = instrument_call_stack.new({
+	instrument = "MockInstrument1",
+	command = "ECHO",
+})
+local result = context:call(cs)
 context:log("Result received")
 
 if result then
