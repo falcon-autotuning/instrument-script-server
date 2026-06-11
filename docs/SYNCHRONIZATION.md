@@ -823,6 +823,5 @@ end)
 
 ## See Also
 
-- [Architecture](ARCHITECTURE.md) - System design
 - [CLI Usage](CLI_USAGE.md) - Running measurements
 - [Main README](index.md) - Getting started

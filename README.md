@@ -59,28 +59,6 @@ Start here if you're new to the Instrument Script Server:
 - **[HTTP RPC Interface](RPC.md)** - Remote procedure call interface for external integrations
 - **[Job Scheduling & Staging](JOB_SCHEDULING.md)** - Job handling, staging and NOPs
 
-### Teal/TypeScript Support
-
-The server now supports statically-typed measurement scripts using Teal (TypeScript for Lua):
-
-- **[Teal Migration Guide](TEAL_MIGRATION.md)** - New script format for Teal static typing
-- **[Type Manifest](TEAL_TYPE_MANIFEST.md)** - Type checking and validation for measurement scripts
-
-## Important: Measurement Script Requirements
-
-!!! warning "Return Statement Required"
-    Measurement scripts using the `main()` function format **must** include a return statement (can be `nil`). This is mandatory for proper error handling and result collection.
-
-See the [Teal Migration Guide](TEAL_MIGRATION.md) for complete script format requirements.
-
-The server now supports a job-based measurement lifecycle and staging area for measurement artifacts prior to deployment:
-
-- Jobs represent a complete measurement run (script, parameters, artifacts).
-- Jobs can be scheduled, staged (prepared), deployed (pushed to workers), and run.
-- A lightweight NOP (no-op) command family was added to the command language to support dry-run, timing placeholders, and synchronization-only markers.
-
-See docs/JOB_SCHEDULING.md for full details on the job lifecycle, states, CLI and embedding API usage, and semantics of the new NOP commands.
-
 ## Environment Variables
 
 The server supports configuration via environment variables:
@@ -103,231 +81,86 @@ The server supports configuration via environment variables:
 
 ## Measurement Script Structure
 
-### New Format (Teal-Compatible)
+### Measurement Scripts
 
-The server uses blocking execution with structured return types for type safety:
+Measurement scripts are written in Lua and interact with instruments using structured command objects.
+
+#### Basic Example
 
 ```lua
--- Define a main function that receives the runtime context
-function main(ctx, voltage)
+function main(ctx)
     ctx:log("Starting measurement")
-    
-    -- ctx:call() returns MeasurementResponse objects with metadata
-    local current_resp = ctx:call("DMM.MEASURE")
-    local current = current_resp:value()  -- Extract actual value
-    
-    -- Perform math operations
-    local power = current * voltage
-    
-    -- Or use built-in operations on measurements
-    local adjusted = current_resp:add_offset(-0.5):multiply_gain(2.0)
-    
-    return adjusted:value()
+
+    local cs = instrument_call_stack.new{
+        instrument = "DMM",
+        command = "MEASURE"
+    }
+
+    local resp = ctx:call(cs)
+
+    local value = resp:value()
+    ctx:log("Measured: " .. tostring(value))
+
+    return value
 end
-```
+````
 
-**MeasurementResponse Structure:**
+#### CallStack Commands
 
-- `instrument()` - Returns instrument name
-- `verb()` - Returns command name
-- `type()` - Returns value type ("float", "integer", "string", "boolean", "buffer")
-- `value()` - Returns the actual value
-- `add_offset(offset)` - Adds offset to numeric values
-- `multiply_gain(gain)` - Multiplies numeric values by gain
+Commands are constructed explicitly using `instrument_call_stack.new{}`:
 
-See [Teal Migration Guide](docs/TEAL_MIGRATION.md) for complete details.
+- `instrument` – Instrument name
+- `command` – API command
+- `channel` *(optional)* – Channel index
+- `params` *(optional)* – Command parameters
 
-### Legacy Format (Deprecated)
-
-Scripts without a `main` function continue to work but emit deprecation warnings:
+Example with parameters:
 
 ```lua
--- Old format: still supported (deprecated)
-context:log("Starting measurement")
-local result = context:call("INSTRUMENT.COMMAND")
-        ctx:error("Measurement failed: no result")
-        return nil
-    end
-    
-    -- Results are automatically collected from context:call()
-    return nil  -- Optional return value
-end
+local cs = instrument_call_stack.new{
+    instrument = "PSU",
+    command = "SET_VOLTAGE",
+    params = { voltage = 5.0 }
+}
 ```
 
-### Teal Static Typing with Type Manifest
+***
 
-For Teal scripts with typed parameters, use a **type manifest** to declare parameter types:
+#### Return Values
 
-```teal
--- Teal script with typed parameters
-record RuntimeContext
-    log: function(RuntimeContext, string)
-    call: function(RuntimeContext, string, {any:any}): any
-end
+`ctx:call()` returns a **MeasurementResponse** object:
 
-function main(ctx: RuntimeContext, voltage: number, sampleRate: number): nil
-    ctx:log("Voltage: " .. tostring(voltage))
-    ctx:log("Sample rate: " .. tostring(sampleRate))
-    return nil
-end
-```
+- `value()` → actual result
+- `type()` → return type
+- `instrument()` → instrument name
+- `verb()` → command name
 
-Generate a type manifest from your Teal file:
-
-```bash
-lua scripts/teal_manifest_generator.lua measurement.tl > manifest.json
-```
-
-Pass the manifest when running the measurement:
-
-```bash
-instrument-script-server measure measurement.lua \
-    --json \
-    --globals '{"voltage": 5.0, "sampleRate": 1000}' \
-    --type-manifest-file manifest.json
-```
-
-**Benefits:**
-
-- ✓ Compile-time type checking with Teal
-- ✓ Runtime parameter validation
-- ✓ Clear parameter contracts
-- ✓ Better error messages
-- ✓ Missing parameter detection
-- ✓ Unused global warnings
-
-See [TEAL_TYPE_MANIFEST.md](docs/TEAL_TYPE_MANIFEST.md) for complete documentation.
-
-**Key features:**
-
-- **Context parameter**: The `main(ctx)` function signature receives the runtime context
-- **Typed parameters**: Additional parameters can be passed with type validation
-- **Global variables**: Spec variables are injected as globals (with warnings)
-- **Explicit error handling**: Use `context:error(message)` to report script errors
-- **Automatic result collection**: All `context:call()` operations are automatically captured
-- **Return statement**: Main function must have a return statement (can be `nil`)
-
-### Backward Compatibility
-
-Scripts without a `main` function continue to work using the old format:
+Example:
 
 ```lua
--- Old format: executes at script load time
-context:log("Starting measurement")
-local result = context:call("INSTRUMENT.COMMAND", {param = value})
+local resp = ctx:call(cs)
+local val = resp:value()
 ```
 
-## Installation
+***
 
-**Quick Install:**
+#### Teal Support (Optional)
 
-```bash
-# Ubuntu 22.04 LTS
-sudo make setup-ubuntu
-make build
-sudo make install
+Teal can be used for type-checked scripts, but must be compiled to Lua before execution.
 
-# Arch Linux  
-sudo make setup-arch
-make build
-sudo make install
-```
+ISS provides runtime validation through **type manifest files**, which describe expected script inputs.
 
-For detailed installation instructions, troubleshooting, and platform-specific notes, see [INSTALL.md](INSTALL.md).
+See:
 
-### Dependencies
+- [TEAL_TYPE_MANIFEST](TEAL_TYPE_MANIFEST.md)
 
-See [INSTALL.md](INSTALL.md) for detailed dependency installation instructions.
-
-### Build
-
-```bash
-git clone https://github.com/falcon-autotuning/instrument-script-server.git
-cd instrument-script-server
-make clean  # Clean any previous builds
-make build  # Build the project
-sudo make install  # Install binaries and libraries-only)
-git clone --depth 1 --branch v3.5.0 https://github.com/ThePhD/sol2.git /tmp/sol2
-sudo mkdir -p /usr/local/include/sol
-sudo cp -r /tmp/sol2/include/sol/* /usr/local/include/sol/
-```
-
-**Windows:**
-Dependencies are managed via vcpkg (see `vcpkg.json`). The CI pipeline handles Windows builds automatically.
-
-### Build
-
-```bash
-git clone https://github.com/falcon-autotuning/instrument-script-server.git
-cd instrument-script-server
-make clean  # Clean any previous builds
-make build  # Build the project
-sudo make install  # Install binaries and libraries
-```
-
-### Running Tests
-
-```bash
-cd build
-
-# Run unit tests
-make test_unit
-
-# Run integration tests
-make test_integration
-
-# Run performance benchmarks
-make test_perf
-```
-
-**Note:** All tests must pass before committing changes. Both unit and integration tests validate the new main function format, deprecation warnings, and error handling.
-
-### Verify Installation
-
-```bash
-instrument-script-server --help
-instrument-script-server plugins
-```
-
-If you encounter library loading errors, run `sudo ldconfig` to update the dynamic linker cache. See [INSTALL.md](INSTALL.md#troubleshooting) for more troubleshooting tips.
+***
 
 ## Configuration
 
-Configuration files are located in the `examples/` folder:
-
-- **[examples/instrument-configurations/](examples/instrument-configurations/)** - Sample instrument configurations
-- **[examples/instrument-apis/](examples/instrument-apis/)** - Sample API definitions
-- **[examples/scripts/](examples/scripts/)** - Sample measurement scripts
+Configuration files are located in the `test/data/` folder:
 
 See the [Configuration Guide](CONFIGURATION.md) for detailed information on the JSON schema.
-
-## Example Workflow
-
-```bash
-# 1. Start the daemon
-instrument-script-server daemon start
-
-# 2. Start your instruments (modify example configs with your connection details)
-instrument-script-server start examples/instrument-configurations/agi_34401_config.yaml
-instrument-script-server start examples/instrument-configurations/dso9254a_config.yaml
-
-# 3. Write and run a measurement script
-cat > simple_measurement.lua << 'EOF'
--- Set voltage and measure
-context: call("INSTRUMENT_NAME.SET_VOLTAGE", {voltage = 5.0})
-local result = context:call("INSTRUMENT_NAME.MEASURE_VOLTAGE")
-print("Measured:  " .. result ..  " V")
-EOF
-
-instrument-script-server measure simple_measurement.lua
-
-# 4. Check status
-instrument-script-server list
-instrument-script-server status INSTRUMENT_NAME
-
-# 5. Stop when done
-instrument-script-server daemon stop
-```
 
 ## Built-in Validation Tools
 
@@ -339,17 +172,6 @@ instrument-script-server validate config examples/instrument-configurations/agi_
 
 # Validate an API definition
 instrument-script-server validate api examples/instrument-apis/agi_34401a. yaml
-```
-
-## Testing
-
-```bash
-cd build
-
-# Run specific test categories
-make test_unit           # Fast unit tests
-make test_integration    # Integration tests
-make test_perf          # Performance benchmarks
 ```
 
 ## Contributing

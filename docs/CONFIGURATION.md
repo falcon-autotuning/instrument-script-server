@@ -840,5 +840,3 @@ my-lab-setup/
 - [CLI Usage Guide](CLI_USAGE.md) - How to use the command-line interface
 - [Plugin Development Guide](PLUGIN_DEVELOPMENT.md) - Creating custom instrument drivers
 - [Architecture Documentation](ARCHITECTURE.md) - System design and internals
-- [Example Configurations](../examples/instrument-configurations/) - Working configuration examples
-- [Example APIs](../examples/instrument-apis/) - Working API definition examples

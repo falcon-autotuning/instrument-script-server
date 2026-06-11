@@ -480,6 +480,7 @@ buffer:multiply_gain(10.0)          -- Gain all elements
 ```
 
 **MeasurementResponse Methods:**
+
 - `instrument()` → string - Returns instrument name
 - `verb()` → string - Returns command/verb name
 - `type()` → string - Returns value type
@@ -489,6 +490,7 @@ buffer:multiply_gain(10.0)          -- Gain all elements
 - `buffer()` → BufferHandle - For array types, returns buffer handle
 
 **BufferHandle Methods (for arrays):**
+
 - `id()` → string - Buffer ID
 - `size()` → integer - Number of elements
 - `type()` → string - Data type
@@ -656,6 +658,7 @@ This architecture keeps the instrument server simple and generic, while allowing
 Large measurement arrays (e.g., waveforms, multi-channel datasets) are stored in shared memory to achieve high throughput and zero copies. You can manage these buffers directly from the CLI.
 
 ### 1. `list-buffers`
+
 Lists all active shared memory buffer IDs currently allocated, along with their metadata.
 
 ```bash
@@ -663,6 +666,7 @@ instrument-script-server list-buffers
 ```
 
 **Example Output:**
+
 ```
 Active Shared Memory Buffers:
   - buffer_1779829276760326 (10000 elements, float32)
@@ -670,6 +674,7 @@ Active Shared Memory Buffers:
 ```
 
 ### 2. `buffer-metadata`
+
 Displays complete structural metadata for a specific buffer ID.
 
 ```bash
@@ -677,11 +682,13 @@ instrument-script-server buffer-metadata <buffer_id>
 ```
 
 **Example:**
+
 ```bash
 instrument-script-server buffer-metadata buffer_1779829276760326
 ```
 
 **Output:**
+
 ```
 Buffer Metadata:
   ID: buffer_1779829276760326
@@ -691,6 +698,7 @@ Buffer Metadata:
 ```
 
 ### 3. `read-buffer`
+
 Reads and displays the data contents of a shared memory buffer.
 
 ```bash
@@ -698,14 +706,17 @@ instrument-script-server read-buffer <buffer_id> [--json]
 ```
 
 **Arguments:**
-*   `<buffer_id>`: Target buffer identifier
-*   `--json`: Optional. Formats data as a structured JSON payload containing the elements array.
+- `<buffer_id>`: Target buffer identifier
+- `--json`: Optional. Formats data as a structured JSON payload containing the elements array.
 
 **Example (Text format):**
+
 ```bash
 instrument-script-server read-buffer buffer_1779829276760326
 ```
+
 **Output:**
+
 ```
 [0] 0
 [1] 0.0627905
@@ -714,10 +725,13 @@ instrument-script-server read-buffer buffer_1779829276760326
 ```
 
 **Example (JSON format):**
+
 ```bash
 instrument-script-server read-buffer buffer_1779829276760326 --json
 ```
+
 **Output:**
+
 ```json
 {
   "ok": true,
@@ -729,6 +743,7 @@ instrument-script-server read-buffer buffer_1779829276760326 --json
 ```
 
 ### 4. `release-buffer`
+
 Decrements the server-side reference count and deallocates the shared-memory buffer if the reference count drops to 0.
 
 ```bash
@@ -736,11 +751,13 @@ instrument-script-server release-buffer <buffer_id>
 ```
 
 **Example:**
+
 ```bash
 instrument-script-server release-buffer buffer_1779829276760326
 ```
 
 **Output:**
+
 ```
 Released buffer: buffer_1779829276760326
 ```
@@ -1169,6 +1186,5 @@ This supports either the directory of a larger package or just a file with regis
 
 - [Main README](../README.md) - Getting started and overview
 - [Configuration Guide](CONFIGURATION.md) - Writing configuration files
-- [Architecture](ARCHITECTURE.md) - System design and components
 - [Plugin Development](PLUGIN_DEVELOPMENT.md) - Writing instrument plugins
 - [Synchronization Protocol](SYNCHRONIZATION.md) - Parallel execution details
