@@ -2,7 +2,7 @@ vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO falcon-autotuning/instrument-call-stack
     REF v${VERSION}
-    SHA512 f0bdd329eaeba39eca106515042ce7a4aa392fd0403117df805ada3e0b87128989569c6484929ba3ce83310ac69cdb3e614ed41f9db1817d46a248e1feb04ed2
+    SHA512 9a17ee7c1612df880e81373a243ad4dd962c2f407f3d29b1aba583d344dde7649bc4a984a9c4b240192a6c49450f925493e8ccc884fb7abe6c5d86a358f26fa1
 )
 
 set(BUILD_LUA OFF)

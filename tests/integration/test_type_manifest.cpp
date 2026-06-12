@@ -328,3 +328,139 @@ TEST_F(TypeManifestTest, ComplexTypeTable) {
   EXPECT_NE(log.find("Voltage: 5.0"), std::string::npos);
   EXPECT_NE(log.find("Rate: 1000"), std::string::npos);
 }
+
+TEST_F(TypeManifestTest, CallStackStdStringIsSafe) {
+  CallStack *stack = instrument_call_stack_create("scope1", "A", 3, "MEASURE");
+  ASSERT_NE(stack, nullptr);
+
+  char *serialized = instrument_call_stack_serialize(stack);
+  ASSERT_NE(serialized, nullptr);
+
+  std::string s(serialized);
+
+  // ✅ No truncation
+  EXPECT_EQ(s.size(), strlen(serialized));
+
+  // ✅ Roundtrip works through std::string
+  CallStack *copy = instrument_call_stack_deserialize(s.c_str());
+  ASSERT_NE(copy, nullptr);
+
+  EXPECT_EQ(std::string(instrument_call_stack_get_instrument_name(copy)),
+            "scope1");
+
+  EXPECT_EQ(std::string(instrument_call_stack_get_channel_group(copy)), "A");
+
+  EXPECT_EQ(instrument_call_stack_get_channel(copy), 3);
+
+  EXPECT_EQ(std::string(instrument_call_stack_get_command(copy)), "MEASURE");
+
+  instrument_call_stack_free(stack);
+  instrument_call_stack_free(copy);
+}
+
+TEST_F(TypeManifestTest, CallStackDeserializationSuccess) {
+  create_test_script("callstack_ok.lua", R"lua(
+    function main(ctx, stack)
+      local name = stack:get_instrument_name()
+      local group = stack:get_channel_group()
+      local channel = stack:get_channel()
+      local cmd = stack:get_command()
+
+      ctx:log("Instrument: " .. tostring(name))
+      ctx:log("Group: " .. tostring(group))
+      ctx:log("Channel: " .. tostring(channel))
+      ctx:log("Command: " .. tostring(cmd))
+
+      return nil
+    end
+  )lua");
+
+  // Create a native CallStack and serialize it
+  CallStack *stack = instrument_call_stack_create("scope1", "A", 3, "MEASURE");
+
+  ASSERT_NE(stack, nullptr);
+
+  char *serialized = instrument_call_stack_serialize(stack);
+  ASSERT_NE(serialized, nullptr);
+
+  json params;
+  params["script_path"] = (test_scripts_dir_ / "callstack_ok.lua").string();
+  params["globals"] = {{"stack", std::string(serialized)}};
+  params["type_manifest"] = {
+      {"parameters",
+       json::array({{{"name", "ctx"}, {"type", "RuntimeContext"}},
+                    {{"name", "stack"}, {"type", "CallStack"}}})}};
+
+  json out;
+  int result = handle_measure(params, out);
+
+  EXPECT_EQ(result, 0);
+  EXPECT_TRUE(out["ok"].get<bool>());
+
+  auto log = read_log();
+
+  EXPECT_NE(log.find("Instrument: scope1"), std::string::npos);
+  EXPECT_NE(log.find("Group: A"), std::string::npos);
+  EXPECT_NE(log.find("Channel: 3"), std::string::npos);
+  EXPECT_NE(log.find("Command: MEASURE"), std::string::npos);
+
+  instrument_call_stack_free(stack);
+}
+
+TEST_F(TypeManifestTest, CallStackDeserializationFailure) {
+  create_test_script("callstack_fail.lua", R"lua(
+    function main(ctx, stack)
+      return nil
+    end
+  )lua");
+
+  json params;
+  params["script_path"] = (test_scripts_dir_ / "callstack_fail.lua").string();
+
+  // Intentionally invalid serialized data
+  params["globals"] = {{"stack", "INVALID_SERIALIZED_DATA"}};
+
+  params["type_manifest"] = {
+      {"parameters",
+       json::array({{{"name", "ctx"}, {"type", "RuntimeContext"}},
+                    {{"name", "stack"}, {"type", "CallStack"}}})}};
+
+  json out;
+  int result = handle_measure(params, out);
+
+  EXPECT_EQ(result, 1);
+  EXPECT_FALSE(out["ok"].get<bool>());
+
+  EXPECT_NE(
+      out["error"].get<std::string>().find("CallStack deserialization failed"),
+      std::string::npos);
+}
+
+TEST_F(TypeManifestTest, CallStackWrongJsonType) {
+  create_test_script("callstack_wrong_type.lua", R"lua(
+    function main(ctx, stack)
+      return nil
+    end
+  )lua");
+
+  json params;
+  params["script_path"] =
+      (test_scripts_dir_ / "callstack_wrong_type.lua").string();
+
+  // Not a string → should fail
+  params["globals"] = {{"stack", 12345}};
+
+  params["type_manifest"] = {
+      {"parameters",
+       json::array({{{"name", "ctx"}, {"type", "RuntimeContext"}},
+                    {{"name", "stack"}, {"type", "CallStack"}}})}};
+
+  json out;
+  int result = handle_measure(params, out);
+
+  EXPECT_EQ(result, 1);
+  EXPECT_FALSE(out["ok"].get<bool>());
+
+  EXPECT_NE(out["error"].get<std::string>().find("CallStack must be"),
+            std::string::npos);
+}

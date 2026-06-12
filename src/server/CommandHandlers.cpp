@@ -436,6 +436,28 @@ int handle_status(const json &params, json &out) {
   return 0;
 }
 
+sol::object callstack_from_serialized(sol::state &lua,
+                                      const std::string &serialized) {
+  lua_State *L = lua.lua_state();
+
+  // Deserialize
+  CallStack *stack = instrument_call_stack_deserialize(serialized.c_str());
+  if (stack == nullptr) {
+    throw std::runtime_error("Failed to deserialize CallStack");
+  }
+
+  // Push userdata (Lua now owns it → GC will free it)
+  push_callstack(L, stack, /*owned=*/1);
+
+  // Convert stack top to sol::object
+  sol::object obj = sol::stack::get<sol::object>(L, -1);
+
+  // Pop from Lua stack (important!)
+  lua_pop(L, 1);
+
+  return obj;
+}
+
 int handle_list(const json &params, json &out) {
   (void)params;
   out = json::object();
@@ -688,7 +710,31 @@ __context_schema_version = nil
           }
 
           // Convert JSON value to Lua object
-          sol::object arg = json_to_lua(lua, params["globals"][param_name]);
+          const auto &value = params["globals"][param_name];
+          std::string type = param.value("type", "");
+
+          sol::object arg;
+
+          if (type == "CallStack") {
+            // Validate input
+            if (!value.is_string()) {
+              out["ok"] = false;
+              out["error"] = "CallStack must be a serialized string";
+              return 1;
+            }
+
+            try {
+              arg = callstack_from_serialized(lua, value.get<std::string>());
+            } catch (const std::exception &e) {
+              out["ok"] = false;
+              out["error"] =
+                  std::string("CallStack deserialization failed: ") + e.what();
+              return 1;
+            }
+
+          } else {
+            arg = json_to_lua(lua, value);
+          }
           args.push_back(arg);
 
           LOG_INFO("SERVER", "MEASURE",

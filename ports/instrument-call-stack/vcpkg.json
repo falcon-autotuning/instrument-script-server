@@ -1,6 +1,6 @@
 {
   "name": "instrument-call-stack",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A call stack implemenation in C99 for use by Cpp, Go, and Lua",
   "homepage": "https://github.com/falcon-autotuning/instrument-call-stack",
   "features": {

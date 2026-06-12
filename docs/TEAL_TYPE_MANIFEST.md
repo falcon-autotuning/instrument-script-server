@@ -62,6 +62,7 @@ instrument-script-server measure measurement.lua \
 - `ctx` must be the first parameter
 - Parameters are matched by name and passed to `main()`
 - Without a manifest, globals are still injected (legacy behavior)
+- For the CallStack type, it expects on input the instrument_call_stack_serialize
 
 ***
 
@@ -72,6 +73,7 @@ instrument-script-server measure measurement.lua \
 - `boolean`
 - `table`
 - `RuntimeContext`
+- `CallStack`
 
 ***
 
@@ -79,9 +81,9 @@ instrument-script-server measure measurement.lua \
 
 ISS does **not execute Teal directly**:
 
-- ✅ Write Teal for type safety
-- ✅ Compile to Lua before running
-- ✅ Use manifests for runtime validation
+- Write Teal for type safety
+- Compile to Lua before running
+- Use manifests for runtime validation
 
 ***
 
