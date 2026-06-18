@@ -45,7 +45,7 @@ public:
   void load_builtin_plugins();
 
   /// Get plugin path for protocol (if registered)
-  std::string get_plugin_path(const std::string &protocol_type) const;
+  std::filesystem::path get_plugin_path(const std::string &protocol_type) const;
 
 private:
   PluginRegistry() = default;

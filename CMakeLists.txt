@@ -104,6 +104,7 @@ find_package(sol2          CONFIG REQUIRED)
 find_package(instrument-data CONFIG REQUIRED)
 find_package(instrument-log CONFIG REQUIRED)
 find_package(instrument-call-stack CONFIG REQUIRED)
+find_package(instrument-plugin-api CONFIG REQUIRED)
 
 # Platform-specific settings
 if(UNIX AND NOT APPLE)
@@ -123,7 +124,6 @@ add_library(
   instrument-script-server-core SHARED
   src/SchemaValidator.cpp
   src/version.cpp
-  src/SerializedCommand.cpp
   src/ipc/SharedQueue.cpp
   src/ipc/ProcessManager.cpp
   src/ipc/DataBufferManager.cpp
@@ -138,6 +138,8 @@ add_library(
   src/server/HttpRpcServer.cpp
   src/server/CommandHandlers.cpp
   src/server/JobManager.cpp
+  src/server/InstrumentCommand.cpp
+  src/server/ParsingTools.cpp
   ${CMAKE_BINARY_DIR}/embedded_schemas.cpp)
 
 set_target_properties(instrument-script-server-core
@@ -210,7 +212,6 @@ add_executable(generate-instrument-config
                  src/instrument_configuration_generator.cpp)
 foreach(target
         instrument-script-server
-        instrument-worker
         validate-instrument-api
         validate-instrument-config
         validate-quantum-dot-config
@@ -219,6 +220,31 @@ foreach(target
 )
   target_link_libraries(${target} PRIVATE instrument-script-server-core)
 endforeach()
+target_link_libraries(instrument-worker
+  PRIVATE
+    instrument-script-server-core
+    instrument-plugin-api::instrument-plugin-api-host
+)
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+
+if(ENABLE_ASAN)
+  message(STATUS "ASAN ENABLED")
+
+  set(SAN_COMPILE_FLAGS
+    -fsanitize=address,undefined
+    -fno-omit-frame-pointer
+    -g
+    -O1
+  )
+
+  set(SAN_LINK_FLAGS
+    -fsanitize=address,undefined
+    -Wl,--export-dynamic
+  )
+
+  add_compile_options(${SAN_COMPILE_FLAGS})
+  add_link_options(${SAN_LINK_FLAGS})
+endif()
 
 # Tests
 if(BUILD_TESTS)

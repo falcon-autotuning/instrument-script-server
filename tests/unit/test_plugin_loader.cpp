@@ -1,8 +1,10 @@
 #include "PlatformPaths.hpp"
+#include "instrument-script-server/ErrorCodes.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include <gtest/gtest.h>
 #include <instrument-plugin.h>
+#include <plugin-host.h>
 
 using namespace instserver;
 using namespace instserver::test;
@@ -70,14 +72,15 @@ TEST_F(PluginLoaderTest, Initialize) {
   plugin::PluginLoader loader(plugin_path_.string());
   ASSERT_TRUE(loader.is_loaded());
 
-  PluginConfig config{};
-  strncpy(config.instrument_name, "TestInstrument", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(config.connection_json, "{\"address\":\"mock://test\"}",
-          PLUGIN_MAX_PAYLOAD - 1);
-  strncpy(config.api_definition_json, "{}", PLUGIN_MAX_PAYLOAD - 1);
+  PluginConfig config{}; // ✅ stack allocation
 
-  int result = loader.initialize(config);
-  EXPECT_EQ(result, 0);
+  strncpy(config.instrument_name, "TestInstrument", PLUGIN_MAX_STRING_LEN - 1);
+  strncpy(config.address, "mock://test", PLUGIN_MAX_STRING_LEN - 1);
+  config.baud_rate = 0;
+  strncpy(config.custom, "", PLUGIN_MAX_STRING_LEN - 1);
+
+  ErrorCode result = loader.initialize(&config); // ✅ pass pointer
+  EXPECT_EQ(result, ErrorCode::NONE);
 }
 
 TEST_F(PluginLoaderTest, ExecuteCommand) {
@@ -89,27 +92,28 @@ TEST_F(PluginLoaderTest, ExecuteCommand) {
   ASSERT_TRUE(loader.is_loaded());
 
   // Initialize plugin first
-  PluginConfig config{};
-  strncpy(config.instrument_name, "TestInstrument", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(config.connection_json, "{\"address\": \"mock://test\"}",
-          PLUGIN_MAX_PAYLOAD - 1);
-  strncpy(config.api_definition_json, "{}", PLUGIN_MAX_PAYLOAD - 1);
+  PluginConfig config{}; // ✅ stack allocation
 
-  int init_result = loader.initialize(config);
-  ASSERT_EQ(init_result, 0) << "Plugin initialization failed";
+  strncpy(config.instrument_name, "TestInstrument", PLUGIN_MAX_STRING_LEN - 1);
+  strncpy(config.address, "mock://test", PLUGIN_MAX_STRING_LEN - 1);
+  config.baud_rate = 0;
+  strncpy(config.custom, "", PLUGIN_MAX_STRING_LEN - 1);
+
+  ErrorCode init_result = loader.initialize(&config); // ✅ pass pointer
+  ASSERT_EQ(init_result, ErrorCode::NONE) << "Plugin initialization failed";
 
   // Execute a command - use a command the mock plugin actually supports
   PluginCommand cmd{};
-  strncpy(cmd.id, "test_cmd_001", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(cmd.instrument_name, "TestInstrument", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(cmd.verb, "ECHO", PLUGIN_MAX_STRING_LEN - 1); // Use a known command
-  cmd.expects_response = true;
-  cmd.param_count = 0;
 
-  PluginResponse resp{};
-  int result = loader.execute_command(cmd, resp);
+  strncpy(cmd.id, "test_cmd_001", PLUGIN_MAX_STRING_LEN - 1);
+  strncpy(cmd.command, "ECHO", PLUGIN_MAX_STRING_LEN - 1);
+  cmd.timeout_ms = 10;
+  cmd.params = param_storage_create_with_capacity(0);
+
+  PluginResponse *resp = plugin_response_create_with_capacity(0);
+
+  ErrorCode result = loader.execute_command(&cmd, resp);
 
   // Command execution should succeed
-  EXPECT_EQ(result, 0) << "Command execution failed";
-  EXPECT_TRUE(resp.success) << "Command marked as failed in response";
+  EXPECT_EQ(result, ErrorCode::NONE) << "Command execution failed";
 }

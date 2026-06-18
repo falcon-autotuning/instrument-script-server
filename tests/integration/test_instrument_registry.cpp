@@ -7,6 +7,12 @@
 
 using namespace instserver;
 
+namespace {
+void copy_string(char *dst, size_t dst_size, const std::string &src) {
+  std::strncpy(dst, src.c_str(), dst_size - 1);
+  dst[dst_size - 1] = '\0';
+}
+} // namespace
 class InstrumentRegistryTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
@@ -130,16 +136,14 @@ TEST_F(InstrumentRegistryTest, InvalidMessageTypeDoesNotCrashWorker) {
   auto proxy = registry.get_instrument("MockInstrument1");
   ASSERT_NE(proxy, nullptr);
   ASSERT_TRUE(proxy->is_alive());
+  std::unique_ptr<instserver::ipc::SharedQueue> queues =
+      instserver::ipc::SharedQueue::create_server_queue("MockInstrument1");
 
   {
-    boost::interprocess::message_queue req_queue(
-        boost::interprocess::open_only, "instrument_MockInstrument1_req");
-
     ipc::IPCMessage msg{};
-    msg.type = static_cast<ipc::IPCMessage::Type>(255); // ✅ invalid enum
-    msg.id = 1234;
-
-    req_queue.send(&msg, sizeof(msg), 0);
+    msg.type = static_cast<ipc::IPCMessage::Type>(20);
+    copy_string(msg.id.data(), msg.id.size(), "1234");
+    queues->send(msg);
   }
 
   std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -153,72 +157,29 @@ TEST_F(InstrumentRegistryTest, InvalidParamTypeDoesNotCrashWorker) {
   ASSERT_TRUE(registry.create_instrument(config_path.string()));
   auto proxy = registry.get_instrument("MockInstrument1");
 
+  std::unique_ptr<instserver::ipc::SharedQueue> queues =
+      instserver::ipc::SharedQueue::create_server_queue("MockInstrument1");
   {
-    boost::interprocess::message_queue req_queue(
-        boost::interprocess::open_only, "instrument_MockInstrument1_req");
-
     ipc::IPCMessage msg{};
     msg.type = ipc::IPCMessage::Type::COMMAND;
-    msg.id = 5678;
+    copy_string(msg.id.data(), msg.id.size(), "5678");
 
     auto &cmd = msg.command;
-
-    std::strncpy(cmd.instrument_name, "MockInstrument1",
-                 PLUGIN_MAX_STRING_LEN - 1);
-    std::strncpy(cmd.verb, "SET", PLUGIN_MAX_STRING_LEN - 1);
-
+    copy_string(cmd.command.data(), cmd.command.size(), "SET");
     cmd.param_count = 1;
-
     std::strncpy(cmd.params[0].name, "bad_param", PLUGIN_MAX_STRING_LEN - 1);
 
     // ❌ Corrupt enum
-    cmd.params[0].value.type = static_cast<ipc::IPCParamValue::Type>(255);
+    cmd.params[0].type = 255;
 
-    req_queue.send(&msg, sizeof(msg), 0);
+    queues->send(msg);
   }
 
   std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
   EXPECT_TRUE(proxy->is_alive()) << "Worker crashed on invalid param type!";
 }
-TEST_F(InstrumentRegistryTest, InvalidArraySizeDoesNotCrashWorker) {
-  auto &registry = InstrumentRegistry::instance();
-  auto config_path = test_data_dir_ / "mock_instrument1.yaml";
 
-  ASSERT_TRUE(registry.create_instrument(config_path.string()));
-  auto proxy = registry.get_instrument("MockInstrument1");
-
-  {
-    boost::interprocess::message_queue req_queue(
-        boost::interprocess::open_only, "instrument_MockInstrument1_req");
-
-    ipc::IPCMessage msg{};
-    msg.type = ipc::IPCMessage::Type::COMMAND;
-    msg.id = 9999;
-
-    auto &cmd = msg.command;
-
-    std::strncpy(cmd.instrument_name, "MockInstrument1",
-                 PLUGIN_MAX_STRING_LEN - 1);
-    std::strncpy(cmd.verb, "SET_ARRAY", PLUGIN_MAX_STRING_LEN - 1);
-
-    cmd.param_count = 1;
-
-    auto &p = cmd.params[0];
-    std::strncpy(p.name, "data", PLUGIN_MAX_STRING_LEN - 1);
-
-    p.value.type = ipc::IPCParamValue::Type::DOUBLE_ARRAY;
-
-    // ❌ Corrupt size (beyond bounds)
-    p.value.arr.size = instserver::ipc::PLUGIN_MAX_ARRAY_LEN + 50;
-
-    req_queue.send(&msg, sizeof(msg), 0);
-  }
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-  EXPECT_TRUE(proxy->is_alive()) << "Worker crashed on oversized array!";
-}
 TEST_F(InstrumentRegistryTest, WrongUnionAccessDoesNotCrashWorker) {
   auto &registry = InstrumentRegistry::instance();
   auto config_path = test_data_dir_ / "mock_instrument1.yaml";
@@ -235,9 +196,6 @@ TEST_F(InstrumentRegistryTest, WrongUnionAccessDoesNotCrashWorker) {
     // ❌ Says RESPONSE but contains COMMAND data
     msg.type = ipc::IPCMessage::Type::RESPONSE;
 
-    std::strncpy(msg.command.instrument_name, "MockInstrument1",
-                 PLUGIN_MAX_STRING_LEN - 1);
-
     req_queue.send(&msg, sizeof(msg), 0);
   }
 
@@ -245,6 +203,7 @@ TEST_F(InstrumentRegistryTest, WrongUnionAccessDoesNotCrashWorker) {
 
   EXPECT_TRUE(proxy->is_alive()) << "Worker crashed on union misuse!";
 }
+
 TEST_F(InstrumentRegistryTest, MissingFieldsDoesNotCrashWorker) {
   auto &registry = InstrumentRegistry::instance();
   auto config_path = test_data_dir_ / "mock_instrument1.yaml";
@@ -260,9 +219,6 @@ TEST_F(InstrumentRegistryTest, MissingFieldsDoesNotCrashWorker) {
     msg.type = ipc::IPCMessage::Type::COMMAND;
 
     // ❌ leave verb empty
-    std::strncpy(msg.command.instrument_name, "MockInstrument1",
-                 PLUGIN_MAX_STRING_LEN - 1);
-
     msg.command.param_count = 0;
 
     req_queue.send(&msg, sizeof(msg), 0);

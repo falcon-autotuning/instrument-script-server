@@ -68,7 +68,7 @@ protected:
     FILE *pipe = popen("which instrument-script-server 2>/dev/null", "r");
 #endif
 
-    if (pipe) {
+    if (pipe != nullptr) {
       char buffer[256];
       if (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
         std::string result = buffer;

@@ -76,7 +76,7 @@ Total message size: **8208 bytes** (fixed)
 
 Instructs worker to execute a command.
 
-**Payload**: JSON-serialized ==SerializedCommand==
+**Payload**: JSON-serialized ==InstrumentCommand==
 
 ```JSON
 {
@@ -107,7 +107,7 @@ Instructs worker to execute a command.
 
 Returns result of command execution.
 
-**Payload**: JSON-serialized ==CommandResponse==
+**Payload**: JSON-serialized ==InstrumentCommandResponse==
 
 ```JSON
 {

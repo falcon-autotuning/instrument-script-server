@@ -220,7 +220,7 @@ sol::object RuntimeContextBase::call(const std::string &func_name,
 
     if (in_parallel_block_) {
         // Buffer command instead of executing
-        SerializedCommand cmd;
+        InstrumentCommand cmd;
         cmd.id = fmt::format("{}-buffered-{}", instrument_id, parallel_buffer_.size());
         cmd.instrument_name = instrument_id;
         cmd.verb = verb;
@@ -259,7 +259,7 @@ void RuntimeContextBase::execute_parallel_buffer() {
     sync_coordinator_.register_barrier(sync_token, instruments);
 
     // Tag and dispatch commands
-    std::vector<std::future<CommandResponse>> futures;
+    std::vector<std::future<InstrumentCommandResponse>> futures;
     for (auto &cmd : parallel_buffer_) {
         cmd.sync_token = sync_token;  // Tag with sync token
 
@@ -390,9 +390,9 @@ while (running) {
     }
 
     // Execute command
-    SerializedCommand cmd = deserialize_command(msg->payload);
+    InstrumentCommand cmd = deserialize_command(msg->payload);
     PluginResponse plugin_resp = execute_via_plugin(cmd);
-    CommandResponse resp = convert_response(plugin_resp);
+    InstrumentCommandResponse resp = convert_response(plugin_resp);
 
     // Send response
     send_response(resp);

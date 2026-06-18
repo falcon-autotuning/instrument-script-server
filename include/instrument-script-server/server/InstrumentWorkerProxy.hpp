@@ -1,12 +1,14 @@
 #pragma once
 #include "instrument-script-server/export.h"
 
-#include "instrument-script-server/SerializedCommand.hpp"
 #include "instrument-script-server/ipc/PlatformTypes.hpp"
 #include "instrument-script-server/ipc/SharedQueue.hpp"
+#include "instrument-script-server/server/InstrumentCommand.hpp"
+#include "instrument-script-server/server/ParsingTools.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
 
 #include <atomic>
+#include <filesystem>
 #include <future>
 #include <mutex>
 #include <string>
@@ -14,16 +16,15 @@
 #include <unordered_map>
 
 namespace instserver {
+using APICommands = std::unordered_map<std::string, Command>;
 
 /// Proxy for communicating with a worker process via IPC
 /// This runs in the main server process
 class INSTRUMENT_SERVER_API InstrumentWorkerProxy {
 public:
-  InstrumentWorkerProxy(const std::string &instrument_name,
-                        const std::string &plugin_path,
-                        const std::string &config_json,
-                        const std::string &api_def_json,
-                        SyncCoordinator &sync_coordinator);
+  InstrumentWorkerProxy(std::string instrument_name,
+                        std::filesystem::path plugin,
+                        std::filesystem::path config);
 
   ~InstrumentWorkerProxy();
 
@@ -34,11 +35,11 @@ public:
   void stop();
 
   /// Execute command (async, returns future)
-  std::future<CommandResponse> execute(SerializedCommand cmd);
+  std::future<InstrumentCommandResponse> execute(InstrumentCommand cmd);
 
   /// Execute command (sync with timeout)
-  CommandResponse execute_sync(SerializedCommand cmd,
-                               std::chrono::milliseconds timeout);
+  InstrumentCommandResponse execute_sync(InstrumentCommand cmd,
+                                         std::chrono::milliseconds timeout);
 
   /// Check if worker is alive
   bool is_alive() const;
@@ -60,20 +61,36 @@ public:
 
   /// Send BUFFER_ACK message to worker
   void send_buffer_ack(const std::string &buffer_id);
+  /// Get expected responses for command
+  std::vector<IO> get_responses(const std::string &instrument_name,
+                                const std::string &verb) const;
+
+  /// Get expected parameters for command
+  std::vector<IO> get_parameters(const std::string &instrument_name,
+                                 const std::string &verb) const;
+
+  /// Checks if a command expects a response
+  bool command_expects_response(const std::string &verb) const;
+  /// Gets responses metedata for a command
+  std::vector<IO> get_responses(const std::string &verb) const;
+  /// Gets parameters metedata for a command
+  std::vector<IO> get_parameters(const std::string &verb) const;
 
 private:
   std::string instrument_name_;
-  std::string plugin_path_;
-  std::string config_json_;  // JSON as string
-  std::string api_def_json_; // JSON as string
+  std::filesystem::path instrument_config_;
+  std::filesystem::path plugin_;
   SyncCoordinator &sync_coordinator_;
+  APICommands commands_;
 
   std::unique_ptr<ipc::SharedQueue> ipc_queue_;
   ProcessId worker_pid_{0};
 
   // Pending responses (message_id -> promise)
-  std::unordered_map<uint64_t, std::promise<CommandResponse>>
+  std::unordered_map<std::string, std::promise<InstrumentCommandResponse>>
       pending_responses_;
+  std::unordered_map<std::string, std::vector<ipc::IPCMessage>>
+      partial_responses_;
   std::mutex pending_mutex_;
 
   // Response listener thread
@@ -97,6 +114,7 @@ private:
   void handle_ipc_message(const ipc::IPCMessage &msg);
   void handle_response_message(const ipc::IPCMessage &msg);
   void handle_sync_ack_message(const ipc::IPCMessage &msg);
+  const Command *find_command(const std::string &verb) const;
 };
 
 } // namespace instserver

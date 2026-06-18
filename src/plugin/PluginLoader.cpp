@@ -1,10 +1,9 @@
 #include "instrument-script-server/plugin/PluginLoader.hpp"
-#include <csignal>
+#include "instrument-script-server/ErrorCodes.hpp"
 #include <instrument-log/inst_logging.h>
 #include <stdexcept>
 
-namespace instserver {
-namespace plugin {
+namespace instserver::plugin {
 
 #ifdef _WIN32
 #define LOAD_LIBRARY(path) LoadLibraryA(path)
@@ -19,13 +18,11 @@ namespace plugin {
 #endif
 
 PluginLoader::PluginLoader(const std::string &plugin_path)
-    : plugin_path_(plugin_path) {
+    : handle_(LOAD_LIBRARY(plugin_path.c_str())), plugin_path_(plugin_path) {
 
   LOG_INFO("PLUGIN", "LOAD", "Loading plugin: %s", plugin_path.c_str());
 
-  handle_ = LOAD_LIBRARY(plugin_path.c_str());
-
-  if (!handle_) {
+  if (handle_ == nullptr) {
     error_message_ = std::string("Failed to load library: ") + LIBRARY_ERROR();
     LOG_ERROR("PLUGIN", "LOAD", "%s", error_message_.c_str());
     throw std::runtime_error(error_message_);
@@ -33,8 +30,8 @@ PluginLoader::PluginLoader(const std::string &plugin_path)
 
   load_symbols();
 
-  if (!fn_get_metadata_ || !fn_initialize_ || !fn_execute_command_ ||
-      !fn_shutdown_) {
+  if ((fn_get_metadata_ == nullptr) || (fn_initialize_ == nullptr) ||
+      (fn_execute_command_ == nullptr) || (fn_shutdown_ == nullptr)) {
     error_message_ = "Failed to load required plugin symbols";
     LOG_ERROR("PLUGIN", "LOAD", "%s", error_message_.c_str());
     unload();
@@ -46,8 +43,7 @@ PluginLoader::PluginLoader(const std::string &plugin_path)
 }
 
 PluginLoader::~PluginLoader() {
-  // ✅ Only shutdown if still safe and not already done
-  if (!shutdown_called_ && fn_shutdown_ && handle_) {
+  if (!shutdown_called_ && (fn_shutdown_ != nullptr) && (handle_ != nullptr)) {
     try {
       fn_shutdown_(); // fallback only
     } catch (...) {
@@ -107,48 +103,45 @@ void PluginLoader::load_symbols() {
 }
 
 void PluginLoader::unload() {
-  if (handle_) {
+  if (handle_ != nullptr) {
     CLOSE_LIBRARY(handle_);
     handle_ = nullptr;
   }
 }
 
 PluginMetadata PluginLoader::get_metadata() const {
-  if (!fn_get_metadata_) {
+  if (fn_get_metadata_ == nullptr) {
     throw std::runtime_error("Plugin not loaded");
   }
   return fn_get_metadata_();
 }
 
-int32_t PluginLoader::initialize(const PluginConfig &config) {
-  if (!fn_initialize_) {
-    return -1;
+ErrorCode PluginLoader::initialize(const PluginConfig *config) {
+  if (fn_initialize_ == nullptr) {
+    return ErrorCode::INITIALIZE_NOT_PROVIDED;
   }
 
-  LOG_INFO("PLUGIN", "INIT", "Initializing plugin for instrument: %s",
-           config.instrument_name);
-
-  int32_t result = fn_initialize_(&config);
+  uint8_t result = fn_initialize_(config);
 
   if (result != 0) {
     LOG_ERROR("PLUGIN", "INIT", "Plugin initialization failed with code: %d",
               result);
   }
 
-  return result;
+  return ErrorCode(result);
 }
 
-int32_t PluginLoader::execute_command(const PluginCommand &command,
-                                      PluginResponse &response) {
-  if (!fn_execute_command_) {
-    return -1;
+ErrorCode PluginLoader::execute_command(const PluginCommand *command,
+                                        PluginResponse *response) {
+  if (fn_execute_command_ == nullptr) {
+    return ErrorCode::EXECUTE_COMMAND_NOT_PROVIDED;
   }
-
-  return fn_execute_command_(&command, &response);
+  auto out = ErrorCode(fn_execute_command_(command, response));
+  return out;
 }
 
 void PluginLoader::shutdown() {
-  if (!shutdown_called_ && fn_shutdown_) {
+  if (!shutdown_called_ && (fn_shutdown_ != nullptr)) {
     LOG_INFO("PLUGIN", "SHUTDOWN", "Shutting down plugin: %s",
              plugin_path_.c_str());
 
@@ -157,5 +150,4 @@ void PluginLoader::shutdown() {
   }
 }
 
-} // namespace plugin
-} // namespace instserver
+} // namespace instserver::plugin

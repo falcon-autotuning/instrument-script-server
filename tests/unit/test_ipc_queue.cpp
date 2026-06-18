@@ -27,7 +27,8 @@ TEST(IPCQueue, SendReceive) {
   // Send from server
   IPCMessage msg;
   msg.type = IPCMessage::Type::COMMAND;
-  msg.id = 42;
+  std::strncpy(msg.id.data(), "42", msg.id.size() - 1);
+  msg.id[msg.id.size() - 1] = '\0';
   msg.sync_token = 0;
 
   bool sent = server_queue->send(msg, std::chrono::milliseconds(1000));
@@ -37,7 +38,9 @@ TEST(IPCQueue, SendReceive) {
   auto received = worker_queue->receive(std::chrono::milliseconds(1000));
   ASSERT_TRUE(received.has_value());
   EXPECT_EQ(received->type, IPCMessage::Type::COMMAND);
-  EXPECT_EQ(received->id, 42);
+  EXPECT_EQ(std::string(received->id.data(),
+                        strnlen(received->id.data(), received->id.size())),
+            "42");
 
   SharedQueue::cleanup(name);
 }

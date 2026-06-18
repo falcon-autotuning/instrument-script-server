@@ -31,16 +31,18 @@ void print_usage() {
                "[--json]\n";
   std::cout << "                               Run Lua measurement script\n";
   std::cout << "\nUtilities:\n";
-  std::cout << "  test <config> <verb> [params]      Test command\n";
   std::cout << "  discover [paths...]                Discover plugins\n";
   std::cout << "  plugins                            List available plugins\n";
   std::cout << "\nBuffer Management:\n";
-  std::cout << "  list-buffers                       List all active shared memory buffers\n";
-  std::cout << "  buffer-metadata <id>               Show metadata for a shared memory buffer\n";
-  std::cout << "  read-buffer <id> [--json]          Read data contents of a shared memory buffer\n";
-  std::cout << "  release-buffer <id>                Deallocate/free a shared memory buffer\n";
+  std::cout << "  list-buffers                       List all active shared "
+               "memory buffers\n";
+  std::cout << "  buffer-metadata <id>               Show metadata for a "
+               "shared memory buffer\n";
+  std::cout << "  read-buffer <id> [--json]          Read data contents of a "
+               "shared memory buffer\n";
+  std::cout << "  release-buffer <id>                Deallocate/free a shared "
+               "memory buffer\n";
   std::cout << "\nOptions:\n";
-  std::cout << "  --plugin <path>      Custom plugin (. so/. dll)\n";
   std::cout << "  --log-level <level>  Log level (default: info)\n";
   std::cout << "  --version            Show version information\n";
   std::cout << "  --help, -h           Show this help message\n";
@@ -50,8 +52,8 @@ void print_usage() {
   std::cout << "\n  2. Start instruments:\n";
   std::cout << "     instrument-script-server start dac1.yaml\n";
   std::cout << "     instrument-script-server start dmm1.yaml\n";
-  std::cout
-      << "     instrument-script-server start scope1.yaml --plugin ./custom.so\n";
+  std::cout << "     instrument-script-server start scope1.yaml --plugin "
+               "./custom.so\n";
   std::cout << "\n  3. Run measurement:\n";
   std::cout << "     instrument-script-server measure my_measurement.lua\n";
   std::cout << "\n  4. Manage:\n";
@@ -63,14 +65,18 @@ void print_usage() {
 }
 
 spdlog::level::level_enum parse_log_level(const std::string &level) {
-  if (level == "debug")
+  if (level == "debug") {
     return spdlog::level::debug;
-  if (level == "warn")
+  }
+  if (level == "warn") {
     return spdlog::level::warn;
-  if (level == "error")
+  }
+  if (level == "error") {
     return spdlog::level::err;
-  if (level == "trace")
+  }
+  if (level == "trace") {
     return spdlog::level::trace;
+  }
   return spdlog::level::info;
 }
 
@@ -86,7 +92,8 @@ int main(int argc, char **argv) {
   if (command == "daemon") {
     // subcommand is positional 0
     if (argc < 3) {
-      std::cerr << "Usage: instrument-script-server daemon <start|stop|status>\n";
+      std::cerr
+          << "Usage: instrument-script-server daemon <start|stop|status>\n";
       return 1;
     }
     std::string action = argv[2];
@@ -94,26 +101,38 @@ int main(int argc, char **argv) {
     params["action"] = action;
 
     // parse options
+    bool json_output = false;
     for (int i = 3; i < argc; ++i) {
       std::string arg = argv[i];
       if (arg == "--log-level" && i + 1 < argc) {
         params["log_level"] = argv[++i];
       }
+      if (arg == "--json") {
+        json_output = true;
+      }
     }
 
     nlohmann::json out;
     int rc = server::handle_daemon(params, out);
-    if (!out.is_null()) {
-      if (out.contains("error"))
-        std::cerr << out["error"].get<std::string>() << "\n";
-      else if (out.contains("message"))
-        std::cout << out["message"].get<std::string>() << "\n";
+    if (out.is_null()) {
+      return rc;
+    }
+    if (json_output) {
+      std::cout << out.dump() << "\n";
+      return rc;
+    }
+    if (out.contains("error")) {
+      std::cerr << out["error"].get<std::string>() << "\n";
+    } else if (out.contains("message")) {
+      std::cout << out["message"].get<std::string>() << "\n";
     }
     return rc;
-  } else if (command == "start") {
+  }
+  if (command == "start") {
     if (argc < 2) {
-      std::cerr << "Usage: instrument-script-server start <config> [--plugin <path>] "
-                   "[--log-level <level>]\n";
+      std::cerr
+          << "Usage: instrument-script-server start <config> [--plugin <path>] "
+             "[--log-level <level>]\n";
       return 1;
     }
     std::string config_path = argv[2];
@@ -239,59 +258,6 @@ int main(int argc, char **argv) {
       }
     }
     return rc;
-  } else if (command == "test") {
-    if (argc < 3) {
-      std::cerr << "Error: test requires config and verb\n";
-      std::cerr
-          << "Usage: instrument-script-server test <config> <verb> [param=value... ] "
-             "[--plugin <path>] [--log-level <level>]\n";
-      return 1;
-    }
-    nlohmann::json params;
-    params["config_path"] = argv[2];
-    params["verb"] = argv[3];
-    // parse remaining args as key=value or options
-    for (int i = 4; i < argc; ++i) {
-      std::string arg = argv[i];
-      if (arg == "--plugin" && i + 1 < argc) {
-        params["plugin"] = argv[++i];
-        continue;
-      }
-      if (arg == "--log-level" && i + 1 < argc) {
-        params["log_level"] = argv[++i];
-        continue;
-      }
-      size_t eq = arg.find('=');
-      if (eq != std::string::npos) {
-        std::string key = arg.substr(0, eq);
-        std::string val = arg.substr(eq + 1);
-        // try number parse
-        try {
-          if (val.find('.') != std::string::npos)
-            params["params"][key] = std::stod(val);
-          else
-            params["params"][key] = std::stoll(val);
-        } catch (...) {
-          if (val == "true" || val == "false") {
-            params["params"][key] = (val == "true");
-          } else {
-            params["params"][key] = val;
-          }
-        }
-      }
-    }
-
-    nlohmann::json out;
-    int rc = server::handle_test(params, out);
-    if (!out.is_null()) {
-      if (!out.value("ok", false)) {
-        std::cerr << out.value("error", "test failed") << "\n";
-      } else {
-        if (out.contains("text_response"))
-          std::cout << out["text_response"].get<std::string>() << "\n";
-      }
-    }
-    return rc;
   } else if (command == "discover") {
     nlohmann::json params;
     if (argc > 2) {
@@ -344,10 +310,13 @@ int main(int argc, char **argv) {
           for (auto &buf_id : arr) {
             nlohmann::json meta_params, meta_out;
             meta_params["buffer_id"] = buf_id.get<std::string>();
-            if (server::handle_get_buffer_metadata(meta_params, meta_out) == 0 && meta_out.value("ok", false)) {
+            if (server::handle_get_buffer_metadata(meta_params, meta_out) ==
+                    0 &&
+                meta_out.value("ok", false)) {
               std::cout << "  - " << buf_id.get<std::string>() << " ("
-                        << meta_out.value("element_count", 0ULL) << " elements, "
-                        << meta_out.value("data_type", "") << ")\n";
+                        << meta_out.value("element_count", 0ULL)
+                        << " elements, " << meta_out.value("data_type", "")
+                        << ")\n";
             } else {
               std::cout << "  - " << buf_id.get<std::string>() << "\n";
             }
@@ -359,7 +328,8 @@ int main(int argc, char **argv) {
   } else if (command == "buffer-metadata") {
     if (argc < 3) {
       std::cerr << "Error: buffer-metadata requires buffer ID\n";
-      std::cerr << "Usage: instrument-script-server buffer-metadata <buffer_id>\n";
+      std::cerr
+          << "Usage: instrument-script-server buffer-metadata <buffer_id>\n";
       return 1;
     }
     nlohmann::json params;
@@ -368,7 +338,8 @@ int main(int argc, char **argv) {
     int rc = server::handle_get_buffer_metadata(params, out);
     if (!out.is_null()) {
       if (!out.value("ok", false)) {
-        std::cerr << out.value("error", "Failed to get buffer metadata") << "\n";
+        std::cerr << out.value("error", "Failed to get buffer metadata")
+                  << "\n";
       } else {
         std::cout << "Buffer Metadata:\n";
         std::cout << "  ID: " << argv[2] << "\n";
@@ -381,7 +352,8 @@ int main(int argc, char **argv) {
   } else if (command == "read-buffer") {
     if (argc < 3) {
       std::cerr << "Error: read-buffer requires buffer ID\n";
-      std::cerr << "Usage: instrument-script-server read-buffer <buffer_id> [--json]\n";
+      std::cerr << "Usage: instrument-script-server read-buffer <buffer_id> "
+                   "[--json]\n";
       return 1;
     }
     nlohmann::json params;
@@ -410,7 +382,8 @@ int main(int argc, char **argv) {
   } else if (command == "release-buffer") {
     if (argc < 3) {
       std::cerr << "Error: release-buffer requires buffer ID\n";
-      std::cerr << "Usage: instrument-script-server release-buffer <buffer_id>\n";
+      std::cerr
+          << "Usage: instrument-script-server release-buffer <buffer_id>\n";
       return 1;
     }
     nlohmann::json params;

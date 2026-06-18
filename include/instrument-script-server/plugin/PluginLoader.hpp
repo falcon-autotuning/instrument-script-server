@@ -1,4 +1,5 @@
 #pragma once
+#include "instrument-script-server/ErrorCodes.hpp"
 #include "instrument-script-server/export.h"
 #include <string>
 
@@ -37,11 +38,11 @@ public:
   [[nodiscard]] PluginMetadata get_metadata() const;
 
   /// Initialize plugin
-  int32_t initialize(const PluginConfig &config);
+  ErrorCode initialize(const PluginConfig *config);
 
   /// Execute command
-  int32_t execute_command(const PluginCommand &command,
-                          PluginResponse &response);
+  ErrorCode execute_command(const PluginCommand *command,
+                            PluginResponse *response);
 
   /// Shutdown plugin
   void shutdown();

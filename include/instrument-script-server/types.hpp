@@ -32,21 +32,6 @@ struct ProtocolConfig {
   std::map<std::string, std::string> config;
 };
 
-struct InstrumentMetadata {
-  std::string vendor;
-  std::string model;
-  std::string identifier; // e.g., "GPI1"
-  std::optional<std::string> description;
-  std::optional<std::string> firmware_version;
-};
-
-struct InstrumentAPI {
-  std::string api_version;
-  InstrumentMetadata instrument;
-  ProtocolConfig protocol;
-  std::map<std::string, Command> commands;
-};
-
 struct ContextField {
   std::string name;
   std::string type;

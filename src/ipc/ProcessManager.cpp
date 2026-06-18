@@ -47,7 +47,23 @@ bool is_alive_impl(ProcessHandle handle) {
 #else
   int status = 0;
   pid_t result = waitpid(handle, &status, WNOHANG);
-  return result == 0;
+
+  if (result == 0) {
+    return true; // still running
+  }
+
+  if (result == handle) {
+    return false; // exited (and reaped)
+  }
+
+  if (result == -1) {
+    if (errno == ECHILD) {
+      return false; // already gone
+    }
+  }
+
+  return false;
+
 #endif
 }
 } // namespace
@@ -55,12 +71,13 @@ namespace instserver::ipc {
 
 ProcessManager::~ProcessManager() { cleanup_all(); }
 
-ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
-                                       const std::string &plugin_path,
-                                       const std::string &worker_executable) {
+ProcessId
+ProcessManager::spawn_worker(const std::filesystem::path &instrument_config,
+                             const std::filesystem::path &plugin,
+                             const std::string &worker_executable) {
   LOG_INFO("PROCESS", "SPAWN",
-           "Spawning worker for instrument: %s with plugin: %s",
-           instrument_name.c_str(), plugin_path.c_str());
+           "Spawning worker for instrument with config: %s with plugin: %s",
+           instrument_config.string().c_str(), plugin.string().c_str());
 
   // Resolve executable path
   std::string resolved_worker = worker_executable;
@@ -78,9 +95,22 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
     }
   }
 
-  std::vector<std::string> args = {resolved_worker, instrument_name,
-                                   plugin_path};
+  std::vector<std::string> args = {resolved_worker, instrument_config.string(),
+                                   plugin.string()};
 
+  std::string instrument_name;
+  YAML::Node doc;
+  try {
+    YAML::Node doc = YAML::LoadFile(instrument_config);
+    if (!doc["name"]) {
+      throw std::runtime_error("Missing required field: name");
+    }
+    instrument_name = doc["name"].as<std::string>();
+  } catch (const std::exception &e) {
+    LOG_ERROR("CONFIG", "WORKER_MAIN", "Invalid config '%s': %s",
+              instrument_config.c_str(), e.what());
+    return 1;
+  }
   ProcessId pid = spawn_process_impl(args);
   if (pid == 0) {
     LOG_ERROR("PROCESS", "SPAWN", "Failed to spawn worker for: %s",
@@ -100,7 +130,7 @@ ProcessId ProcessManager::spawn_worker(const std::string &instrument_name,
     }
     entry->pid = pid;
     entry->instrument_name = instrument_name;
-    entry->plugin_path = plugin_path;
+    entry->plugin_path = plugin.string();
     entry->started_at = now;
     entry->is_alive = true;
     entry->last_heartbeat = last_heartbeat;
@@ -169,9 +199,19 @@ bool ProcessManager::wait_for_exit(ProcessId pid,
   auto deadline = std::chrono::steady_clock::now() + timeout;
 
   while (std::chrono::steady_clock::now() < deadline) {
-    if (!is_alive(pid)) {
+    int status = 0;
+    pid_t result = waitpid(pid, &status, WNOHANG);
+
+    if (result == pid) {
       return true;
     }
+
+    if (result == -1) {
+      if (errno == ECHILD) {
+        return true;
+      }
+    }
+
     std::this_thread::sleep_for(
         std::chrono::milliseconds(PROCESS_KILL_POLL_INTERVAL_MS));
   }

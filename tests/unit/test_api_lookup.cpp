@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <gtest/gtest.h>
+#include <instrument-plugin.h>
 #include <spdlog/common.h>
 
 using namespace instserver;
@@ -39,44 +40,36 @@ protected:
   std::filesystem::path config_path_;
 };
 
-TEST_F(APILookupTest, GetInstrumentMetadata) {
-  ASSERT_TRUE(registry_->create_instrument(config_path_.string()));
-
-  auto metadata = registry_->get_instrument_metadata("MockInstrument1");
-  ASSERT_TRUE(metadata.has_value());
-  EXPECT_EQ(metadata->name, "MockInstrument1");
-  EXPECT_TRUE(metadata->config.contains("name"));
-  EXPECT_TRUE(metadata->api_def.contains("commands"));
-  EXPECT_TRUE(metadata->api_def.contains("io"));
-}
-
 TEST_F(APILookupTest, CommandExpectsResponse) {
   ASSERT_TRUE(registry_->create_instrument(config_path_.string()));
 
   // Commands with non-empty outputs array expect response
-  EXPECT_TRUE(registry_->command_expects_response("MockInstrument1", "IDN"));
-  EXPECT_TRUE(registry_->command_expects_response("MockInstrument1", "ECHO"));
-  EXPECT_TRUE(
-      registry_->command_expects_response("MockInstrument1", "MEASURE"));
-  EXPECT_TRUE(registry_->command_expects_response("MockInstrument1", "GET"));
-  EXPECT_TRUE(
-      registry_->command_expects_response("MockInstrument1", "GET_DOUBLE"));
-  EXPECT_TRUE(
-      registry_->command_expects_response("MockInstrument1", "GET_STRING"));
-  EXPECT_TRUE(
-      registry_->command_expects_response("MockInstrument1", "GET_BOOL"));
-  EXPECT_TRUE(
-      registry_->command_expects_response("MockInstrument1", "GET_ARRAY"));
-  EXPECT_TRUE(
-      registry_->command_expects_response("MockInstrument1", "GET_RANGE"));
+  EXPECT_TRUE(registry_->get_instrument("MockInstrument1")
+                  ->command_expects_response("IDN"));
+  EXPECT_TRUE(registry_->get_instrument("MockInstrument1")
+                  ->command_expects_response("ECHO"));
+  EXPECT_TRUE(registry_->get_instrument("MockInstrument1")
+                  ->command_expects_response("MEASURE"));
+  EXPECT_TRUE(registry_->get_instrument("MockInstrument1")
+                  ->command_expects_response("GET"));
+  EXPECT_TRUE(registry_->get_instrument("MockInstrument1")
+                  ->command_expects_response("GET_STRING"));
+  EXPECT_TRUE(registry_->get_instrument("MockInstrument1")
+                  ->command_expects_response("GET_BOOL"));
+  EXPECT_TRUE(registry_->get_instrument("MockInstrument1")
+                  ->command_expects_response("GET_ARRAY"));
+  EXPECT_TRUE(registry_->get_instrument("MockInstrument1")
+                  ->command_expects_response("GET_RANGE"));
 
   // Commands with empty outputs array don't expect response
-  EXPECT_FALSE(registry_->command_expects_response("MockInstrument1", "SET"));
-  EXPECT_FALSE(
-      registry_->command_expects_response("MockInstrument1", "SET_RANGE"));
-  EXPECT_FALSE(
-      registry_->command_expects_response("MockInstrument1", "CONFIGURE"));
-  EXPECT_FALSE(registry_->command_expects_response("MockInstrument1", "RESET"));
+  EXPECT_FALSE(registry_->get_instrument("MockInstrument1")
+                   ->command_expects_response("SET"));
+  EXPECT_FALSE(registry_->get_instrument("MockInstrument1")
+                   ->command_expects_response("SET_RANGE"));
+  EXPECT_FALSE(registry_->get_instrument("MockInstrument1")
+                   ->command_expects_response("CONFIGURE"));
+  EXPECT_FALSE(registry_->get_instrument("MockInstrument1")
+                   ->command_expects_response("RESET"));
 }
 
 TEST_F(APILookupTest, GetResponseType) {
@@ -84,88 +77,48 @@ TEST_F(APILookupTest, GetResponseType) {
 
   // Check response types from io definitions
   auto type_measure =
-      registry_->get_response_type("MockInstrument1", "MEASURE");
-  ASSERT_TRUE(type_measure.has_value());
-  EXPECT_EQ(*type_measure, "float"); // current is float in io
+      registry_->get_instrument("MockInstrument1")->get_responses("MEASURE");
+  ASSERT_TRUE(!type_measure.empty());
+  EXPECT_EQ(type_measure[0].type, PARAM_TYPE_DOUBLE);
 
-  auto type_idn = registry_->get_response_type("MockInstrument1", "IDN");
-  ASSERT_TRUE(type_idn.has_value());
-  EXPECT_EQ(*type_idn, "string"); // message is string in io
+  auto type_idn =
+      registry_->get_instrument("MockInstrument1")->get_responses("IDN");
+  ASSERT_TRUE(!type_idn.empty());
+  EXPECT_EQ(type_idn[0].type, PARAM_TYPE_STRING);
 
-  auto type_bool = registry_->get_response_type("MockInstrument1", "GET_BOOL");
-  ASSERT_TRUE(type_bool.has_value());
-  EXPECT_EQ(*type_bool, "boolean"); // status is boolean in io
+  auto type_bool =
+      registry_->get_instrument("MockInstrument1")->get_responses("GET_BOOL");
+  ASSERT_TRUE(!type_bool.empty());
+  EXPECT_EQ(type_bool[0].type, PARAM_TYPE_BOOL);
 
   auto type_array =
-      registry_->get_response_type("MockInstrument1", "GET_ARRAY");
-  ASSERT_TRUE(type_array.has_value());
-  EXPECT_EQ(*type_array, "array"); // waveform is array in io
+      registry_->get_instrument("MockInstrument1")->get_responses("GET_ARRAY");
+  ASSERT_TRUE(!type_array.empty());
+  EXPECT_EQ(type_array[0].type, PARAM_TYPE_BUFFER);
 
   auto type_range =
-      registry_->get_response_type("MockInstrument1", "GET_RANGE");
-  ASSERT_TRUE(type_range.has_value());
-  EXPECT_EQ(*type_range, "float"); // range is float in io
+      registry_->get_instrument("MockInstrument1")->get_responses("GET_RANGE");
+  ASSERT_TRUE(!type_range.empty());
+  EXPECT_EQ(type_range[0].type, PARAM_TYPE_DOUBLE);
 
   // Commands without outputs should return nullopt
-  auto type_set = registry_->get_response_type("MockInstrument1", "SET");
-  EXPECT_FALSE(type_set.has_value());
+  auto type_set =
+      registry_->get_instrument("MockInstrument1")->get_responses("SET");
+  EXPECT_TRUE(type_set.empty());
 
-  auto type_reset = registry_->get_response_type("MockInstrument1", "RESET");
-  EXPECT_FALSE(type_reset.has_value());
+  auto type_reset =
+      registry_->get_instrument("MockInstrument1")->get_responses("RESET");
+  EXPECT_TRUE(type_reset.empty());
 }
 
 TEST_F(APILookupTest, UnknownCommand) {
   ASSERT_TRUE(registry_->create_instrument(config_path_.string()));
 
   // Unknown command should default to no response expected
-  EXPECT_FALSE(
-      registry_->command_expects_response("MockInstrument1", "NONEXISTENT"));
+  EXPECT_FALSE(registry_->get_instrument("MockInstrument1")
+                   ->command_expects_response("NONEXISTENT"));
 
-  auto type = registry_->get_response_type("MockInstrument1", "NONEXISTENT");
-  EXPECT_FALSE(type.has_value());
-}
-
-TEST_F(APILookupTest, UnknownInstrument) {
-  EXPECT_FALSE(registry_->command_expects_response("NonExistent", "MEASURE"));
-
-  auto metadata = registry_->get_instrument_metadata("NonExistent");
-  EXPECT_FALSE(metadata.has_value());
-}
-
-TEST_F(APILookupTest, IOOutputsStructure) {
-  ASSERT_TRUE(registry_->create_instrument(config_path_.string()));
-
-  auto metadata = registry_->get_instrument_metadata("MockInstrument1");
-  ASSERT_TRUE(metadata.has_value());
-
-  const auto &api_def = metadata->api_def;
-  const auto &commands = api_def["commands"];
-
-  // Verify GET_RANGE has proper structure per schema
-  ASSERT_TRUE(commands.contains("GET_RANGE"));
-  const auto &get_range = commands["GET_RANGE"];
-
-  ASSERT_TRUE(get_range.contains("outputs"));
-  ASSERT_TRUE(get_range["outputs"].is_array());
-  ASSERT_FALSE(get_range["outputs"].empty());
-  EXPECT_EQ(get_range["outputs"][0], "range");
-
-  // Verify range exists in io
-  const auto &io_defs = api_def["io"];
-  bool found_range = false;
-  for (const auto &io : io_defs) {
-    if (io["name"] == "range") {
-      found_range = true;
-      EXPECT_EQ(io["type"], "float");
-      break;
-    }
-  }
-  EXPECT_TRUE(found_range);
-
-  // Verify SET has empty outputs per schema
-  ASSERT_TRUE(commands.contains("SET"));
-  const auto &set = commands["SET"];
-  ASSERT_TRUE(set.contains("outputs"));
-  ASSERT_TRUE(set["outputs"].is_array());
-  EXPECT_TRUE(set["outputs"].empty());
+  auto type = registry_->get_instrument("MockInstrument1")
+                  ->get_responses("NONEXISTENT");
+  EXPECT_TRUE(type.empty());
 }

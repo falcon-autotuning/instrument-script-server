@@ -1,8 +1,8 @@
 #include "instrument-script-server/server/CommandHandlers.hpp"
-#include "instrument-script-server/SerializedCommand.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
+#include "instrument-script-server/server/InstrumentCommand.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/JobManager.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
@@ -228,77 +228,150 @@ void load_optional_lua_libs(sol::state &lua) {
 int handle_daemon(const json &params, json &out) {
   out = json::object();
   std::string action = params.value("action", "");
-  std::string log_level = params.value("log_level", "info");
-  bool block = params.value("block", true); // block by default for CLI usage
 
   auto &daemon = ServerDaemon::instance();
 
   if (action == "start") {
-    // Initialize logger (same default as CLI)
-    uint8_t log_level_num = 0;
-    if (log_level == "trace") {
-      log_level_num = INST_LOG_TRACE;
-    } else if (log_level == "debug") {
-      log_level_num = INST_LOG_DEBUG;
-    } else if (log_level == "info") {
-      log_level_num = INST_LOG_INFO;
-    } else if (log_level == "warn") {
-      log_level_num = INST_LOG_WARN;
-    } else if (log_level == "error") {
-      log_level_num = INST_LOG_ERROR;
-    } else {
-      log_level_num = INST_LOG_INFO; // default
+#ifdef _WIN32
+    char exe_path[MAX_PATH];
+    GetModuleFileNameA(NULL, exe_path, MAX_PATH);
+
+    std::string cmd = std::string(exe_path) + " daemon run";
+
+    STARTUPINFOA si = {sizeof(si)};
+    PROCESS_INFORMATION pi;
+
+    BOOL ok = CreateProcessA(NULL, cmd.data(), NULL, NULL, FALSE,
+                             DETACHED_PROCESS | CREATE_NO_WINDOW, NULL, NULL,
+                             &si, &pi);
+
+    if (!ok) {
+      out["ok"] = false;
+      out["error"] = "Failed to launch daemon process";
+      return 1;
     }
 
-    inst_log_init("instrument_server.log", log_level_num, "instrument",
-                  10 * 1024 * 1024, // 10 MB
-                  3);               // rotation count
-    // Check for RPC port configuration from environment variable
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+
+#else
+    pid_t pid = fork();
+
+    if (pid < 0) {
+      out["ok"] = false;
+      out["error"] = "fork failed";
+      return 1;
+    }
+
+    if (pid == 0) {
+      setsid();
+      int devnull = open("/dev/null", O_RDWR);
+      if (devnull >= 0) {
+        // dup2(devnull, STDIN_FILENO);
+        // dup2(devnull, STDOUT_FILENO);
+        // dup2(devnull, STDERR_FILENO);
+        close(devnull);
+      }
+
+      char exe_path[1024];
+      ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+      if (len > 0) {
+        exe_path[len] = '\0';
+        execl(exe_path, exe_path, "daemon", "run", nullptr);
+      }
+
+      _exit(1); // exec failed
+    }
+
+#endif
+
+    pid = -1;
+    for (int i = 0; i < 20; ++i) {
+      pid = ServerDaemon::get_daemon_pid();
+      if (0 < pid) {
+        break;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    if (pid == -1) {
+      out["ok"] = false;
+      out["error"] = "daemon not started";
+      return 1;
+    }
+
+    out["pid"] = pid;
+    out["ok"] = true;
+    out["message"] = "daemon started";
+    return 0;
+  }
+
+  if (action == "run") {
+
+    // ---- Logging setup (belongs in daemon, NOT CLI) ----
+    std::string log_level = params.value("log_level", "info");
+    uint8_t level = INST_LOG_INFO;
+
+    if (log_level == "trace")
+      level = INST_LOG_TRACE;
+    else if (log_level == "debug")
+      level = INST_LOG_DEBUG;
+    else if (log_level == "warn")
+      level = INST_LOG_WARN;
+    else if (log_level == "error")
+      level = INST_LOG_ERROR;
+
+    inst_log_init("instrument_server.log", level, "instrument",
+                  10 * 1024 * 1024, 3);
+    LOG_INFO("DAEMON", "RUN", "Entered daemon run mode");
+    // ---- RPC port config ----
     const char *rpc_port_env = std::getenv("INSTRUMENT_SCRIPT_SERVER_RPC_PORT");
-    if ((rpc_port_env != nullptr) && (rpc_port_env[0] != 0)) {
+    if (rpc_port_env && rpc_port_env[0] != 0) {
       try {
         int port = std::stoi(rpc_port_env);
         if (port > 0 && port <= 65535) {
           daemon.set_rpc_port(static_cast<uint16_t>(port));
+        } else {
+          daemon.set_rpc_port(DEFAULT_PORT);
         }
       } catch (...) {
         daemon.set_rpc_port(DEFAULT_PORT);
       }
     }
-
-    if (!daemon.start()) {
-      out["ok"] = false;
-      out["error"] = "Failed to start daemon";
+    bool ok = daemon.start();
+    LOG_INFO("DAEMON", "RUN", "daemon.start() returned %d", ok);
+    if (!ok) {
+      out["ok"] = ok;
+      out["error"] = "daemon start failed";
       return 1;
     }
-    out["ok"] = true;
-    out["pid"] = ServerDaemon::get_daemon_pid();
 
-    // Block and wait for daemon to stop (keeps process alive)
-    // This is necessary for CLI usage to keep the daemon process running
-    if (block) {
-      while (daemon.is_running()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      }
+    while (daemon.is_running()) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     return 0;
   }
+
   if (action == "stop") {
     if (!ServerDaemon::is_already_running()) {
       out["ok"] = true;
       out["message"] = "daemon not running";
       return 0;
     }
+
     daemon.stop();
+
     out["ok"] = true;
     out["message"] = "daemon stopped";
     return 0;
   }
+
   if (action == "status") {
     bool running = ServerDaemon::is_already_running();
+
     out["ok"] = true;
     out["running"] = running;
+
     if (running) {
       out["pid"] = ServerDaemon::get_daemon_pid();
       out["message"] =
@@ -306,6 +379,7 @@ int handle_daemon(const json &params, json &out) {
     } else {
       out["message"] = "daemon not running";
     }
+
     return 0;
   }
 
@@ -519,12 +593,11 @@ int handle_measure(const json &params, json &out) {
     load_optional_lua_libs(lua);
     register_instrument_call_stack(lua.lua_state());
 
-    SyncCoordinator sync_coordinator;
-    bind_runtime_context(lua, registry, sync_coordinator);
+    auto &sync = ServerDaemon::instance().sync_coordinator();
+    bind_runtime_context(lua, registry, sync);
 
     // Create default context (host-side C++ runtime object)
-    auto ctx_shared =
-        std::make_shared<RuntimeContext>(registry, sync_coordinator);
+    auto ctx_shared = std::make_shared<RuntimeContext>(registry, sync);
     lua["context"] =
         ctx_shared; // keep the existing behavior to bind the userdata
 
@@ -815,115 +888,12 @@ __context_schema_version = nil
       // Result was already executed during safe_script_file
     }
 
-    // Check for explicit errors
-    if (ctx_shared->has_error()) {
-      out["ok"] = false;
-      out["error"] = ctx_shared->get_error();
-      // Still include results collected so far
-      const auto &results = ctx_shared->get_results();
-      out["script"] = std::filesystem::path(script_path).filename().string();
-      out["results"] = json::array();
-
-      for (size_t i = 0; i < results.size(); ++i) {
-        const auto &r = results[i];
-        json result_json;
-        result_json["index"] = i;
-        result_json["instrument"] =
-            instrument_call_stack_get_instrument_name(r.target.get());
-        result_json["verb"] = instrument_call_stack_get_command(r.target.get());
-
-        // Convert params to JSON
-        json params_json;
-
-        for (uint8_t i = 0; i < r.param_count; ++i) {
-          const auto &p = r.params[i];
-
-          const auto &key = p.name;
-          const auto &value = p.value;
-          switch (value.type) {
-          case ipc::IPCParamValue::Type::DOUBLE:
-            params_json[key] = value.d;
-            break;
-          case ipc::IPCParamValue::Type::INT64:
-            params_json[key] = value.i;
-            break;
-          case ipc::IPCParamValue::Type::STRING:
-            params_json[key] = value.str;
-            break;
-          case ipc::IPCParamValue::Type::BOOL:
-            params_json[key] = value.b;
-            break;
-          case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
-            params_json[key] = value.arr;
-            break;
-          default:
-            params_json[key] = nullptr;
-            break;
-          }
-        }
-
-        result_json["params"] = params_json;
-
-        auto ms_since_epoch =
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                r.executed_at.time_since_epoch())
-                .count();
-        result_json["executed_at_ms"] = ms_since_epoch;
-
-        json return_json;
-        if (r.has_large_data) {
-          return_json["type"] = "buffer";
-          return_json["buffer_id"] = r.buffer_id;
-          return_json["element_count"] = r.element_count;
-          return_json["data_type"] = r.data_type;
-
-        } else if (r.return_value) {
-          const auto &v = *r.return_value;
-
-          switch (v.type) {
-          case ipc::IPCParamValue::Type::DOUBLE:
-            return_json["value"] = v.d;
-            return_json["type"] = "float";
-            break;
-          case ipc::IPCParamValue::Type::INT64:
-            return_json["value"] = v.i;
-            return_json["type"] = "integer";
-            break;
-          case ipc::IPCParamValue::Type::STRING:
-            return_json["value"] = v.str;
-            return_json["type"] = "string";
-            break;
-          case ipc::IPCParamValue::Type::BOOL:
-            return_json["value"] = v.b;
-            return_json["type"] = "boolean";
-            break;
-          case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
-            return_json["value"] = v.arr;
-            return_json["type"] = "array";
-            break;
-          default:
-            // keep type="unknown" (or whatever helper returns)
-            break;
-          }
-
-        } else {
-          return_json["type"] = "void";
-        }
-
-        result_json["return"] = return_json;
-
-        out["results"].push_back(result_json);
-      }
-
-      return 1;
-    }
-
     // Get collected results
     const auto &results = ctx_shared->get_results();
     LOG_INFO("SERVER", "MEASURE",
              "Lua script done. Serializing %d results into HTTP response",
              results.size());
-    out["ok"] = true;
+    out["ok"] = ctx_shared->has_error();
     out["script"] = std::filesystem::path(script_path).filename().string();
     out["results"] = json::array();
 
@@ -937,30 +907,23 @@ __context_schema_version = nil
 
       // Convert params to JSON
       json params_json;
-      if (r.param_count > PLUGIN_MAX_PARAMS) {
-        LOG_ERROR("SERVER", "MEASURE", "Invalid param_count=%u, max=%u",
-                  r.param_count, PLUGIN_MAX_PARAMS);
-      }
-      for (uint8_t i = 0; i < r.param_count; ++i) {
-        const auto &p = r.params[i];
-
+      for (const auto &p : r.params) {
         const auto &key = p.name;
-        const auto &value = p.value;
-        switch (value.type) {
-        case ipc::IPCParamValue::Type::DOUBLE:
-          params_json[key] = value.d;
+        switch (p.type) {
+        case PARAM_TYPE_DOUBLE:
+          params_json[key] = p.value.d_val;
           break;
-        case ipc::IPCParamValue::Type::INT64:
-          params_json[key] = value.i;
+        case PARAM_TYPE_INT64:
+          params_json[key] = p.value.i64_val;
           break;
-        case ipc::IPCParamValue::Type::STRING:
-          params_json[key] = value.str;
+        case PARAM_TYPE_STRING:
+          params_json[key] = p.value.str_val;
           break;
-        case ipc::IPCParamValue::Type::BOOL:
-          params_json[key] = value.b;
+        case PARAM_TYPE_BOOL:
+          params_json[key] = p.value.b_val;
           break;
-        case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
-          params_json[key] = value.arr;
+        case PARAM_TYPE_BUFFER:
+          params_json[key] = p.value.str_val;
           break;
         default:
           params_json[key] = nullptr;
@@ -980,38 +943,66 @@ __context_schema_version = nil
 
       // Return value
       json return_json;
-      if (r.has_large_data) {
-        return_json["type"] = "buffer";
-        return_json["buffer_id"] = r.buffer_id;
-        return_json["element_count"] = r.element_count;
-        return_json["data_type"] = r.data_type;
-
-      } else if (r.return_value) {
-        const auto &v = *r.return_value;
-
+      for (const auto &v : r.returns) {
+        const auto &key = v.name;
         switch (v.type) {
-        case ipc::IPCParamValue::Type::DOUBLE:
-          return_json["value"] = v.d;
-          return_json["type"] = "float";
+        case PARAM_TYPE_DOUBLE:
+          return_json[key]["value"] = v.value.d_val;
+          return_json[key]["type"] = "float";
           break;
-        case ipc::IPCParamValue::Type::INT64:
-          return_json["value"] = v.i;
-          return_json["type"] = "integer";
+        case PARAM_TYPE_INT64:
+          return_json[key]["value"] = v.value.i64_val;
+          return_json[key]["type"] = "integer";
           break;
-        case ipc::IPCParamValue::Type::STRING:
-          return_json["value"] = v.str;
-          return_json["type"] = "string";
+        case PARAM_TYPE_STRING:
+          return_json[key]["value"] = v.value.str_val;
+          return_json[key]["type"] = "string";
           break;
-        case ipc::IPCParamValue::Type::BOOL:
-          return_json["value"] = v.b;
-          return_json["type"] = "boolean";
+        case PARAM_TYPE_BOOL:
+          return_json[key]["value"] = v.value.b_val;
+          return_json[key]["type"] = "boolean";
           break;
-        case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
-          return_json["value"] = v.arr;
-          return_json["type"] = "array";
+        case PARAM_TYPE_BUFFER: {
+          return_json[key]["type"] = "buffer";
+          return_json[key]["value"] = v.value.str_val;
+
+          auto out =
+              ipc::DataBufferManager::instance().get_metadata(v.value.str_val);
+
+          if (out) {
+            return_json[key]["element_count"] = out->element_count;
+
+            switch (out->data_type) {
+            case INST_DATA_FLOAT32:
+              return_json[key]["data_type"] = "float32";
+              break;
+            case INST_DATA_FLOAT64:
+              return_json[key]["data_type"] = "float64";
+              break;
+            case INST_DATA_INT32:
+              return_json[key]["data_type"] = "int32";
+              break;
+            case INST_DATA_INT64:
+              return_json[key]["data_type"] = "int64";
+              break;
+            case INST_DATA_UINT32:
+              return_json[key]["data_type"] = "uint32";
+              break;
+            case INST_DATA_UINT64:
+              return_json[key]["data_type"] = "uint64";
+              break;
+            case INST_DATA_UINT8:
+              return_json[key]["data_type"] = "uint8";
+              break;
+            default:
+              return_json[key]["data_type"] = "unknown";
+              break;
+            }
+          }
           break;
+        }
         default:
-          // keep type="unknown" (or whatever helper returns)
+          return_json[key]["type"] = "void";
           break;
         }
       }
@@ -1022,173 +1013,11 @@ __context_schema_version = nil
     LOG_INFO("SERVER", "MEASURE",
              "Serialization complete. Returning to HTTP handler to send "
              "response");
+    if (ctx_shared->has_error()) {
+      out["error"] = ctx_shared->get_error();
+      return 1;
+    }
     return 0;
-  } catch (const std::exception &e) {
-    out["ok"] = false;
-    out["error"] = std::string("exception: ") + e.what();
-    return 1;
-  }
-}
-
-int handle_test(const json &params, json &out) {
-  out = json::object();
-  std::string config_path = params.value("config_path", "");
-  std::string verb = params.value("verb", "");
-  std::string custom_plugin = params.value("plugin", "");
-  std::string log_level = params.value("log_level", "info");
-  json param_values = params.value("params", json::object());
-
-  if (config_path.empty() || verb.empty()) {
-    out["ok"] = false;
-    out["error"] = "missing config_path or verb";
-    return 1;
-  }
-
-  uint8_t log_level_num = 0;
-  if (log_level == "trace") {
-    log_level_num = INST_LOG_TRACE;
-  } else if (log_level == "debug") {
-    log_level_num = INST_LOG_DEBUG;
-  } else if (log_level == "info") {
-    log_level_num = INST_LOG_INFO;
-  } else if (log_level == "warn") {
-    log_level_num = INST_LOG_WARN;
-  } else if (log_level == "error") {
-    log_level_num = INST_LOG_ERROR;
-  } else {
-    log_level_num = INST_LOG_INFO; // default
-  }
-
-  inst_log_init("instrument_server.log", log_level_num, "instrument",
-                10 * 1024 * 1024, // 10 MB
-                3);               // rotation count
-
-  try {
-    // If a custom plugin path was provided, try to load it via
-    // PluginLoader.
-    if (!custom_plugin.empty()) {
-      if (!std::filesystem::exists(custom_plugin)) {
-        out["ok"] = false;
-        out["error"] = "plugin file not found";
-        return 1;
-      }
-
-      plugin::PluginLoader loader(custom_plugin);
-      if (!loader.is_loaded()) {
-        out["ok"] = false;
-        out["error"] = "failed to load plugin";
-        return 1;
-      }
-
-      auto metadata = loader.get_metadata();
-      plugin::PluginRegistry::instance().load_plugin(metadata.protocol_type,
-                                                     custom_plugin);
-    }
-
-    auto &registry = InstrumentRegistry::instance();
-
-    // Create instrument (this starts worker)
-    bool created = registry.create_instrument(config_path);
-    if (!created) {
-      out["ok"] = false;
-      out["error"] = "failed to create instrument";
-      return 1;
-    }
-
-    auto instruments = registry.list_instruments();
-    if (instruments.empty()) {
-      out["ok"] = false;
-      out["error"] = "no instrument created";
-      return 1;
-    }
-
-    const std::string &instrument_name = instruments.back();
-    auto proxy = registry.get_instrument(instrument_name);
-    if (!proxy) {
-      out["ok"] = false;
-      out["error"] = "failed to get instrument proxy";
-      registry.remove_instrument(instrument_name);
-      return 1;
-    }
-
-    // Build SerializedCommand
-    SerializedCommand cmd;
-    cmd.id = "rpc-test-cmd";
-    cmd.instrument_name = instrument_name;
-    cmd.verb = verb;
-    cmd.expects_response = true;
-
-    cmd.param_count = 0;
-
-    for (const auto &[key, param_value] : param_values.items()) {
-
-      if (cmd.param_count >= PLUGIN_MAX_PARAMS) {
-        break;
-      }
-
-      auto &p = cmd.params[cmd.param_count];
-      p.name = key;
-
-      if (param_value.is_number_integer()) {
-        p.value.type = ipc::IPCParamValue::Type::INT64;
-        p.value.i = param_value.get<int64_t>();
-
-      } else if (param_value.is_number_float()) {
-        p.value.type = ipc::IPCParamValue::Type::DOUBLE;
-        p.value.d = param_value.get<double>();
-
-      } else if (param_value.is_boolean()) {
-        p.value.type = ipc::IPCParamValue::Type::BOOL;
-        p.value.b = param_value.get<bool>();
-
-      } else if (param_value.is_string()) {
-        p.value.type = ipc::IPCParamValue::Type::STRING;
-        p.value.str = param_value.get<std::string>();
-
-      } else {
-        // fallback to string
-        p.value.type = ipc::IPCParamValue::Type::STRING;
-        p.value.str = param_value.dump();
-      }
-
-      ++cmd.param_count;
-    }
-
-    auto resp =
-        proxy->execute_sync(std::move(cmd), std::chrono::milliseconds(5000));
-
-    out["ok"] = resp.success;
-    out["success"] = resp.success;
-    out["error_message"] = resp.error_message;
-    out["text_response"] = resp.text_response;
-    if (resp.success && resp.return_value) {
-      const auto &v = *resp.return_value;
-      switch (v.type) {
-      case ipc::IPCParamValue::Type::DOUBLE:
-        out["return_value"] = v.d;
-        break;
-      case ipc::IPCParamValue::Type::INT64:
-        out["return_value"] = v.i;
-        break;
-      case ipc::IPCParamValue::Type::STRING:
-        out["return_value"] = v.str;
-        break;
-      case ipc::IPCParamValue::Type::BOOL:
-        out["return_value"] = v.b;
-        break;
-      case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
-        out["return_value"] = v.arr;
-        break;
-      default:
-        // ignore unsupported
-        break;
-      }
-    }
-
-    // cleanup instrument
-    registry.remove_instrument(instrument_name);
-
-    return resp.success ? 0 : 1;
   } catch (const std::exception &e) {
     out["ok"] = false;
     out["error"] = std::string("exception: ") + e.what();

@@ -11,7 +11,8 @@ namespace instserver {
 static nlohmann::json yaml_to_json(const YAML::Node &node) {
   if (node.IsNull()) {
     return nullptr;
-  } else if (node.IsScalar()) {
+  }
+  if (node.IsScalar()) {
     try {
       return node.as<int64_t>();
     } catch (...) {
@@ -44,91 +45,79 @@ static nlohmann::json yaml_to_json(const YAML::Node &node) {
 bool InstrumentRegistry::create_instrument(const std::string &config_path) {
   LOG_INFO("REGISTRY", "CREATE", "Loading instrument from: %s",
            config_path.c_str());
-
+  YAML::Node config_yaml;
   try {
-    YAML::Node config_yaml = YAML::LoadFile(config_path);
-    nlohmann::json config = yaml_to_json(config_yaml);
-
-    std::string api_ref = config["api_ref"];
-
-    std::string resolved_api_path;
-    try {
-      resolved_api_path = server::resolve_api_ref(api_ref, config_path);
-    } catch (const std::exception &e) {
-      LOG_ERROR("REGISTRY", "CREATE",
-                "Failed to resolve api_ref '%s' (from config '%s'): %s",
-                api_ref.c_str(), config_path.c_str(), e.what());
-      return false;
-    }
-
-    YAML::Node api_yaml = YAML::LoadFile(resolved_api_path);
-    nlohmann::json api_def = yaml_to_json(api_yaml);
-
-    std::string name = config["name"];
-
-    // Convert JSON objects to strings for worker
-    std::string config_json = config.dump();
-    std::string api_def_json = api_def.dump();
-
-    return create_instrument_from_json(name, config_json, api_def_json);
+    config_yaml = YAML::LoadFile(config_path);
   } catch (const std::exception &ex) {
     LOG_ERROR("REGISTRY", "CREATE", "Failed to load config: %s", ex.what());
     return false;
   }
-}
+  nlohmann::json config = yaml_to_json(config_yaml);
 
-bool InstrumentRegistry::create_instrument_from_json(
-    const std::string &name, const std::string &config_json,
-    const std::string &api_def_json) {
-  std::lock_guard lock(mutex_);
+  std::string api_ref = config["api_ref"];
 
-  if (instruments_.count(name)) {
+  std::string resolved_api_path;
+  try {
+    resolved_api_path = server::resolve_api_ref(api_ref, config_path);
+  } catch (const std::exception &e) {
+    LOG_ERROR("REGISTRY", "CREATE",
+              "Failed to resolve api_ref '%s' (from config '%s'): %s",
+              api_ref.c_str(), config_path.c_str(), e.what());
+    return false;
+  }
+  YAML::Node api_yaml;
+  try {
+    api_yaml = YAML::LoadFile(resolved_api_path);
+  } catch (const std::exception &ex) {
+    LOG_ERROR("REGISTRY", "CREATE", "Failed to load api: %s", ex.what());
+    return false;
+  }
+  nlohmann::json api_def = yaml_to_json(api_yaml);
+
+  std::string name = config["name"];
+
+  // Get protocol type
+  std::string protocol_type = api_def["protocol"]["type"].get<std::string>();
+
+  // Look up in plugin registry
+  auto &plugin_registry = plugin::PluginRegistry::instance();
+  auto plugin = plugin_registry.get_plugin_path(protocol_type);
+  if (plugin.empty()) {
+    LOG_ERROR("REGISTRY", "CREATE", "No plugin found for protocol: %s",
+              protocol_type.c_str());
+    return false;
+  }
+  bool exists = false;
+  {
+    std::lock_guard lock(mutex_);
+    exists = instruments_.count(name) != 0U;
+  }
+
+  if (exists) {
     LOG_WARN("REGISTRY", "CREATE", "Instrument already exists: %s",
              name.c_str());
     return false;
   }
 
-  // Parse JSON strings
-  nlohmann::json config = nlohmann::json::parse(config_json);
-  nlohmann::json api_def = nlohmann::json::parse(api_def_json);
-
-  // Store metadata for later lookup
-  InstrumentMetadata metadata;
-  metadata.name = name;
-  metadata.config = config;
-  metadata.api_def = api_def;
-  metadata_[name] = metadata;
-
-  // Get protocol type
-  std::string protocol_type = api_def["protocol"]["type"];
-
-  // Look up in plugin registry
-  auto &plugin_registry = plugin::PluginRegistry::instance();
-  std::string plugin_path = plugin_registry.get_plugin_path(protocol_type);
-
-  if (plugin_path.empty()) {
-    LOG_ERROR("REGISTRY", "CREATE", "No plugin found for protocol: %s",
-              protocol_type.c_str());
-    metadata_.erase(name);
-    return false;
-  }
-
   LOG_INFO("REGISTRY", "CREATE",
            "Creating instrument '%s' with protocol '%s' using plugin:  %s",
-           name.c_str(), protocol_type.c_str(), plugin_path.c_str());
+           name.c_str(), protocol_type.c_str(), plugin.c_str());
 
   // Create worker proxy with JSON strings
   auto proxy = std::make_shared<InstrumentWorkerProxy>(
-      name, plugin_path, config_json, api_def_json, sync_coordinator_);
+      name, plugin, std::filesystem::path(config_path));
 
   if (!proxy->start()) {
     LOG_ERROR("REGISTRY", "CREATE", "Failed to start worker for:  %s",
               name.c_str());
-    metadata_.erase(name);
+    std::lock_guard lock(mutex_);
     return false;
   }
 
-  instruments_[name] = proxy;
+  {
+    std::lock_guard lock(mutex_);
+    instruments_[name] = proxy;
+  }
 
   LOG_INFO("REGISTRY", "CREATE", "Instrument '%s' created successfully",
            name.c_str());
@@ -145,119 +134,6 @@ InstrumentRegistry::get_instrument(const std::string &name) {
   return it->second;
 }
 
-std::optional<InstrumentMetadata>
-InstrumentRegistry::get_instrument_metadata(const std::string &name) const {
-  std::lock_guard lock(mutex_);
-  auto it = metadata_.find(name);
-  if (it == metadata_.end()) {
-    return std::nullopt;
-  }
-  return it->second;
-}
-
-const nlohmann::json *
-find_command_def(const std::map<std::string, InstrumentMetadata> &metadata,
-                 const std::string &instrument_name, const std::string &verb) {
-  auto meta_it = metadata.find(instrument_name);
-  if (meta_it == metadata.end()) {
-    LOG_WARN("REGISTRY", "API_LOOKUP", "No metadata found for instrument: %s",
-             instrument_name.c_str());
-    return nullptr;
-  }
-  const auto &api_def = meta_it->second.api_def;
-  if (!api_def.contains("commands") || !api_def["commands"].is_object()) {
-    LOG_WARN("REGISTRY", "API_LOOKUP",
-             "No commands section in API definition for:  %s",
-             instrument_name.c_str());
-    return nullptr;
-  }
-  const auto &commands = api_def["commands"];
-  if (!commands.contains(verb)) {
-    LOG_WARN("REGISTRY", "API_LOOKUP",
-             "Command '%s' not found in API definition for instrument '%s'",
-             verb.c_str(), instrument_name.c_str());
-    return nullptr;
-  }
-  return &commands[verb];
-}
-
-bool InstrumentRegistry::command_expects_response(
-    const std::string &instrument_name, const std::string &verb) const {
-  std::lock_guard lock(mutex_);
-
-  const nlohmann::json *cmd_def =
-      find_command_def(metadata_, instrument_name, verb);
-  if (!cmd_def) {
-    return false;
-  }
-
-  if (cmd_def->contains("outputs") && (*cmd_def)["outputs"].is_array()) {
-    const auto &outputs = (*cmd_def)["outputs"];
-    return !outputs.empty();
-  }
-  return false;
-}
-
-std::optional<std::string>
-InstrumentRegistry::get_response_type(const std::string &instrument_name,
-                                      const std::string &verb) const {
-  std::lock_guard lock(mutex_);
-
-  auto meta_it = metadata_.find(instrument_name);
-  if (meta_it == metadata_.end()) {
-    return std::nullopt;
-  }
-  const auto &api_def = meta_it->second.api_def;
-
-  const nlohmann::json *cmd_def =
-      find_command_def(metadata_, instrument_name, verb);
-  if (!cmd_def) {
-    return std::nullopt;
-  }
-
-  if (!cmd_def->contains("outputs") || !(*cmd_def)["outputs"].is_array()) {
-    return std::nullopt;
-  }
-  const auto &outputs = (*cmd_def)["outputs"];
-  if (outputs.empty()) {
-    return std::nullopt;
-  }
-  std::string output_name = outputs[0].get<std::string>();
-
-  // Search in io section
-  if (api_def.contains("io") && api_def["io"].is_array()) {
-    for (const auto &io : api_def["io"]) {
-      if (io.contains("name") && io["name"].get<std::string>() == output_name) {
-        if (io.contains("type")) {
-          return io["type"].get<std::string>();
-        }
-      }
-    }
-  }
-
-  // Search in channel_groups' io_types
-  if (api_def.contains("channel_groups") &&
-      api_def["channel_groups"].is_array()) {
-    for (const auto &group : api_def["channel_groups"]) {
-      if (group.contains("io_types") && group["io_types"].is_array()) {
-        for (const auto &io_type : group["io_types"]) {
-          if (io_type.contains("suffix") &&
-              io_type["suffix"].get<std::string>() == output_name) {
-            if (io_type.contains("type")) {
-              return io_type["type"].get<std::string>();
-            }
-          }
-        }
-      }
-    }
-  }
-
-  LOG_WARN("REGISTRY", "API_LOOKUP",
-           "Output '%s' not found in io or channel_groups for instrument '%s'",
-           output_name.c_str(), instrument_name.c_str());
-  return std::nullopt;
-}
-
 bool InstrumentRegistry::has_instrument(const std::string &name) const {
   std::lock_guard lock(mutex_);
   return instruments_.count(name) > 0;
@@ -269,7 +145,6 @@ void InstrumentRegistry::remove_instrument(const std::string &name) {
   if (it != instruments_.end()) {
     it->second->stop();
     instruments_.erase(it);
-    metadata_.erase(name);
     LOG_INFO("REGISTRY", "REMOVE", "Removed instrument: %s", name.c_str());
   }
 }
@@ -290,7 +165,6 @@ void InstrumentRegistry::stop_all() {
     }
 
     instruments_.clear();
-    metadata_.clear();
   }
 
   for (auto &proxy : proxies) {

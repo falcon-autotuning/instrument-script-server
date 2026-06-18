@@ -50,6 +50,8 @@ public:
   /// Get daemon PID if running
   static int get_daemon_pid();
 
+  SyncCoordinator &sync_coordinator() { return *sync_coordinator_; }
+
 private:
   ServerDaemon() = default;
   ~ServerDaemon();
@@ -72,7 +74,7 @@ private:
   std::mutex mutex_;
 
   InstrumentRegistry *registry_{nullptr};
-  SyncCoordinator *sync_coordinator_{nullptr};
+  std::unique_ptr<SyncCoordinator> sync_coordinator_;
 
   // RPC listener
   server::HttpRpcServer *rpc_server_{nullptr};

@@ -100,20 +100,16 @@
     },
     {
       "name": "linux-clang-asan",
-      "description": "Linux Debug build with AddressSanitizer",
+      "description": "Linux Debug build with ASAN + UBSAN",
       "inherits": "default",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++",
         "VCPKG_TARGET_TRIPLET": "x64-linux-dynamic",
         "CMAKE_PREFIX_PATH": "${sourceDir}/vcpkg_installed/x64-linux-dynamic/share;${sourceDir}/vcpkg_installed",
-        "CMAKE_EXE_LINKER_FLAGS": "-fuse-ld=lld -fsanitize=address",
-        "CMAKE_SHARED_LINKER_FLAGS": "-fuse-ld=lld -fsanitize=address",
-        "CMAKE_C_FLAGS": "-fsanitize=address -fno-omit-frame-pointer -g",
-        "CMAKE_CXX_FLAGS": "-fsanitize=address -fno-omit-frame-pointer -g",
-        "DENABLE_DEBUG_LOGS": true,
-        "ASAN_OPTIONS": "detect_leaks=1"
+        "ENABLE_ASAN": "ON",
+        "BUILD_TESTS": "ON"
       }
     },
     {

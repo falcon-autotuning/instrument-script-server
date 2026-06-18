@@ -1,8 +1,8 @@
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include "instrument-script-server/server/HttpRpcServer.hpp"
+#include <csignal>
 #include <instrument-log/inst_logging.h>
 
-#include <csignal>
 #include <filesystem>
 #include <fstream>
 #include <thread>
@@ -20,17 +20,23 @@
 #include <unistd.h>
 #endif
 
-namespace instserver {
-
+namespace {
 // Platform-specific paths
-static std::string get_runtime_dir() {
+std::string get_runtime_dir() {
+  const char *forced = getenv("INSTRUMENT_SERVER_RUNTIME_DIR");
 #ifdef _WIN32
+  if (forced != nullptr) {
+    return forced;
+  }
   char *appdata = getenv("LOCALAPPDATA");
-  if (appdata) {
+  if (appdata != nullptr) {
     return std::string(appdata) + "\\InstrumentServer";
   }
   return ".\\instrument-script-server-runtime";
 #else
+  if (forced != nullptr) {
+    return forced;
+  }
   // Try XDG_RUNTIME_DIR first, fallback to /tmp
   char *xdg_runtime = getenv("XDG_RUNTIME_DIR");
   if (xdg_runtime != nullptr) {
@@ -40,9 +46,14 @@ static std::string get_runtime_dir() {
          std::string((getenv("USER") != nullptr) ? getenv("USER") : "unknown");
 #endif
 }
+} // namespace
+namespace instserver {
 
 ServerDaemon &ServerDaemon::instance() {
   static ServerDaemon daemon;
+  std::string runtime_dir = get_runtime_dir();
+  // So the parent and child have same environment
+  setenv("INSTRUMENT_SERVER_RUNTIME_DIR", runtime_dir.c_str(), 1);
   return daemon;
 }
 
@@ -96,7 +107,7 @@ bool ServerDaemon::is_already_running() {
   return exit_code == STILL_ACTIVE;
 #else
   // Send signal 0 to check if process exists
-  if (kill(pid, 0) == 0) {
+  if (kill(pid, 0) == 0 || errno == EPERM) {
     return true;
   }
   return false;
@@ -111,7 +122,7 @@ int ServerDaemon::get_daemon_pid() {
   }
 
   std::ifstream ifs(pid_file);
-  int pid;
+  int pid = 0;
   if (!(ifs >> pid)) {
     return -1;
   }
@@ -131,19 +142,101 @@ bool ServerDaemon::create_pid_file() {
   }
 
   std::string pid_file = get_pid_file_path();
+  std::string tmp_file = pid_file + ".tmp";
+  std::string content = std::to_string(getpid()) + "\n";
 
-  std::ofstream ofs(pid_file);
-  if (!ofs) {
-    LOG_ERROR("DAEMON", "INIT", "Failed to create PID file: %s",
-              pid_file.c_str());
+#ifdef _WIN32
+
+  HANDLE hFile = CreateFileA(tmp_file.c_str(), GENERIC_WRITE,
+                             0, // no sharing
+                             NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+  if (hFile == INVALID_HANDLE_VALUE) {
+    DWORD err = GetLastError();
+    LOG_ERROR("DAEMON", "INIT", "CreateFile failed for %s (err=%lu)",
+              tmp_file.c_str(), err);
     return false;
   }
 
-  ofs << getpid() << std::endl;
-  ofs.close();
+  DWORD written = 0;
+  BOOL success =
+      WriteFile(hFile, content.c_str(), (DWORD)content.size(), &written, NULL);
+
+  if (!success || written != content.size()) {
+    DWORD err = GetLastError();
+    LOG_ERROR("DAEMON", "INIT", "WriteFile failed (err=%lu)", err);
+    CloseHandle(hFile);
+    DeleteFileA(tmp_file.c_str());
+    return false;
+  }
+
+  if (!FlushFileBuffers(hFile)) {
+    DWORD err = GetLastError();
+    LOG_ERROR("DAEMON", "INIT", "FlushFileBuffers failed (err=%lu)", err);
+    CloseHandle(hFile);
+    DeleteFileA(tmp_file.c_str());
+    return false;
+  }
+
+  CloseHandle(hFile);
+
+  if (!MoveFileExA(tmp_file.c_str(), pid_file.c_str(),
+                   MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+
+    DWORD err = GetLastError();
+    LOG_ERROR("DAEMON", "INIT", "MoveFileEx failed (%s → %s) (err=%lu)",
+              tmp_file.c_str(), pid_file.c_str(), err);
+
+    DeleteFileA(tmp_file.c_str());
+    return false;
+  }
+
+#else
+
+  int fd = open(tmp_file.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  if (fd < 0) {
+    LOG_ERROR("DAEMON", "INIT", "open() failed for %s (errno=%d: %s)",
+              tmp_file.c_str(), errno, strerror(errno));
+    return false;
+  }
+
+  ssize_t total_written = 0;
+  while (total_written < (ssize_t)content.size()) {
+    ssize_t n = write(fd, content.c_str() + total_written,
+                      content.size() - total_written);
+
+    if (n < 0) {
+      LOG_ERROR("DAEMON", "INIT", "write() failed (errno=%d: %s)", errno,
+                strerror(errno));
+      close(fd);
+      unlink(tmp_file.c_str());
+      return false;
+    }
+    total_written += n;
+  }
+
+  if (fsync(fd) != 0) {
+    LOG_ERROR("DAEMON", "INIT", "fsync() failed (errno=%d: %s)", errno,
+              strerror(errno));
+    close(fd);
+    unlink(tmp_file.c_str());
+    return false;
+  }
+
+  close(fd);
+
+  if (rename(tmp_file.c_str(), pid_file.c_str()) != 0) {
+    LOG_ERROR("DAEMON", "INIT", "rename() failed (%s → %s) (errno=%d: %s)",
+              tmp_file.c_str(), pid_file.c_str(), errno, strerror(errno));
+    unlink(tmp_file.c_str());
+    return false;
+  }
+
+#endif
 
   LOG_INFO("DAEMON", "INIT", "Created PID file: %s (PID: %ld)",
            pid_file.c_str(), (long)getpid());
+
   return true;
 }
 
@@ -355,7 +448,6 @@ void ServerDaemon::daemon_loop() {
 
   LOG_INFO("DAEMON", "LOOP", "Daemon loop exited");
 }
-
 bool ServerDaemon::start() {
   std::lock_guard<std::mutex> lock(mutex_);
 
@@ -387,7 +479,7 @@ bool ServerDaemon::start() {
 
   // Initialize registry and coordinator
   registry_ = &InstrumentRegistry::instance();
-  sync_coordinator_ = new SyncCoordinator();
+  sync_coordinator_ = std::make_unique<SyncCoordinator>();
 
   // If an RPC port is configured, start RPC server
   if (rpc_port_ > 0) {
@@ -399,7 +491,6 @@ bool ServerDaemon::start() {
       rpc_server_ = nullptr;
       close_shutdown_pipe();
       remove_pid_file();
-      delete sync_coordinator_;
       sync_coordinator_ = nullptr;
       registry_ = nullptr;
       return false;
@@ -480,21 +571,15 @@ void ServerDaemon::stop() {
     running_.store(false);
 
     // Stop instruments
-    if (registry_) {
+    if (registry_ != nullptr) {
       registry_->stop_all();
     }
 
     // Stop RPC server
-    if (rpc_server_) {
+    if (rpc_server_ != nullptr) {
       rpc_server_->stop();
       delete rpc_server_;
       rpc_server_ = nullptr;
-    }
-
-    // Cleanup resources
-    if (sync_coordinator_) {
-      delete sync_coordinator_;
-      sync_coordinator_ = nullptr;
     }
 
     remove_pid_file();

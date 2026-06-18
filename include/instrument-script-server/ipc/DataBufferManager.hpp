@@ -3,6 +3,7 @@
 #include "instrument-script-server/export.h"
 #include <cstddef>
 #include <cstdint>
+#include <instrument-data.h>
 #include <instrument-plugin.h>
 #include <list>
 #include <mutex>

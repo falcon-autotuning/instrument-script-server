@@ -114,9 +114,7 @@ TEST_F(RuntimeContextGenericTest, CallFunctionLogsMissingInstrument) {
     result = context:call(cs)
   )");
 
-  expect_log_contains(
-      "Calling instrument: FakeInstrument and command: Command");
-  expect_log_contains("No metadata found for instrument: FakeInstrument");
+  expect_log_contains("Instrument not found: FakeInstrument");
 }
 
 // Test: empty parallel block should not schedule any commands (no results)
@@ -162,7 +160,7 @@ TEST_F(RuntimeContextGenericTest, ParseInstrumentCommandFormatsAreLogged) {
   expect_log_contains("Calling instrument: Inst1 and command: Command");
   expect_log_contains("Calling instrument: Inst1 and command: Command1");
   expect_log_contains("Calling instrument: Inst1 and command: Command2");
-  expect_log_contains("No metadata found for instrument: Inst1");
+  expect_log_contains("Instrument not found: Inst1");
 }
 
 // Test: parallel buffering should buffer 3 commands and attempt execution of 3
@@ -198,9 +196,9 @@ TEST_F(RuntimeContextGenericTest, ParallelWithBufferingBuffersCommands) {
   expect_log_contains("Calling instrument: Inst3 and command: Command3");
 
   // Registry warns about missing instrument metadata for each instrument
-  expect_log_contains("No metadata found for instrument: Inst1");
-  expect_log_contains("No metadata found for instrument: Inst2");
-  expect_log_contains("No metadata found for instrument: Inst3");
+  expect_log_contains("Instrument not found: Inst1");
+  expect_log_contains("Instrument not found: Inst2");
+  expect_log_contains("Instrument not found: Inst3");
 
   // No execution results since no instruments exist
   EXPECT_TRUE(ctx->get_results().empty());

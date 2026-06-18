@@ -248,7 +248,7 @@
       "properties": {
         "template": {
           "type": "string",
-          "description": "**Template** (Required)\n\nCommand template with {param} placeholders (e.g., 'SOUR{channel}: VOLT {voltage}'). This string describes how the command is formatted for the instrument."
+          "description": "**Template** (Optional)\n\nCommand template with {param} placeholders (e.g., 'SOUR{channel}: VOLT {voltage}'). This string describes how the command is formatted for the instrument. Required for VISA instruments."
         },
         "description": {
           "type": "string",

@@ -1,9 +1,14 @@
 #include "instrument-script-server/server/InstrumentWorkerProxy.hpp"
 #include "instrument-script-server/ipc/ProcessManager.hpp"
 #include "instrument-script-server/ipc/SharedQueue.hpp"
+#include "instrument-script-server/server/InstrumentCommand.hpp"
+#include "instrument-script-server/server/ServerDaemon.hpp"
 #include <instrument-log/inst_logging.h>
 
 namespace instserver {
+static std::string safe_string(const char *src, size_t max_len) {
+  return {src, strnlen(src, max_len)};
+}
 
 // Global process manager instance.
 //
@@ -16,14 +21,12 @@ static ipc::ProcessManager &get_process_manager() {
   return *manager;
 }
 
-InstrumentWorkerProxy::InstrumentWorkerProxy(const std::string &instrument_name,
-                                             const std::string &plugin_path,
-                                             const std::string &config_json,
-                                             const std::string &api_def_json,
-                                             SyncCoordinator &sync_coordinator)
-    : instrument_name_(instrument_name), plugin_path_(plugin_path),
-      config_json_(config_json), api_def_json_(api_def_json),
-      sync_coordinator_(sync_coordinator) {}
+InstrumentWorkerProxy::InstrumentWorkerProxy(std::string instrument_name,
+                                             std::filesystem::path plugin,
+                                             std::filesystem::path config)
+    : instrument_name_(std::move(instrument_name)), plugin_(std::move(plugin)),
+      instrument_config_(std::move(config)),
+      sync_coordinator_(ServerDaemon::instance().sync_coordinator()) {}
 
 InstrumentWorkerProxy::~InstrumentWorkerProxy() { stop(); }
 
@@ -40,8 +43,7 @@ bool InstrumentWorkerProxy::start() {
   }
 
   // Spawn worker process
-  worker_pid_ =
-      get_process_manager().spawn_worker(instrument_name_, plugin_path_);
+  worker_pid_ = get_process_manager().spawn_worker(instrument_config_, plugin_);
 
   if (worker_pid_ == 0) {
     LOG_ERROR(instrument_name_.c_str(), "PROXY",
@@ -61,6 +63,25 @@ bool InstrumentWorkerProxy::start() {
     stop();
     return false;
   }
+  // TODO: populate commands_
+  InstrumentConfig config;
+  try {
+    config = load_config(instrument_config_);
+  } catch (const std::exception &e) {
+    LOG_ERROR(instrument_name_.c_str(), "PROXY",
+              "Failed to load config '%s': %s", instrument_config_.c_str(),
+              e.what());
+    return false;
+  }
+  const std::filesystem::path api_path =
+      instrument_config_.parent_path() / config.api_ref;
+  try {
+    commands_ = load_api(api_path);
+  } catch (const std::exception &e) {
+    LOG_ERROR(instrument_name_.c_str(), "PROXY", "Invalid api '%s': %s\n",
+              api_path.c_str(), e.what());
+    return false;
+  }
 
   LOG_INFO(instrument_name_.c_str(), "PROXY",
            "Worker proxy started successfully");
@@ -75,23 +96,13 @@ void InstrumentWorkerProxy::stop() {
   LOG_INFO(instrument_name_.c_str(), "PROXY", "Stopping worker proxy");
 
   send_shutdown_message();
-  if (ipc_queue_ && ipc_queue_->is_valid()) {
-    ipc::IPCMessage wake_msg;
-    wake_msg.type = ipc::IPCMessage::Type::HEARTBEAT;
-    wake_msg.id = 0;
-    wake_msg.sync_token = 0;
 
+  if (ipc_queue_ && ipc_queue_->is_valid()) {
+    ipc::IPCMessage wake_msg{};
+    wake_msg.type = ipc::IPCMessage::Type::HEARTBEAT;
     ipc_queue_->send_to_response_queue(wake_msg, std::chrono::milliseconds(50));
   }
 
-  if (worker_pid_ != 0) {
-    if (!get_process_manager().wait_for_exit(worker_pid_,
-                                             std::chrono::milliseconds(200))) {
-      LOG_WARN(instrument_name_.c_str(), "PROXY",
-               "Worker did not exit gracefully, forcing kill");
-      get_process_manager().kill_process(worker_pid_, true);
-    }
-  }
   if (response_thread_.joinable()) {
     try {
       response_thread_.join();
@@ -104,16 +115,69 @@ void InstrumentWorkerProxy::stop() {
     }
   }
 
+  if (worker_pid_ != 0) {
+    if (!get_process_manager().wait_for_exit(worker_pid_,
+                                             std::chrono::seconds(2))) {
+      LOG_WARN(instrument_name_.c_str(), "PROXY",
+               "Worker did not exit gracefully, forcing kill");
+      get_process_manager().kill_process(worker_pid_, true);
+    }
+  }
+
   cleanup_pending_promises();
   cleanup_ipc();
+  commands_.clear();
+
   LOG_INFO(instrument_name_.c_str(), "PROXY", "Worker proxy stopped");
+}
+const Command *
+InstrumentWorkerProxy::find_command(const std::string &verb) const {
+
+  auto cmd_it = commands_.find(verb);
+  if (cmd_it == commands_.end()) {
+    LOG_WARN(instrument_name_.c_str(), "PROXY",
+             "Looking for command %s that was not found", verb.c_str());
+    return nullptr;
+  }
+
+  return &cmd_it->second;
+}
+
+bool InstrumentWorkerProxy::command_expects_response(
+    const std::string &verb) const {
+  const Command *cmd = find_command(verb);
+  if (cmd == nullptr) {
+    return false;
+  }
+  return !cmd->returns.empty();
+}
+
+std::vector<IO>
+InstrumentWorkerProxy::get_responses(const std::string &verb) const {
+
+  const Command *cmd = find_command(verb);
+  if (cmd == nullptr) {
+    return {};
+  }
+
+  return cmd->returns;
+}
+
+std::vector<IO>
+InstrumentWorkerProxy::get_parameters(const std::string &verb) const {
+
+  const Command *cmd = find_command(verb);
+  if (cmd == nullptr) {
+    return {};
+  }
+
+  return cmd->parameters;
 }
 
 void InstrumentWorkerProxy::send_shutdown_message() {
   if (ipc_queue_ && ipc_queue_->is_valid()) {
     ipc::IPCMessage shutdown_msg;
     shutdown_msg.type = ipc::IPCMessage::Type::SHUTDOWN;
-    shutdown_msg.id = 0;
     shutdown_msg.sync_token = 0;
     ipc_queue_->send(shutdown_msg, std::chrono::milliseconds(100));
   }
@@ -140,7 +204,8 @@ void InstrumentWorkerProxy::join_response_thread_with_timeout() {
       auto elapsed = std::chrono::steady_clock::now() - start;
       if (elapsed > std::chrono::milliseconds(500)) {
         LOG_WARN(instrument_name_.c_str(), "PROXY",
-                 "Response thread did not exit in time, detaching");
+                 "Response thread did not exit in time, "
+                 "detaching\n");
         response_thread_.detach();
         break;
       }
@@ -151,7 +216,7 @@ void InstrumentWorkerProxy::join_response_thread_with_timeout() {
         try {
           response_thread_.join();
           LOG_DEBUG(instrument_name_.c_str(), "PROXY",
-                    "Response thread joined successfully");
+                    "Response thread joined successfully\n");
           break;
         } catch (...) {
           // Thread still running, continue waiting
@@ -164,10 +229,9 @@ void InstrumentWorkerProxy::join_response_thread_with_timeout() {
 void InstrumentWorkerProxy::cleanup_pending_promises() {
   std::lock_guard<std::mutex> lock(pending_mutex_);
   for (auto &[msg_id, promise] : pending_responses_) {
-    CommandResponse error_resp;
-    error_resp.instrument_name = instrument_name_;
-    error_resp.success = false;
-    error_resp.error_message = "Worker stopped";
+    InstrumentCommandResponse error_resp;
+    error_resp.error_code = ErrorCode::WORKER_CRASHED;
+    LOG_ERROR(instrument_name_.c_str(), "PROXY", "Worker stopped\n");
     try {
       promise.set_value(std::move(error_resp));
     } catch (...) {
@@ -181,9 +245,9 @@ void InstrumentWorkerProxy::cleanup_ipc() {
   ipc::SharedQueue::cleanup(instrument_name_);
 }
 
-std::future<CommandResponse>
-InstrumentWorkerProxy::execute(SerializedCommand cmd) {
-  std::promise<CommandResponse> promise;
+std::future<InstrumentCommandResponse>
+InstrumentWorkerProxy::execute(InstrumentCommand cmd) {
+  std::promise<InstrumentCommandResponse> promise;
   auto future = promise.get_future();
 
   uint64_t msg_id = next_message_id_++;
@@ -196,35 +260,38 @@ InstrumentWorkerProxy::execute(SerializedCommand cmd) {
   // Store promise for response
   {
     std::lock_guard lock(pending_mutex_);
-    pending_responses_[msg_id] = std::move(promise);
+    pending_responses_[cmd.id] = std::move(promise);
   }
 
   // Serialize and send command
-  ipc::IPCMessage msg;
-  msg.type = ipc::IPCMessage::Type::COMMAND;
-  msg.id = msg_id;
-  msg.sync_token = cmd.sync_token.value_or(0);
-  ipc::fill_ipc_command(msg.command, cmd);
+  std::vector<ipc::IPCMessage> msg;
+  ipc::fill_ipc_commands(msg, cmd);
 
   LOG_INFO(instrument_name_.c_str(), cmd.id.c_str(),
            "execute: sending msg_id=%d verb='%s' to req queue", msg_id,
            cmd.verb.c_str());
+  bool send_ok = true;
 
-  if (!ipc_queue_->send(msg, cmd.timeout)) {
-    LOG_ERROR(
-        instrument_name_.c_str(), cmd.id.c_str(),
-        "Failed to send command msg_id=%d verb='%s' (req queue send timed out)",
-        msg_id, cmd.verb.c_str());
+  for (const auto &m : msg) {
+    if (!ipc_queue_->send(m, cmd.timeout)) {
+      send_ok = false;
+      break;
+    }
+  }
+  if (!send_ok) {
+    LOG_ERROR(instrument_name_.c_str(), cmd.id.c_str(),
+              "Failed to send command msg_id=%d verb='%s' "
+              "(req queue send timed out)",
+              msg_id, cmd.verb.c_str());
 
     // Fulfill promise with error
-    CommandResponse error_resp;
-    error_resp.command_id = cmd.id;
-    error_resp.instrument_name = instrument_name_;
-    error_resp.success = false;
-    error_resp.error_message = "IPC send timeout";
+    InstrumentCommandResponse error_resp;
+    error_resp.id = cmd.id;
+    error_resp.error_code = ErrorCode::IPC_SEND_TIMEOUT;
+    LOG_ERROR(instrument_name_.c_str(), "PROXY", "IPC send timeout\n");
 
     std::lock_guard lock(pending_mutex_);
-    auto it = pending_responses_.find(msg_id);
+    auto it = pending_responses_.find(cmd.id);
     if (it != pending_responses_.end()) {
       it->second.set_value(error_resp);
       pending_responses_.erase(it);
@@ -237,17 +304,17 @@ InstrumentWorkerProxy::execute(SerializedCommand cmd) {
   return future;
 }
 
-CommandResponse
-InstrumentWorkerProxy::execute_sync(SerializedCommand cmd,
+InstrumentCommandResponse
+InstrumentWorkerProxy::execute_sync(InstrumentCommand cmd,
                                     std::chrono::milliseconds timeout) {
   // Capture identifying info before the move consumes cmd
   const std::string verb = cmd.verb;
-  const std::string instrument = cmd.instrument_name;
 
   auto future = execute(std::move(cmd));
 
   LOG_INFO(instrument_name_.c_str(), "PROXY",
-           "execute_sync: waiting for response verb='%s' timeout=%dms",
+           "execute_sync: waiting for response verb='%s' "
+           "timeout=%dms",
            verb.c_str(), timeout.count());
 
   if (future.wait_for(timeout) == std::future_status::ready) {
@@ -256,13 +323,13 @@ InstrumentWorkerProxy::execute_sync(SerializedCommand cmd,
     return future.get();
   }
   LOG_WARN(instrument_name_.c_str(), "PROXY",
-           "execute_sync TIMED OUT after %dms waiting for verb='%s' on '%s'",
-           timeout.count(), verb.c_str(), instrument.c_str());
+           "execute_sync TIMED OUT after %dms waiting for "
+           "verb='%s'",
+           timeout.count(), verb.c_str());
 
-  CommandResponse timeout_resp;
-  timeout_resp.instrument_name = instrument_name_;
-  timeout_resp.success = false;
-  timeout_resp.error_message = "Command timeout";
+  InstrumentCommandResponse timeout_resp;
+  timeout_resp.error_code = ErrorCode::SYNC_TIMEOUT;
+  LOG_ERROR(instrument_name_.c_str(), "PROXY", "Sync timeout\n");
 
   std::lock_guard lock(stats_mutex_);
   stats_.commands_timeout++;
@@ -304,12 +371,10 @@ void InstrumentWorkerProxy::response_listener_loop() {
       handle_ipc_message(msg);
     } catch (const std::exception &e) {
       LOG_ERROR(instrument_name_.c_str(), "PROXY",
-                "Exception processing message ID %llu: %s",
-                (unsigned long long)msg.id, e.what());
-    } catch (...) {
+                "Exception processing message ID %s: %s", msg.id, e.what());
+    } catch (std::exception &e) {
       LOG_ERROR(instrument_name_.c_str(), "PROXY",
-                "Unknown exception processing message ID %llu",
-                (unsigned long long)msg.id);
+                "Unknown exception processing message ID %s", e.what());
     }
   }
   LOG_INFO(instrument_name_.c_str(), "PROXY", "Response listener stopped");
@@ -328,16 +393,20 @@ void InstrumentWorkerProxy::handle_ipc_message(const ipc::IPCMessage &msg) {
                 "Failed to process response message ID %d: %s", msg.id,
                 e.what());
 
-      // Fulfill pending promise with error so the caller thread doesn't hang
+      // Fulfill pending promise with error so the caller
+      // thread doesn't hang
       std::lock_guard<std::mutex> lock(pending_mutex_);
-      auto it = pending_responses_.find(msg.id);
+      std::string id = safe_string(msg.id.data(), msg.id.size());
+
+      auto it = pending_responses_.find(id);
       if (it != pending_responses_.end()) {
-        CommandResponse err_resp;
-        err_resp.command_id = fmt::format("{}-{}", instrument_name_, msg.id);
-        err_resp.instrument_name = instrument_name_;
-        err_resp.success = false;
-        err_resp.error_message =
-            std::string("Malformed response payload: ") + e.what();
+        InstrumentCommandResponse err_resp;
+        err_resp.id = fmt::format(
+            "{}-{}", instrument_name_,
+            std::string(msg.id.data(), strnlen(msg.id.data(), msg.id.size())));
+        err_resp.error_code = ErrorCode::MALFORMED_IPC_FROM_WORKER;
+        LOG_ERROR(instrument_name_.c_str(), "PROXY",
+                  "Malformed response payload: %s\n", e.what());
 
         try {
           it->second.set_value(std::move(err_resp));
@@ -361,35 +430,58 @@ void InstrumentWorkerProxy::handle_ipc_message(const ipc::IPCMessage &msg) {
 
 void InstrumentWorkerProxy::handle_response_message(
     const ipc::IPCMessage &msg) {
-  CommandResponse resp = ipc::from_ipc_response(msg.response);
-  LOG_DEBUG(instrument_name_.c_str(), resp.command_id.c_str(),
-            "Received response msg_id=%d success=%d", msg.id,
-            resp.success ? 1 : 0);
+
+  std::string id = safe_string(msg.id.data(), msg.id.size());
+
+  LOG_DEBUG(instrument_name_.c_str(), id.c_str(),
+            "Received response chunk (return_count=%d / "
+            "total=%d)",
+            msg.response.return_count, msg.response.return_total);
 
   std::lock_guard<std::mutex> lock(pending_mutex_);
-  LOG_DEBUG(instrument_name_.c_str(), "PROXY",
-            "handle_response_message: looking up msg_id=%d in "
-            "pending_responses_ (size=%d)",
-            msg.id, pending_responses_.size());
-  auto it = pending_responses_.find(msg.id);
+
+  auto &chunks = partial_responses_[id];
+  chunks.push_back(msg);
+
+  size_t accumulated = 0;
+  for (const auto &m : chunks) {
+    accumulated += m.response.return_count;
+  }
+
+  size_t expected = msg.response.return_total;
+
+  if (accumulated < expected) {
+    return;
+  }
+
+  InstrumentCommandResponse resp = ipc::from_ipc_responses(chunks);
+
+  partial_responses_.erase(id);
+
+  LOG_DEBUG(instrument_name_.c_str(), id.c_str(),
+            "Reassembled response (%zu values)", accumulated);
+
+  auto it = pending_responses_.find(id);
   if (it != pending_responses_.end()) {
     try {
       it->second.set_value(std::move(resp));
     } catch (const std::future_error &) {
     }
+
     pending_responses_.erase(it);
 
     std::lock_guard<std::mutex> stats_lock(stats_mutex_);
-    if (resp.success) {
+    if (resp.error_code == ErrorCode::NONE) {
       stats_.commands_completed++;
     } else {
       stats_.commands_failed++;
     }
+
   } else {
     LOG_WARN(instrument_name_.c_str(), "PROXY",
-             "handle_response_message: no pending promise for msg_id=%d "
-             "(pending_responses_ size=%d); response discarded",
-             msg.id, pending_responses_.size());
+             "No pending promise for id=%s (discarding "
+             "response)",
+             id.c_str());
   }
 }
 
@@ -406,7 +498,8 @@ void InstrumentWorkerProxy::handle_sync_ack_message(
 
   if (barrier_complete) {
     LOG_INFO(instrument_name_.c_str(), "PROXY",
-             "Sync barrier %d complete, broadcasting SYNC_CONTINUE",
+             "Sync barrier %d complete, broadcasting "
+             "SYNC_CONTINUE",
              sync_token);
 
     // Send SYNC_CONTINUE to self
@@ -421,9 +514,8 @@ void InstrumentWorkerProxy::send_sync_continue(uint64_t sync_token) {
     return;
   }
 
-  ipc::IPCMessage msg;
+  ipc::IPCMessage msg{};
   msg.type = ipc::IPCMessage::Type::SYNC_CONTINUE;
-  msg.id = 0;
   msg.sync_token = sync_token;
 
   bool sent = ipc_queue_->send(msg, std::chrono::milliseconds(1000));
@@ -446,12 +538,15 @@ void InstrumentWorkerProxy::send_buffer_ack(const std::string &buffer_id) {
 
   ipc::IPCMessage msg{};
   msg.type = ipc::IPCMessage::Type::BUFFER_ACK;
-  msg.id = 0;
+  new (&msg.buffer_ack) ipc::IPCBufferAck{};
   msg.sync_token = 0;
 
-  std::strncpy(msg.buffer_ack.buffer_id, buffer_id.c_str(),
-               sizeof(msg.buffer_ack.buffer_id) - 1);
-  msg.buffer_ack.buffer_id[sizeof(msg.buffer_ack.buffer_id) - 1] = '\0';
+  std::strncpy(msg.id.data(), buffer_id.c_str(), msg.id.size() - 1);
+  msg.id[msg.id.size() - 1] = '\0';
+
+  std::strncpy(msg.buffer_ack.buffer_id.data(), buffer_id.c_str(),
+               msg.buffer_ack.buffer_id.size() - 1);
+  msg.buffer_ack.buffer_id[msg.buffer_ack.buffer_id.size() - 1] = '\0';
 
   bool sent = ipc_queue_->send(msg, std::chrono::milliseconds(1000));
 
@@ -471,10 +566,9 @@ void InstrumentWorkerProxy::handle_worker_death() {
   // Fail all pending commands
   std::lock_guard lock(pending_mutex_);
   for (auto &[msg_id, promise] : pending_responses_) {
-    CommandResponse error_resp;
-    error_resp.instrument_name = instrument_name_;
-    error_resp.success = false;
-    error_resp.error_message = "Worker process died";
+    InstrumentCommandResponse error_resp;
+    error_resp.error_code = ErrorCode::WORKER_CRASHED;
+    LOG_ERROR(instrument_name_.c_str(), "PROXY", "Worker process died");
     promise.set_value(error_resp);
   }
   pending_responses_.clear();

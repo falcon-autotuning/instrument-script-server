@@ -1,15 +1,17 @@
 -- Simple single call test
-context:log("Starting simple call test")
+function main(ctx)
+	ctx:log("Starting simple call test")
 
-local cs = instrument_call_stack.new({
-	instrument = "MockInstrument1",
-	command = "ECHO",
-})
-local result = context:call(cs)
-context:log("Result received")
+	local cs = instrument_call_stack.new({
+		instrument = "MockInstrument1",
+		command = "ECHO",
+	})
+	local result = ctx:call(cs)
+	ctx:log("Result received")
 
-if result then
-	context:log("Test passed")
-else
-	context:log("Test failed")
+	if result then
+		ctx:log("Test passed")
+	else
+		ctx:log("Test failed")
+	end
 end

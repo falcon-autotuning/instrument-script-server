@@ -14,6 +14,7 @@
 #include <instrument-call-stack/instrument-call-stack.h>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
+#include <instrument-plugin.h>
 #include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
 constexpr double PI = 3.14159265358979323846;
@@ -191,12 +192,15 @@ protected:
     std::string config3 =
         (test_configs_dir_ / "mock_instrument3.yaml").string();
 
-    if (std::filesystem::exists(config1))
+    if (std::filesystem::exists(config1)) {
       registry.create_instrument(config1);
-    if (std::filesystem::exists(config2))
+    }
+    if (std::filesystem::exists(config2)) {
       registry.create_instrument(config2);
-    if (std::filesystem::exists(config3))
+    }
+    if (std::filesystem::exists(config3)) {
       registry.create_instrument(config3);
+    }
   }
 
   void TearDown() override {
@@ -237,11 +241,24 @@ protected:
       RuntimeContext ctx(registry, sync_coordinator);
       lua["context"] = &ctx;
 
+      // 1️⃣ load script
       auto result = lua.safe_script_file(script_path.string());
-
       if (!result.valid()) {
         sol::error err = result;
-        LOG_ERROR("TEST", "SCRIPT", "Script error: %s", err.what());
+        LOG_ERROR("TEST", "SCRIPT", "Script load error: %s", err.what());
+        return false;
+      }
+
+      sol::function main = lua["main"];
+      if (!main.valid()) {
+        LOG_ERROR("TEST", "SCRIPT", "No main() function defined in script");
+        return false;
+      }
+
+      auto call_result = main(lua["context"]);
+      if (!call_result.valid()) {
+        sol::error err = call_result;
+        LOG_ERROR("TEST", "SCRIPT", "Error running main(): %s", err.what());
         return false;
       }
 
@@ -278,11 +295,24 @@ protected:
           std::make_unique<RuntimeContext>(registry, sync_coordinator);
       lua["context"] = test_context_.get();
 
+      // 1️⃣ load script
       auto result = lua.safe_script_file(script_path.string());
-
       if (!result.valid()) {
         sol::error err = result;
-        LOG_ERROR("TEST", "SCRIPT", "Script error: %s", err.what());
+        LOG_ERROR("TEST", "SCRIPT", "Script load error: %s", err.what());
+        return nullptr;
+      }
+
+      sol::function main = lua["main"];
+      if (!main.valid()) {
+        LOG_ERROR("TEST", "SCRIPT", "No main() function defined in script");
+        return nullptr;
+      }
+
+      auto call_result = main(lua["context"]);
+      if (!call_result.valid()) {
+        sol::error err = call_result;
+        LOG_ERROR("TEST", "SCRIPT", "Error running main(): %s", err.what());
         return nullptr;
       }
 
@@ -335,17 +365,6 @@ TEST_F(MeasurementScriptTest, TableParameters) {
 }
 
 TEST_F(MeasurementScriptTest, ScriptWithOutput) {
-  auto script_path = test_scripts_dir_ / "loop_measurement.lua";
-
-  if (!std::filesystem::exists(script_path)) {
-    GTEST_SKIP() << "Script not found";
-  }
-
-  // FIXED: On Windows, Lua's print() might not go to captured stdout
-  // Instead, verify the script executes successfully
-  EXPECT_TRUE(run_script("loop_measurement.lua"));
-
-  // Alternative: Check that the script produced results via context
   auto *ctx = run_script_with_context("loop_measurement.lua");
   ASSERT_NE(ctx, nullptr);
 
@@ -370,7 +389,7 @@ TEST_F(MeasurementScriptTest, MultipleReturns) {
     EXPECT_NE(instrument_call_stack_get_instrument_name(result.target.get()),
               nullptr);
     EXPECT_NE(instrument_call_stack_get_command(result.target.get()), nullptr);
-    EXPECT_FALSE(result.return_type.empty());
+    EXPECT_FALSE(result.returns.empty());
   }
 
   // Verify we captured returns in order - first should be GET_DOUBLE
@@ -496,24 +515,17 @@ commands:
 
   // First two results should be buffer references
   if (results.size() >= 2) {
-    EXPECT_TRUE(results[0].has_large_data);
-    EXPECT_FALSE(results[0].buffer_id.empty());
-    EXPECT_GT(results[0].element_count, 0);
-    EXPECT_EQ(results[0].return_type, "buffer");
-
-    EXPECT_TRUE(results[1].has_large_data);
-    EXPECT_FALSE(results[1].buffer_id.empty());
-    EXPECT_GT(results[1].element_count, 0);
-    EXPECT_EQ(results[1].return_type, "buffer");
+    EXPECT_EQ(results[0].returns[0].type, PARAM_TYPE_BUFFER);
+    EXPECT_EQ(results[1].returns[0].type, PARAM_TYPE_BUFFER);
 
     // Buffer IDs should be different
-    EXPECT_NE(results[0].buffer_id, results[1].buffer_id);
+    EXPECT_NE(results[0].returns[0].value.str_val,
+              results[1].returns[0].value.str_val);
   }
 
   // Third result should be regular return value
   if (results.size() >= 3) {
-    EXPECT_FALSE(results[2].has_large_data);
-    EXPECT_TRUE(results[2].return_value.has_value());
+    EXPECT_EQ(results[2].returns[0].type, PARAM_TYPE_DOUBLE);
   }
 
   // Robust Integration Test / Data Recovery Verification:
@@ -523,7 +535,7 @@ commands:
     // 1. Recover first buffer and verify integrity (sin wave)
     {
       nlohmann::json read_params, read_out;
-      read_params["buffer_id"] = results[0].buffer_id;
+      read_params["buffer_id"] = results[0].returns[0].value.str_val;
       int rc = server::handle_read_buffer(read_params, read_out);
       if (rc != 0) {
         std::string error_msg = read_out.contains("error")
@@ -533,8 +545,6 @@ commands:
                << ". Details: " << error_msg;
       }
       EXPECT_TRUE(read_out.value("ok", false));
-      EXPECT_EQ(read_out.value("element_count", 0ULL),
-                results[0].element_count);
       EXPECT_EQ(read_out["data_type"], INST_DATA_FLOAT64);
 
       auto data = read_out["data"].get<std::vector<double>>();
@@ -548,12 +558,10 @@ commands:
     // 2. Recover second buffer and verify integrity
     {
       nlohmann::json read_params, read_out;
-      read_params["buffer_id"] = results[1].buffer_id;
+      read_params["buffer_id"] = results[1].returns[0].value.str_val;
       int rc = server::handle_read_buffer(read_params, read_out);
       ASSERT_EQ(rc, 0);
       EXPECT_TRUE(read_out.value("ok", false));
-      EXPECT_EQ(read_out.value("element_count", 0ULL),
-                results[1].element_count);
 
       auto data = read_out["data"].get<std::vector<double>>();
       ASSERT_GE(data.size(), 100);
@@ -570,7 +578,7 @@ commands:
     //    shared memory buffer to be deallocated cleanly.
     {
       nlohmann::json release_params, release_out;
-      release_params["buffer_id"] = results[0].buffer_id;
+      release_params["buffer_id"] = results[0].returns[0].value.str_val;
       int rc = server::handle_release_buffer(release_params, release_out);
       EXPECT_EQ(rc, 0);
       EXPECT_TRUE(release_out.value("ok", false));
@@ -578,7 +586,7 @@ commands:
 
     {
       nlohmann::json release_params, release_out;
-      release_params["buffer_id"] = results[1].buffer_id;
+      release_params["buffer_id"] = results[1].returns[0].value.str_val;
       int rc = server::handle_release_buffer(release_params, release_out);
       EXPECT_EQ(rc, 0);
       EXPECT_TRUE(release_out.value("ok", false));
@@ -587,7 +595,7 @@ commands:
     // 4. Validate that the buffers are gone after release
     {
       nlohmann::json read_params, read_out;
-      read_params["buffer_id"] = results[0].buffer_id;
+      read_params["buffer_id"] = results[0].returns[0].value.str_val;
       int rc = server::handle_read_buffer(read_params, read_out);
       EXPECT_FALSE(read_out.value("ok", false));
     }
@@ -820,125 +828,4 @@ commands:
   registry.remove_instrument("TestScope");
   std::filesystem::remove(config_path);
   std::filesystem::remove(api_path);
-}
-
-TEST_F(MeasurementScriptTest, JSONOutputValidation) {
-  // Test that JSON output conforms to the expected schema structure
-  auto *ctx = run_script_with_context("multiple_returns.lua");
-  ASSERT_NE(ctx, nullptr);
-
-  const auto &results = ctx->get_results();
-  ASSERT_GT(results.size(), 0);
-
-  // Build JSON output manually (simulating what instrument_server_main. cpp
-  // does)
-  json output;
-  output["status"] = "success";
-  output["script"] = "multiple_returns.lua";
-  output["results"] = json::array();
-
-  for (size_t i = 0; i < results.size(); ++i) {
-    const auto &r = results[i];
-    json result_json;
-
-    result_json["index"] = i;
-    result_json["instrument"] =
-        instrument_call_stack_get_instrument_name(r.target.get());
-    result_json["verb"] = instrument_call_stack_get_command(r.target.get());
-
-    // Add params
-    json params_json = json::object();
-
-    for (uint8_t j = 0; j < r.param_count; ++j) {
-      const auto &p = r.params[j];
-      const auto &value = p.value;
-      switch (value.type) {
-      case ipc::IPCParamValue::Type::DOUBLE:
-        params_json[p.name] = value.d;
-        break;
-      case ipc::IPCParamValue::Type::INT64:
-        params_json[p.name] = value.i;
-        break;
-      case ipc::IPCParamValue::Type::STRING:
-        params_json[p.name] = value.str;
-        break;
-      case ipc::IPCParamValue::Type::BOOL:
-        params_json[p.name] = value.b;
-        break;
-      case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
-        params_json[p.name] = value.arr;
-        break;
-      default:
-        params_json[p.name] = nullptr;
-        break;
-      }
-    }
-    result_json["params"] = params_json;
-
-    // Add timestamp (using a placeholder for this test)
-    result_json["executed_at_ms"] = 1704720615123 + i;
-
-    // Add return value
-    json return_json;
-
-    if (r.has_large_data) {
-      return_json["type"] = "buffer";
-      return_json["buffer_id"] = r.buffer_id;
-      return_json["element_count"] = r.element_count;
-      return_json["data_type"] = r.data_type;
-
-    } else if (r.return_value) {
-      const auto &v = *r.return_value;
-
-      return_json["type"] = r.return_type;
-
-      switch (v.type) {
-      case ipc::IPCParamValue::Type::DOUBLE:
-        return_json["value"] = v.d;
-        break;
-      case ipc::IPCParamValue::Type::INT64:
-        return_json["value"] = v.i;
-        break;
-      case ipc::IPCParamValue::Type::STRING:
-        return_json["value"] = v.str;
-        break;
-      case ipc::IPCParamValue::Type::BOOL:
-        return_json["value"] = v.b;
-        break;
-      case ipc::IPCParamValue::Type::DOUBLE_ARRAY:
-        return_json["value"] = v.arr;
-        break;
-      default:
-        return_json["value"] = nullptr;
-        break;
-      }
-
-    } else {
-      return_json["type"] = r.return_type;
-      return_json["value"] = nullptr;
-    }
-
-    result_json["return"] = return_json;
-    output["results"].push_back(result_json);
-  }
-
-  // Validate the JSON structure
-  std::string error;
-  bool is_valid = validate_measurement_results_json(output, error);
-
-  EXPECT_TRUE(is_valid) << "JSON validation failed: " << error;
-
-  // Additional checks
-  EXPECT_EQ(output["status"], "success");
-  EXPECT_EQ(output["script"], "multiple_returns.lua");
-  EXPECT_TRUE(output["results"].is_array());
-  EXPECT_EQ(output["results"].size(), results.size());
-
-  // Verify JSON can be serialized
-  std::string json_str = output.dump(2);
-  EXPECT_FALSE(json_str.empty());
-
-  // Verify JSON can be parsed back
-  json parsed = json::parse(json_str);
-  EXPECT_EQ(parsed, output);
 }

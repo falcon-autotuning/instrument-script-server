@@ -1,12 +1,14 @@
 #include "PlatformPaths.hpp"
+#include "instrument-script-server/ErrorCodes.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
 #include <algorithm>
 #include <fmt/format.h>
-#include <format>
 #include <inst_logging.h>
 #include <instrument-data.h>
 #include <instrument-plugin.h>
+#include <plugin-api.h>
+#include <plugin-host.h>
 #include <string_view>
 
 // CRITICAL: Define this BEFORE including <cmath> to get M_PI on Windows
@@ -72,57 +74,54 @@ TEST_F(VISALargeDataTest, SmallDataInResponse) {
   ASSERT_TRUE(loader.is_loaded());
 
   // Use a more complete configuration
-  PluginConfig config{};
-  safe_c_str_copy(config.instrument_name, "TestScope");
-  safe_c_str_copy(config.connection_json, R"({"address":"mock://test"})");
-  safe_c_str_copy(config.api_definition_json, "{}");
+  PluginConfig *config{};
+  safe_c_str_copy(config->instrument_name, "TestScope");
+  safe_c_str_copy(config->address, "mock://test");
+  safe_c_str_copy(config->custom, "");
+  config->baud_rate = 0;
 
-  ASSERT_EQ(loader.initialize(config), 0);
+  ASSERT_EQ(loader.initialize(config), ErrorCode::NONE);
 
   // Request small data (should fit in response)
-  PluginCommand cmd{};
-  safe_c_str_copy(cmd.id, "cmd_001");
-  safe_c_str_copy(cmd.instrument_name, "TestScope");
-  safe_c_str_copy(cmd.verb, "GET_SMALL_DATA");
-  cmd.expects_response = true;
-  cmd.param_count = 0;
+  PluginCommand *cmd{};
+  safe_c_str_copy(cmd->id, "cmd_001");
+  safe_c_str_copy(cmd->command, "GET_SMALL_DATA");
+  cmd->timeout_ms = 10;
+  cmd->params = param_storage_create();
 
-  PluginResponse resp{};
-  ASSERT_EQ(loader.execute_command(cmd, resp), 0);
-
-  EXPECT_TRUE(resp.success);
-  EXPECT_FALSE(resp.has_large_data);
-  EXPECT_GT(std::string_view(resp.text_response).size(), 0);
+  PluginResponse *resp = plugin_response_create();
+  ASSERT_EQ(loader.execute_command(cmd, resp), ErrorCode::NONE);
+  const Variable *v = plugin_response_get(resp, 0);
+  ASSERT_EQ(v->name, "data");
+  ASSERT_EQ(v->type, PARAM_TYPE_DOUBLE);
+  ASSERT_EQ(v->value.d_val, 42.0);
 }
 
 TEST_F(VISALargeDataTest, LargeDataInBuffer) {
   plugin::PluginLoader loader(plugin_path_.string());
   ASSERT_TRUE(loader.is_loaded());
 
-  PluginConfig config{};
-  safe_c_str_copy(config.instrument_name, "TestScope");
-  safe_c_str_copy(config.connection_json, R"({"address":"mock://test"})");
+  PluginConfig *config{};
+  safe_c_str_copy(config->instrument_name, "TestScope");
+  safe_c_str_copy(config->address, "mock://test");
+  safe_c_str_copy(config->custom, "");
+  config->baud_rate = 0;
 
-  ASSERT_EQ(loader.initialize(config), 0);
+  ASSERT_EQ(loader.initialize(config), ErrorCode::NONE);
 
   // Request large data (should use buffer)
-  PluginCommand cmd{};
-  safe_c_str_copy(cmd.id, "cmd_002");
-  safe_c_str_copy(cmd.instrument_name, "TestScope");
-  safe_c_str_copy(cmd.verb, "GET_LARGE_DATA");
-  cmd.expects_response = true;
-  cmd.param_count = 0;
+  PluginCommand *cmd{};
+  safe_c_str_copy(cmd->id, "cmd_002");
+  safe_c_str_copy(cmd->command, "GET_LARGE_DATA");
 
-  PluginResponse resp{};
-  ASSERT_EQ(loader.execute_command(cmd, resp), 0);
+  PluginResponse *resp = plugin_response_create();
+  ASSERT_EQ(loader.execute_command(cmd, resp), ErrorCode::NONE);
 
-  EXPECT_TRUE(resp.success);
-  EXPECT_TRUE(resp.has_large_data);
-  EXPECT_GT(strlen(resp.data_buffer_id), 0);
-  EXPECT_GT(resp.data_element_count, 1000); // Large data
-  EXPECT_EQ(resp.data_type, INST_DATA_FLOAT32);
+  const Variable *v = plugin_response_get(resp, 0);
+  ASSERT_EQ(v->name, "data");
+  ASSERT_EQ(v->type, PARAM_TYPE_BUFFER);
 
   // Verify buffer exists
-  ASSERT_TRUE(data_manager_get_buffer(resp.data_buffer_id) != nullptr);
-  data_manager_release_buffer(resp.data_buffer_id); // Clean up
+  ASSERT_TRUE(data_manager_get_buffer(v->value.str_val) != nullptr);
+  data_manager_release_buffer(v->value.str_val); // Clean up
 }

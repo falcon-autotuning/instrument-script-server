@@ -8,7 +8,7 @@ bool PluginRegistry::load_plugin(const std::string &protocol_type,
                                  const std::string &plugin_path) {
   std::lock_guard lock(mutex_);
 
-  if (plugins_.count(protocol_type)) {
+  if (plugins_.count(protocol_type) != 0U) {
     LOG_WARN("PLUGIN_REGISTRY", "LOAD",
              "Plugin already loaded for protocol: %s", protocol_type.c_str());
     return false;
@@ -140,14 +140,14 @@ std::vector<std::string> PluginRegistry::list_protocols() const {
   return protocols;
 }
 
-std::string
+std::filesystem::path
 PluginRegistry::get_plugin_path(const std::string &protocol_type) const {
   std::lock_guard lock(mutex_);
   auto it = plugin_paths_.find(protocol_type);
   if (it == plugin_paths_.end()) {
     return "";
   }
-  return it->second;
+  return std::filesystem::path(it->second);
 }
 
 void PluginRegistry::discover_plugins(
@@ -165,8 +165,9 @@ void PluginRegistry::discover_plugins(
     }
 
     for (const auto &entry : fs::directory_iterator(search_path)) {
-      if (!entry.is_regular_file())
+      if (!entry.is_regular_file()) {
         continue;
+      }
 
       std::string filename = entry.path().filename().string();
 
@@ -177,8 +178,9 @@ void PluginRegistry::discover_plugins(
         continue;
 #else
       if (filename.length() < 3 ||
-          filename.compare(filename.length() - 3, 3, ".so") != 0)
+          filename.compare(filename.length() - 3, 3, ".so") != 0) {
         continue;
+      }
 #endif
 
       // Try to load plugin

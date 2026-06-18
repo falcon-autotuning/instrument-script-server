@@ -13,7 +13,7 @@
 #include <windows.h>
 #define getpid _getpid
 #else
-#include <signal.h>
+#include <csignal>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>

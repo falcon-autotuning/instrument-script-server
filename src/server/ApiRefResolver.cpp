@@ -4,10 +4,9 @@
 #include <stdexcept>
 #include <string>
 
-namespace instserver {
-namespace server {
-
-static std::string strip_file_scheme(const std::string &s) {
+namespace instserver::server {
+namespace {
+std::string strip_file_scheme(const std::string &s) {
   const std::string file_scheme = "file://";
   if (s.rfind(file_scheme, 0) == 0) {
     // Remove leading "file://"
@@ -23,6 +22,7 @@ static std::string strip_file_scheme(const std::string &s) {
   }
   return s;
 }
+} // namespace
 
 std::string resolve_api_ref(const std::string &api_ref,
                             const std::string &config_path) {
@@ -73,5 +73,4 @@ std::string resolve_api_ref(const std::string &api_ref,
                            attempt1.string());
 }
 
-} // namespace server
-} // namespace instserver
+} // namespace instserver::server

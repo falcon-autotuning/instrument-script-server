@@ -1,0 +1,14 @@
+#pragma once
+#include <cstdint>
+enum class ErrorCode : uint8_t {
+  NONE = 0,
+  MISSING_MESSAGE_ID = 20,
+
+  MALFORMED_IPC_FROM_WORKER = 6,
+  IPC_SEND_TIMEOUT = 7,
+  SYNC_TIMEOUT = 9,
+  WORKER_CRASHED = 10,
+  INSTRUMENT_NOT_FOUND = 11,
+  INITIALIZE_NOT_PROVIDED = 12,
+  EXECUTE_COMMAND_NOT_PROVIDED = 13,
+};

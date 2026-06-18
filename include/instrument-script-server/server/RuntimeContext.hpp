@@ -1,7 +1,7 @@
 #pragma once
 #include "instrument-script-server/export.h"
 
-#include "instrument-script-server/SerializedCommand.hpp"
+#include "instrument-script-server/server/InstrumentCommand.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
 #include <instrument-call-stack/instrument-call-stack.h>
@@ -12,7 +12,6 @@
 #include <sol/forward.hpp>
 #include <sol/sol.hpp>
 #include <vector>
-
 namespace instserver {
 using CallStackPtr =
     std::unique_ptr<CallStack, decltype(&instrument_call_stack_free)>;
@@ -99,19 +98,10 @@ private:
 struct INSTRUMENT_SERVER_API CallResult {
   std::string command_id;
   CallStackPtr target{nullptr, instrument_call_stack_free};
-  std::array<Param, PLUGIN_MAX_PARAMS> params;
-  uint8_t param_count{0};
+  std::vector<Variable> params;
   std::chrono::steady_clock::time_point executed_at;
 
-  // Either a direct return value...
-  std::optional<ParamValue> return_value;
-  std::string return_type;
-
-  // ...or a reference to large data buffer
-  bool has_large_data{false};
-  std::string buffer_id;
-  uint64_t element_count{0};
-  std::string data_type;
+  std::vector<Variable> returns;
 
   // Execution status / error
   bool success{false};
@@ -184,7 +174,7 @@ protected:
 
   // Parallel execution state (used while parsing)
   bool in_parallel_block_{false};
-  std::vector<SerializedCommand> parallel_buffer_;
+  std::vector<InstrumentCommand> parallel_buffer_;
   std::atomic<uint64_t> next_sync_token_{1};
 
   // Collected results from all call() operations
@@ -205,17 +195,18 @@ protected:
   // token -> set of instruments participating (used to send SYNC_CONTINUE)
   std::unordered_map<uint64_t, std::set<std::string>> token_instruments_;
   // token -> vector of futures for commands tagged with that token
-  std::unordered_map<uint64_t, std::vector<std::future<CommandResponse>>>
+  std::unordered_map<uint64_t,
+                     std::vector<std::future<InstrumentCommandResponse>>>
       token_futures_;
   // token -> vector of indices in collected_results_ corresponding to those
   // futures
   std::unordered_map<uint64_t, std::vector<size_t>> token_result_indices_;
 
   // Helper to send command to instrument (synchronous path)
-  CommandResponse
-  send_command(const std::string &instrument_id, const std::string &verb,
-               const std::array<Param, PLUGIN_MAX_PARAMS> &params,
-               uint8_t param_count, bool expects_response);
+  InstrumentCommandResponse send_command(const std::string &instrument_id,
+                                         const std::string &verb,
+                                         const std::vector<Variable> &params,
+                                         bool expects_response);
 
   // Execute buffered parallel commands with sync (used only when not
   // enqueue_mode)

@@ -37,8 +37,8 @@ public:
   /// Spawn worker process
   /// Returns process ID on success, 0 on failure
   ProcessId
-  spawn_worker(const std::string &instrument_name,
-               const std::string &plugin_path,
+  spawn_worker(const std::filesystem::path &instrument_config,
+               const std::filesystem::path &plugin,
                const std::string &worker_executable = "instrument-worker");
 
   /// Check if process is alive

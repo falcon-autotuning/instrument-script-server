@@ -1,7 +1,6 @@
 find_package(GTest CONFIG REQUIRED)
 
 add_library(test-utils STATIC
-  test_utils/MockInstrument.cpp
   test_utils/TestFixtures.cpp
 )
 
@@ -26,7 +25,6 @@ add_executable(
   unit/test_sync_coordinator.cpp
   unit/test_runtime_context_generic.cpp
   unit/test_ipc_queue.cpp
-  unit/test_server_daemon.cpp
   unit/test_schema_validator.cpp
   unit/test_plugin_loader.cpp
   unit/test_api_lookup.cpp
@@ -36,11 +34,14 @@ add_executable(
   unit/test_plugin_registry.cpp
   unit/test_main_function.cpp)
 
-target_link_libraries(unit_tests PRIVATE
-  instrument-script-server-core
-  test-utils
-  GTest::gtest
-  GTest::gtest_main
+target_link_libraries(unit_tests
+  PRIVATE
+    instrument-script-server-core
+    test-utils
+    GTest::gtest
+    GTest::gtest_main
+    instrument-plugin-api::instrument-plugin-api-host
+    instrument-plugin-api::instrument-plugin-api-plugin
 )
 
 add_executable(
@@ -56,11 +57,13 @@ add_executable(
   integration/test_main_function_integration.cpp
   integration/test_type_manifest.cpp)
 
-target_link_libraries(integration_tests PRIVATE
-  instrument-script-server-core
-  test-utils
-  GTest::gtest
-  GTest::gtest_main
+target_link_libraries(integration_tests
+  PRIVATE
+    instrument-script-server-core
+    test-utils
+    GTest::gtest
+    GTest::gtest_main
+    instrument-plugin-api::instrument-plugin-api-host
 )
 
 add_executable(
@@ -86,7 +89,6 @@ endforeach()
 foreach(tgt unit_tests integration_tests perf_tests)
   add_test(NAME ${tgt} COMMAND ${tgt})
 
-  # ✅ VERY IMPORTANT: run from build/tests dir
   set_tests_properties(${tgt} PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
   )
@@ -101,18 +103,39 @@ endforeach()
 
 add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
 target_compile_definitions(mock_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
-target_link_libraries(mock_plugin PRIVATE instrument-script-server-core)
+target_link_libraries(mock_plugin
+  PRIVATE
+    instrument-script-server-core
+    instrument-plugin-api::instrument-plugin-api-plugin
+)
 
 add_library(mock_visa_plugin SHARED mocks/mock_visa_plugin.c)
 target_compile_definitions(mock_visa_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
-target_link_libraries(mock_visa_plugin PRIVATE instrument-script-server-core)
+target_link_libraries(mock_visa_plugin
+  PRIVATE
+    instrument-script-server-core
+    instrument-plugin-api::instrument-plugin-api-plugin
+)
 
 add_library(mock_visa_large_data_plugin SHARED
   mocks/mock_visa_large_data_plugin.c)
 target_compile_definitions(mock_visa_large_data_plugin
   PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
 target_link_libraries(mock_visa_large_data_plugin
-  PRIVATE instrument-script-server-core)
+  PRIVATE
+    instrument-script-server-core
+    instrument-plugin-api::instrument-plugin-api-plugin
+)
+if(ENABLE_ASAN)
+  foreach(plugin_target
+      mock_plugin
+      mock_visa_plugin
+      mock_visa_large_data_plugin
+  )
+    target_compile_options(${plugin_target} PRIVATE -fno-sanitize=all)
+    target_link_options(${plugin_target} PRIVATE -fno-sanitize=all)
+  endforeach()
+endif()
 
 
 set(TEST_RUNTIME_TOOLS

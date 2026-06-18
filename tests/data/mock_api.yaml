@@ -72,6 +72,12 @@ commands:
     parameters: []
     outputs: [current]
 
+  SAFE_MEASURE:
+    template: "SMEAS:CURR"
+    description: "Measure current with a safety message"
+    parameters: []
+    outputs: [message, current]
+
   SET:
     template: "SOUR:VOLT {voltage}"
     description: "Set voltage"

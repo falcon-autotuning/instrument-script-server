@@ -22,8 +22,7 @@
 
 using json = nlohmann::json;
 
-namespace instserver {
-namespace server {
+namespace instserver::server {
 
 namespace {
 constexpr int BACKLOG = 8;
@@ -389,8 +388,6 @@ void HttpRpcServer::run_loop(uint16_t port) {
         rc = server::handle_daemon(params, resp);
       } else if (command == "measure") {
         rc = server::handle_measure(params, resp);
-      } else if (command == "test") {
-        rc = server::handle_test(params, resp);
       } else if (command == "discover") {
         rc = server::handle_discover(params, resp);
       } else if (command == "plugins") {
@@ -439,5 +436,4 @@ void HttpRpcServer::run_loop(uint16_t port) {
   running_ = false;
 }
 
-} // namespace server
-} // namespace instserver
+} // namespace instserver::server

@@ -3,7 +3,12 @@
 #include <chrono>
 #include <gtest/gtest.h>
 #include <thread>
-
+namespace {
+void copy_string(char *dst, size_t dst_size, const std::string &src) {
+  std::strncpy(dst, src.c_str(), dst_size - 1);
+  dst[dst_size - 1] = '\0';
+}
+} // namespace
 using namespace instserver::ipc;
 
 TEST(IPCPerformance, Throughput) {
@@ -20,7 +25,7 @@ TEST(IPCPerformance, Throughput) {
     for (int i = 0; i < num_messages; i++) {
       IPCMessage msg;
       msg.type = IPCMessage::Type::COMMAND;
-      msg.id = i;
+      copy_string(msg.id.data(), msg.id.size(), std::to_string(i));
       server_queue->send(msg, std::chrono::seconds(1));
     }
   });

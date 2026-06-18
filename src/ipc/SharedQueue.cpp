@@ -6,11 +6,12 @@
 #include <string>
 
 namespace instserver::ipc {
-
-static std::string make_queue_name(const std::string &instrument_name,
-                                   const std::string &suffix) {
+namespace {
+std::string make_queue_name(const std::string &instrument_name,
+                            const std::string &suffix) {
   return "instrument_" + instrument_name + "_" + suffix;
 }
+} // namespace
 
 std::unique_ptr<SharedQueue>
 SharedQueue::create_server_queue(const std::string &instrument_name) {
@@ -24,13 +25,12 @@ SharedQueue::create_server_queue(const std::string &instrument_name) {
   message_queue::remove(resp_name.c_str());
 
   try {
-    auto req_queue =
-        std::make_unique<message_queue>(create_only, req_name.c_str(),
-                                        100, // max messages
-                                        sizeof(IPCMessage));
+    auto req_queue = std::make_unique<message_queue>(
+        create_only, req_name.c_str(), MAX_QUEUED_MESSAGES, sizeof(IPCMessage));
 
     auto resp_queue = std::make_unique<message_queue>(
-        create_only, resp_name.c_str(), 100, sizeof(IPCMessage));
+        create_only, resp_name.c_str(), MAX_QUEUED_MESSAGES,
+        sizeof(IPCMessage));
 
     LOG_INFO("IPC", "QUEUE_CREATE", "Created queues for instrument: %s",
              instrument_name.c_str());
@@ -74,14 +74,14 @@ SharedQueue::create_worker_queue(const std::string &instrument_name) {
 instserver::ipc::SharedQueue::SharedQueue(
     std::unique_ptr<boost::interprocess::message_queue> req_queue,
     std::unique_ptr<boost::interprocess::message_queue> resp_queue,
-    const std::string &req_name, const std::string &resp_name, bool is_server)
+    std::string req_name, std::string resp_name, bool is_server)
     : request_queue_(std::move(req_queue)),
-      response_queue_(std::move(resp_queue)), request_queue_name_(req_name),
-      response_queue_name_(resp_name), is_server_(is_server) {}
+      response_queue_(std::move(resp_queue)),
+      request_queue_name_(std::move(req_name)),
+      response_queue_name_(std::move(resp_name)), is_server_(is_server) {}
 
-instserver::ipc::SharedQueue::~SharedQueue() {
-  // Queues are automatically closed when unique_ptr is destroyed
-}
+instserver::ipc::SharedQueue::~SharedQueue() = default;
+// Queues are automatically closed when unique_ptr is destroyed
 
 bool instserver::ipc::SharedQueue::send(const IPCMessage &msg,
                                         std::chrono::milliseconds timeout) {
@@ -101,9 +101,9 @@ bool instserver::ipc::SharedQueue::send(const IPCMessage &msg,
       const std::string &queue_name =
           is_server_ ? request_queue_name_ : response_queue_name_;
       LOG_WARN("IPC", "SEND_TIMEOUT",
-               "Send timeout (%dms) on queue '%s' msg_id=%llu type=%u",
-               (int)timeout.count(), queue_name.c_str(),
-               (unsigned long long)msg.id, (unsigned int)msg.type);
+               "Send timeout (%dms) on queue '%s' msg_id=%s type=%u",
+               (int)timeout.count(), queue_name.c_str(), msg.id,
+               (unsigned int)msg.type);
     }
 
     return sent;

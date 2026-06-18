@@ -2,6 +2,7 @@
 #include "instrument-script-server/server/CommandHandlers.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
+#include "instrument-script-server/server/ServerDaemon.hpp"
 #include <algorithm>
 #include <chrono>
 #include <instrument-log/inst_logging.h>
@@ -11,8 +12,7 @@
 
 using json = nlohmann::json;
 
-namespace instserver {
-namespace server {
+namespace instserver::server {
 
 JobManager &JobManager::instance() {
   static JobManager mgr;
@@ -29,13 +29,15 @@ JobManager::~JobManager() { stop(); }
 void JobManager::stop() {
   {
     std::lock_guard<std::mutex> lk(mutex_);
-    if (!running_)
+    if (!running_) {
       return;
+    }
     running_ = false;
   }
   cv_.notify_all();
-  if (worker_thread_.joinable())
+  if (worker_thread_.joinable()) {
     worker_thread_.join();
+  }
   LOG_INFO("JOB", "MGR", "JobManager stopped");
 }
 
@@ -215,9 +217,9 @@ void JobManager::worker_loop() {
         // Load optional Lua libraries (was missing before)
         load_optional_lua_libs(lua);
 
-        SyncCoordinator sync_coordinator;
+        auto &sync = ServerDaemon::instance().sync_coordinator();
         auto ctx = bind_runtime_context(lua, InstrumentRegistry::instance(),
-                                        sync_coordinator, false);
+                                        sync, false);
 
         // Load the script file
         auto load_result = lua.safe_script_file(script_path);
@@ -392,5 +394,4 @@ void JobManager::worker_loop() {
   }
 }
 
-} // namespace server
-} // namespace instserver
+} // namespace instserver::server
