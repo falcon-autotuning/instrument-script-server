@@ -77,12 +77,12 @@ TEST_F(PluginRegistryTest, GetPluginPath) {
 
   registry_->load_plugin("MockPlugin", plugin_path.string());
 
-  std::string path = registry_->get_plugin_path("MockPlugin");
+  std::string path = registry_->get_plugin_path("MockPlugin").string();
   EXPECT_EQ(path, plugin_path.string());
 }
 
 TEST_F(PluginRegistryTest, GetNonexistentPlugin) {
-  std::string path = registry_->get_plugin_path("NonexistentProtocol");
+  std::string path = registry_->get_plugin_path("NonexistentProtocol").string();
   EXPECT_TRUE(path.empty());
 }
 
