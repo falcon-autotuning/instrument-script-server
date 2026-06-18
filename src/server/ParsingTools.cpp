@@ -37,7 +37,7 @@ IO parseParam(const YAML::Node &node,
 std::unordered_map<std::string, Command>
 load_api(const std::filesystem::path &api_path) {
   std::unordered_map<std::string, Command> instrument_commands;
-  YAML::Node doc = YAML::LoadFile(api_path);
+  YAML::Node doc = YAML::LoadFile(api_path.string());
 
   // ---------------- IO LOOKUP ----------------
   if (!doc["io"]) {
@@ -131,7 +131,7 @@ load_api(const std::filesystem::path &api_path) {
 InstrumentConfig load_config(const std::filesystem::path &config_path) {
   InstrumentConfig cfg;
 
-  YAML::Node doc = YAML::LoadFile(config_path);
+  YAML::Node doc = YAML::LoadFile(config_path.string());
 
   // ---- required fields ----
   if (!doc["name"]) {

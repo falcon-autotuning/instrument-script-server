@@ -101,7 +101,7 @@ ProcessManager::spawn_worker(const std::filesystem::path &instrument_config,
   std::string instrument_name;
   YAML::Node doc;
   try {
-    YAML::Node doc = YAML::LoadFile(instrument_config);
+    YAML::Node doc = YAML::LoadFile(instrument_config.string());
     if (!doc["name"]) {
       throw std::runtime_error("Missing required field: name");
     }
@@ -196,6 +196,21 @@ std::vector<ProcessId> ProcessManager::list_processes() const {
 
 bool ProcessManager::wait_for_exit(ProcessId pid,
                                    std::chrono::milliseconds timeout) const {
+#ifdef _WIN32
+  ProcessHandle hProcess = OpenProcess(SYNCHRONIZE, FALSE, pid);
+  if (hProcess == nullptr) {
+    // Process likely already exited
+    return true;
+  }
+
+  DWORD result =
+      WaitForSingleObject(hProcess, static_cast<DWORD>(timeout.count()));
+
+  CloseHandle(hProcess);
+
+  return result == WAIT_OBJECT_0;
+
+#else
   auto deadline = std::chrono::steady_clock::now() + timeout;
 
   while (std::chrono::steady_clock::now() < deadline) {
@@ -206,10 +221,8 @@ bool ProcessManager::wait_for_exit(ProcessId pid,
       return true;
     }
 
-    if (result == -1) {
-      if (errno == ECHILD) {
-        return true;
-      }
+    if (result == -1 && errno == ECHILD) {
+      return true;
     }
 
     std::this_thread::sleep_for(
@@ -217,6 +230,7 @@ bool ProcessManager::wait_for_exit(ProcessId pid,
   }
 
   return false;
+#endif
 }
 void ProcessManager::cleanup_all() {
   LOG_INFO("PROCESS", "CLEANUP", "Cleaning up all worker processes");

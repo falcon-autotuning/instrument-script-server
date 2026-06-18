@@ -57,7 +57,8 @@ void signal_handler(int sig) {
 }
 void copy_string(char *dst, size_t dst_size, const char *src) {
   if (src == nullptr) {
-    if (dst_size > 0) dst[0] = '\0';
+    if (dst_size > 0)
+      dst[0] = '\0';
     return;
   }
   std::strncpy(dst, src, dst_size - 1);
@@ -160,9 +161,7 @@ public:
       : config_(std::move(config)), plugin_path_(plugin_path),
         commands_(std::move(commands)), plugin_(plugin_path) {}
 
-  ~InstrumentWorker() {
-    cleanup();
-  }
+  ~InstrumentWorker() { cleanup(); }
 
   int run() {
     if (!load_and_init_plugin()) {
@@ -317,7 +316,8 @@ private:
       throw std::runtime_error("IPC queue disconnected");
     }
     // investigate new message
-    if ((waiting_sync_token_.has_value() && internal_msg.sync_token == waiting_sync_token_.value()) ||
+    if ((waiting_sync_token_.has_value() &&
+         internal_msg.sync_token == waiting_sync_token_.value()) ||
         (!waiting_sync_token_.has_value() && internal_msg.sync_token == 0)) {
       if (internal_msg.sync_token !=
           0) { // we don't consider 0 to be a sync token
@@ -335,7 +335,9 @@ private:
     if (it == incoming_read_messages_.end()) {
       Incoming inc = internal_msg.sync_token;
       queue_of_incoming_messages_.emplace(inc);
-      it = incoming_read_messages_.emplace(internal_msg.sync_token, std::queue<ipc::IPCMessage>()).first;
+      it = incoming_read_messages_
+               .emplace(internal_msg.sync_token, std::queue<ipc::IPCMessage>())
+               .first;
     }
     it->second.push(internal_msg);
     return false;
@@ -527,7 +529,8 @@ private:
     const auto &command = it->second;
     log_debug("Checking that command %s matches what is defined in the config",
               cmd.verb.c_str());
-    // Check command parameters, ignoring implicitly injected "channel" if not expected by the API
+    // Check command parameters, ignoring implicitly injected "channel" if not
+    // expected by the API
     size_t actual_size = 0;
     size_t channel_param_index = -1;
     for (size_t i = 0; i < cmd.params.size(); ++i) {
@@ -677,7 +680,7 @@ int main(int argc, char **argv) {
   try {
     config = load_config(instrument_config);
   } catch (const std::exception &e) {
-    std::fprintf(stderr, "[WORKER] Failed to load config '%s': %s\n",
+    std::fprintf(stderr, "[WORKER] Failed to load config '%ls': %s\n",
                  instrument_config.c_str(), e.what());
     return 1;
   }
@@ -718,7 +721,7 @@ int main(int argc, char **argv) {
   std::signal(SIGTERM, signal_handler);
 
   try {
-    InstrumentWorker worker(config, plugin, instrument_commands);
+    InstrumentWorker worker(config, plugin.string(), instrument_commands);
     int rc = worker.run();
 
     LOG_INFO(config.name.c_str(), "WORKER_MAIN", "Worker exited with code %d",

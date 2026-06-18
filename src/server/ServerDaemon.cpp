@@ -52,8 +52,13 @@ namespace instserver {
 ServerDaemon &ServerDaemon::instance() {
   static ServerDaemon daemon;
   std::string runtime_dir = get_runtime_dir();
-  // So the parent and child have same environment
+
+#ifdef _WIN32
+  SetEnvironmentVariableA("INSTRUMENT_SERVER_RUNTIME_DIR", runtime_dir.c_str());
+#else
   setenv("INSTRUMENT_SERVER_RUNTIME_DIR", runtime_dir.c_str(), 1);
+#endif
+
   return daemon;
 }
 
