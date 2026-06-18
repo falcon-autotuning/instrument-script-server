@@ -238,7 +238,7 @@ protected:
       bind_runtime_context(lua, registry, sync_coordinator);
       register_instrument_call_stack(lua.lua_state());
 
-      RuntimeContext ctx(registry, sync_coordinator);
+      RuntimeContext ctx(registry);
       lua["context"] = &ctx;
 
       // 1️⃣ load script
@@ -291,8 +291,7 @@ protected:
       register_instrument_call_stack(lua.lua_state());
 
       // Use member context
-      test_context_ =
-          std::make_unique<RuntimeContext>(registry, sync_coordinator);
+      test_context_ = std::make_unique<RuntimeContext>(registry);
       lua["context"] = test_context_.get();
 
       // 1️⃣ load script

@@ -53,7 +53,7 @@ TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   lua.open_libraries(sol::lib::base, sol::lib::math);
   bind_runtime_context(lua, registry, sync);
 
-  RuntimeContext ctx(registry, sync);
+  RuntimeContext ctx(registry);
   lua["context"] = &ctx;
 
   // Warm up
@@ -94,7 +94,7 @@ TEST_F(EndToEndPerformanceTest, CommandWithParametersOverhead) {
   lua.open_libraries(sol::lib::base, sol::lib::math);
   bind_runtime_context(lua, registry, sync);
 
-  RuntimeContext ctx(registry, sync);
+  RuntimeContext ctx(registry);
   lua["context"] = &ctx;
 
   const int num_calls = 100000;
@@ -124,7 +124,7 @@ TEST_F(EndToEndPerformanceTest, WorstCaseMaxPayload) {
   lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::table);
   bind_runtime_context(lua, registry, sync);
 
-  RuntimeContext ctx(registry, sync);
+  RuntimeContext ctx(registry);
   lua["context"] = &ctx;
 
   // Test with array return values (heavier payload)
@@ -192,7 +192,7 @@ connection:
   lua.open_libraries(sol::lib::base);
   bind_runtime_context(lua, registry, sync);
 
-  RuntimeContext ctx(registry, sync);
+  RuntimeContext ctx(registry);
   lua["context"] = &ctx;
 
   const int calls_per_instrument = 10000;
@@ -252,7 +252,7 @@ connection:
   lua.open_libraries(sol::lib::base);
   bind_runtime_context(lua, registry, sync);
 
-  RuntimeContext ctx(registry, sync);
+  RuntimeContext ctx(registry);
   lua["context"] = &ctx;
 
   const int num_parallel_blocks = 100000;

@@ -94,7 +94,7 @@ TEST_F(MainFunctionTest, MainFunctionReceivesContext) {
   sol::optional<sol::function> main_func = (*lua_)["main"];
   ASSERT_TRUE(main_func.has_value());
 
-  auto ctx = std::make_shared<RuntimeContext>(*registry_, *sync_coordinator_);
+  auto ctx = std::make_shared<RuntimeContext>(*registry_);
   sol::protected_function_result call_result = (*main_func)(ctx.get());
 
   ASSERT_TRUE(call_result.valid());
@@ -116,7 +116,7 @@ TEST_F(MainFunctionTest, ContextErrorSetsErrorState) {
   sol::optional<sol::function> main_func = (*lua_)["main"];
   ASSERT_TRUE(main_func.has_value());
 
-  auto ctx = std::make_shared<RuntimeContext>(*registry_, *sync_coordinator_);
+  auto ctx = std::make_shared<RuntimeContext>(*registry_);
   sol::protected_function_result call_result = (*main_func)(ctx.get());
 
   ASSERT_TRUE(call_result.valid());
@@ -146,7 +146,7 @@ TEST_F(MainFunctionTest, MainReturnValueOptional) {
   ASSERT_TRUE(result1.valid());
 
   sol::optional<sol::function> main_func1 = (*lua_)["main"];
-  auto ctx1 = std::make_shared<RuntimeContext>(*registry_, *sync_coordinator_);
+  auto ctx1 = std::make_shared<RuntimeContext>(*registry_);
   sol::protected_function_result call_result1 = (*main_func1)(ctx1.get());
   ASSERT_TRUE(call_result1.valid());
 
@@ -155,7 +155,7 @@ TEST_F(MainFunctionTest, MainReturnValueOptional) {
   ASSERT_TRUE(result2.valid());
 
   sol::optional<sol::function> main_func2 = (*lua_)["main"];
-  auto ctx2 = std::make_shared<RuntimeContext>(*registry_, *sync_coordinator_);
+  auto ctx2 = std::make_shared<RuntimeContext>(*registry_);
   sol::protected_function_result call_result2 = (*main_func2)(ctx2.get());
   ASSERT_TRUE(call_result2.valid());
 }

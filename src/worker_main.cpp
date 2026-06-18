@@ -1,5 +1,6 @@
 #include "instrument-script-server/ErrorCodes.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
+#include "instrument-script-server/ipc/IPCMessage.hpp"
 #include "instrument-script-server/ipc/SharedQueue.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
 #include "instrument-script-server/server/InstrumentCommand.hpp"
@@ -11,7 +12,9 @@
 #include <instrument-plugin.h>
 #include <iostream>
 #include <plugin-host.h>
+#include <queue>
 #include <thread>
+#include <variant>
 #include <yaml-cpp/yaml.h>
 
 #ifdef _WIN32
@@ -196,6 +199,7 @@ public:
 
 private:
   InstrumentConfig config_;
+
   std::unordered_map<std::string, Command> commands_;
   std::unordered_map<std::string, std::vector<ipc::IPCMessage>>
       partial_commands_;
@@ -207,6 +211,17 @@ private:
   std::optional<uint64_t> waiting_sync_token_;
   std::chrono::steady_clock::time_point last_heartbeat_ =
       std::chrono::steady_clock::now();
+
+  // Both of these are related to incoming messages and organizing
+  std::unordered_map<uint64_t, std::queue<ipc::IPCMessage>>
+      incoming_read_messages_{};
+
+  using Incoming = std::variant<ipc::IPCMessage, // SINGLETON
+                                uint64_t         // QUEUE (sync token)
+                                >;
+  std::queue<Incoming>
+      queue_of_incoming_messages_{}; // The next index to pop comings after the
+                                     // waiting_sync_token_
 
   // NOLINTBEGIN(hicpp-avoid-c-arrays,
   // cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
@@ -269,6 +284,56 @@ private:
     LOG_INFO(config_.name.c_str(), "WORKER_MAIN", "IPC queue connected");
     return true;
   }
+  bool receive_queued(ipc::IPCMessage msg) {
+    if (!waiting_sync_token_.has_value() &&
+        queue_of_incoming_messages_.size() > 0) {
+      Incoming inc = queue_of_incoming_messages_.front();
+      queue_of_incoming_messages_.pop();
+
+      if (std::holds_alternative<ipc::IPCMessage>(inc)) {
+        msg = std::get<ipc::IPCMessage>(inc);
+        return true;
+      }
+
+      waiting_sync_token_ = std::get<uint64_t>(inc);
+    }
+    if (waiting_sync_token_.has_value()) {
+      auto it = incoming_read_messages_.find(waiting_sync_token_.value());
+      if (it != incoming_read_messages_.end()) {
+        msg = it->second.front();
+        it->second.pop();
+        return true;
+      }
+    }
+    instserver::ipc::IPCMessage internal_msg{};
+    if (!ipc_queue_->receive_blocking(internal_msg)) {
+      return false;
+    }
+    // investigate new message
+    if ((internal_msg.sync_token == waiting_sync_token_.value()) ||
+        (!waiting_sync_token_.has_value() && internal_msg.sync_token == 0)) {
+      if (internal_msg.sync_token !=
+          0) { // we don't consider 0 to be a sync token
+        waiting_sync_token_ = internal_msg.sync_token;
+      }
+      msg = internal_msg;
+      return true;
+    }
+    if (internal_msg.sync_token == 0) {
+      Incoming inc = internal_msg;
+      queue_of_incoming_messages_.emplace(inc);
+      return false;
+    }
+    auto it = incoming_read_messages_.find(internal_msg.sync_token);
+    if (it == incoming_read_messages_.end()) {
+      Incoming inc = internal_msg.sync_token;
+      queue_of_incoming_messages_.emplace(inc);
+      auto temp_queue = std::queue<ipc::IPCMessage>();
+      incoming_read_messages_.emplace(internal_msg.sync_token, temp_queue);
+    }
+    it->second.push(internal_msg);
+    return false;
+  }
 
   void main_loop() {
     uint64_t iteration = 0;
@@ -276,7 +341,7 @@ private:
     while (g_running) {
       instserver::ipc::IPCMessage msg{};
 
-      if (!ipc_queue_->receive_blocking(msg)) {
+      if (!receive_queued(msg)) {
         continue;
       }
 
@@ -314,13 +379,7 @@ private:
       handle_buffer_ack(msg);
       break;
     case ipc::IPCMessage::Type::COMMAND:
-      if (!waiting_sync_token_) {
-        handle_command_chunk(msg);
-      } else {
-        log_debug("Blocked on sync token=%llu, ignoring message",
-                  (unsigned long long)*waiting_sync_token_);
-      }
-      break;
+      handle_command_chunk(msg);
     default:
       log_warn("Received unexpected message type: %u",
                static_cast<unsigned int>(msg.type));
@@ -334,9 +393,12 @@ private:
   }
 
   void handle_sync_continue(const ipc::IPCMessage &msg) {
-    if (waiting_sync_token_ && msg.sync_token == *waiting_sync_token_) {
+    if (waiting_sync_token_.has_value() &&
+        msg.sync_token == waiting_sync_token_.value()) {
       log_debug("Received SYNC_CONTINUE for token=%llu, proceeding",
                 (unsigned long long)msg.sync_token);
+      // deleting all other messages with our sync_token
+      incoming_read_messages_.erase(waiting_sync_token_.value());
       waiting_sync_token_.reset();
     } else {
       log_warn("Unexpected SYNC_CONTINUE token=%llu (waiting=%llu)",
@@ -509,16 +571,6 @@ private:
     uint64_t token = cmd.sync_token.value();
 
     send_sync_ack(msg, token);
-
-    if (cmd.is_sync_barrier) {
-      waiting_sync_token_ = cmd.sync_token;
-
-      log_debug("Now waiting for SYNC_CONTINUE token=%llu",
-                (unsigned long long)token);
-    } else {
-      log_debug("Received sync command (token=%llu), not final; continuing",
-                (unsigned long long)token);
-    }
   }
   void send_command_response(const ipc::IPCMessage &msg,
                              const InstrumentCommand &cmd,

@@ -117,7 +117,6 @@ struct INSTRUMENT_SERVER_API CallResult {
 class INSTRUMENT_SERVER_API RuntimeContext {
 public:
   explicit RuntimeContext(InstrumentRegistry &registry,
-                          SyncCoordinator &sync_coordinator,
                           bool enqueue_mode = false);
   virtual ~RuntimeContext() = default;
 

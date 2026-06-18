@@ -1,6 +1,7 @@
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/server/InstrumentCommand.hpp"
+#include "instrument-script-server/server/ServerDaemon.hpp"
 #include <fmt/format.h>
 #include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-data.h>
@@ -181,10 +182,9 @@ MeasurementResponse::multiply_gain(double gain) const {
 
 // RuntimeContext implementation
 
-RuntimeContext::RuntimeContext(InstrumentRegistry &registry,
-                               SyncCoordinator &sync_coordinator,
-                               bool enqueue_mode)
-    : registry_(registry), sync_coordinator_(sync_coordinator),
+RuntimeContext::RuntimeContext(InstrumentRegistry &registry, bool enqueue_mode)
+    : registry_(registry),
+      sync_coordinator_(ServerDaemon::instance().sync_coordinator()),
       enqueue_mode_(enqueue_mode) {}
 
 static void
@@ -820,8 +820,7 @@ bind_runtime_context(sol::state &lua, InstrumentRegistry &registry,
       "parallel", &RuntimeContext::parallel, "log", &RuntimeContext::log,
       "error", &RuntimeContext::error);
 
-  auto ctx = std::make_shared<RuntimeContext>(registry, sync_coordinator,
-                                              enqueue_mode);
+  auto ctx = std::make_shared<RuntimeContext>(registry, enqueue_mode);
   lua["context"] = ctx;
   return ctx;
 }

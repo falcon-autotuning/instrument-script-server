@@ -25,7 +25,6 @@ struct INSTRUMENT_SERVER_API InstrumentCommand {
 
   // Synchronization fields
   std::optional<uint64_t> sync_token; // Groups commands in parallel block
-  bool is_sync_barrier{false};        // Marks end of sync group
 };
 
 struct INSTRUMENT_SERVER_API InstrumentCommandResponse {

@@ -2,12 +2,10 @@
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
-#include "instrument-script-server/server/InstrumentCommand.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/JobManager.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
-#include "instrument-script-server/server/SyncCoordinator.hpp"
 #include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
@@ -597,7 +595,7 @@ int handle_measure(const json &params, json &out) {
     bind_runtime_context(lua, registry, sync);
 
     // Create default context (host-side C++ runtime object)
-    auto ctx_shared = std::make_shared<RuntimeContext>(registry, sync);
+    auto ctx_shared = std::make_shared<RuntimeContext>(registry);
     lua["context"] =
         ctx_shared; // keep the existing behavior to bind the userdata
 
