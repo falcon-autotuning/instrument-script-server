@@ -169,6 +169,7 @@ if(WIN32)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
           "$<TARGET_FILE:${tool}>"
           "$<TARGET_FILE_DIR:${tgt}>"
+        DEPENDS ${tool}
       )
     endforeach()
 
