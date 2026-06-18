@@ -116,4 +116,6 @@ TEST_F(PluginLoaderTest, ExecuteCommand) {
 
   // Command execution should succeed
   EXPECT_EQ(result, ErrorCode::NONE) << "Command execution failed";
+  param_storage_free(cmd.params);
+  plugin_response_free(resp);
 }

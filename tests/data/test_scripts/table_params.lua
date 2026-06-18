@@ -6,9 +6,9 @@ function main(ctx)
 		command = "CONFIGURE",
 	})
 	ctx:call(cs, {
-		param1 = 1.5,
-		param2 = "test",
-		param3 = true,
+		config_param1 = 1.5,
+		config_param2 = "test",
+		config_param3 = true,
 	})
 
 	ctx:log("Table parameters test complete")

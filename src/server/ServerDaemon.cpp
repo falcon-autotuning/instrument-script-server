@@ -60,10 +60,10 @@ ServerDaemon &ServerDaemon::instance() {
 ServerDaemon::~ServerDaemon() {
   // unique_ptr will handle cleanup, but ensure threads are detached
   if (daemon_thread_ && daemon_thread_->joinable()) {
-    daemon_thread_->detach();
+    daemon_thread_->join();
   }
   if (shutdown_listener_thread_ && shutdown_listener_thread_->joinable()) {
-    shutdown_listener_thread_->detach();
+    shutdown_listener_thread_->join();
   }
   // unique_ptr destructor will delete the thread objects after detach
 }
@@ -248,7 +248,7 @@ void ServerDaemon::remove_pid_file() {
       std::filesystem::remove(pid_file);
       LOG_INFO("DAEMON", "CLEANUP", "Removed PID file");
     } catch (const std::exception &e) {
-      LOG_WARN("DAEMON", "CLEANUP", "Failed to remove PID file: %s", e.what());
+      std::cerr << "Failed to remove PID file: " << e.what() << "\n";
     }
   }
 }
@@ -422,14 +422,14 @@ void ServerDaemon::signal_shutdown_pipe() {
   // Write to FIFO on Unix
   int pipe_fd = open(pipe_path.c_str(), O_WRONLY | O_NONBLOCK);
   if (pipe_fd < 0) {
-    LOG_WARN("DAEMON", "PIPE", "Failed to open shutdown pipe for writing");
+    std::cerr << "Failed to open shutdown pipe for writing" << "\n";
     return;
   }
 
   if (write(pipe_fd, "X", 1) > 0) {
     LOG_INFO("DAEMON", "PIPE", "Sent shutdown signal via pipe");
   } else {
-    LOG_WARN("DAEMON", "PIPE", "Failed to write to shutdown pipe");
+    std::cerr << "Failed to write to shutdown pipe" << "\n";
   }
 
   close(pipe_fd);
@@ -458,9 +458,9 @@ bool ServerDaemon::start() {
 
   // Check if another instance is running
   if (is_already_running()) {
-    LOG_ERROR("DAEMON", "START",
-              "Another server instance is already running (PID: %ld)",
-              (long)get_daemon_pid());
+    LOG_WARN("DAEMON", "START",
+             "Another server instance is already running (PID: %ld)",
+             (long)get_daemon_pid());
     return false;
   }
 
@@ -532,24 +532,16 @@ void ServerDaemon::stop() {
     // We're in a CLI/test process trying to stop the daemon
     int daemon_pid = get_daemon_pid();
     if (daemon_pid > 0) {
-      try {
-        LOG_INFO("DAEMON", "STOP",
-                 "Signaling daemon process (PID: %ld) to stop via pipe",
-                 (long)daemon_pid);
-      } catch (...) {
-        // Ignore logging errors
-      }
+      LOG_INFO("DAEMON", "STOP",
+               "Signaling daemon process (PID: %ld) to stop via pipe",
+               (long)daemon_pid);
 
       signal_shutdown_pipe();
 
       // Give daemon time to shutdown gracefully
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
     } else {
-      try {
-        LOG_WARN("DAEMON", "STOP", "No daemon PID found");
-      } catch (...) {
-        // Ignore logging errors
-      }
+      std::cerr << "No daemon PID found. Already stopped" << "\n";
     }
     return;
   }
@@ -557,10 +549,6 @@ void ServerDaemon::stop() {
   // We're in the daemon process - do full cleanup
   { // Scope for lock_guard
     std::lock_guard<std::mutex> lock(mutex_);
-
-    if (!running_.load()) {
-      return; // Already stopped
-    }
 
     try {
       LOG_INFO("DAEMON", "STOP", "Stopping server daemon (graceful shutdown)");
@@ -587,21 +575,14 @@ void ServerDaemon::stop() {
   } // Lock released here
 
   // Join threads outside the mutex
-  try {
-    if (daemon_thread_ && daemon_thread_->joinable()) {
-      daemon_thread_->join();
-    }
-  } catch (...) {
-    // Suppress
+  if (daemon_thread_ && daemon_thread_->joinable()) {
+    daemon_thread_->join();
+  }
+  if (shutdown_listener_thread_ && shutdown_listener_thread_->joinable()) {
+    shutdown_listener_thread_->join();
   }
 
-  try {
-    if (shutdown_listener_thread_ && shutdown_listener_thread_->joinable()) {
-      shutdown_listener_thread_->join();
-    }
-  } catch (...) {
-    // Suppress
-  }
+  inst_log_shutdown();
 }
 
 } // namespace instserver

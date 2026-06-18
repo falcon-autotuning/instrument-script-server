@@ -239,8 +239,7 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
   // Table-style parameters
   if (args.size() == 1 && args[0].get_type() == sol::type::table) {
     // first allocate the types
-    std::unordered_map<std::string, uint8_t> lookup_param_types;
-    lookup_param_types.reserve(parameters.size());
+    std::map<std::string, uint8_t> lookup_param_types;
 
     for (const IO &io : parameters) {
       lookup_param_types.emplace(io.name, io.type);
@@ -249,6 +248,7 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
     // then run through the arguments
     sol::table tbl = args[0];
 
+    std::unordered_map<std::string, Variable> unordered_params;
     for (auto &[k, v] : tbl) {
       Variable p;
 
@@ -291,8 +291,12 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
         continue; // skip unsupported types
       }
 
-      params.push_back(p);
+      unordered_params.emplace(key, p);
     }
+    for (const auto &[k, v] : lookup_param_types) {
+      params.push_back(unordered_params.find(k)->second);
+    }
+
   } else {
     // first allocate expected types by index
     std::vector<uint8_t> expected_types;

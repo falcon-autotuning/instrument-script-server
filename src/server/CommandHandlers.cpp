@@ -347,6 +347,8 @@ int handle_daemon(const json &params, json &out) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
+    daemon.stop();
+
     return 0;
   }
 
@@ -397,25 +399,6 @@ int handle_start(const json &params, json &out) {
     out["error"] = "missing config_path";
     return 1;
   }
-
-  uint8_t log_level_num = 0;
-  if (log_level == "trace") {
-    log_level_num = INST_LOG_TRACE;
-  } else if (log_level == "debug") {
-    log_level_num = INST_LOG_DEBUG;
-  } else if (log_level == "info") {
-    log_level_num = INST_LOG_INFO;
-  } else if (log_level == "warn") {
-    log_level_num = INST_LOG_WARN;
-  } else if (log_level == "error") {
-    log_level_num = INST_LOG_ERROR;
-  } else {
-    log_level_num = INST_LOG_INFO; // default
-  }
-
-  inst_log_init("instrument_server.log", log_level_num, "instrument",
-                10 * 1024 * 1024, // 10 MB
-                3);               // rotation count
 
   try {
     // If a custom plugin path was provided, try to load it via PluginLoader.
@@ -552,25 +535,6 @@ int handle_measure(const json &params, json &out) {
     out["error"] = "missing script_path";
     return 1;
   }
-
-  uint8_t log_level_num = 0;
-  if (log_level == "trace") {
-    log_level_num = INST_LOG_TRACE;
-  } else if (log_level == "debug") {
-    log_level_num = INST_LOG_DEBUG;
-  } else if (log_level == "info") {
-    log_level_num = INST_LOG_INFO;
-  } else if (log_level == "warn") {
-    log_level_num = INST_LOG_WARN;
-  } else if (log_level == "error") {
-    log_level_num = INST_LOG_ERROR;
-  } else {
-    log_level_num = INST_LOG_INFO; // default
-  }
-
-  inst_log_init("instrument_server.log", log_level_num, "instrument",
-                10 * 1024 * 1024, // 10 MB
-                3);               // rotation count
 
   try {
     auto &registry = InstrumentRegistry::instance();
@@ -1029,8 +993,8 @@ __context_schema_version = nil
             return_json[key]["value"] = v.value.str_val;
             return_json[key]["buffer_id"] = v.value.str_val;
 
-            auto out =
-                ipc::DataBufferManager::instance().get_metadata(v.value.str_val);
+            auto out = ipc::DataBufferManager::instance().get_metadata(
+                v.value.str_val);
 
             if (out) {
               return_json[key]["element_count"] = out->element_count;

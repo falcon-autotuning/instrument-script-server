@@ -1,6 +1,4 @@
-#include <chrono>
 #include <cstdlib>
-#include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
@@ -115,7 +113,6 @@ TEST_F(DaemonIntegrationTest, StartCreatesProcessAndPidFile) {
   EXPECT_GT(pid, 0);
   EXPECT_TRUE(process_alive(pid));
   std::system((BIN_PATH + " daemon stop").c_str());
-  std::cout << "The daemon stop is " << out << "\n";
   std::this_thread::sleep_for(200ms);
   EXPECT_FALSE(process_alive(pid));
 }

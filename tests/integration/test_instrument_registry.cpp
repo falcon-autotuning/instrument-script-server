@@ -39,8 +39,6 @@ protected:
       daemon.stop();
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
-    inst_log_flush();
-    inst_log_shutdown();
   }
 
   std::filesystem::path test_data_dir_;
