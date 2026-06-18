@@ -69,7 +69,7 @@ uint8_t plugin_execute_command(const PluginCommand *cmd, PluginResponse *resp) {
     var.type = PARAM_TYPE_DOUBLE;
     strncpy(var.name, "data", PLUGIN_MAX_STRING_LEN - 1);
     var.value.d_val = 42.0;
-    VISA_LOG_INFO("Small data: %s\n", var.value.d_val);
+    VISA_LOG_INFO("Small data: %f\n", var.value.d_val);
     plugin_response_push(resp, &var);
     return 0;
   }
@@ -105,7 +105,7 @@ uint8_t plugin_execute_command(const PluginCommand *cmd, PluginResponse *resp) {
     strncpy(var.name, "data", PLUGIN_MAX_STRING_LEN - 1);
     int err =
         snprintf(var.value.str_val, PLUGIN_MAX_STRING_LEN, "%s", buffer_id);
-    if (err != 0) {
+    if (err < 0 || err >= PLUGIN_MAX_STRING_LEN) {
       VISA_LOG_ERROR(
           "Failed to allocate string for the GET_LARGE_DATA command\n");
       return 4;
@@ -121,7 +121,7 @@ uint8_t plugin_execute_command(const PluginCommand *cmd, PluginResponse *resp) {
   strncpy(var.name, "idn", PLUGIN_MAX_STRING_LEN - 1);
   int err = snprintf(var.value.str_val, PLUGIN_MAX_STRING_LEN,
                      "Mock response: %s\n", cmd->command);
-  if (err != 0) {
+  if (err < 0 || err >= PLUGIN_MAX_STRING_LEN) {
     VISA_LOG_ERROR("Failed to allocate string for %s command\n", cmd->command);
     return 3;
   }
@@ -132,7 +132,7 @@ uint8_t plugin_execute_command(const PluginCommand *cmd, PluginResponse *resp) {
 void plugin_shutdown(void) {
   VISA_LOG_INFO("Shutting down\n");
   int err = snprintf(instrument_name, PLUGIN_MAX_STRING_LEN, "");
-  if (err != 0) {
+  if (err < 0 || err >= PLUGIN_MAX_STRING_LEN) {
     VISA_LOG_ERROR("Could not deallocate the instrument_name\n");
   }
   g_initialized = 0;

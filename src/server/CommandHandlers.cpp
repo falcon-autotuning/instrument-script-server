@@ -891,7 +891,7 @@ __context_schema_version = nil
     LOG_INFO("SERVER", "MEASURE",
              "Lua script done. Serializing %d results into HTTP response",
              results.size());
-    out["ok"] = ctx_shared->has_error();
+    out["ok"] = !ctx_shared->has_error();
     out["script"] = std::filesystem::path(script_path).filename().string();
     out["results"] = json::array();
 
@@ -941,67 +941,133 @@ __context_schema_version = nil
 
       // Return value
       json return_json;
-      for (const auto &v : r.returns) {
-        const auto &key = v.name;
+      if (r.returns.size() == 1) {
+        const auto &v = r.returns[0];
         switch (v.type) {
         case PARAM_TYPE_DOUBLE:
-          return_json[key]["value"] = v.value.d_val;
-          return_json[key]["type"] = "float";
+          return_json["value"] = v.value.d_val;
+          return_json["type"] = "float";
           break;
         case PARAM_TYPE_INT64:
-          return_json[key]["value"] = v.value.i64_val;
-          return_json[key]["type"] = "integer";
+          return_json["value"] = v.value.i64_val;
+          return_json["type"] = "integer";
           break;
         case PARAM_TYPE_STRING:
-          return_json[key]["value"] = v.value.str_val;
-          return_json[key]["type"] = "string";
+          return_json["value"] = v.value.str_val;
+          return_json["type"] = "string";
           break;
         case PARAM_TYPE_BOOL:
-          return_json[key]["value"] = v.value.b_val;
-          return_json[key]["type"] = "boolean";
+          return_json["value"] = v.value.b_val;
+          return_json["type"] = "boolean";
           break;
         case PARAM_TYPE_BUFFER: {
-          return_json[key]["type"] = "buffer";
-          return_json[key]["value"] = v.value.str_val;
+          return_json["type"] = "buffer";
+          return_json["buffer_id"] = v.value.str_val;
+          return_json["value"] = v.value.str_val;
 
           auto out =
               ipc::DataBufferManager::instance().get_metadata(v.value.str_val);
 
           if (out) {
-            return_json[key]["element_count"] = out->element_count;
+            return_json["element_count"] = out->element_count;
 
             switch (out->data_type) {
             case INST_DATA_FLOAT32:
-              return_json[key]["data_type"] = "float32";
+              return_json["data_type"] = "float32";
               break;
             case INST_DATA_FLOAT64:
-              return_json[key]["data_type"] = "float64";
+              return_json["data_type"] = "float64";
               break;
             case INST_DATA_INT32:
-              return_json[key]["data_type"] = "int32";
+              return_json["data_type"] = "int32";
               break;
             case INST_DATA_INT64:
-              return_json[key]["data_type"] = "int64";
+              return_json["data_type"] = "int64";
               break;
             case INST_DATA_UINT32:
-              return_json[key]["data_type"] = "uint32";
+              return_json["data_type"] = "uint32";
               break;
             case INST_DATA_UINT64:
-              return_json[key]["data_type"] = "uint64";
+              return_json["data_type"] = "uint64";
               break;
             case INST_DATA_UINT8:
-              return_json[key]["data_type"] = "uint8";
+              return_json["data_type"] = "uint8";
               break;
             default:
-              return_json[key]["data_type"] = "unknown";
+              return_json["data_type"] = "unknown";
               break;
             }
           }
           break;
         }
         default:
-          return_json[key]["type"] = "void";
+          return_json["type"] = "void";
           break;
+        }
+      } else {
+        for (const auto &v : r.returns) {
+          const auto &key = v.name;
+          switch (v.type) {
+          case PARAM_TYPE_DOUBLE:
+            return_json[key]["value"] = v.value.d_val;
+            return_json[key]["type"] = "float";
+            break;
+          case PARAM_TYPE_INT64:
+            return_json[key]["value"] = v.value.i64_val;
+            return_json[key]["type"] = "integer";
+            break;
+          case PARAM_TYPE_STRING:
+            return_json[key]["value"] = v.value.str_val;
+            return_json[key]["type"] = "string";
+            break;
+          case PARAM_TYPE_BOOL:
+            return_json[key]["value"] = v.value.b_val;
+            return_json[key]["type"] = "boolean";
+            break;
+          case PARAM_TYPE_BUFFER: {
+            return_json[key]["type"] = "buffer";
+            return_json[key]["value"] = v.value.str_val;
+            return_json[key]["buffer_id"] = v.value.str_val;
+
+            auto out =
+                ipc::DataBufferManager::instance().get_metadata(v.value.str_val);
+
+            if (out) {
+              return_json[key]["element_count"] = out->element_count;
+
+              switch (out->data_type) {
+              case INST_DATA_FLOAT32:
+                return_json[key]["data_type"] = "float32";
+                break;
+              case INST_DATA_FLOAT64:
+                return_json[key]["data_type"] = "float64";
+                break;
+              case INST_DATA_INT32:
+                return_json[key]["data_type"] = "int32";
+                break;
+              case INST_DATA_INT64:
+                return_json[key]["data_type"] = "int64";
+                break;
+              case INST_DATA_UINT32:
+                return_json[key]["data_type"] = "uint32";
+                break;
+              case INST_DATA_UINT64:
+                return_json[key]["data_type"] = "uint64";
+                break;
+              case INST_DATA_UINT8:
+                return_json[key]["data_type"] = "uint8";
+                break;
+              default:
+                return_json[key]["data_type"] = "unknown";
+                break;
+              }
+            }
+            break;
+          }
+          default:
+            return_json[key]["type"] = "void";
+            break;
+          }
         }
       }
       result_json["return"] = return_json;

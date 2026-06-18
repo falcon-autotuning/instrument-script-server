@@ -102,7 +102,7 @@ bool instserver::ipc::SharedQueue::send(const IPCMessage &msg,
           is_server_ ? request_queue_name_ : response_queue_name_;
       LOG_WARN("IPC", "SEND_TIMEOUT",
                "Send timeout (%dms) on queue '%s' msg_id=%s type=%u",
-               (int)timeout.count(), queue_name.c_str(), msg.id,
+               (int)timeout.count(), queue_name.c_str(), msg.id.data(),
                (unsigned int)msg.type);
     }
 

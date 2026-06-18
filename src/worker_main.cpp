@@ -55,8 +55,12 @@ void signal_handler(int sig) {
   (void)sig;
   g_running = false;
 }
-void copy_string(char *dst, size_t dst_size, const std::string &src) {
-  std::strncpy(dst, src.c_str(), dst_size - 1);
+void copy_string(char *dst, size_t dst_size, const char *src) {
+  if (src == nullptr) {
+    if (dst_size > 0) dst[0] = '\0';
+    return;
+  }
+  std::strncpy(dst, src, dst_size - 1);
   dst[dst_size - 1] = '\0';
 }
 
@@ -156,6 +160,10 @@ public:
       : config_(std::move(config)), plugin_path_(plugin_path),
         commands_(std::move(commands)), plugin_(plugin_path) {}
 
+  ~InstrumentWorker() {
+    cleanup();
+  }
+
   int run() {
     if (!load_and_init_plugin()) {
       return 1;
@@ -167,7 +175,6 @@ public:
 
     log_info("Entering main loop");
     main_loop();
-    cleanup();
     log_info("Worker exited cleanly");
     return 0;
   }
@@ -284,7 +291,7 @@ private:
     LOG_INFO(config_.name.c_str(), "WORKER_MAIN", "IPC queue connected");
     return true;
   }
-  bool receive_queued(ipc::IPCMessage msg) {
+  bool receive_queued(ipc::IPCMessage &msg) {
     if (!waiting_sync_token_.has_value() &&
         queue_of_incoming_messages_.size() > 0) {
       Incoming inc = queue_of_incoming_messages_.front();
@@ -299,7 +306,7 @@ private:
     }
     if (waiting_sync_token_.has_value()) {
       auto it = incoming_read_messages_.find(waiting_sync_token_.value());
-      if (it != incoming_read_messages_.end()) {
+      if (it != incoming_read_messages_.end() && !it->second.empty()) {
         msg = it->second.front();
         it->second.pop();
         return true;
@@ -307,10 +314,10 @@ private:
     }
     instserver::ipc::IPCMessage internal_msg{};
     if (!ipc_queue_->receive_blocking(internal_msg)) {
-      return false;
+      throw std::runtime_error("IPC queue disconnected");
     }
     // investigate new message
-    if ((internal_msg.sync_token == waiting_sync_token_.value()) ||
+    if ((waiting_sync_token_.has_value() && internal_msg.sync_token == waiting_sync_token_.value()) ||
         (!waiting_sync_token_.has_value() && internal_msg.sync_token == 0)) {
       if (internal_msg.sync_token !=
           0) { // we don't consider 0 to be a sync token
@@ -328,8 +335,7 @@ private:
     if (it == incoming_read_messages_.end()) {
       Incoming inc = internal_msg.sync_token;
       queue_of_incoming_messages_.emplace(inc);
-      auto temp_queue = std::queue<ipc::IPCMessage>();
-      incoming_read_messages_.emplace(internal_msg.sync_token, temp_queue);
+      it = incoming_read_messages_.emplace(internal_msg.sync_token, std::queue<ipc::IPCMessage>()).first;
     }
     it->second.push(internal_msg);
     return false;
@@ -380,6 +386,7 @@ private:
       break;
     case ipc::IPCMessage::Type::COMMAND:
       handle_command_chunk(msg);
+      break;
     default:
       log_warn("Received unexpected message type: %u",
                static_cast<unsigned int>(msg.type));
@@ -520,8 +527,28 @@ private:
     const auto &command = it->second;
     log_debug("Checking that command %s matches what is defined in the config",
               cmd.verb.c_str());
+    // Check command parameters, ignoring implicitly injected "channel" if not expected by the API
+    size_t actual_size = 0;
+    size_t channel_param_index = -1;
+    for (size_t i = 0; i < cmd.params.size(); ++i) {
+      if (std::string_view(cmd.params[i].name) == "channel") {
+        // Only count it if the API actually expects a parameter named "channel"
+        bool expected_in_api = false;
+        for (const auto &p : command.parameters) {
+          if (p.name == "channel") {
+            expected_in_api = true;
+            break;
+          }
+        }
+        if (!expected_in_api) {
+          channel_param_index = i;
+          continue;
+        }
+      }
+      actual_size++;
+    }
+
     auto expected_size = command.parameters.size();
-    auto actual_size = cmd.params.size();
     if (actual_size != expected_size) {
       log_error("Config command %s parameter mismatch: "
                 "expected size='%d', got='%d'",
@@ -530,9 +557,13 @@ private:
     }
     log_debug("The size of the command matches the one in the config with %d "
               "entries",
-              cmd.params.size());
-    for (int i = 0; i < command.parameters.size(); i++) {
-      const auto &expected_name = command.parameters[i].name;
+              actual_size);
+    size_t api_idx = 0;
+    for (size_t i = 0; i < cmd.params.size(); i++) {
+      if (i == channel_param_index) {
+        continue;
+      }
+      const auto &expected_name = command.parameters[api_idx].name;
       const auto &actual_name = cmd.params[i].name;
       if (std::string_view(actual_name) != expected_name) {
         log_error("Config command %s parameter mismatch at index %d: "
@@ -540,7 +571,7 @@ private:
                   cmd.verb.c_str(), i, expected_name.c_str(), actual_name);
         return;
       }
-      auto expected_type = command.parameters[i].type;
+      auto expected_type = command.parameters[api_idx].type;
       auto actual_type = cmd.params[i].type;
       if (actual_type != expected_type) {
         log_error("Config command %s parameter mismatch at index %d: "
@@ -548,6 +579,7 @@ private:
                   cmd.verb.c_str(), i, expected_type, actual_type);
         return;
       }
+      api_idx++;
     }
     log_debug("All of the parameters types and names match the API");
     auto expected_returns_size = command.returns.size();
@@ -686,7 +718,8 @@ int main(int argc, char **argv) {
   std::signal(SIGTERM, signal_handler);
 
   try {
-    int rc = InstrumentWorker(config, plugin, instrument_commands).run();
+    InstrumentWorker worker(config, plugin, instrument_commands);
+    int rc = worker.run();
 
     LOG_INFO(config.name.c_str(), "WORKER_MAIN", "Worker exited with code %d",
              rc);

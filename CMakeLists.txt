@@ -95,6 +95,27 @@ if(USE_CCACHE)
   endif()
 endif()
 
+option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
+
+if(ENABLE_ASAN)
+  message(STATUS "ASAN ENABLED")
+
+  set(SAN_COMPILE_FLAGS
+    -fsanitize=address,undefined
+    -fno-omit-frame-pointer
+    -g
+    -O1
+  )
+
+  set(SAN_LINK_FLAGS
+    -fsanitize=address,undefined
+    -Wl,--export-dynamic
+  )
+
+  add_compile_options(${SAN_COMPILE_FLAGS})
+  add_link_options(${SAN_LINK_FLAGS})
+endif()
+
 # Find dependencies
 find_package(Threads       REQUIRED)
 find_package(Lua           REQUIRED)
@@ -225,26 +246,7 @@ target_link_libraries(instrument-worker
     instrument-script-server-core
     instrument-plugin-api::instrument-plugin-api-host
 )
-option(ENABLE_ASAN "Enable AddressSanitizer" OFF)
 
-if(ENABLE_ASAN)
-  message(STATUS "ASAN ENABLED")
-
-  set(SAN_COMPILE_FLAGS
-    -fsanitize=address,undefined
-    -fno-omit-frame-pointer
-    -g
-    -O1
-  )
-
-  set(SAN_LINK_FLAGS
-    -fsanitize=address,undefined
-    -Wl,--export-dynamic
-  )
-
-  add_compile_options(${SAN_COMPILE_FLAGS})
-  add_link_options(${SAN_LINK_FLAGS})
-endif()
 
 # Tests
 if(BUILD_TESTS)

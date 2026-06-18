@@ -356,6 +356,7 @@ TEST_F(TypeManifestTest, CallStackStdStringIsSafe) {
 
   instrument_call_stack_free(stack);
   instrument_call_stack_free(copy);
+  free(serialized);
 }
 
 TEST_F(TypeManifestTest, CallStackDeserializationSuccess) {
@@ -405,6 +406,7 @@ TEST_F(TypeManifestTest, CallStackDeserializationSuccess) {
   EXPECT_NE(log.find("Command: MEASURE"), std::string::npos);
 
   instrument_call_stack_free(stack);
+  free(serialized);
 }
 
 TEST_F(TypeManifestTest, CallStackDeserializationFailure) {

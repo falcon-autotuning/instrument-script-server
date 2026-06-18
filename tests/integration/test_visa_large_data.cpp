@@ -74,54 +74,60 @@ TEST_F(VISALargeDataTest, SmallDataInResponse) {
   ASSERT_TRUE(loader.is_loaded());
 
   // Use a more complete configuration
-  PluginConfig *config{};
-  safe_c_str_copy(config->instrument_name, "TestScope");
-  safe_c_str_copy(config->address, "mock://test");
-  safe_c_str_copy(config->custom, "");
-  config->baud_rate = 0;
+  PluginConfig config{};
+  safe_c_str_copy(config.instrument_name, "TestScope");
+  safe_c_str_copy(config.address, "mock://test");
+  safe_c_str_copy(config.custom, "");
+  config.baud_rate = 0;
 
-  ASSERT_EQ(loader.initialize(config), ErrorCode::NONE);
+  ASSERT_EQ(loader.initialize(&config), ErrorCode::NONE);
 
   // Request small data (should fit in response)
-  PluginCommand *cmd{};
-  safe_c_str_copy(cmd->id, "cmd_001");
-  safe_c_str_copy(cmd->command, "GET_SMALL_DATA");
-  cmd->timeout_ms = 10;
-  cmd->params = param_storage_create();
+  PluginCommand cmd{};
+  safe_c_str_copy(cmd.id, "cmd_001");
+  safe_c_str_copy(cmd.command, "GET_SMALL_DATA");
+  cmd.timeout_ms = 10;
+  cmd.params = param_storage_create();
 
   PluginResponse *resp = plugin_response_create();
-  ASSERT_EQ(loader.execute_command(cmd, resp), ErrorCode::NONE);
+  ASSERT_EQ(loader.execute_command(&cmd, resp), ErrorCode::NONE);
   const Variable *v = plugin_response_get(resp, 0);
-  ASSERT_EQ(v->name, "data");
+  ASSERT_STREQ(v->name, "data");
   ASSERT_EQ(v->type, PARAM_TYPE_DOUBLE);
   ASSERT_EQ(v->value.d_val, 42.0);
+
+  param_storage_free(cmd.params);
+  plugin_response_free(resp);
 }
 
 TEST_F(VISALargeDataTest, LargeDataInBuffer) {
   plugin::PluginLoader loader(plugin_path_.string());
   ASSERT_TRUE(loader.is_loaded());
 
-  PluginConfig *config{};
-  safe_c_str_copy(config->instrument_name, "TestScope");
-  safe_c_str_copy(config->address, "mock://test");
-  safe_c_str_copy(config->custom, "");
-  config->baud_rate = 0;
+  PluginConfig config{};
+  safe_c_str_copy(config.instrument_name, "TestScope");
+  safe_c_str_copy(config.address, "mock://test");
+  safe_c_str_copy(config.custom, "");
+  config.baud_rate = 0;
 
-  ASSERT_EQ(loader.initialize(config), ErrorCode::NONE);
+  ASSERT_EQ(loader.initialize(&config), ErrorCode::NONE);
 
   // Request large data (should use buffer)
-  PluginCommand *cmd{};
-  safe_c_str_copy(cmd->id, "cmd_002");
-  safe_c_str_copy(cmd->command, "GET_LARGE_DATA");
+  PluginCommand cmd{};
+  safe_c_str_copy(cmd.id, "cmd_002");
+  safe_c_str_copy(cmd.command, "GET_LARGE_DATA");
+  cmd.params = param_storage_create();
 
   PluginResponse *resp = plugin_response_create();
-  ASSERT_EQ(loader.execute_command(cmd, resp), ErrorCode::NONE);
+  ASSERT_EQ(loader.execute_command(&cmd, resp), ErrorCode::NONE);
 
   const Variable *v = plugin_response_get(resp, 0);
-  ASSERT_EQ(v->name, "data");
+  ASSERT_STREQ(v->name, "data");
   ASSERT_EQ(v->type, PARAM_TYPE_BUFFER);
 
   // Verify buffer exists
   ASSERT_TRUE(data_manager_get_buffer(v->value.str_val) != nullptr);
   data_manager_release_buffer(v->value.str_val); // Clean up
+  param_storage_free(cmd.params);
+  plugin_response_free(resp);
 }
