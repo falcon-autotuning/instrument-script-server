@@ -6,6 +6,7 @@
 #include "instrument-script-server/server/JobManager.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
+#include <fmt/format.h>
 #include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>

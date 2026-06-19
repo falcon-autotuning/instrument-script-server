@@ -1,4 +1,5 @@
 #include "instrument-script-server/server/ParsingTools.hpp"
+#include <yaml-cpp/yaml.h>
 namespace instserver {
 IO makeIO(const YAML::Node &node) {
   if (!node["name"] || !node["type"]) {

@@ -1,7 +1,9 @@
 #include "instrument-script-server/ipc/ProcessManager.hpp"
+#include <cstring>
 #include <instrument-log/inst_logging.h>
 
 #include <filesystem>
+#include <yaml-cpp/yaml.h>
 
 #ifdef _WIN32
 #include <processthreadsapi.h>

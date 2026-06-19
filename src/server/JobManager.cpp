@@ -5,6 +5,7 @@
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include <algorithm>
 #include <chrono>
+#include <fmt/format.h>
 #include <instrument-log/inst_logging.h>
 #include <sol/sol.hpp>
 #include <sstream>

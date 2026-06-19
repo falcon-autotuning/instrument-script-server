@@ -3,6 +3,7 @@
 #include "instrument-script-server/ipc/SharedQueue.hpp"
 #include "instrument-script-server/server/InstrumentCommand.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
+#include <fmt/format.h>
 #include <instrument-log/inst_logging.h>
 
 namespace instserver {
@@ -371,7 +372,8 @@ void InstrumentWorkerProxy::response_listener_loop() {
       handle_ipc_message(msg);
     } catch (const std::exception &e) {
       LOG_ERROR(instrument_name_.c_str(), "PROXY",
-                "Exception processing message ID %s: %s", msg.id.data(), e.what());
+                "Exception processing message ID %s: %s", msg.id.data(),
+                e.what());
     } catch (std::exception &e) {
       LOG_ERROR(instrument_name_.c_str(), "PROXY",
                 "Unknown exception processing message ID %s", e.what());
@@ -489,8 +491,8 @@ void InstrumentWorkerProxy::handle_sync_ack_message(
     const ipc::IPCMessage &msg) {
   uint64_t sync_token = msg.sync_token;
 
-  LOG_DEBUG(instrument_name_.c_str(), "PROXY", "Received SYNC_ACK for token=%llu",
-            (unsigned long long)sync_token);
+  LOG_DEBUG(instrument_name_.c_str(), "PROXY",
+            "Received SYNC_ACK for token=%llu", (unsigned long long)sync_token);
 
   // Notify sync coordinator
   bool barrier_complete =
