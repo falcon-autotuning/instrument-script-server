@@ -24,7 +24,7 @@ std::string get_last_error() {
   return msg;
 }
 
-#define LIBRARY_ERROR() get_last_error().c_str()
+#define LIBRARY_ERROR() get_last_error()
 #else
 #define LOAD_LIBRARY(path) dlopen(path, RTLD_LAZY)
 #define GET_SYMBOL(handle, name) dlsym(handle, name)
