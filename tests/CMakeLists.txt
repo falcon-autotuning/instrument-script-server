@@ -102,30 +102,21 @@ endforeach()
 
 
 add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
-target_compile_definitions(mock_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
-target_link_libraries(mock_plugin
-  PRIVATE
-    instrument-script-server-core
-    instrument-plugin-api::instrument-plugin-api-plugin
-)
-
 add_library(mock_visa_plugin SHARED mocks/mock_visa_plugin.c)
-target_compile_definitions(mock_visa_plugin PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
-target_link_libraries(mock_visa_plugin
-  PRIVATE
-    instrument-script-server-core
-    instrument-plugin-api::instrument-plugin-api-plugin
-)
-
 add_library(mock_visa_large_data_plugin SHARED
   mocks/mock_visa_large_data_plugin.c)
-target_compile_definitions(mock_visa_large_data_plugin
-  PRIVATE INSTRUMENT_PLUGIN_EXPORTS)
-target_link_libraries(mock_visa_large_data_plugin
-  PRIVATE
-    instrument-script-server-core
-    instrument-plugin-api::instrument-plugin-api-plugin
+foreach(plugin_target
+    mock_plugin
+    mock_visa_plugin
+    mock_visa_large_data_plugin
 )
+  target_compile_definitions(${plugin_target} PRIVATE INSTRUMENT_PLUGIN_BUILD)
+  target_link_libraries(${plugin_target}
+    PRIVATE
+      instrument-script-server-core
+      instrument-plugin-api::instrument-plugin-api-plugin
+  )
+endforeach()
 if(ENABLE_ASAN)
   foreach(plugin_target
       mock_plugin
@@ -134,7 +125,6 @@ if(ENABLE_ASAN)
   )
     target_compile_options(${plugin_target} PRIVATE -fno-sanitize=all)
     target_link_options(${plugin_target} PRIVATE -fno-sanitize=all)
-    target_compile_definitions(${plugin_target} PRIVATE INSTRUMENT_PLUGIN_BUILD)
   endforeach()
 endif()
 
