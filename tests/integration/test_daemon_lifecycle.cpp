@@ -14,11 +14,11 @@
 using std::system;
 
 using namespace std::chrono_literals;
-#ifdef _WIN32
-static std::string BIN_PATH = "instrument-script-server.exe";
-#else
-static std::string BIN_PATH = "./../instrument-script-server";
+#ifndef ISS_BIN_PATH
+#define ISS_BIN_PATH "instrument-script-server"
 #endif
+
+static std::string bin_path = ISS_BIN_PATH;
 
 static std::string run_cmd(const std::string &cmd) {
 #ifdef _WIN32
@@ -88,23 +88,23 @@ class DaemonIntegrationTest : public ::testing::Test {
 protected:
   void SetUp() override {
     // ensure stopped beforehand
-    std::system((BIN_PATH + " daemon stop").c_str());
+    std::system((bin_path + " daemon stop").c_str());
     std::this_thread::sleep_for(200ms);
   }
 
   void TearDown() override {
-    std::system((BIN_PATH + " daemon stop").c_str());
+    std::system((bin_path + " daemon stop").c_str());
     std::this_thread::sleep_for(200ms);
   }
 };
 
 TEST_F(DaemonIntegrationTest, StartCreatesProcessAndPidFile) {
-  int rc = std::system((BIN_PATH + " daemon start --json").c_str());
+  int rc = std::system((bin_path + " daemon start --json").c_str());
   // std::cout << "The start result is " << out << "\n";
   std::string out;
   int pid = -1;
   std::this_thread::sleep_for(200ms);
-  out = run_cmd(BIN_PATH + " daemon status --json");
+  out = run_cmd(bin_path + " daemon status --json");
   std::cout << "The daemon status is " << out << "\n";
   pid = extract_pid(out);
   bool running = extract_running(out);
@@ -112,51 +112,51 @@ TEST_F(DaemonIntegrationTest, StartCreatesProcessAndPidFile) {
 
   EXPECT_GT(pid, 0);
   EXPECT_TRUE(process_alive(pid));
-  std::system((BIN_PATH + " daemon stop").c_str());
+  std::system((bin_path + " daemon stop").c_str());
   std::this_thread::sleep_for(200ms);
   EXPECT_FALSE(process_alive(pid));
 }
 
 TEST_F(DaemonIntegrationTest, RestartWorks) {
-  int rc1 = std::system((BIN_PATH + " daemon start --json").c_str());
+  int rc1 = std::system((bin_path + " daemon start --json").c_str());
   ASSERT_EQ(rc1, 0);
   std::this_thread::sleep_for(200ms);
 
-  std::string out1 = run_cmd(BIN_PATH + " daemon status --json");
+  std::string out1 = run_cmd(bin_path + " daemon status --json");
   int pid1 = extract_pid(out1);
   ASSERT_GT(pid1, 0);
 
-  std::system((BIN_PATH + " daemon stop").c_str());
+  std::system((bin_path + " daemon stop").c_str());
   std::this_thread::sleep_for(300ms);
 
-  int rc2 = std::system((BIN_PATH + " daemon start --json").c_str());
+  int rc2 = std::system((bin_path + " daemon start --json").c_str());
   ASSERT_EQ(rc2, 0);
   std::this_thread::sleep_for(200ms);
 
-  std::string out2 = run_cmd(BIN_PATH + " daemon status --json");
+  std::string out2 = run_cmd(bin_path + " daemon status --json");
   int pid2 = extract_pid(out2);
   ASSERT_GT(pid2, 0);
 
   EXPECT_NE(pid1, pid2);
 
-  std::system((BIN_PATH + " daemon stop").c_str());
+  std::system((bin_path + " daemon stop").c_str());
 }
 
 TEST_F(DaemonIntegrationTest, MultipleStartsDoNotDuplicate) {
-  int rc1 = std::system((BIN_PATH + " daemon start --json").c_str());
+  int rc1 = std::system((bin_path + " daemon start --json").c_str());
   ASSERT_EQ(rc1, 0);
   std::this_thread::sleep_for(200ms);
-  std::string out1 = run_cmd(BIN_PATH + " daemon status --json");
+  std::string out1 = run_cmd(bin_path + " daemon status --json");
   int pid1 = extract_pid(out1);
   ASSERT_GT(pid1, 0);
 
-  int rc2 = std::system((BIN_PATH + " daemon start --json").c_str());
+  int rc2 = std::system((bin_path + " daemon start --json").c_str());
   ASSERT_EQ(rc2, 0);
-  std::string out2 = run_cmd(BIN_PATH + " daemon status --json");
+  std::string out2 = run_cmd(bin_path + " daemon status --json");
   int pid2 = extract_pid(out2);
   ASSERT_GT(pid2, 0);
   std::this_thread::sleep_for(200ms);
 
   EXPECT_EQ(pid1, pid2); // same daemon
-  std::system((BIN_PATH + " daemon stop").c_str());
+  std::system((bin_path + " daemon stop").c_str());
 }

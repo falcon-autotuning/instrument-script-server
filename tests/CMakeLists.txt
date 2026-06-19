@@ -87,6 +87,9 @@ endforeach()
 
 
 foreach(tgt unit_tests integration_tests perf_tests)
+  target_compile_definitions(${tgt} PRIVATE
+    ISS_BIN_PATH="$<TARGET_FILE:instrument-script-server>"
+  )
   add_test(NAME ${tgt} COMMAND ${tgt})
 
   set_tests_properties(${tgt} PROPERTIES
