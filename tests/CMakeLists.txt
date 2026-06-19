@@ -134,6 +134,7 @@ if(ENABLE_ASAN)
   )
     target_compile_options(${plugin_target} PRIVATE -fno-sanitize=all)
     target_link_options(${plugin_target} PRIVATE -fno-sanitize=all)
+    target_compile_definitions(${plugin_target} PRIVATE INSTRUMENT_PLUGIN_BUILD)
   endforeach()
 endif()
 

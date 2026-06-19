@@ -205,7 +205,7 @@ void PluginRegistry::discover_plugins(
   }
 
   LOG_INFO("PLUGIN_REGISTRY", "DISCOVER",
-           "Discovery complete. {} plugins loaded", plugins_.size());
+           "Discovery complete. %d plugins loaded", plugins_.size());
 }
 
 void PluginRegistry::unload_all() {
