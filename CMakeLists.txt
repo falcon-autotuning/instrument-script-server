@@ -66,8 +66,6 @@ option(BUILD_TESTS "Build tests" OFF)
 
 # Performance options
 option(USE_CCACHE "Enable ccache or sccache if available" ON)
-option(ENABLE_PCH
-       "Enable target_precompile_headers to speed up builds (opt-in)" ON)
 
 # Windows-specific definitions
 if(WIN32)
@@ -199,27 +197,6 @@ target_include_directories(
          $<INSTALL_INTERFACE:include>
          $<$<BOOL:${LUA_INCLUDE_DIR}>:$<BUILD_INTERFACE:${LUA_INCLUDE_DIR}>>
          $<$<BOOL:${SOL2_INCLUDE_DIR}>:$<BUILD_INTERFACE:${SOL2_INCLUDE_DIR}>>)
-
-# Optional precompiled headers
-if(ENABLE_PCH)
-  # Prefer a project-provided PCH header, fallback to common std headers.
-  if(EXISTS "${CMAKE_SOURCE_DIR}/include/instrument-script-server/pch.h")
-    message(STATUS "Using project PCH: include/instrument-script-server/pch.h")
-    target_precompile_headers(
-      instrument-script-server-core PRIVATE
-      "${CMAKE_SOURCE_DIR}/include/instrument-script-server/pch.h")
-  else()
-    message(STATUS "No project PCH found; using common system headers as PCH")
-    target_precompile_headers(
-      instrument-script-server-core
-      PRIVATE
-      <vector>
-      <string>
-      <memory>
-      <map>
-      <set>)
-  endif()
-endif()
 
 add_executable(instrument-script-server src/server/instrument_server_main.cpp)
 add_executable(instrument-worker src/worker_main.cpp)
