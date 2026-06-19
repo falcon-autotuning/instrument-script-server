@@ -15,7 +15,7 @@ using std::system;
 
 using namespace std::chrono_literals;
 #ifdef _WIN32
-static std::string BIN_PATH = "./instrument-script-server";
+static std::string BIN_PATH = "instrument-script-server.exe";
 #else
 static std::string BIN_PATH = "./../instrument-script-server";
 #endif

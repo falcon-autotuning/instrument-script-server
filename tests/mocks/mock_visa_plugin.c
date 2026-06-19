@@ -55,7 +55,7 @@ static size_t strlcpy(char *dst, const char *src, size_t size) {
 static bool g_initialized = false;
 static char instrument_name[PLUGIN_MAX_STRING_LEN] = "";
 
-uint8_t plugin_initialize(const PluginConfig *config) {
+uint8_t INSTRUMENT_PLUGIN_API plugin_initialize(const PluginConfig *config) {
   if (config == NULL) {
     VISA_LOG_ERROR("plugin_initialize: invalid config\n");
     return 1;
@@ -76,7 +76,7 @@ uint8_t plugin_initialize(const PluginConfig *config) {
   return 0;
 }
 
-PluginMetadata plugin_get_metadata(void) {
+PluginMetadata INSTRUMENT_PLUGIN_API plugin_get_metadata(void) {
   PluginMetadata meta = {0};
   meta.api_version = INSTRUMENT_PLUGIN_API_VERSION;
 
@@ -89,7 +89,8 @@ PluginMetadata plugin_get_metadata(void) {
   return meta;
 }
 
-uint8_t plugin_execute_command(const PluginCommand *cmd, PluginResponse *resp) {
+uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
+                                                     PluginResponse *resp) {
   if (!g_initialized) {
     VISA_LOG_ERROR("Plugin not initialized");
     return 1;
@@ -185,7 +186,7 @@ uint8_t plugin_execute_command(const PluginCommand *cmd, PluginResponse *resp) {
   return 0;
 }
 
-void plugin_shutdown(void) {
+void INSTRUMENT_PLUGIN_API plugin_shutdown(void) {
   VISA_LOG_INFO("Shutting down\n");
 
   strlcpy(instrument_name, "", PLUGIN_MAX_STRING_LEN);
