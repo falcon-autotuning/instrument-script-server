@@ -8,17 +8,13 @@
 #include <string>
 #include <thread>
 
+#ifndef ISS_BIN_PATH
+#define ISS_BIN_PATH "instrument-script-server"
+#endif
+
+static std::string bin_path = ISS_BIN_PATH;
 class CLITest : public ::testing::Test {
 protected:
-  void SetUp() override {
-    // Locate the instrument-script-server executable
-    executable_path_ = find_instrument_server_executable();
-
-    if (executable_path_.empty()) {
-      GTEST_SKIP() << "instrument-script-server executable not found.  "
-                   << "This test requires the executable to be built.";
-    }
-  }
   void TearDown() override {
     // Clean up after each test - use public API only
     auto &daemon = instserver::ServerDaemon::instance();
@@ -28,71 +24,6 @@ protected:
       daemon.stop();
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
-  }
-
-  // Find the instrument-script-server executable in the build directory
-  std::string find_instrument_server_executable() {
-    std::vector<std::filesystem::path> search_paths;
-
-#ifdef _WIN32
-    search_paths.push_back(std::filesystem::current_path() / "build" /
-                           "instrument-script-server.exe");
-    search_paths.push_back(std::filesystem::current_path() /
-                           "instrument-script-server.exe");
-#else
-    auto cwd = std::filesystem::current_path();
-
-    // Typical layouts
-    search_paths.push_back(cwd / "instrument-script-server");
-    search_paths.push_back(cwd / "../instrument-script-server");
-    search_paths.push_back(cwd / "../../instrument-script-server");
-
-    // If run from repo root
-    search_paths.push_back(cwd /
-                           "build/linux-clang-debug/instrument-script-server");
-
-    // PATH fallback
-    search_paths.emplace_back("instrument-script-server");
-#endif
-
-    for (const auto &path : search_paths) {
-      if (std::filesystem::exists(path)) {
-        return path.string();
-      }
-    }
-
-    // Try to find in PATH by running which/where
-#ifdef _WIN32
-    FILE *pipe = _popen("where instrument-script-server 2>NUL", "r");
-#else
-    FILE *pipe = popen("which instrument-script-server 2>/dev/null", "r");
-#endif
-
-    if (pipe != nullptr) {
-      char buffer[256];
-      if (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-        std::string result = buffer;
-        // Remove trailing newline
-        if (!result.empty() && result.back() == '\n') {
-          result.pop_back();
-        }
-#ifdef _WIN32
-        _pclose(pipe);
-#else
-        pclose(pipe);
-#endif
-        if (std::filesystem::exists(result)) {
-          return result;
-        }
-      }
-#ifdef _WIN32
-      _pclose(pipe);
-#else
-      pclose(pipe);
-#endif
-    }
-
-    return "";
   }
 
   // Get platform-specific null device
@@ -106,7 +37,7 @@ protected:
 
   // Run a command and return the exit code
   int run_command(const std::string &args) {
-    if (executable_path_.empty()) {
+    if (bin_path.empty()) {
       return -1;
     }
 
@@ -119,7 +50,7 @@ protected:
     cmd << "\"" << executable_path_ << "\" " << args << " >NUL 2>&1";
 #else
     // Linux: Direct execution with redirection
-    cmd << executable_path_ << " " << args << " >/dev/null 2>&1";
+    cmd << bin_path << " " << args << " >/dev/null 2>&1";
 #endif
 
     return std::system(cmd.str().c_str());
@@ -127,7 +58,7 @@ protected:
 
   // Run a command and capture its output
   std::pair<int, std::string> run_command_with_output(const std::string &args) {
-    if (executable_path_.empty()) {
+    if (bin_path.empty()) {
       return {-1, ""};
     }
 
@@ -137,7 +68,7 @@ protected:
     cmd << "\"" << executable_path_ << "\" " << args << " 2>&1";
     FILE *pipe = _popen(cmd.str().c_str(), "r");
 #else
-    cmd << executable_path_ << " " << args << " 2>&1";
+    cmd << bin_path << " " << args << " 2>&1";
     FILE *pipe = popen(cmd.str().c_str(), "r");
 #endif
 
@@ -164,8 +95,6 @@ protected:
 
     return {exit_code, output.str()};
   }
-
-  std::string executable_path_;
 };
 
 TEST_F(CLITest, HelpCommand) {
