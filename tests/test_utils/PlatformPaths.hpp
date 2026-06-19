@@ -24,7 +24,7 @@ inline std::filesystem::path get_test_plugin_dir() {
 /// Get full path to a test plugin
 inline std::filesystem::path
 get_test_plugin_path(const std::string &plugin_name) {
-  auto dir = std::filesystem::current_path();
+  auto dir = get_test_plugin_dir();
 
 #ifdef _WIN32
   return dir / (plugin_name + ".dll");

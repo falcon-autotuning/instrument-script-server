@@ -147,7 +147,7 @@ PluginRegistry::get_plugin_path(const std::string &protocol_type) const {
   if (it == plugin_paths_.end()) {
     return "";
   }
-  return std::filesystem::path(it->second);
+  return {it->second};
 }
 
 void PluginRegistry::discover_plugins(
