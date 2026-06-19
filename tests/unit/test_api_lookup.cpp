@@ -12,14 +12,6 @@ using namespace instserver;
 class APILookupTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
-    PluginTestFixture::SetUp();
-    registry_ = &InstrumentRegistry::instance();
-    test_data_dir_ = std::filesystem::current_path() / "data";
-    config_path_ = test_data_dir_ / "mock_instrument1.yaml";
-    if (!std::filesystem::exists(config_path_)) {
-      GTEST_SKIP() << "Config not found at: " << config_path_;
-    }
-
     // Ensure clean state between tests
     inst_log_shutdown();
     auto tmp = std::filesystem::temp_directory_path();
@@ -27,6 +19,13 @@ protected:
     inst_log_init(log_path.string().c_str(), INST_LOG_DEBUG, "instrument_test",
                   1024 * 1024, // 1 MB
                   3);          // rotation count
+    PluginTestFixture::SetUp();
+    registry_ = &InstrumentRegistry::instance();
+    test_data_dir_ = std::filesystem::current_path() / "data";
+    config_path_ = test_data_dir_ / "mock_instrument1.yaml";
+    if (!std::filesystem::exists(config_path_)) {
+      GTEST_SKIP() << "Config not found at: " << config_path_;
+    }
   }
 
   void TearDown() override {
