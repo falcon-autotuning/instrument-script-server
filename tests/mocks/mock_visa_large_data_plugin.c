@@ -3,6 +3,7 @@
 #include <instrument-plugin.h>
 #include <math.h>
 #include <plugin-api.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -51,10 +51,14 @@ clean:
 
 TEST_BIN := ./build/$(PRESET)/tests/perf_tests
 
+TEST_FILTER ?= *
+
 profile: build
 	@echo "Running perf profile for $(PRESET)..."
 	@if [ "$(PRESET)" != "linux-gcc-prof" ]; then \
 			echo "⚠️  Warning: profiling is recommended with PRESET=linux-gcc-prof"; \
 	fi
-	perf record -e cycles --call-graph dwarf -- $(TEST_BIN)
+	perf record -e cycles --call-graph dwarf -- \
+			$(TEST_BIN) \
+			--gtest_filter=$(TEST_FILTER)
 	perf script -i perf.data | stackcollapse-perf.pl > out.folded

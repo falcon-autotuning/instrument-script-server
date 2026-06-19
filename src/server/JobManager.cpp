@@ -219,8 +219,8 @@ void JobManager::worker_loop() {
         load_optional_lua_libs(lua);
 
         auto &sync = ServerDaemon::instance().sync_coordinator();
-        auto ctx = bind_runtime_context(lua, InstrumentRegistry::instance(),
-                                        sync, false);
+        auto ctx =
+            bind_runtime_context(lua, InstrumentRegistry::instance(), sync);
 
         // Load the script file
         auto load_result = lua.safe_script_file(script_path);

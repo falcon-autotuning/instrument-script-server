@@ -48,7 +48,7 @@ TEST(IPCPerformance, Throughput) {
   double messages_per_sec = (num_messages * 1000000.0) / duration.count();
 
   std::cout << "IPC Throughput: " << messages_per_sec << " msg/s\n";
-  std::cout << "Average latency: " << (duration.count() / num_messages)
+  std::cout << "Average latency: " << (duration.count() / (long)num_messages)
             << " µs\n";
 
   SharedQueue::cleanup(name);

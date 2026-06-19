@@ -88,7 +88,9 @@ endforeach()
 
 foreach(tgt unit_tests integration_tests perf_tests)
   target_compile_definitions(${tgt} PRIVATE
+    TEST_DATA_DIR="$<JOIN:$<TARGET_FILE_DIR:${tgt}>/data,>"
     ISS_BIN_PATH="$<TARGET_FILE:instrument-script-server>"
+    TEST_PLUGIN_DIR="$<TARGET_FILE_DIR:mock_visa_plugin>"
   )
   add_test(NAME ${tgt} COMMAND ${tgt})
 

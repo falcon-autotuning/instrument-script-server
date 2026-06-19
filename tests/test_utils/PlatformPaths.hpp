@@ -1,7 +1,6 @@
 #pragma once
 
 #include <filesystem>
-#include <iostream>
 #include <string>
 
 namespace instserver::test {
@@ -15,11 +14,11 @@ inline std::string get_plugin_extension() {
 #endif
 }
 
-/// Get the platform-specific plugin directory for tests
-inline std::filesystem::path get_test_plugin_dir() {
-  std::cout << "CWD = " << std::filesystem::current_path() << '\n';
-  return std::filesystem::current_path();
-}
+#ifndef TEST_PLUGIN_DIR
+#define TEST_PLUGIN_DIR "."
+#endif
+
+inline std::filesystem::path get_test_plugin_dir() { return TEST_PLUGIN_DIR; }
 
 /// Get full path to a test plugin
 inline std::filesystem::path

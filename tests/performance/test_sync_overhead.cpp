@@ -33,7 +33,7 @@ TEST(SyncPerformance, BarrierOverhead) {
   auto duration =
       std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-  double overhead_per_barrier = duration.count() / (double)num_iterations;
+  long overhead_per_barrier = (long)duration.count() / (long)num_iterations;
 
   std::cout << "Sync barrier overhead: " << overhead_per_barrier << " µs\n";
 

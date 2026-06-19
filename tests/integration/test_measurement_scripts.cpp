@@ -238,7 +238,7 @@ protected:
       bind_runtime_context(lua, registry, sync_coordinator);
       register_instrument_call_stack(lua.lua_state());
 
-      RuntimeContext ctx(registry);
+      RuntimeContext ctx(registry, ServerDaemon::instance().sync_coordinator());
       lua["context"] = &ctx;
 
       // 1️⃣ load script
@@ -291,7 +291,8 @@ protected:
       register_instrument_call_stack(lua.lua_state());
 
       // Use member context
-      test_context_ = std::make_unique<RuntimeContext>(registry);
+      test_context_ = std::make_unique<RuntimeContext>(
+          registry, ServerDaemon::instance().sync_coordinator());
       lua["context"] = test_context_.get();
 
       // 1️⃣ load script
@@ -394,6 +395,9 @@ TEST_F(MeasurementScriptTest, MultipleReturns) {
   // Verify we captured returns in order - first should be GET_DOUBLE
   EXPECT_STREQ(instrument_call_stack_get_command(results[0].target.get()),
                "GET_DOUBLE");
+  EXPECT_EQ(results[3].returns[0].type, PARAM_TYPE_BUFFER);
+  const auto &id = results[3].returns[0].value.str_val;
+  data_manager_release_buffer(id);
 }
 
 TEST_F(MeasurementScriptTest, ChannelAddressingWithReturns) {

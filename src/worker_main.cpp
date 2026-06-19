@@ -680,8 +680,8 @@ int main(int argc, char **argv) {
   try {
     config = load_config(instrument_config);
   } catch (const std::exception &e) {
-    std::fprintf(stderr, "[WORKER] Failed to load config '%ls': %s\n",
-                 instrument_config.c_str(), e.what());
+    std::fprintf(stderr, "[WORKER] Failed to load config '%s': %s\n",
+                 instrument_config.string().c_str(), e.what());
     return 1;
   }
   const std::string log_file = "worker_" + config.name + ".log";

@@ -2,6 +2,7 @@
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/server/InstrumentCommand.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
+#include "instrument-script-server/server/SyncCoordinator.hpp"
 #include <fmt/format.h>
 #include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-data.h>
@@ -182,10 +183,9 @@ MeasurementResponse::multiply_gain(double gain) const {
 
 // RuntimeContext implementation
 
-RuntimeContext::RuntimeContext(InstrumentRegistry &registry, bool enqueue_mode)
-    : registry_(registry),
-      sync_coordinator_(ServerDaemon::instance().sync_coordinator()),
-      enqueue_mode_(enqueue_mode) {}
+RuntimeContext::RuntimeContext(InstrumentRegistry &registry,
+                               SyncCoordinator &sync_coordinator)
+    : registry_(registry), sync_coordinator_(sync_coordinator) {}
 
 static void
 populate_callresult_from_response(CallResult &cr,
@@ -442,8 +442,16 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
       break;
 
     case PARAM_TYPE_BUFFER: {
-      auto out =
-          ipc::DataBufferManager::instance().get_metadata(v.value.str_val);
+      auto &mgr = ipc::DataBufferManager::instance();
+      mgr.save_buffer(v.value.str_val);
+      auto out = mgr.get_metadata(v.value.str_val);
+      if (!out.has_value()) {
+        LOG_ERROR("LUA_CONTEXT", "CALL", "Invalid buffer id was sent: %s",
+                  v.value.str_val);
+        response = std::make_shared<MeasurementResponse>(
+            clone_callstack_ptr(cr.target), "Bad array");
+        break;
+      }
       std::string data_type;
       switch (out->data_type) {
       case INST_DATA_FLOAT32:
@@ -528,7 +536,6 @@ void RuntimeContext::parallel(sol::function block) {
     return;
   }
 
-  // Always use blocking execution (enqueue_mode should be false)
   execute_parallel_buffer();
 }
 
@@ -802,7 +809,7 @@ nlohmann::json RuntimeContext::collect_results_json() const {
 
 std::shared_ptr<RuntimeContext>
 bind_runtime_context(sol::state &lua, InstrumentRegistry &registry,
-                     SyncCoordinator &sync_coordinator, bool enqueue_mode) {
+                     SyncCoordinator &sync_coordinator) {
   // Bind BufferHandle for array operations
   lua.new_usertype<BufferHandle>(
       "BufferHandle", sol::no_constructor, "id", &BufferHandle::id, "size",
@@ -824,7 +831,7 @@ bind_runtime_context(sol::state &lua, InstrumentRegistry &registry,
       "parallel", &RuntimeContext::parallel, "log", &RuntimeContext::log,
       "error", &RuntimeContext::error);
 
-  auto ctx = std::make_shared<RuntimeContext>(registry, enqueue_mode);
+  auto ctx = std::make_shared<RuntimeContext>(registry, sync_coordinator);
   lua["context"] = ctx;
   return ctx;
 }

@@ -576,7 +576,8 @@ int handle_measure(const json &params, json &out) {
     bind_runtime_context(lua, registry, sync);
 
     // Create default context (host-side C++ runtime object)
-    auto ctx_shared = std::make_shared<RuntimeContext>(registry);
+    auto ctx_shared = std::make_shared<RuntimeContext>(
+        registry, ServerDaemon::instance().sync_coordinator());
     lua["context"] =
         ctx_shared; // keep the existing behavior to bind the userdata
 

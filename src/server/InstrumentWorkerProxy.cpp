@@ -26,8 +26,7 @@ InstrumentWorkerProxy::InstrumentWorkerProxy(std::string instrument_name,
                                              std::filesystem::path plugin,
                                              std::filesystem::path config)
     : instrument_name_(std::move(instrument_name)), plugin_(std::move(plugin)),
-      instrument_config_(std::move(config)),
-      sync_coordinator_(ServerDaemon::instance().sync_coordinator()) {}
+      instrument_config_(std::move(config)) {}
 
 InstrumentWorkerProxy::~InstrumentWorkerProxy() { stop(); }
 
@@ -496,7 +495,8 @@ void InstrumentWorkerProxy::handle_sync_ack_message(
 
   // Notify sync coordinator
   bool barrier_complete =
-      sync_coordinator_.handle_ack(sync_token, instrument_name_);
+      ServerDaemon::instance().sync_coordinator().handle_ack(sync_token,
+                                                             instrument_name_);
 
   if (barrier_complete) {
     LOG_INFO(instrument_name_.c_str(), "PROXY",

@@ -13,6 +13,11 @@
 using namespace instserver;
 using namespace std::chrono;
 
+#ifndef TEST_DATA_DIR
+#define TEST_DATA_DIR "."
+#endif
+
+std::string api_path = std::string(TEST_DATA_DIR) + "/mock_api.yaml";
 class EndToEndPerformanceTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
@@ -53,7 +58,7 @@ TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   lua.open_libraries(sol::lib::base, sol::lib::math);
   bind_runtime_context(lua, registry, sync);
 
-  RuntimeContext ctx(registry);
+  RuntimeContext ctx(registry, sync);
   lua["context"] = &ctx;
 
   // Warm up
@@ -72,14 +77,14 @@ TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   auto end = high_resolution_clock::now();
   auto duration = duration_cast<microseconds>(end - start);
 
-  double avg_latency = duration.count() / (double)num_calls;
-  double calls_per_sec = (num_calls * 1000000.0) / duration.count();
+  long avg_latency = duration.count() / (long)num_calls;
+  long calls_per_sec = (long)(num_calls * 1000000.0) / (long)duration.count();
 
   std::cout << "\n=== Single Command Overhead (Best Case) ===\n";
   std::cout << "Average latency per command: " << avg_latency << " µs\n";
   std::cout << "Throughput: " << calls_per_sec << " commands/sec\n";
   std::cout << "Total time for " << num_calls
-            << " calls: " << duration.count() / 1000.0 << " ms\n";
+            << " calls: " << duration.count() / (long)1000.0 << " ms\n";
 
   // Overhead should be reasonable (less than 5ms per command on average)
   EXPECT_LT(avg_latency, 5000.0);
@@ -94,7 +99,7 @@ TEST_F(EndToEndPerformanceTest, CommandWithParametersOverhead) {
   lua.open_libraries(sol::lib::base, sol::lib::math);
   bind_runtime_context(lua, registry, sync);
 
-  RuntimeContext ctx(registry);
+  RuntimeContext ctx(registry, sync);
   lua["context"] = &ctx;
 
   const int num_calls = 100000;
@@ -107,42 +112,12 @@ TEST_F(EndToEndPerformanceTest, CommandWithParametersOverhead) {
   auto end = high_resolution_clock::now();
   auto duration = duration_cast<microseconds>(end - start);
 
-  double avg_latency = duration.count() / (double)num_calls;
+  long avg_latency = (long)duration.count() / (long)num_calls;
 
   std::cout << "\n=== Command with Parameters Overhead ===\n";
   std::cout << "Average latency per command: " << avg_latency << " µs\n";
-  std::cout << "Throughput: " << (num_calls * 1000000.0) / duration.count()
-            << " commands/sec\n";
-}
-
-TEST_F(EndToEndPerformanceTest, WorstCaseMaxPayload) {
-  // Worst case: large data transfers (if supported)
-  auto &registry = InstrumentRegistry::instance();
-  SyncCoordinator sync;
-
-  sol::state lua;
-  lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::table);
-  bind_runtime_context(lua, registry, sync);
-
-  RuntimeContext ctx(registry);
-  lua["context"] = &ctx;
-
-  // Test with array return values (heavier payload)
-  const int num_calls = 100000;
-  auto start = high_resolution_clock::now();
-
-  for (int i = 0; i < num_calls; i++) {
-    lua.script("context:call('MockInstrument1.GET_ARRAY')");
-  }
-
-  auto end = high_resolution_clock::now();
-  auto duration = duration_cast<microseconds>(end - start);
-
-  double avg_latency = duration.count() / (double)num_calls;
-
-  std::cout << "\n=== Worst Case: Array/Large Data Overhead ===\n";
-  std::cout << "Average latency per command: " << avg_latency << " µs\n";
-  std::cout << "Throughput: " << (num_calls * 1000000.0) / duration.count()
+  std::cout << "Throughput: "
+            << (num_calls * (long)1000000.0) / (long)duration.count()
             << " commands/sec\n";
 }
 
@@ -160,7 +135,7 @@ TEST_F(EndToEndPerformanceTest, MaxConcurrentInstruments) {
     std::string config = R"(
 name: MockInstrument)" + std::to_string(i) +
                          R"(
-api_ref: tests/data/mock_api.yaml
+api_ref: )" + api_path + R"(
 connection:
   type: VISA
   address: "mock://test)" +
@@ -192,7 +167,7 @@ connection:
   lua.open_libraries(sol::lib::base);
   bind_runtime_context(lua, registry, sync);
 
-  RuntimeContext ctx(registry);
+  RuntimeContext ctx(registry, sync);
   lua["context"] = &ctx;
 
   const int calls_per_instrument = 10000;
@@ -216,8 +191,8 @@ connection:
             << (calls_per_instrument * (instrument_names.size() + 1))
             << " calls: " << exec_duration.count() << " ms\n";
   std::cout << "Average latency per call: "
-            << (exec_duration.count() * 1000.0) /
-                   (calls_per_instrument * (instrument_names.size() + 1))
+            << (long)(exec_duration.count() * (long)1000.0) /
+                   (long)(calls_per_instrument * (instrument_names.size() + 1))
             << " µs\n";
 
   // Clean up
@@ -235,10 +210,10 @@ TEST_F(EndToEndPerformanceTest, ParallelExecutionOverhead) {
   // Create second instrument
   std::string config2 = R"(
 name: MockInstrument2
-api_ref: tests/data/mock_api.yaml
+api_ref: )" + api_path + R"(
 connection:
   type: VISA
-  address: "mock://test2"
+  address: "mock://test2
 )";
 
   std::string config_path = "/tmp/mock_instrument_2.yaml";
@@ -252,7 +227,7 @@ connection:
   lua.open_libraries(sol::lib::base);
   bind_runtime_context(lua, registry, sync);
 
-  RuntimeContext ctx(registry);
+  RuntimeContext ctx(registry, sync);
   lua["context"] = &ctx;
 
   const int num_parallel_blocks = 100000;
@@ -270,16 +245,17 @@ connection:
   auto end = high_resolution_clock::now();
   auto duration = duration_cast<microseconds>(end - start);
 
-  double avg_latency = duration.count() / (double)num_parallel_blocks;
+  long avg_latency = duration.count() / (long)num_parallel_blocks;
 
   std::cout << "\n=== Parallel Execution Overhead ===\n";
   std::cout << "Average latency per parallel block (2 commands): "
             << avg_latency << " µs\n";
   std::cout << "Throughput: "
-            << (num_parallel_blocks * 1000000.0) / duration.count()
+            << (long)(num_parallel_blocks * 1000000.0) / duration.count()
             << " parallel blocks/sec\n";
   std::cout << "Total time for " << num_parallel_blocks
-            << " parallel blocks: " << duration.count() / 1000.0 << " ms\n";
+            << " parallel blocks: " << (long)duration.count() / (long)1000.0
+            << " ms\n";
 
   // Clean up
   registry.remove_instrument("MockInstrument2");

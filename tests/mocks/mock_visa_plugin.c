@@ -1,3 +1,4 @@
+#include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
 #include <instrument-plugin.h>
 #include <plugin-api.h>
@@ -155,10 +156,13 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
   if (strcmp(cmd->command, "GET_ARRAY") == 0) {
     // depends on your system design:
     // either PARAM_TYPE_BUFFER or PARAM_TYPE_ARRAY
+    double data[1] = {1.0};
+    const char *id = data_manager_create_buffer(instrument_name, cmd->id,
+                                                INST_DATA_FLOAT64, 1, data);
     Variable var = {0};
-    var.type = PARAM_TYPE_BUFFER; // likely your design
+    var.type = PARAM_TYPE_BUFFER;
     strlcpy(var.name, "waveform", PLUGIN_MAX_STRING_LEN);
-    strlcpy(var.value.str_val, "mock_buffer_id", PLUGIN_MAX_STRING_LEN);
+    strlcpy(var.value.str_val, id, PLUGIN_MAX_STRING_LEN);
     plugin_response_push(resp, &var);
     return 0;
   }

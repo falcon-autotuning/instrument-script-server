@@ -116,8 +116,7 @@ struct INSTRUMENT_SERVER_API CallResult {
 /// - log(): Logging from scripts
 class INSTRUMENT_SERVER_API RuntimeContext {
 public:
-  explicit RuntimeContext(InstrumentRegistry &registry,
-                          bool enqueue_mode = false);
+  explicit RuntimeContext(InstrumentRegistry &, SyncCoordinator &);
   virtual ~RuntimeContext() = default;
 
   /// Call an instrument command
@@ -218,7 +217,6 @@ protected:
 /// process_tokens_and_wait().
 INSTRUMENT_SERVER_API std::shared_ptr<RuntimeContext>
 bind_runtime_context(sol::state &lua, InstrumentRegistry &registry,
-                     SyncCoordinator &sync_coordinator,
-                     bool enqueue_mode = false);
+                     SyncCoordinator &sync_coordinator);
 
 } // namespace instserver

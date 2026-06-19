@@ -80,7 +80,6 @@ private:
   std::string instrument_name_;
   std::filesystem::path instrument_config_;
   std::filesystem::path plugin_;
-  SyncCoordinator &sync_coordinator_;
   APICommands commands_;
 
   std::unique_ptr<ipc::SharedQueue> ipc_queue_;

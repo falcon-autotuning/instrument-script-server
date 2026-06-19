@@ -1,8 +1,6 @@
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include <chrono>
-#include <cstdlib>
-#include <filesystem>
 #include <gtest/gtest.h>
 #include <sstream>
 #include <string>
@@ -10,6 +8,10 @@
 
 #ifndef ISS_BIN_PATH
 #define ISS_BIN_PATH "instrument-script-server"
+#endif
+#ifdef _WIN32
+#define popen _popen
+#define pclose _pclose
 #endif
 
 static std::string bin_path = ISS_BIN_PATH;
@@ -25,54 +27,12 @@ protected:
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
   }
-
-  // Get platform-specific null device
-  std::string get_null_device() {
-#ifdef _WIN32
-    return "NUL";
-#else
-    return "/dev/null";
-#endif
-  }
-
   // Run a command and return the exit code
-  int run_command(const std::string &args) {
-    if (bin_path.empty()) {
-      return -1;
-    }
+  static std::pair<int, std::string> run_command(const std::string &args) {
+    std::string cmd = "\"" + bin_path + "\" " + args + " 2>&1";
 
-    // Build full command with output redirection to null device
-    std::ostringstream cmd;
-
-#ifdef _WIN32
-    // Windows: Use cmd /c to handle redirection properly
-    // Quote the executable path in case it has spaces
-    cmd << "\"" << executable_path_ << "\" " << args << " >NUL 2>&1";
-#else
-    // Linux: Direct execution with redirection
-    cmd << bin_path << " " << args << " >/dev/null 2>&1";
-#endif
-
-    return std::system(cmd.str().c_str());
-  }
-
-  // Run a command and capture its output
-  std::pair<int, std::string> run_command_with_output(const std::string &args) {
-    if (bin_path.empty()) {
-      return {-1, ""};
-    }
-
-    std::ostringstream cmd;
-
-#ifdef _WIN32
-    cmd << "\"" << executable_path_ << "\" " << args << " 2>&1";
-    FILE *pipe = _popen(cmd.str().c_str(), "r");
-#else
-    cmd << bin_path << " " << args << " 2>&1";
-    FILE *pipe = popen(cmd.str().c_str(), "r");
-#endif
-
-    if (!pipe) {
+    FILE *pipe = popen(cmd.c_str(), "r");
+    if (pipe == nullptr) {
       return {-1, ""};
     }
 
@@ -82,12 +42,9 @@ protected:
       output << buffer;
     }
 
-#ifdef _WIN32
-    int exit_code = _pclose(pipe);
-#else
     int exit_code = pclose(pipe);
-    // On Unix, pclose returns status in the format used by waitpid
-    // Extract actual exit code
+
+#ifndef _WIN32
     if (WIFEXITED(exit_code)) {
       exit_code = WEXITSTATUS(exit_code);
     }
@@ -98,7 +55,7 @@ protected:
 };
 
 TEST_F(CLITest, HelpCommand) {
-  auto [exit_code, output] = run_command_with_output("--help");
+  auto [exit_code, output] = run_command("--help");
 
   // Help command should succeed
   EXPECT_EQ(exit_code, 0) << "Help command failed with exit code:  "
@@ -123,7 +80,7 @@ TEST_F(CLITest, DaemonStatusWhenNotRunning) {
   // Sleep for 500 milliseconds
   std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-  auto [exit_code, output] = run_command_with_output("daemon status");
+  auto [exit_code, output] = run_command("daemon status");
 
   // When daemon is not running, status command should return non-zero
   // (or succeed but report daemon is not running)
@@ -135,7 +92,7 @@ TEST_F(CLITest, DaemonStatusWhenNotRunning) {
 }
 
 TEST_F(CLITest, ListPlugins) {
-  auto [exit_code, output] = run_command_with_output("plugins");
+  auto [exit_code, output] = run_command("plugins");
 
   // Plugins command should succeed even with no plugins
   EXPECT_EQ(exit_code, 0) << "Plugins command failed with exit code: "
@@ -146,7 +103,7 @@ TEST_F(CLITest, ListPlugins) {
 }
 
 TEST_F(CLITest, ListInstrumentsWhenNoneRunning) {
-  auto [exit_code, output] = run_command_with_output("list");
+  auto [exit_code, output] = run_command("list");
 
   // List command should succeed even with no instruments
   EXPECT_EQ(exit_code, 1) << "List command failed with exit code: "

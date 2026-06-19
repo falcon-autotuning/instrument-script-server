@@ -120,7 +120,7 @@ TEST_F(RuntimeContextGenericTest, CallFunctionLogsMissingInstrument) {
 // Test: empty parallel block should not schedule any commands (no results)
 TEST_F(RuntimeContextGenericTest, ParallelBlockLogsStartAndEmptyExecution) {
   // Create a dedicated runtime context so we can inspect results directly
-  auto ctx = std::make_unique<RuntimeContext>(*registry_);
+  auto ctx = std::make_unique<RuntimeContext>(*registry_, *sync_coordinator_);
   (*lua_)["context"] = ctx.get();
 
   lua_->script(R"(
@@ -167,7 +167,7 @@ TEST_F(RuntimeContextGenericTest, ParseInstrumentCommandFormatsAreLogged) {
 // commands; with no instruments present, no results are produced but
 // parsing/logs occur.
 TEST_F(RuntimeContextGenericTest, ParallelWithBufferingBuffersCommands) {
-  auto ctx = std::make_unique<RuntimeContext>(*registry_);
+  auto ctx = std::make_unique<RuntimeContext>(*registry_, *sync_coordinator_);
   (*lua_)["context"] = ctx.get();
 
   lua_->script(R"(
