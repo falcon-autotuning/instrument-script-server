@@ -32,7 +32,6 @@ void print_usage() {
   std::cout << "                               Run Lua measurement script\n";
   std::cout << "\nUtilities:\n";
   std::cout << "  discover [paths...]                Discover plugins\n";
-  std::cout << "  plugins                            List available plugins\n";
   std::cout << "\nBuffer Management:\n";
   std::cout << "  list-buffers                       List all active shared "
                "memory buffers\n";

@@ -40,59 +40,68 @@ std::string read_file_to_string(const std::filesystem::path &p) {
           std::istreambuf_iterator<char>()};
 }
 void preload_lua_modules_from_dir(sol::state &lua, const std::string &libroot) {
+
   namespace fs = std::filesystem;
 
   sol::table package = lua["package"];
-  // optionally append libroot/?.lua to package.path so require still works on
-  // disk
   std::string current_path = package["path"];
   std::string append = ";" + libroot + "/?.lua;" + libroot + "/?/init.lua";
   package["path"] = current_path + append;
 
   sol::table preload = package["preload"];
 
-  // Walk libroot and preload .lua files. Convert e.g. lib/foo/bar.lua ->
-  // "foo.bar"
-  for (auto const &entry : fs::recursive_directory_iterator(libroot)) {
-    if (!entry.is_regular_file()) {
+  std::error_code ec;
+
+  for (fs::recursive_directory_iterator it(libroot, ec), end; it != end;
+       it.increment(ec)) {
+
+    if (ec) {
+      LOG_WARN("SERVER", "MEASURE", "Directory iteration error: %s",
+               ec.message().c_str());
+      break;
+    }
+
+    const auto &entry = *it;
+
+    if (!entry.is_regular_file(ec)) {
       continue;
     }
+
     const auto &path = entry.path();
+
     if (path.extension() != ".lua") {
       continue;
     }
-    // compute module name relative to libroot
-    fs::path rel = fs::relative(path, libroot);
-    // strip extension
-    rel = rel.replace_extension("");
-    // convert path separators to dots
-    std::string module = rel.generic_string(); // uses '/' separators
+
+    fs::path rel = fs::relative(path, libroot, ec);
+    if (ec) {
+      continue;
+    }
+
+    rel.replace_extension("");
+
+    std::string module = rel.generic_string();
     for (auto &c : module) {
       if (c == '/') {
         c = '.';
       }
     }
-    // read file
+
     std::string code = read_file_to_string(path);
     if (code.empty()) {
       continue;
     }
-    // load the module code as a chunk with module filename for meaningful
-    // errors
+
     sol::load_result loader = lua.load(code, path.string());
     if (!loader.valid()) {
       sol::error err = loader;
-      // log and skip problematic helper file
-      LOG_ERROR("SERVER", "MEASURE", "Failed to load helper %s: %s",
+      LOG_ERROR("SERVER", "MEASURE", "Failed to load %s: %s",
                 path.string().c_str(), err.what());
       continue;
     }
-    // Convert to protected_function (stable registry reference) before
-    // assigning to the table — sol::load_result holds a raw Lua stack index
-    // and must not be stored directly in a table proxy.
+
     sol::protected_function fn = loader;
     preload[module] = fn;
-    LOG_INFO("SERVER", "MEASURE", "Preloaded Lua module '%s'", module.c_str());
   }
 }
 void load_bundle_file(sol::state &lua, const std::string &bundle_path) {
@@ -1073,26 +1082,33 @@ __context_schema_version = nil
 
 int handle_discover(const json &params, json &out) {
   out = json::object();
+
   std::vector<std::string> search_paths;
+
   if (params.contains("paths") && params["paths"].is_array()) {
     for (const auto &p : params["paths"]) {
       search_paths.push_back(p.get<std::string>());
     }
   } else {
 #ifdef _WIN32
-    search_paths = {"plugins", "."};
+    search_paths = {".\\plugins", "."};
 #else
     search_paths = {"./plugins", "."};
 #endif
   }
 
   auto &plugin_registry = plugin::PluginRegistry::instance();
-  // Ensure built-in plugins are loaded and standard discovery is performed.
-  // Use call_once to avoid repeated loads across multiple handler calls.
+
   static std::once_flag g_plugins_init_flag;
+
   std::call_once(g_plugins_init_flag, [search_paths, &plugin_registry]() {
-    plugin_registry.load_builtin_plugins();
-    plugin_registry.discover_plugins(search_paths);
+    try {
+      plugin_registry.load_builtin_plugins();
+      plugin_registry.discover_plugins(search_paths);
+    } catch (const std::exception &e) {
+      LOG_ERROR("PLUGIN_REGISTRY", "DISCOVER_INIT", "Initialization failed: %s",
+                e.what());
+    }
   });
 
   auto protocols = plugin_registry.list_protocols();
@@ -1100,6 +1116,7 @@ int handle_discover(const json &params, json &out) {
   out["ok"] = true;
   out["protocols"] = protocols;
   out["paths"] = search_paths;
+
   return 0;
 }
 

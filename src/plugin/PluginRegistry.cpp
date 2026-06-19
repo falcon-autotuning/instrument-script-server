@@ -53,9 +53,7 @@ void PluginRegistry::load_builtin_plugins() {
   // Define built-in plugin locations
   std::vector<std::pair<std::string, std::vector<std::string>>> builtins = {
       {"VISA",
-       {"/usr/local/lib/instrument-plugins/visa_plugin.so",
-        "/usr/lib/instrument-plugins/visa_plugin.so",
-        "./plugins/visa/visa_plugin.so",
+       {"./plugins/visa/visa_plugin.so",
         "./build/plugins/visa/visa_plugin.so"}},
   };
 
@@ -152,55 +150,75 @@ PluginRegistry::get_plugin_path(const std::string &protocol_type) const {
 
 void PluginRegistry::discover_plugins(
     const std::vector<std::string> &search_paths) {
+
   namespace fs = std::filesystem;
 
   LOG_INFO("PLUGIN_REGISTRY", "DISCOVER",
            "Discovering plugins in %d directories", search_paths.size());
 
   for (const auto &search_path : search_paths) {
-    if (!fs::exists(search_path) || !fs::is_directory(search_path)) {
-      LOG_WARN("PLUGIN_REGISTRY", "DISCOVER", "Invalid search path: %s",
-               search_path.c_str());
-      continue;
-    }
+    try {
+      std::error_code ec;
 
-    for (const auto &entry : fs::directory_iterator(search_path)) {
-      if (!entry.is_regular_file()) {
+      if (!fs::exists(search_path, ec) || !fs::is_directory(search_path, ec)) {
+        LOG_WARN("PLUGIN_REGISTRY", "DISCOVER", "Invalid search path: %s",
+                 search_path.c_str());
         continue;
       }
 
-      std::string filename = entry.path().filename().string();
+      for (fs::directory_iterator it(search_path, ec), end; it != end;
+           it.increment(ec)) {
 
-      // Check for plugin library extension
+        if (ec) {
+          LOG_WARN("PLUGIN_REGISTRY", "DISCOVER", "Iterator error in %s: %s",
+                   search_path.c_str(), ec.message().c_str());
+          break;
+        }
+
+        const fs::directory_entry &entry = *it;
+
+        if (!entry.is_regular_file(ec)) {
+          continue;
+        }
+
+        std::string ext = entry.path().extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+
 #ifdef _WIN32
-      if (filename.length() < 4 ||
-          filename.compare(filename.length() - 4, 4, ".dll") != 0)
-        continue;
+        if (ext != ".dll") {
+          continue;
+        }
 #else
-      if (filename.length() < 3 ||
-          filename.compare(filename.length() - 3, 3, ".so") != 0) {
-        continue;
-      }
+        if (ext != ".so") {
+          continue;
+        }
 #endif
 
-      // Try to load plugin
-      std::string plugin_path = entry.path().string();
+        std::string plugin_path = entry.path().string();
 
-      try {
-        PluginLoader temp_loader(plugin_path);
-        if (temp_loader.is_loaded()) {
+        try {
+          PluginLoader temp_loader(plugin_path);
+
+          if (!temp_loader.is_loaded()) {
+            continue;
+          }
           auto metadata = temp_loader.get_metadata();
           std::string protocol = metadata.protocol_type;
 
           if (!has_plugin(protocol)) {
             load_plugin(protocol, plugin_path);
           }
+
+        } catch (const std::exception &ex) {
+          LOG_WARN("PLUGIN_REGISTRY", "DISCOVER",
+                   "Failed to load plugin %s: %s", plugin_path.c_str(),
+                   ex.what());
         }
-      } catch (const std::exception &ex) {
-        LOG_WARN("PLUGIN_REGISTRY", "DISCOVER",
-                 "Failed to discover plugin %s: %s", plugin_path.c_str(),
-                 ex.what());
       }
+
+    } catch (const std::exception &ex) {
+      LOG_WARN("PLUGIN_REGISTRY", "DISCOVER", "Exception scanning %s: %s",
+               search_path.c_str(), ex.what());
     }
   }
 
