@@ -92,7 +92,7 @@ TEST_F(CLITest, DaemonStatusWhenNotRunning) {
 }
 
 TEST_F(CLITest, ListPlugins) {
-  auto [exit_code, output] = run_command("plugins");
+  auto [exit_code, output] = run_command("discover");
 
   // Plugins command should succeed even with no plugins
   EXPECT_EQ(exit_code, 0) << "Plugins command failed with exit code: "
