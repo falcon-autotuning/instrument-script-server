@@ -69,16 +69,7 @@ PluginLoader::PluginLoader(const std::string &plugin_path)
            plugin_path.c_str());
 }
 
-PluginLoader::~PluginLoader() {
-  if (!shutdown_called_ && (fn_shutdown_ != nullptr) && (handle_ != nullptr)) {
-    try {
-      fn_shutdown_(); // fallback only
-    } catch (...) {
-    }
-  }
-
-  unload();
-}
+PluginLoader::~PluginLoader() {}
 
 PluginLoader::PluginLoader(PluginLoader &&other) noexcept
     : handle_(other.handle_), plugin_path_(std::move(other.plugin_path_)),
