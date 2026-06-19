@@ -9,7 +9,22 @@ namespace instserver::plugin {
 #define LOAD_LIBRARY(path) LoadLibraryA(path)
 #define GET_SYMBOL(handle, name) GetProcAddress(handle, name)
 #define CLOSE_LIBRARY(handle) FreeLibrary(handle)
-#define LIBRARY_ERROR() "Windows LoadLibrary error"
+std::string get_last_error() {
+  DWORD err = GetLastError();
+  LPSTR buf = nullptr;
+
+  FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+                     FORMAT_MESSAGE_IGNORE_INSERTS,
+                 NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                 (LPSTR)&buf, 0, NULL);
+
+  std::string msg = buf ? buf : "Unknown error";
+  if (buf)
+    LocalFree(buf);
+  return msg;
+}
+
+#define LIBRARY_ERROR() get_last_error().c_str()
 #else
 #define LOAD_LIBRARY(path) dlopen(path, RTLD_LAZY)
 #define GET_SYMBOL(handle, name) dlsym(handle, name)

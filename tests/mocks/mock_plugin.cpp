@@ -7,6 +7,11 @@
 #include <map>
 #include <string>
 #include <thread>
+#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT
+#endif
 
 #define VISA_LOG_INFO(fmt, ...)                                                \
   LOG_INFO("Plugin", "MockVISA", fmt, ##__VA_ARGS__)
@@ -29,7 +34,7 @@ static char instrument_name[PLUGIN_MAX_STRING_LEN] = "";
 
 extern "C" {
 
-PluginMetadata plugin_get_metadata(void) {
+PluginMetadata EXPORT plugin_get_metadata(void) {
   PluginMetadata meta = {};
   meta.api_version = INSTRUMENT_PLUGIN_API_VERSION;
   strncpy(meta.name, "Enhanced Mock Test Plugin", PLUGIN_MAX_STRING_LEN - 1);
@@ -40,7 +45,7 @@ PluginMetadata plugin_get_metadata(void) {
   return meta;
 }
 
-uint8_t plugin_initialize(const PluginConfig *config) {
+uint8_t EXPORT plugin_initialize(const PluginConfig *config) {
   VISA_LOG_INFO("Initializing for %s\n", config->instrument_name);
   int err = snprintf(instrument_name, PLUGIN_MAX_STRING_LEN, "%s",
                      config->instrument_name);
@@ -67,8 +72,8 @@ uint8_t plugin_initialize(const PluginConfig *config) {
   return 0;
 }
 
-uint8_t plugin_execute_command(const PluginCommand *command,
-                               PluginResponse *response) {
+uint8_t EXPORT plugin_execute_command(const PluginCommand *command,
+                                      PluginResponse *response) {
   std::string verb = command->command;
   g_call_count++;
 
@@ -190,7 +195,7 @@ uint8_t plugin_execute_command(const PluginCommand *command,
   return 3;
 }
 
-void plugin_shutdown(void) {
+void EXPORT plugin_shutdown(void) {
   g_initialized = false;
   g_channel_values.clear();
 }
