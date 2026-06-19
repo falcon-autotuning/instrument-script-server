@@ -49,6 +49,18 @@ PluginLoader::PluginLoader(const std::string &plugin_path)
       (fn_execute_command_ == nullptr) || (fn_shutdown_ == nullptr)) {
     error_message_ = "Failed to load required plugin symbols";
     LOG_ERROR("PLUGIN", "LOAD", "%s", error_message_.c_str());
+    if (fn_get_metadata_ == nullptr) {
+      LOG_ERROR("PLUGIN", "LOAD", "Missing: plugin_get_metadata");
+    }
+    if (fn_initialize_ == nullptr) {
+      LOG_ERROR("PLUGIN", "LOAD", "Missing: plugin_initialize");
+    }
+    if (fn_execute_command_ == nullptr) {
+      LOG_ERROR("PLUGIN", "LOAD", "Missing: plugin_execute_command");
+    }
+    if (fn_shutdown_ == nullptr) {
+      LOG_ERROR("PLUGIN", "LOAD", "Missing: plugin_shutdown");
+    }
     unload();
     throw std::runtime_error(error_message_);
   }
