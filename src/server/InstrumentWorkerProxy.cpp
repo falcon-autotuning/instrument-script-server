@@ -194,38 +194,6 @@ void InstrumentWorkerProxy::stop_worker_process() {
   }
 }
 
-void InstrumentWorkerProxy::join_response_thread_with_timeout() {
-  if (response_thread_.joinable()) {
-    // Give thread 500ms to exit gracefully
-    running_.store(false, std::memory_order_release);
-
-    auto start = std::chrono::steady_clock::now();
-    while (response_thread_.joinable()) {
-      auto elapsed = std::chrono::steady_clock::now() - start;
-      if (elapsed > std::chrono::milliseconds(500)) {
-        LOG_WARN(instrument_name_.c_str(), "PROXY",
-                 "Response thread did not exit in time, "
-                 "detaching\n");
-        response_thread_.detach();
-        break;
-      }
-
-      // Try to join with timeout
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
-      if (response_thread_.joinable()) {
-        try {
-          response_thread_.join();
-          LOG_DEBUG(instrument_name_.c_str(), "PROXY",
-                    "Response thread joined successfully\n");
-          break;
-        } catch (...) {
-          // Thread still running, continue waiting
-        }
-      }
-    }
-  }
-}
-
 void InstrumentWorkerProxy::cleanup_pending_promises() {
   std::lock_guard<std::mutex> lock(pending_mutex_);
   for (auto &[msg_id, promise] : pending_responses_) {

@@ -159,6 +159,7 @@ add_library(
   src/server/JobManager.cpp
   src/server/InstrumentCommand.cpp
   src/server/ParsingTools.cpp
+  src/GlobalConfig.cpp
   ${CMAKE_BINARY_DIR}/embedded_schemas.cpp)
 
 set_target_properties(instrument-script-server-core

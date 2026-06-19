@@ -39,29 +39,21 @@ instrument-script-server daemon stop
 
 ## Documentation Guide
 
-### Getting Started
-
 Start here if you're new to the Instrument Script Server:
 
 - **[CLI Usage](CLI_USAGE.md)** - Complete command-line interface reference
 - **[Configuration Guide](CONFIGURATION.md)** - How to write instrument configurations and API definitions
-
-### Core Concepts
-
-- **[Architecture](ARCHITECTURE.md)** - System design and components
-- **[IPC Protocol](IPC_PROTOCOL.md)** - Inter-process communication details
-- **[Synchronization](SYNCHRONIZATION.md)** - Parallel execution protocol
-
-### Extension & Integration
-
 - **[Plugin Development](PLUGIN_DEVELOPMENT.md)** - Creating custom instrument drivers
-- **[Embedding API](EMBEDDING_API.md)** - Embed the server inside other processes/servers
-- **[HTTP RPC Interface](RPC.md)** - Remote procedure call interface for external integrations
-- **[Job Scheduling & Staging](JOB_SCHEDULING.md)** - Job handling, staging and NOPs
 
 ## Environment Variables
 
 The server supports configuration via environment variables:
+
+### Measurement Timeout
+
+- **Variable**: `MEASUREMENT_TIMEOUT_SEC`
+- **Default**: `5`
+- **Description**: Sets the longest possible safe measurement time. After this maximal time the server will abort the measurement.
 
 ### RPC Port Configuration
 

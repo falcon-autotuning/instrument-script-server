@@ -65,7 +65,7 @@ instrument-script-server <command> [subcommand] [options]
 | **Measurements** | `measure <script>` | Run measurement scripts |
 | **Buffer Management** | `list-buffers`, `buffer-metadata`, `read-buffer`, `release-buffer` | Manage shared-memory buffers |
 | **Testing** | `test <config> <verb>` | Test instrument commands |
-| **Plugins** | `plugins`, `discover` | Manage plugins |
+| **Plugins** | `discover` | Manage plugins |
 | **Validation** | `validate config/api <file>` | Validate configuration files |
 
 ### Global Options
@@ -338,7 +338,7 @@ instrument-script-server measure scripts/sweep.lua --json > results.json
 
 #### Automatic Result Collection
 
-All `context:call()` operations are automatically collected with full metadata, including:
+All `ctx:call()` operations are automatically collected with full metadata, including:
 
 - Command ID and execution timestamp
 - Instrument name and verb (command)
@@ -435,29 +435,29 @@ Output structure:
 
 ### Script Structure
 
-All scripts have access to a global `context` object:
+All scripts have access to a global `ctx` object:
 
 ```lua
--- context:call(command, args...)     - Execute instrument command (returns MeasurementResponse)
--- context:parallel(function)         - Synchronized parallel execution
--- context:log(message)               - Log message
+-- ctx:call(command, args...)     - Execute instrument command (returns MeasurementResponse)
+-- ctx:parallel(function)         - Synchronized parallel execution
+-- ctx:log(message)               - Log message
 
-context:log("Script starting")
+ctx:log("Script starting")
 
 -- Your measurement logic here
-local resp = context:call("DMM1.Measure")
+local resp = ctx:call("DMM1.Measure")
 local value = resp:value()  -- Extract actual value
 print(value)
 
-context:log("Script complete")
+ctx:log("Script complete")
 ```
 
 ### MeasurementResponse Return Type
 
-All `context:call()` operations return `MeasurementResponse` objects that wrap the measurement value with metadata:
+All `ctx:call()` operations return `MeasurementResponse` objects that wrap the measurement value with metadata:
 
 ```lua
-local response = context:call("DMM.MEASURE")
+local response = ctx:call("DMM.MEASURE")
 
 -- Access metadata
 print(response:instrument())  -- "DMM"
@@ -473,7 +473,7 @@ local scaled = adjusted:multiply_gain(2.0)        -- Multiply by gain
 local final_value = scaled:value()                -- Extract result
 
 -- For arrays/buffers:
-local array_resp = context:call("Scope.GET_WAVEFORM")
+local array_resp = ctx:call("Scope.GET_WAVEFORM")
 local buffer = array_resp:buffer()  -- Get BufferHandle
 buffer:add_offset(-0.5)             -- Offset all elements
 buffer:multiply_gain(10.0)          -- Gain all elements
@@ -501,13 +501,13 @@ buffer:multiply_gain(10.0)          -- Gain all elements
 
 ```lua
 -- Basic:  InstrumentName.CommandVerb
-context:call("DAC1.SetVoltage", 5.0)
+ctx:call("DAC1.SetVoltage", 5.0)
 
 -- With channel:  InstrumentName:Channel.CommandVerb
-context:call("DAC1:1.SetVoltage", 3.3)
+ctx:call("DAC1:1.SetVoltage", 3.3)
 
 -- Return value extraction
-local voltage_resp = context:call("DMM1.MeasureVoltage")
+local voltage_resp = ctx:call("DMM1.MeasureVoltage")
 local voltage = voltage_resp:value()
 ```
 
@@ -517,8 +517,8 @@ local voltage = voltage_resp:value()
 
 ```lua
 for v = 0, 5, 0.1 do
-    context:call("DAC1.Set", v)
-    local i_resp = context:call("DMM1.Measure")
+    ctx:call("DAC1.Set", v)
+    local i_resp = ctx:call("DMM1.Measure")
     local i = i_resp:value()
     print(string.format("%.3f,%.6e", v, i))
 end
@@ -528,8 +528,8 @@ end
 
 ```lua
 for v = 0, 5, 0.1 do
-    context:call("DAC1.Set", v)
-    local i_resp = context:call("DMM1.Measure")
+    ctx:call("DAC1.Set", v)
+    local i_resp = ctx:call("DMM1.Measure")
     -- Apply offset and gain corrections
     local corrected = i_resp:add_offset(-0.001):multiply_gain(1.05)
     print(string.format("%.3f,%.6e", v, corrected:value()))
@@ -539,9 +539,9 @@ end
 **Parallel execution:**
 
 ```lua
-context:parallel(function()
-    context:call("DAC1.Set", 1.0)
-    context:call("DAC2.Set", 2.0)
+ctx:parallel(function()
+    ctx:call("DAC1.Set", 1.0)
+    ctx:call("DAC2.Set", 2.0)
 end)
 -- Both DACs set simultaneously
 ```
@@ -550,14 +550,14 @@ end)
 
 ```lua
 for x = 0, 10 do
-    context:call("DAC_X.Set", x * 0.1)
+    ctx:call("DAC_X.Set", x * 0.1)
     
     for y = 0, 10 do
-        context:parallel(function()
-            context:call("DAC_Y.Set", y * 0.05)
+        ctx:parallel(function()
+            ctx:call("DAC_Y.Set", y * 0.05)
         end)
         
-        local z_resp = context:call("DMM1.Measure")
+        local z_resp = ctx:call("DMM1.Measure")
         local z = z_resp:value()
         print(string.format("%d,%d,%.6e", x, y, z))
     end
@@ -585,9 +585,9 @@ function M.sweep(setter, getter, v_start, v_stop, v_step)
     local v = v_start
     
     while v <= v_stop do
-        context:call(setter, v)
+        ctx:call(setter, v)
         os.execute("sleep 0.01")
-        local measured_resp = context:call(getter)
+        local measured_resp = ctx:call(getter)
         local measured = measured_resp:value()
         table.insert(data, {v, measured})
         v = v + v_step
@@ -624,10 +624,10 @@ import tempfile
 
 # Generate Lua script
 lua_script = """
-context:log("Starting measurement")
+ctx:log("Starting measurement")
 for v = 0, 5, 0.1 do
-    context:call("DAC1.Set", v)
-    local i = context:call("DMM1.Measure")
+    ctx:call("DAC1.Set", v)
+    local i = ctx:call("DMM1.Measure")
     print(string.format("%.3f,%.6e", v, i))
 end
 """
@@ -706,6 +706,7 @@ instrument-script-server read-buffer <buffer_id> [--json]
 ```
 
 **Arguments:**
+
 - `<buffer_id>`: Target buffer identifier
 - `--json`: Optional. Formats data as a structured JSON payload containing the elements array.
 
@@ -1187,4 +1188,3 @@ This supports either the directory of a larger package or just a file with regis
 - [Main README](../README.md) - Getting started and overview
 - [Configuration Guide](CONFIGURATION.md) - Writing configuration files
 - [Plugin Development](PLUGIN_DEVELOPMENT.md) - Writing instrument plugins
-- [Synchronization Protocol](SYNCHRONIZATION.md) - Parallel execution details

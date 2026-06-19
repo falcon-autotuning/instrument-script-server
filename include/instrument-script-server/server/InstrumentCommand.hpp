@@ -8,7 +8,7 @@
 #include <vector>
 
 // The timeout for a measurement to become stale
-constexpr int MEASUREMENT_TIMEOUT_SEC = 5;
+extern INSTRUMENT_SERVER_API int g_measurement_timeout_sec;
 namespace instserver {
 
 struct INSTRUMENT_SERVER_API InstrumentCommand {
@@ -20,7 +20,7 @@ struct INSTRUMENT_SERVER_API InstrumentCommand {
   std::string id;
   std::string verb;
   std::vector<Variable> params;
-  std::chrono::milliseconds timeout{MEASUREMENT_TIMEOUT_SEC * 1000};
+  std::chrono::milliseconds timeout{g_measurement_timeout_sec * 1000};
   std::chrono::steady_clock::time_point created_at;
 
   // Synchronization fields

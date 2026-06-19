@@ -655,7 +655,7 @@ InstrumentCommandResponse RuntimeContext::send_command(
 
   auto resp = worker->execute_sync(
       std::move(cmd),
-      std::chrono::milliseconds(MEASUREMENT_TIMEOUT_SEC * 1000));
+      std::chrono::milliseconds(g_measurement_timeout_sec * 1000));
   LOG_INFO("LUA_CONTEXT", "SEND", "Command %s.%s returned: success=%s",
            instrument_id.c_str(), verb.c_str(),
            (resp.error_code == ErrorCode::NONE) ? "true" : "false");

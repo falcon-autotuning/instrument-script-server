@@ -107,7 +107,6 @@ private:
   void handle_worker_death();
   void send_shutdown_message();
   void stop_worker_process();
-  void join_response_thread_with_timeout();
   void cleanup_pending_promises();
   void cleanup_ipc();
   void handle_ipc_message(const ipc::IPCMessage &msg);
