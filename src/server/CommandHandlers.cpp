@@ -1079,56 +1079,27 @@ int handle_discover(const json &params, json &out) {
       search_paths.push_back(p.get<std::string>());
     }
   } else {
-    search_paths = {"/usr/local/lib/instrument-plugins",
-                    "/usr/lib/instrument-plugins", "./plugins", "."};
+#ifdef _WIN32
+    search_paths = {"plugins", "."};
+#else
+    search_paths = {"./plugins", "."};
+#endif
   }
 
   auto &plugin_registry = plugin::PluginRegistry::instance();
   // Ensure built-in plugins are loaded and standard discovery is performed.
   // Use call_once to avoid repeated loads across multiple handler calls.
   static std::once_flag g_plugins_init_flag;
-  std::call_once(g_plugins_init_flag, [&]() {
+  std::call_once(g_plugins_init_flag, [search_paths, &plugin_registry]() {
     plugin_registry.load_builtin_plugins();
     plugin_registry.discover_plugins(search_paths);
   });
-
-  // If we haven't discovered via call_once (e.g. because paths differ),
-  // still run discover for the requested paths (idempotent).
-  plugin_registry.discover_plugins(search_paths);
 
   auto protocols = plugin_registry.list_protocols();
 
   out["ok"] = true;
   out["protocols"] = protocols;
   out["paths"] = search_paths;
-  return 0;
-}
-
-int handle_plugins(const json &params, json &out) {
-  (void)params;
-  out = json::object();
-  auto &plugin_registry = plugin::PluginRegistry::instance();
-  std::vector<std::string> plugin_paths = {"/usr/local/lib/instrument-plugins",
-                                           "/usr/lib/instrument-plugins",
-                                           "./plugins", "."};
-  // Ensure built-in plugins are present before listing; idempotent.
-  static std::once_flag g_plugins_init_flag2;
-  std::call_once(g_plugins_init_flag2,
-                 [&]() { plugin_registry.load_builtin_plugins(); });
-  // Also run discover for the current invocation in case tests override
-  // paths.
-  plugin_registry.discover_plugins(plugin_paths);
-
-  auto protocols = plugin_registry.list_protocols();
-  out["ok"] = true;
-  out["plugins"] = json::array();
-  for (const auto &protocol : protocols) {
-    json p;
-    p["protocol"] = protocol;
-    p["path"] = plugin_registry.get_plugin_path(protocol);
-    out["plugins"].push_back(p);
-  }
-  out["total"] = protocols.size();
   return 0;
 }
 

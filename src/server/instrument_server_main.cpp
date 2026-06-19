@@ -262,8 +262,9 @@ int main(int argc, char **argv) {
     nlohmann::json params;
     if (argc > 2) {
       params["paths"] = nlohmann::json::array();
-      for (int i = 2; i < argc; ++i)
+      for (int i = 2; i < argc; ++i) {
         params["paths"].push_back(argv[i]);
+      }
     }
     nlohmann::json out;
     int rc = server::handle_discover(params, out);
@@ -271,29 +272,12 @@ int main(int argc, char **argv) {
       if (out.contains("protocols")) {
         auto p = out["protocols"];
         std::cout << "Found " << p.size() << " plugin(s):\n";
-        for (auto &proto : p)
+        for (auto &proto : p) {
           std::cout << "  " << proto.get<std::string>() << "\n";
-      }
-    }
-    return rc;
-  } else if (command == "plugins") {
-    nlohmann::json params;
-    nlohmann::json out;
-    int rc = server::handle_plugins(params, out);
-    if (!out.is_null()) {
-      if (out.contains("plugins")) {
-        auto arr = out["plugins"];
-        if (arr.empty()) {
-          std::cout << "No plugins found\n";
-        } else {
-          std::cout << "Available plugins:\n\n";
-          for (auto &p : arr) {
-            std::cout << "  " << p["protocol"].get<std::string>() << " -> "
-                      << p["path"].get<std::string>() << "\n";
-          }
         }
       }
     }
+    return rc;
   } else if (command == "list-buffers") {
     nlohmann::json params;
     nlohmann::json out;

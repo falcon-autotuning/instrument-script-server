@@ -227,13 +227,13 @@ TEST_F(RpcServerTest, ListReturnsOk) {
 }
 
 TEST_F(RpcServerTest, PluginsReturnsOk) {
-  std::string body = R"({"command":"plugins","params":{}})";
+  std::string body = R"({"command":"discover","params":{}})";
   std::string resp;
   bool ok = send_http_post("127.0.0.1", 8555, "/rpc", body, resp);
   ASSERT_TRUE(ok);
   json j = json::parse(resp);
   ASSERT_TRUE(j.contains("ok"));
   ASSERT_TRUE(j["ok"].get<bool>());
-  ASSERT_TRUE(j.contains("plugins"));
-  ASSERT_TRUE(j["plugins"].is_array());
+  ASSERT_TRUE(j.contains("protocols"));
+  ASSERT_TRUE(j["protocols"].is_array());
 }

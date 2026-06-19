@@ -30,8 +30,6 @@ INSTRUMENT_SERVER_API int handle_measure(const nlohmann::json &params,
                                          nlohmann::json &out);
 INSTRUMENT_SERVER_API int handle_discover(const nlohmann::json &params,
                                           nlohmann::json &out);
-INSTRUMENT_SERVER_API int handle_plugins(const nlohmann::json &params,
-                                         nlohmann::json &out);
 INSTRUMENT_SERVER_API int handle_submit_job(const nlohmann::json &params,
                                             nlohmann::json &out);
 INSTRUMENT_SERVER_API int handle_submit_measure(const nlohmann::json &params,

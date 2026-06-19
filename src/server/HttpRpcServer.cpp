@@ -390,8 +390,6 @@ void HttpRpcServer::run_loop(uint16_t port) {
         rc = server::handle_measure(params, resp);
       } else if (command == "discover") {
         rc = server::handle_discover(params, resp);
-      } else if (command == "plugins") {
-        rc = server::handle_plugins(params, resp);
       } else if (command == "submit_job") {
         rc = server::handle_submit_job(params, resp);
       } else if (command == "submit_measure") {
