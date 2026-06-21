@@ -52,6 +52,17 @@ protected:
 
     return {exit_code, output.str()};
   }
+  static std::string has_instrument_processes() {
+#ifdef _WIN32
+    auto [code, output] =
+        run_command("tasklist | findstr /i instrument-script-server");
+#else
+    auto [code, output] = run_command("pgrep -a instrument-script-server");
+#endif
+
+    // No output = no processes
+    return output;
+  }
 };
 
 TEST_F(CLITest, HelpCommand) {
@@ -77,7 +88,6 @@ TEST_F(CLITest, DaemonStatusWhenNotRunning) {
   // Stop any running daemon first
   run_command("daemon stop");
 
-  // Sleep for 500 milliseconds
   std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
   auto [exit_code, output] = run_command("daemon status");
@@ -89,6 +99,38 @@ TEST_F(CLITest, DaemonStatusWhenNotRunning) {
 
   // Output should indicate status
   EXPECT_FALSE(output.empty()) << "Status command produced no output";
+}
+
+TEST_F(CLITest, DaemonStartStop) {
+  // Stop any running daemon first
+  run_command("daemon stop");
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+  auto [exit_code, output] = run_command("daemon start --json");
+
+  // When daemon is not running, start command should return non-zero
+  // The json should print all the information as a json blob
+  // The exact behavior depends on implementation, so we just verify it executed
+  EXPECT_NE(exit_code, -1) << "Command failed to execute";
+
+  // Output should indicate status
+  EXPECT_FALSE(output.empty()) << "Start command produced no output";
+
+  // Should contain instument started
+  bool started = output.find("daemon started") != std::string::npos;
+
+  EXPECT_TRUE(started) << "Daemon was not started with an output message: "
+                       << output;
+
+  run_command("daemon stop");
+  // Give processes time to shut down
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+  // Verify no instrument processes remain
+  std::string process_check = has_instrument_processes();
+  EXPECT_TRUE(process_check.empty())
+      << "Instrument processes still running! " << process_check;
 }
 
 TEST_F(CLITest, ListPlugins) {
@@ -112,3 +154,48 @@ TEST_F(CLITest, ListInstrumentsWhenNoneRunning) {
   // Should produce some output (even if just "No instruments" or empty list)
   // Don't require specific output as it depends on running instruments
 }
+
+TEST_F(CLITest, StartInstrument) {
+  // Start the background daemon process for the ISS
+  {
+    auto [exit_code, output] = run_command("daemon start --json");
+    EXPECT_NE(exit_code, -1) << "daemon start failed to execute";
+    bool started = output.find("daemon started") != std::string::npos;
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // Start an instrument
+  {
+    auto [exit_code, output] = run_command(
+        "start ./data/mock_instrument1.yaml --plugin ./mock_visa_plugin.so");
+    EXPECT_NE(exit_code, -1) << "instrument start failed to execute";
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // Check that the instrument is still running
+  {
+    auto [exit_code, output] = run_command("status MockInstrument1");
+    EXPECT_NE(exit_code, -1) << "instrument status failed to execute";
+    bool running = (output.find("RUNNING") != std::string::npos);
+    EXPECT_TRUE(running) << "The MockInstrument1 has stopped running: "
+                         << output;
+  }
+  // Shutdown the instrument
+  {
+    auto [exit_code, output] = run_command("stop MockInstrument1");
+    EXPECT_NE(exit_code, -1) << "instrument stop failed to execute";
+    bool stopped = (output.find("Stopped instrument") != std::string::npos);
+    EXPECT_TRUE(stopped) << "The MockInstrument1 has failed to stop: "
+                         << output;
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // Shutdown the daemon process
+  run_command("daemon stop");
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  std::string process_check = has_instrument_processes();
+  EXPECT_TRUE(process_check.empty())
+      << "Instrument processes still running! " << process_check;
+}
+
+// TODO: Need to test starting two instruments and shutting them down and that
+// they persist
+// TODO: Need to perform a measurement directly from the CLI on a running
+// instrument and check the output

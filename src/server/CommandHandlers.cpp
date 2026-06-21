@@ -956,13 +956,13 @@ __context_schema_version = nil
           return_json["buffer_id"] = v.value.str_val;
           return_json["value"] = v.value.str_val;
 
-          auto out =
+          auto meta =
               ipc::DataBufferManager::instance().get_metadata(v.value.str_val);
 
-          if (out) {
-            return_json["element_count"] = out->element_count;
+          if (meta) {
+            return_json["element_count"] = meta->element_count;
 
-            switch (out->data_type) {
+            switch (meta->data_type) {
             case INST_DATA_FLOAT32:
               return_json["data_type"] = "float32";
               break;
@@ -1020,13 +1020,13 @@ __context_schema_version = nil
             return_json[key]["value"] = v.value.str_val;
             return_json[key]["buffer_id"] = v.value.str_val;
 
-            auto out = ipc::DataBufferManager::instance().get_metadata(
+            auto meta = ipc::DataBufferManager::instance().get_metadata(
                 v.value.str_val);
 
-            if (out) {
-              return_json[key]["element_count"] = out->element_count;
+            if (meta) {
+              return_json[key]["element_count"] = meta->element_count;
 
-              switch (out->data_type) {
+              switch (meta->data_type) {
               case INST_DATA_FLOAT32:
                 return_json[key]["data_type"] = "float32";
                 break;

@@ -63,7 +63,6 @@ bool InstrumentWorkerProxy::start() {
     stop();
     return false;
   }
-  // TODO: populate commands_
   InstrumentConfig config;
   try {
     config = load_config(instrument_config_);

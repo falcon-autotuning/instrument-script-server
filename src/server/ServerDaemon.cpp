@@ -484,7 +484,7 @@ bool ServerDaemon::start() {
   }
 
   // Initialize registry and coordinator
-  registry_ = &InstrumentRegistry::instance();
+  InstrumentRegistry::instance();
   sync_coordinator_ = std::make_unique<SyncCoordinator>();
 
   // If an RPC port is configured, start RPC server
@@ -498,12 +498,11 @@ bool ServerDaemon::start() {
       close_shutdown_pipe();
       remove_pid_file();
       sync_coordinator_ = nullptr;
-      registry_ = nullptr;
       return false;
     }
 
     auto start_ts = std::chrono::steady_clock::now();
-    while (rpc_server_ && rpc_server_->port() == 0) {
+    while ((rpc_server_ != nullptr) && rpc_server_->port() == 0) {
       if (std::chrono::steady_clock::now() - start_ts >
           std::chrono::milliseconds(500)) {
         LOG_WARN("DAEMON", "RPC", "RPC server did not bind within timeout");
@@ -565,9 +564,7 @@ void ServerDaemon::stop() {
     running_.store(false);
 
     // Stop instruments
-    if (registry_ != nullptr) {
-      registry_->stop_all();
-    }
+    InstrumentRegistry::instance().stop_all();
 
     // Stop RPC server
     if (rpc_server_ != nullptr) {

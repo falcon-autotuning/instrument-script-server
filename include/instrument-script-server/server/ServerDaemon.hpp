@@ -73,7 +73,6 @@ private:
   std::unique_ptr<std::thread> shutdown_listener_thread_;
   std::mutex mutex_;
 
-  InstrumentRegistry *registry_{nullptr};
   std::unique_ptr<SyncCoordinator> sync_coordinator_;
 
   // RPC listener

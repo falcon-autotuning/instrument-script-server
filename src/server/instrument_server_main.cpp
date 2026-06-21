@@ -63,21 +63,66 @@ void print_usage() {
   std::cout << "     instrument-script-server daemon stop\n";
 }
 
-spdlog::level::level_enum parse_log_level(const std::string &level) {
-  if (level == "debug") {
-    return spdlog::level::debug;
+namespace {
+enum class ISS_CLI_Command : std::uint8_t {
+  DAEMON,
+  START,
+  STOP,
+  LIST,
+  LIST_BUFFERS,
+  BUFFER_METADATA,
+  RELEASE_BUFFER,
+  READ_BUFFER,
+  MEASURE,
+  DISCOVER,
+  STATUS,
+  HELP,
+  HELP_SHORT,
+  VERSION,
+  VERSION_SHORT,
+  UNKNOWN
+};
+
+struct CommandEntry {
+  ISS_CLI_Command cmd;
+  std::string_view name;
+};
+
+constexpr std::array<CommandEntry, 15> command_table{
+    {{ISS_CLI_Command::DAEMON, "daemon"},
+     {ISS_CLI_Command::START, "start"},
+     {ISS_CLI_Command::STOP, "stop"},
+     {ISS_CLI_Command::LIST, "list"},
+     {ISS_CLI_Command::LIST_BUFFERS, "list-buffers"},
+     {ISS_CLI_Command::BUFFER_METADATA, "buffer-metadata"},
+     {ISS_CLI_Command::RELEASE_BUFFER, "release-buffer"},
+     {ISS_CLI_Command::READ_BUFFER, "read-buffer"},
+     {ISS_CLI_Command::MEASURE, "measure"},
+     {ISS_CLI_Command::STATUS, "status"},
+     {ISS_CLI_Command::HELP, "--help"},
+     {ISS_CLI_Command::HELP_SHORT, "-h"},
+     {ISS_CLI_Command::VERSION, "--version"},
+     {ISS_CLI_Command::VERSION_SHORT, "-v"},
+     {ISS_CLI_Command::DISCOVER, "discover"}}};
+
+constexpr std::string_view to_string(ISS_CLI_Command cmd) {
+  for (const auto &entry : command_table) {
+    if (entry.cmd == cmd) {
+      return entry.name;
+    }
   }
-  if (level == "warn") {
-    return spdlog::level::warn;
-  }
-  if (level == "error") {
-    return spdlog::level::err;
-  }
-  if (level == "trace") {
-    return spdlog::level::trace;
-  }
-  return spdlog::level::info;
+  return "unknown";
 }
+
+constexpr ISS_CLI_Command parse_command(std::string_view str) {
+  for (const auto &entry : command_table) {
+    if (entry.name == str) {
+      return entry.cmd;
+    }
+  }
+  return ISS_CLI_Command::UNKNOWN;
+}
+} // namespace
 
 int main(int argc, char **argv) {
   if (argc < 2) {
@@ -86,17 +131,19 @@ int main(int argc, char **argv) {
   }
 
   std::string command = argv[1];
-
-  // Dispatch mapping CLI commands to handlers
-  if (command == "daemon") {
+  int rc;
+  nlohmann::json params;
+  nlohmann::json out;
+  switch (parse_command(command)) {
+  case ISS_CLI_Command::DAEMON: {
     // subcommand is positional 0
     if (argc < 3) {
       std::cerr
           << "Usage: instrument-script-server daemon <start|stop|status>\n";
-      return 1;
+      rc = 1;
+      break;
     }
     std::string action = argv[2];
-    nlohmann::json params;
     params["action"] = action;
 
     // parse options
@@ -111,28 +158,28 @@ int main(int argc, char **argv) {
       }
     }
 
-    nlohmann::json out;
     int rc = server::handle_daemon(params, out);
     if (out.is_null()) {
-      return rc;
+      break;
     }
     if (json_output) {
       std::cout << out.dump() << "\n";
-      return rc;
+      break;
     }
     if (out.contains("error")) {
       std::cerr << out["error"].get<std::string>() << "\n";
     } else if (out.contains("message")) {
       std::cout << out["message"].get<std::string>() << "\n";
     }
-    return rc;
+    break;
   }
-  if (command == "start") {
+  case ISS_CLI_Command::START: {
     if (argc < 2) {
-      std::cerr
-          << "Usage: instrument-script-server start <config> [--plugin <path>] "
-             "[--log-level <level>]\n";
-      return 1;
+      std::cerr << "Usage: instrument-script-server start <config> [--plugin "
+                   "<path>] "
+                   "[--log-level <level>]\n";
+      rc = 1;
+      break;
     }
     std::string config_path = argv[2];
     nlohmann::json params;
@@ -147,47 +194,49 @@ int main(int argc, char **argv) {
     }
 
     nlohmann::json out;
-    int rc = server::handle_start(params, out);
+    rc = server::handle_start(params, out);
     if (!out.is_null()) {
-      if (out.contains("error"))
+      if (out.contains("error")) {
         std::cerr << out["error"].get<std::string>() << "\n";
-      if (out.contains("instrument"))
+      }
+      if (out.contains("instrument")) {
         std::cout << "Started instrument: "
                   << out["instrument"].get<std::string>() << "\n";
+      }
     }
-    return rc;
-  } else if (command == "stop") {
+    break;
+  }
+  case ISS_CLI_Command::STOP: {
     if (argc < 3) {
       std::cerr << "Error: stop requires instrument name\n";
       std::cerr << "Usage: instrument-script-server stop <name>\n";
       return 1;
     }
-    nlohmann::json params;
     params["name"] = argv[2];
-    nlohmann::json out;
-    int rc = server::handle_stop(params, out);
+    rc = server::handle_stop(params, out);
     if (!out.is_null()) {
-      if (out.contains("error"))
+      if (out.contains("error")) {
         std::cerr << out["error"].get<std::string>() << "\n";
-      else
+      } else {
         std::cout << "Stopped instrument: " << params["name"].get<std::string>()
                   << "\n";
+      }
     }
     return rc;
-  } else if (command == "status") {
+  }
+  case ISS_CLI_Command::STATUS: {
     if (argc < 3) {
       std::cerr << "Error: status requires instrument name\n";
       std::cerr << "Usage: instrument-script-server status <name>\n";
-      return 1;
+      rc = 1;
+      break;
     }
-    nlohmann::json params;
     params["name"] = argv[2];
-    nlohmann::json out;
-    int rc = server::handle_status(params, out);
+    rc = server::handle_status(params, out);
     if (!out.is_null()) {
-      if (out.contains("error"))
+      if (out.contains("error")) {
         std::cerr << out["error"].get<std::string>() << "\n";
-      else {
+      } else {
         std::cout << "Instrument: " << out.value("name", "") << "\n";
         std::cout << "  Status: "
                   << (out.value("alive", false) ? "RUNNING" : "STOPPED")
@@ -199,25 +248,27 @@ int main(int argc, char **argv) {
         }
       }
     }
-    return rc;
-  } else if (command == "list") {
-    nlohmann::json params;
-    nlohmann::json out;
-    int rc = server::handle_list(params, out);
+    break;
+  }
+  case ISS_CLI_Command::LIST: {
+    rc = server::handle_list(params, out);
     if (!out.is_null() && out.contains("instruments")) {
       auto arr = out["instruments"];
       if (arr.empty()) {
         std::cout << "No instruments running\n";
-        return 1;
-      } else {
-        std::cout << "Running instruments:\n";
-        for (auto &name : arr)
-          std::cout << "  " << name.get<std::string>() << "\n";
-        return 0;
+        rc = 1;
+        break;
       }
+      std::cout << "Running instruments:\n";
+      for (auto &name : arr) {
+        std::cout << "  " << name.get<std::string>() << "\n";
+      }
+      rc = 0;
+      break;
     }
-    return rc;
-  } else if (command == "measure") {
+    break;
+  }
+  case ISS_CLI_Command::MEASURE: {
     if (argc < 3) {
       std::cerr << "Error: measure requires script path\n";
       std::cerr << "Usage: instrument-script-server measure <script> [--json] ";
@@ -227,9 +278,9 @@ int main(int argc, char **argv) {
                    "[--context_schema_version <x.y.z>]"
                    "[--json]"
                    "[--log-level <level>]\n";
-      return 1;
+      rc = 1;
+      break;
     }
-    nlohmann::json params;
     params["script_path"] = argv[2];
     for (int i = 3; i < argc; ++i) {
       std::string arg = argv[i];
@@ -245,8 +296,7 @@ int main(int argc, char **argv) {
         params["context_schema_version"] = argv[++i];
       }
     }
-    nlohmann::json out;
-    int rc = server::handle_measure(params, out);
+    rc = server::handle_measure(params, out);
     if (!out.is_null()) {
       if (!out.value("ok", false)) {
         std::cerr << out.value("error", "measure failed") << "\n";
@@ -256,17 +306,16 @@ int main(int argc, char **argv) {
         std::cout << "Measurement complete\n";
       }
     }
-    return rc;
-  } else if (command == "discover") {
-    nlohmann::json params;
+    break;
+  }
+  case ISS_CLI_Command::DISCOVER: {
     if (argc > 2) {
       params["paths"] = nlohmann::json::array();
       for (int i = 2; i < argc; ++i) {
         params["paths"].push_back(argv[i]);
       }
     }
-    nlohmann::json out;
-    int rc = server::handle_discover(params, out);
+    rc = server::handle_discover(params, out);
     if (!out.is_null()) {
       if (out.contains("protocols")) {
         auto p = out["protocols"];
@@ -276,44 +325,50 @@ int main(int argc, char **argv) {
         }
       }
     }
-    return rc;
-  } else if (command == "list-buffers") {
-    nlohmann::json params;
-    nlohmann::json out;
-    int rc = server::handle_list_buffers(params, out);
-    if (!out.is_null()) {
-      if (!out.value("ok", false)) {
-        std::cerr << out.value("error", "Failed to list buffers") << "\n";
-      } else if (out.contains("buffers")) {
-        auto arr = out["buffers"];
-        if (arr.empty()) {
-          std::cout << "No active shared memory buffers\n";
-        } else {
-          std::cout << "Active Shared Memory Buffers:\n";
-          for (auto &buf_id : arr) {
-            nlohmann::json meta_params, meta_out;
-            meta_params["buffer_id"] = buf_id.get<std::string>();
-            if (server::handle_get_buffer_metadata(meta_params, meta_out) ==
-                    0 &&
-                meta_out.value("ok", false)) {
-              std::cout << "  - " << buf_id.get<std::string>() << " ("
-                        << meta_out.value("element_count", 0ULL)
-                        << " elements, " << meta_out.value("data_type", "")
-                        << ")\n";
-            } else {
-              std::cout << "  - " << buf_id.get<std::string>() << "\n";
+    break;
+  }
+  case ISS_CLI_Command::LIST_BUFFERS: {
+    if (command == "list-buffers") {
+      nlohmann::json params;
+      nlohmann::json out;
+      int rc = server::handle_list_buffers(params, out);
+      if (!out.is_null()) {
+        if (!out.value("ok", false)) {
+          std::cerr << out.value("error", "Failed to list buffers") << "\n";
+        } else if (out.contains("buffers")) {
+          auto arr = out["buffers"];
+          if (arr.empty()) {
+            std::cout << "No active shared memory buffers\n";
+          } else {
+            std::cout << "Active Shared Memory Buffers:\n";
+            for (auto &buf_id : arr) {
+              nlohmann::json meta_params;
+              nlohmann::json meta_out;
+              meta_params["buffer_id"] = buf_id.get<std::string>();
+              if (server::handle_get_buffer_metadata(meta_params, meta_out) ==
+                      0 &&
+                  meta_out.value("ok", false)) {
+                std::cout << "  - " << buf_id.get<std::string>() << " ("
+                          << meta_out.value("element_count", 0ULL)
+                          << " elements, " << meta_out.value("data_type", "")
+                          << ")\n";
+              } else {
+                std::cout << "  - " << buf_id.get<std::string>() << "\n";
+              }
             }
           }
         }
       }
+      break;
     }
-    return rc;
-  } else if (command == "buffer-metadata") {
+  }
+  case ISS_CLI_Command::BUFFER_METADATA: {
     if (argc < 3) {
       std::cerr << "Error: buffer-metadata requires buffer ID\n";
       std::cerr
           << "Usage: instrument-script-server buffer-metadata <buffer_id>\n";
-      return 1;
+      rc = 1;
+      break;
     }
     nlohmann::json params;
     params["buffer_id"] = argv[2];
@@ -331,15 +386,16 @@ int main(int argc, char **argv) {
         std::cout << "  Size: " << out.value("bytes", 0ULL) << " bytes\n";
       }
     }
-    return rc;
-  } else if (command == "read-buffer") {
+    break;
+  }
+  case ISS_CLI_Command::READ_BUFFER: {
     if (argc < 3) {
       std::cerr << "Error: read-buffer requires buffer ID\n";
       std::cerr << "Usage: instrument-script-server read-buffer <buffer_id> "
                    "[--json]\n";
-      return 1;
+      rc = 1;
+      break;
     }
-    nlohmann::json params;
     params["buffer_id"] = argv[2];
     bool json_output = false;
     for (int i = 3; i < argc; ++i) {
@@ -347,8 +403,7 @@ int main(int argc, char **argv) {
         json_output = true;
       }
     }
-    nlohmann::json out;
-    int rc = server::handle_read_buffer(params, out);
+    rc = server::handle_read_buffer(params, out);
     if (!out.is_null()) {
       if (!out.value("ok", false)) {
         std::cerr << out.value("error", "Failed to read buffer") << "\n";
@@ -361,18 +416,18 @@ int main(int argc, char **argv) {
         }
       }
     }
-    return rc;
-  } else if (command == "release-buffer") {
+    break;
+  }
+  case ISS_CLI_Command::RELEASE_BUFFER: {
     if (argc < 3) {
       std::cerr << "Error: release-buffer requires buffer ID\n";
       std::cerr
           << "Usage: instrument-script-server release-buffer <buffer_id>\n";
-      return 1;
+      rc = 1;
+      break;
     }
-    nlohmann::json params;
     params["buffer_id"] = argv[2];
-    nlohmann::json out;
-    int rc = server::handle_release_buffer(params, out);
+    rc = server::handle_release_buffer(params, out);
     if (!out.is_null()) {
       if (!out.value("ok", false)) {
         std::cerr << out.value("error", "Failed to release buffer") << "\n";
@@ -380,16 +435,25 @@ int main(int argc, char **argv) {
         std::cout << "Released buffer: " << argv[2] << "\n";
       }
     }
-    return rc;
-  } else if (command == "--help" || command == "-h") {
+    break;
+  }
+  case ISS_CLI_Command::HELP_SHORT:
+  case ISS_CLI_Command::HELP: {
     print_usage();
-    return 0;
-  } else if (command == "--version" || command == "-v") {
-    std::cout << "instrument-script-server " << get_full_version() << std::endl;
-    return 0;
-  } else {
+    rc = 0;
+    break;
+  }
+  case ISS_CLI_Command::VERSION_SHORT:
+  case ISS_CLI_Command::VERSION: {
+    std::cout << "instrument-script-server " << get_full_version() << '\n';
+    rc = 0;
+    break;
+  }
+  default: {
     std::cerr << "Unknown command: " << command << "\n\n";
     print_usage();
-    return 1;
+    rc = 1;
+  }
+    return rc;
   }
 }
