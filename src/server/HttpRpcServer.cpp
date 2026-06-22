@@ -213,7 +213,7 @@ void HttpRpcServer::run_loop(uint16_t port) {
   setsockopt(listen_fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 #endif
 
-  struct sockaddr_in addr;
+  struct sockaddr_in addr{};
   std::memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_port = htons(port);
@@ -263,7 +263,7 @@ void HttpRpcServer::run_loop(uint16_t port) {
   // Set bound_port_ AFTER listen succeeds so daemon knows server is ready
   // If port was 0, query assigned port
   if (port == 0) {
-    struct sockaddr_in sin;
+    struct sockaddr_in sin{};
     socklen_t len = sizeof(sin);
     if (getsockname(listen_fd_, reinterpret_cast<struct sockaddr *>(&sin),
                     &len) == 0) {
@@ -278,7 +278,7 @@ void HttpRpcServer::run_loop(uint16_t port) {
 
   // Accept loop
   while (running_) {
-    struct sockaddr_in client_addr;
+    struct sockaddr_in client_addr{};
     socklen_t client_len = sizeof(client_addr);
 #ifdef _WIN32
     SOCKET client_fd =
@@ -299,8 +299,9 @@ void HttpRpcServer::run_loop(uint16_t port) {
         accept(listen_fd_, reinterpret_cast<struct sockaddr *>(&client_addr),
                &client_len);
     if (client_socket < 0) {
-      if (!running_)
+      if (!running_) {
         break;
+      }
       LOG_WARN("RPC", "ACCEPT", "accept failed: %s", strerror(errno));
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
       continue;
