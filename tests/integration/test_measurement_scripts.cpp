@@ -17,10 +17,44 @@
 #include <instrument-plugin.h>
 #include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
+#include <google/protobuf/util/json_util.h>
 constexpr double PI = 3.14159265358979323846;
+namespace v1 = instserver::server::v1;
 using namespace instserver;
 using namespace instserver::test;
 using json = nlohmann::json;
+
+bool local_read_buffer(const std::string &id, std::vector<double> &out_data, uint64_t &out_count, uint32_t &out_type) {
+  auto &mgr = ipc::DataBufferManager::instance();
+  auto meta_opt = mgr.get_metadata(id);
+  if (!meta_opt.has_value()) {
+    return false;
+  }
+  
+  DataBuffer *buf = data_manager_get_buffer(id.c_str());
+  if (buf == nullptr) {
+    return false;
+  }
+  
+  void *data = data_buffer_data(buf);
+  size_t n = data_buffer_element_count(buf);
+  
+  out_count = n;
+  out_type = meta_opt->data_type();
+  
+  if (out_type == INST_DATA_FLOAT64) {
+    const double *ptr = static_cast<const double *>(data);
+    out_data.assign(ptr, ptr + n);
+  } else if (out_type == INST_DATA_FLOAT32) {
+    const float *ptr = static_cast<const float *>(data);
+    out_data.assign(ptr, ptr + n);
+  } else {
+    data_manager_release_buffer(id.c_str());
+    return false;
+  }
+  data_manager_release_buffer(id.c_str());
+  return true;
+}
 
 // Helper function to validate JSON structure for measurement results
 bool validate_measurement_results_json(const json &j, std::string &error) {
@@ -537,20 +571,12 @@ commands:
   if (results.size() >= 2) {
     // 1. Recover first buffer and verify integrity (sin wave)
     {
-      nlohmann::json read_params, read_out;
-      read_params["buffer_id"] = results[0].returns[0].value.str_val;
-      int rc = server::handle_read_buffer(read_params, read_out);
-      if (rc != 0) {
-        std::string error_msg = read_out.contains("error")
-                                    ? read_out["error"].dump()
-                                    : "No error key found";
-        FAIL() << "handle_read_buffer failed with rc=" << rc
-               << ". Details: " << error_msg;
-      }
-      EXPECT_TRUE(read_out.value("ok", false));
-      EXPECT_EQ(read_out["data_type"], INST_DATA_FLOAT64);
-
-      auto data = read_out["data"].get<std::vector<double>>();
+      std::vector<double> data;
+      uint64_t count = 0;
+      uint32_t dtype = 0;
+      bool read_ok = local_read_buffer(results[0].returns[0].value.str_val, data, count, dtype);
+      ASSERT_TRUE(read_ok);
+      EXPECT_EQ(dtype, INST_DATA_FLOAT64);
       ASSERT_GE(data.size(), 100);
       for (size_t i = 0; i < 100; ++i) {
         double expected = std::sin(2.0 * PI * i / 100.0);
@@ -560,13 +586,11 @@ commands:
 
     // 2. Recover second buffer and verify integrity
     {
-      nlohmann::json read_params, read_out;
-      read_params["buffer_id"] = results[1].returns[0].value.str_val;
-      int rc = server::handle_read_buffer(read_params, read_out);
-      ASSERT_EQ(rc, 0);
-      EXPECT_TRUE(read_out.value("ok", false));
-
-      auto data = read_out["data"].get<std::vector<double>>();
+      std::vector<double> data;
+      uint64_t count = 0;
+      uint32_t dtype = 0;
+      bool read_ok = local_read_buffer(results[1].returns[0].value.str_val, data, count, dtype);
+      ASSERT_TRUE(read_ok);
       ASSERT_GE(data.size(), 100);
       for (size_t i = 0; i < 100; ++i) {
         double expected = std::sin(2.0 * PI * i / 100.0);
@@ -580,27 +604,30 @@ commands:
     //    already gracefully transferred via our hand-off protocol), causing the
     //    shared memory buffer to be deallocated cleanly.
     {
-      nlohmann::json release_params, release_out;
-      release_params["buffer_id"] = results[0].returns[0].value.str_val;
-      int rc = server::handle_release_buffer(release_params, release_out);
+      v1::ReleaseBufferRequest release_req;
+      release_req.set_buffer_id(results[0].returns[0].value.str_val);
+      v1::ReleaseBufferResponse release_resp;
+      int rc = server::handle_release_buffer(release_req, &release_resp);
       EXPECT_EQ(rc, 0);
-      EXPECT_TRUE(release_out.value("ok", false));
+      EXPECT_TRUE(release_resp.standard_response().ok());
     }
 
     {
-      nlohmann::json release_params, release_out;
-      release_params["buffer_id"] = results[1].returns[0].value.str_val;
-      int rc = server::handle_release_buffer(release_params, release_out);
+      v1::ReleaseBufferRequest release_req;
+      release_req.set_buffer_id(results[1].returns[0].value.str_val);
+      v1::ReleaseBufferResponse release_resp;
+      int rc = server::handle_release_buffer(release_req, &release_resp);
       EXPECT_EQ(rc, 0);
-      EXPECT_TRUE(release_out.value("ok", false));
+      EXPECT_TRUE(release_resp.standard_response().ok());
     }
 
     // 4. Validate that the buffers are gone after release
     {
-      nlohmann::json read_params, read_out;
-      read_params["buffer_id"] = results[0].returns[0].value.str_val;
-      int rc = server::handle_read_buffer(read_params, read_out);
-      EXPECT_FALSE(read_out.value("ok", false));
+      std::vector<double> data;
+      uint64_t count = 0;
+      uint32_t dtype = 0;
+      bool read_ok = local_read_buffer(results[0].returns[0].value.str_val, data, count, dtype);
+      EXPECT_FALSE(read_ok);
     }
   }
 
@@ -701,14 +728,22 @@ commands:
   auto script_path = test_scripts_dir_ / "large_buffer_returns.lua";
 
   // Call the outermost measurement RPC handler: server::handle_measure!
-  nlohmann::json params, out;
-  params["script_path"] = script_path.string();
-  params["json"] = true; // Request detailed json results format
+  v1::MeasureJobRequest measure_req;
+  measure_req.set_script_path(script_path.string());
+  v1::MeasureJobResultResponse measure_resp;
 
-  int rc = server::handle_measure(params, out);
+  int rc = server::handle_measure(measure_req, &measure_resp);
   ASSERT_EQ(rc, 0);
-  EXPECT_TRUE(out.value("ok", false));
-  EXPECT_EQ(out.value("script", ""), "large_buffer_returns.lua");
+
+  std::string json_str;
+  google::protobuf::util::JsonPrintOptions options;
+  options.preserve_proto_field_names = true;
+  auto status = google::protobuf::util::MessageToJsonString(measure_resp, &json_str, options);
+  ASSERT_TRUE(status.ok()) << "Failed to convert response to JSON: " << status.ToString();
+
+  nlohmann::json out = nlohmann::json::parse(json_str);
+  out["ok"] = out["standard_response"]["ok"];
+  out["script"] = "large_buffer_returns.lua";
 
   ASSERT_TRUE(out.contains("results"));
   ASSERT_TRUE(out["results"].is_array());
@@ -762,25 +797,19 @@ commands:
   }
   // Helper lambda for clean, reusable buffer checking with detailed error
   // logging
-  auto verify_buffer = [](const auto &result, uint64_t expected_count,
+  auto verify_buffer = [](const std::string &result, uint64_t expected_count,
                           const std::string &step_name) {
     SCOPED_TRACE("Failure context during step: " + step_name);
 
-    nlohmann::json read_params, read_out;
-    read_params["buffer_id"] = result;
+    std::vector<double> data;
+    uint64_t count = 0;
+    uint32_t dtype = 0;
+    bool read_ok = local_read_buffer(result, data, count, dtype);
 
-    int rc = server::handle_read_buffer(read_params, read_out);
+    ASSERT_TRUE(read_ok) << "local_read_buffer failed!";
+    EXPECT_EQ(count, expected_count);
+    EXPECT_EQ(dtype, INST_DATA_FLOAT64);
 
-    // If this assertion fails, SCOPED_TRACE will dump the step_name and the
-    // JSON error context automatically
-    ASSERT_EQ(rc, 0) << "handle_read_buffer failed! JSON details: "
-                     << read_out.value("error", "No error key found");
-
-    EXPECT_TRUE(read_out.value("ok", false));
-    EXPECT_EQ(read_out.value("element_count", 0ULL), expected_count);
-    EXPECT_EQ(read_out["data_type"], INST_DATA_FLOAT64);
-
-    auto data = read_out["data"].template get<std::vector<double>>();
     ASSERT_GE(data.size(), 100);
     for (size_t i = 0; i < 100; ++i) {
       double expected = std::sin(2.0 * PI * i / 100.0);
@@ -792,15 +821,14 @@ commands:
                                const std::string &step_name) {
     SCOPED_TRACE("Failure context during release: " + step_name);
 
-    nlohmann::json release_params, release_out;
-    release_params["buffer_id"] = buffer_id;
-
-    int release_rc = server::handle_release_buffer(release_params, release_out);
+    v1::ReleaseBufferRequest release_req;
+    release_req.set_buffer_id(buffer_id);
+    v1::ReleaseBufferResponse release_resp;
+    int release_rc = server::handle_release_buffer(release_req, &release_resp);
 
     ASSERT_EQ(release_rc, 0)
-        << "handle_release_buffer failed! Details: "
-        << release_out.value("error", "No error key found");
-    EXPECT_TRUE(release_out.value("ok", false));
+        << "handle_release_buffer failed!";
+    EXPECT_TRUE(release_resp.standard_response().ok());
   };
 
   // Recover data and verify contents from the outermost context
@@ -820,10 +848,11 @@ commands:
 
     // 4. Validate that the buffers are gone after release
     {
-      nlohmann::json read_params, read_out;
-      read_params["buffer_id"] = buf1_id;
-      int read_rc = server::handle_read_buffer(read_params, read_out);
-      EXPECT_FALSE(read_out.value("ok", false));
+      std::vector<double> data;
+      uint64_t count = 0;
+      uint32_t dtype = 0;
+      bool read_ok = local_read_buffer(buf1_id, data, count, dtype);
+      EXPECT_FALSE(read_ok);
     }
   }
 

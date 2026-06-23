@@ -223,7 +223,6 @@ void JobManager::worker_loop() {
         // Update status based on success
         if (success) {
           it->second.job.set_status(v1::JOB_STATUS_COMPLETED);
-          it->second.job.set_result(result);
         } else {
           it->second.job.set_status(v1::JOB_STATUS_FAILED);
         }

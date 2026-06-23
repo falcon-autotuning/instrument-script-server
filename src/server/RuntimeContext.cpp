@@ -397,7 +397,7 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
   cr.target =
       CallStackPtr{instrument_call_stack_clone(cs), instrument_call_stack_free};
   cr.params = params;
-  cr.executed_at = std::chrono::steady_clock::now();
+  cr.executed_at = std::chrono::system_clock::now();
 
   collected_results_.push_back(std::move(cr));
 
@@ -453,7 +453,7 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
         break;
       }
       std::string data_type;
-      switch (out->data_type) {
+      switch (out->data_type()) {
       case INST_DATA_FLOAT32:
         data_type = "float32";
         break;
@@ -480,7 +480,7 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
         break;
       }
       auto handle = std::make_shared<BufferHandle>(
-          v.value.str_val, out->element_count, data_type);
+          v.value.str_val, out->element_count(), data_type);
 
       response = std::make_shared<MeasurementResponse>(
           clone_callstack_ptr(cr.target), handle);
@@ -590,7 +590,7 @@ void RuntimeContext::execute_parallel_buffer() {
       auto resp = future.get();
       CallResult cr;
       populate_callresult_from_response(cr, resp);
-      cr.executed_at = std::chrono::steady_clock::now();
+      cr.executed_at = std::chrono::system_clock::now();
       collected_results_.push_back(std::move(cr));
       if (resp.error_code != ErrorCode::NONE) {
         LOG_ERROR("LUA_CONTEXT", "PARALLEL",
@@ -683,7 +683,7 @@ void RuntimeContext::process_tokens_and_wait() {
 
           auto &cr = collected_results_[result_index];
           populate_callresult_from_response(cr, resp);
-          cr.executed_at = std::chrono::steady_clock::now();
+          cr.executed_at = std::chrono::system_clock::now();
         } catch (const std::exception &e) {
           LOG_ERROR("LUA_CONTEXT", "TOKEN",
                     "Exception waiting future for token %llu: %s",
@@ -761,9 +761,9 @@ nlohmann::json RuntimeContext::collect_results_json() const {
             ipc::DataBufferManager::instance().get_metadata(v.value.str_val);
 
         if (out) {
-          return_json[key]["element_count"] = out->element_count;
+          return_json[key]["element_count"] = out->element_count();
 
-          switch (out->data_type) {
+          switch (out->data_type()) {
           case INST_DATA_FLOAT32:
             return_json[key]["data_type"] = "float32";
             break;

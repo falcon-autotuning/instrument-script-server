@@ -16,9 +16,87 @@
 #include <spdlog/spdlog.h>
 #include <thread>
 
+#include <google/protobuf/util/json_util.h>
 using namespace instserver;
 using namespace instserver::server;
 using json = nlohmann::json;
+
+namespace {
+int handle_measure(const json &params, json &out) {
+  v1::MeasureJobRequest req;
+  
+  if (params.contains("script_path")) {
+    req.set_script_path(params["script_path"].get<std::string>());
+  }
+  if (params.contains("block_inject_globals")) {
+    req.set_block_inject_globals(params["block_inject_globals"].get<bool>());
+  }
+  if (params.contains("context_schema_version")) {
+    req.set_context_schema_version(params["context_schema_version"].get<uint32_t>());
+  }
+
+  if (params.contains("globals") && params["globals"].is_object()) {
+    auto *globals_map = req.mutable_globals()->mutable_map();
+    for (auto it = params["globals"].begin(); it != params["globals"].end(); ++it) {
+      v1::VariableValue val;
+      if (it.value().is_number_integer()) {
+        val.set_i(it.value().get<int64_t>());
+      } else if (it.value().is_number_float()) {
+        val.set_d(it.value().get<double>());
+      } else if (it.value().is_boolean()) {
+        val.set_b(it.value().get<bool>());
+      } else if (it.value().is_string()) {
+        val.set_s(it.value().get<std::string>());
+      } else if (it.value().is_null()) {
+        val.set_is_nil(true);
+      }
+      (*globals_map)[it.key()] = val;
+    }
+  }
+
+  if (params.contains("type_manifest") && params["type_manifest"].is_object()) {
+    auto &tm = params["type_manifest"];
+    if (tm.contains("parameters") && tm["parameters"].is_array()) {
+      auto *manifest = req.mutable_type_manifest();
+      for (const auto &p : tm["parameters"]) {
+        auto *param = manifest->add_parameters();
+        if (p.contains("name")) {
+          param->set_name(p["name"].get<std::string>());
+        }
+        if (p.contains("type")) {
+          std::string type_str = p["type"].get<std::string>();
+          v1::LuaTypes ltype = v1::LUA_TYPES_UNSPECIFIED;
+          if (type_str == "int") ltype = v1::LUA_TYPES_INT64;
+          else if (type_str == "number") ltype = v1::LUA_TYPES_DOUBLE;
+          else if (type_str == "boolean") ltype = v1::LUA_TYPES_BOOL;
+          else if (type_str == "string") ltype = v1::LUA_TYPES_STRING;
+          else if (type_str == "DataBuffer") ltype = v1::LUA_TYPES_DATA_BUFFER;
+          else if (type_str == "CallStack") ltype = v1::LUA_TYPES_CALL_STACK;
+          param->set_type(ltype);
+        }
+      }
+    }
+  }
+
+  v1::MeasureJobResultResponse resp;
+  int rc = server::handle_measure(req, &resp);
+  
+  std::string json_str;
+  google::protobuf::util::JsonPrintOptions options;
+  options.preserve_proto_field_names = true;
+  auto status = google::protobuf::util::MessageToJsonString(resp, &json_str, options);
+  if (!status.ok()) {
+    return 1;
+  }
+  
+  out = json::parse(json_str);
+  out["ok"] = out["standard_response"]["ok"];
+  if (out.contains("standard_response") && out["standard_response"].contains("error") && out["standard_response"]["error"].contains("message")) {
+    out["error"] = out["standard_response"]["error"]["message"];
+  }
+  return rc;
+}
+} // namespace
 
 class TypeManifestTest : public test::PluginTestFixture {
 protected:

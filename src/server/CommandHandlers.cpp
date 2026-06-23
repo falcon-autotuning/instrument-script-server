@@ -1091,4 +1091,10 @@ int handle_read_buffer(const json &params, json &out) {
 
   return 0;
 }
+
+int handle_daemon_stop(const DaemonStop &req, void *unused) {
+  ServerDaemon::instance().stop();
+  return 0;
+}
 } // namespace instserver::server
+

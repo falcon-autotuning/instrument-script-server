@@ -2,6 +2,7 @@
 #include "instrument-script-server/export.h"
 
 #include "instrument-script-server/server/InstrumentCommand.hpp"
+#include <nlohmann/json.hpp>
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
 #include <instrument-call-stack/instrument-call-stack.h>
