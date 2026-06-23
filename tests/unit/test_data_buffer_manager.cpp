@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <gtest/gtest.h>
 #include <instrument-data.h>
+#include <google/protobuf/util/time_util.h>
 
 using namespace instserver::ipc;
 
@@ -25,13 +26,12 @@ TEST_F(DataBufferManagerTest, GetMetadata) {
   auto metadata = manager_->get_metadata(buffer_id);
   ASSERT_TRUE(metadata.has_value());
 
-  EXPECT_EQ(metadata->buffer_id, buffer_id);
-  EXPECT_EQ(metadata->instrument_name, "DMM");
-  EXPECT_EQ(metadata->command_id, "READ");
-  EXPECT_EQ(metadata->data_type, INST_DATA_INT32);
-  EXPECT_EQ(metadata->element_count, test_data.size());
-  EXPECT_EQ(metadata->byte_size, test_data.size() * sizeof(int32_t));
-  EXPECT_GT(metadata->timestamp_ms, 0);
+  EXPECT_EQ(metadata->instrument_name(), "DMM");
+  EXPECT_EQ(metadata->command_id(), "READ");
+  EXPECT_EQ(metadata->data_type(), INST_DATA_INT32);
+  EXPECT_EQ(metadata->element_count(), test_data.size());
+  EXPECT_EQ(metadata->byte_size(), test_data.size() * sizeof(int32_t));
+  EXPECT_GT(google::protobuf::util::TimeUtil::TimestampToMilliseconds(metadata->captured_at()), 0);
   manager_->release_buffer(buffer_id);
 }
 

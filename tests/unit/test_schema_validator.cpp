@@ -28,7 +28,20 @@ void debug_log(const std::string &prefix, const std::string &message) {
  * dir)
  */
 fs::path get_executables_dir() {
-  fs::path exe_dir = fs::current_path().parent_path();
+#ifdef _WIN32
+  char path[MAX_PATH];
+  GetModuleFileNameA(NULL, path, MAX_PATH);
+  fs::path self_path(path);
+#else
+  char path[1024];
+  ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+  if (len == -1) {
+    return fs::current_path().parent_path();
+  }
+  path[len] = '\0';
+  fs::path self_path(path);
+#endif
+  fs::path exe_dir = self_path.parent_path().parent_path();
   debug_log("get_executables_dir",
             "Executables directory: " + exe_dir.string());
   return exe_dir;
