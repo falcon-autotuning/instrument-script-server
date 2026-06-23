@@ -19,7 +19,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/instrument-script-server-targets.cmake")
 # Set include directories
 set(InstrumentServer_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_PREFIX@/include")
 
-check_required_components(instrument-script-server)
+check_required_components(instrument-script-server-daemon)
 check_required_components(instrument-worker)
 check_required_components(template-expander)
 check_required_components(validate-instrument-api)

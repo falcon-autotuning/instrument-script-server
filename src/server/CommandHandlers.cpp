@@ -154,9 +154,6 @@ sol::object array_to_lua(sol::state_view lua, const Range &range) {
 
 namespace instserver::server {
 
-// The environment variable INSTRUMENT_SCRIPT_SERVER_RPC_PORT can be used to set
-// this port from outside.
-constexpr int DEFAULT_PORT = 8555;
 sol::object variable_to_lua(sol::state_view lua, const v1::VariableValue *var) {
 
   switch (var->value_case()) {
@@ -884,4 +881,3 @@ int handle_get_buffer_metadata(const GetBufferMetadataRequest &req,
   return 0;
 }
 } // namespace instserver::server
-

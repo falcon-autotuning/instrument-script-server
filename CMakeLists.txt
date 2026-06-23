@@ -211,7 +211,7 @@ target_include_directories(
     $<$<BOOL:${SOL2_INCLUDE_DIR}>:$<BUILD_INTERFACE:${SOL2_INCLUDE_DIR}>>
 )
 
-add_executable(instrument-script-server src/server/instrument_server_main.cpp)
+add_executable(instrument-script-server-daemon src/server/daemon_main.cpp)
 add_executable(instrument-worker src/worker_main.cpp)
 add_executable(validate-instrument-api src/instrument_api_validator_main.cpp)
 add_executable(validate-instrument-config
@@ -222,7 +222,7 @@ add_executable(template-expander src/template_expander.cpp)
 add_executable(generate-instrument-config
                  src/instrument_configuration_generator.cpp)
 foreach(target
-        instrument-script-server
+        instrument-script-server-daemon
         validate-instrument-api
         validate-instrument-config
         validate-quantum-dot-config
@@ -257,7 +257,7 @@ install(TARGETS instrument-script-server-core
 )
 
 install(TARGETS
-    instrument-script-server
+    instrument-script-server-daemon
     instrument-worker
     validate-instrument-api
     validate-instrument-config
