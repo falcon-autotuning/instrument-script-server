@@ -66,7 +66,6 @@ handle_get_buffer_metadata(const GetBufferMetadataRequest &req,
 
 // Special case (no response message)
 INSTRUMENT_SERVER_API int
-handle_daemon_stop(const DaemonStop &req,
-                   void *unused /* or remove later */); // TODO:
+handle_daemon_stop(const DaemonStop &req, void *unused /* or remove later */);
 
 } // namespace instserver::server
