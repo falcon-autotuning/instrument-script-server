@@ -1,9 +1,15 @@
 syntax = "proto3";
+package instserver.server.v1;
 
+import "google/protobuf/timestamp.proto";
 // Unified error handling
 enum ErrorCode {
   ERROR_CODE_UNSPECIFIED = 0;
-  ERROR_CODE_INVALID_ARGUMENT = 1;
+  ERROR_CODE_RUNTIME = 1;
+  ERROR_CODE_INVALID_ARGUMENT = 2;
+  ERROR_CODE_FILE_DOES_NOT_EXIST = 3;
+  ERROR_CODE_PLUGIN_CRASH = 4;
+  ERROR_CODE_INSTRUMENT_CRASH = 5;
 }
 message ErrorDetails {
   ErrorCode code = 1;
@@ -21,7 +27,7 @@ message DaemonStop {} // One directional shutdown command
 
 message DaemonStatusRequest {}
 message DaemonStatusResponse {
-  StandardResponse stdrp = 1;
+  StandardResponse standard_response = 1;
   bool running = 2;
   optional uint32 pid = 3;
 }
@@ -29,36 +35,35 @@ message DaemonStatusResponse {
 message StartInstrumentRequest {
   string config_path = 1;
   optional string plugin_path = 2;
-  optional string log_level = 3;
 }
 message StartInstrumentResponse {
-  StandardResponse stdrp = 1;
+  StandardResponse standard_response = 1;
 }
 
 message StopInstrumentRequest {
   string instrument_name = 1;
 }
 message StopInstrumentResponse {
-  StandardResponse stdrp = 1;
+  StandardResponse standard_response = 1;
 }
 
 message InstrumentStatusRequest {
   string instrument_name = 1;
 }
 message InstrumentStats {
-  string commands_sent = 1;
-  string commands_completed = 2;
-  string commands_failed = 3;
-  string commands_timeout = 4;
+  int32 commands_sent = 1;
+  int32 commands_completed = 2;
+  int32 commands_failed = 3;
+  int32 commands_timeout = 4;
 }
 message InstrumentStatusResponse {
-  StandardResponse stdrp = 1;
+  StandardResponse standard_response = 1;
   optional InstrumentStats stats = 3;
 }
 
 message ListInstrumentsRequest {}
 message ListInstrumentsResponse {
-  StandardResponse stdrp = 1;
+  StandardResponse standard_response = 1;
   repeated string instrument_name = 2;
 }
 
@@ -132,30 +137,48 @@ message VariableValue {
     MixedMap m_map = 13;
   }
 }
-message GlobalVariables {
-  map<string, VariableValue> values = 1;
+message Globals {
+  map<string, VariableValue> map = 1;
 }
 message MeasureJobRequest {
   string script_path = 1;
-  GlobalVariables globals = 2;
+  Globals globals = 2;
   bool block_inject_globals = 3;
   optional TypeManifest type_manifest = 4;
   optional uint32 context_schema_version = 5;
 }
 message MeasureJobResponse {
-  StandardResponse stdrp = 1;
+  StandardResponse standard_response = 1;
   uint32 job_id = 2;
 }
 
 message JobStatusRequest {
   uint32 job_id = 1;
 }
+enum JobStatus {
+  JOB_STATUS_UNSPECIFIED = 0;
+  JOB_STATUS_QUEUED = 1;
+  JOB_STATUS_RUNNING = 2;
+  JOB_STATUS_COMPLETED = 3;
+  JOB_STATUS_FAILED = 4;
+  JOB_STATUS_CANCELING = 5;
+  JOB_STATUS_CANCELLED = 6;
+}
+enum JobType {
+  JOB_TYPE_UNSPECIFIED = 0;
+  JOB_TYPE_MEASURE = 1;
+  JOB_TYPE_SLEEP = 2;
+}
+message Job {
+  JobType type = 1;
+  JobStatus status = 2;
+  optional google.protobuf.Timestamp created_at = 3;
+  optional google.protobuf.Timestamp started_at = 4;
+  optional google.protobuf.Timestamp finished_at = 5;
+}
 message JobStatusResponse {
-  StandardResponse stdrp = 1;
-  optional string status = 2;
-  optional uint64 created_at = 3;
-  optional uint64 started_at = 4;
-  optional uint64 finished_at = 5;
+  StandardResponse standard_response = 1;
+  Job job = 2;
 }
 
 message MeasureJobResultRequest {
@@ -175,55 +198,41 @@ message TypedParameter {
 message CommandResult {
   string instrument_name = 1;
   string verb = 2;
-  uint64 executed_at_ms = 3;
+  google.protobuf.Timestamp executed_at = 3;
   repeated TypedParameter return = 4;
 }
-enum InstrumentMeasureStatus {
-  INSTRUMENT_MEASURE_STATUS_UNSPECIFIED = 0;
-  INSTRUMENT_MEASURE_STATUS_QUEUED = 1;
-  INSTRUMENT_MEASURE_STATUS_RUNNING = 2;
-  INSTRUMENT_MEASURE_STATUS_COMPLETED = 3;
-  INSTRUMENT_MEASURE_STATUS_FAILED = 4;
-  INSTRUMENT_MEASURE_STATUS_CANCELLED = 5;
-}
 message MeasureJobResultResponse {
-  StandardResponse stdrp = 1;
+  StandardResponse standard_response = 1;
   uint32 job_id = 2;
-  optional InstrumentMeasureStatus status = 3;
+  JobStatus status = 3;
   repeated CommandResult results = 4;
 }
 
-message MeasureJobListRequest {}
-message Job {
-  uint32 job_id = 1;
-  string type = 2;
-  InstrumentMeasureStatus status = 3;
-  uint64 created_at = 4;
-}
-message MeasureJobListResponse {
-  StandardResponse stdrp = 1;
-  repeated Job jobs = 2;
+message JobListRequest {}
+message JobListResponse {
+  StandardResponse standard_response = 1;
+  map<uint32, Job> jobs = 2;
 }
 
 message CancelJobRequest {
   uint32 job_id = 1;
 }
 message CancelJobResponse {
-  StandardResponse stdrp = 1;
+  StandardResponse standard_response = 1;
 }
 
 message DiscoverRequest {
   repeated string plugin_paths = 1;
 }
 message DiscoverResponse {
-  StandardResponse stdrp = 1;
+  StandardResponse standard_response = 1;
   repeated string paths = 2;
   repeated string plugin_names = 3;
 }
 
 message ListDataBuffersRequest {}
 message ListDataBuffersResponse {
-  StandardResponse stdrp = 1;
+  StandardResponse standard_response = 1;
   map<string, DataBufferMetadata> buffers = 2; // the key is the buffer_id
 }
 
@@ -231,14 +240,59 @@ message ReleaseBufferRequest {
   string buffer_id = 1;
 }
 message ReleaseBufferResponse {
-  StandardResponse stdrp = 1;
+  StandardResponse standard_response = 1;
 }
 
 message GetBufferMetadataRequest {
   string buffer_id = 1;
 }
 message GetBufferMetadataResponse {
-  StandardResponse stdrp = 1;
+  StandardResponse standard_response = 1;
   optional DataBufferMetadata meta = 2;
 }
 // ReadBuffer needs to be handled in the CLI process since it streams all the data to cout
+
+message RpcError {
+  StandardResponse standard_response = 1;
+}
+
+// The total all possible requests to the daemon
+message RpcRequest {
+  oneof request {
+    DaemonStatusRequest daemon_status = 1;
+    StartInstrumentRequest start_instrument = 2;
+    StopInstrumentRequest stop_instrument = 3;
+    InstrumentStatusRequest instrument_status = 4;
+    ListInstrumentsRequest list_instrument = 5;
+    MeasureJobRequest measure_job = 6;
+    JobStatusRequest job_status = 7;
+    MeasureJobResultRequest measure_job_result = 8;
+    JobListRequest job_list = 9;
+    CancelJobRequest cancel_job = 10;
+    DiscoverRequest discover = 11;
+    ListDataBuffersRequest list_data_buffers = 12;
+    ReleaseBufferRequest release_buffer = 13;
+    GetBufferMetadataRequest get_buffer_metadata = 14;
+    DaemonStop daemon_stop = 100;
+  }
+}
+// The total all possible responses from the daemon
+message RpcResponse {
+  oneof response {
+    DaemonStatusResponse daemon_status = 1;
+    StartInstrumentResponse start_instrument = 2;
+    StopInstrumentResponse stop_instrument = 3;
+    InstrumentStatusResponse instrument_status = 4;
+    ListInstrumentsResponse list_instrument = 5;
+    MeasureJobResponse measure_job = 6;
+    JobStatusResponse job_status = 7;
+    MeasureJobResultResponse measure_job_result = 8;
+    JobListResponse job_list = 9;
+    CancelJobResponse cancel_job = 10;
+    DiscoverResponse discover = 11;
+    ListDataBuffersResponse list_data_buffers = 12;
+    ReleaseBufferResponse release_buffer = 13;
+    GetBufferMetadataResponse get_buffer_metadata = 14;
+    RpcError error = 100;
+  }
+}

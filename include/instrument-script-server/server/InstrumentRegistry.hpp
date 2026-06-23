@@ -2,12 +2,10 @@
 #include "instrument-script-server/export.h"
 
 #include "instrument-script-server/server/InstrumentWorkerProxy.hpp"
-#include "instrument-script-server/server/SyncCoordinator.hpp"
 
 #include <map>
 #include <memory>
 #include <mutex>
-#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 

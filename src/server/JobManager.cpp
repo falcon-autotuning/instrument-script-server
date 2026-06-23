@@ -3,12 +3,14 @@
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
+#include "instserver/server/v1/daemon_messages.pb.h"
 #include <algorithm>
 #include <chrono>
 #include <fmt/format.h>
+#include <google/protobuf/util/time_util.h>
 #include <instrument-log/inst_logging.h>
 #include <sol/sol.hpp>
-#include <sstream>
+#include <stdexcept>
 #include <thread>
 
 using json = nlohmann::json;
@@ -42,92 +44,82 @@ void JobManager::stop() {
   LOG_INFO("JOB", "MGR", "JobManager stopped");
 }
 
-std::string JobManager::make_job_id() {
-  uint64_t n = next_id_.fetch_add(1);
-  auto now = std::chrono::system_clock::now();
-  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                now.time_since_epoch())
-                .count();
-  std::ostringstream ss;
-  ss << "job-" << ms << "-" << n;
-  return ss.str();
-}
+JobID JobManager::make_job_id() { return next_id_.fetch_add(1); }
 
-std::string JobManager::submit_job(const std::string &job_type,
-                                   const json &params) {
+JobID JobManager::submit_job(v1::JobType job_type, const JobParams &params) {
+  JobID jid = make_job_id();
   JobInfo info;
-  info.id = make_job_id();
-  info.type = job_type;
+  info.job.set_type(job_type);
   info.params = params;
-  info.status = "queued";
-  info.created_at = std::chrono::system_clock::now();
+  info.job.set_status(v1::JOB_STATUS_QUEUED);
+  *info.job.mutable_created_at() =
+      google::protobuf::util::TimeUtil::GetCurrentTime();
 
   {
     std::lock_guard<std::mutex> lk(mutex_);
-    jobs_.emplace(info.id, info);
-    queue_.push_back(info.id);
+    jobs_.emplace(jid, info);
+    queue_.push_back(jid);
   }
   cv_.notify_one();
 
-  LOG_INFO("JOB", "SUBMIT", "Submitted job %s type=%s", info.id.c_str(),
-           job_type.c_str());
-  return info.id;
+  LOG_INFO("JOB", "SUBMIT", "Submitted job %d type=%s", jid,
+           JobType_Name(job_type).c_str());
+  return jid;
 }
 
-std::string JobManager::submit_measure(const std::string &script_path,
-                                       const json &params) {
-  json p = params;
-  p["script_path"] = script_path;
-  return submit_job("measure", p);
+JobID JobManager::submit_measure(const v1::MeasureJobRequest &params) {
+  return submit_job(v1::JOB_TYPE_MEASURE, params);
 }
 
-bool JobManager::get_job_info(const std::string &job_id, JobInfo &out) {
+bool JobManager::get_job_info(uint32_t job_id, JobInfo &out) {
   std::lock_guard<std::mutex> lk(mutex_);
   auto it = jobs_.find(job_id);
-  if (it == jobs_.end())
+  if (it == jobs_.end()) {
     return false;
+  }
   out = it->second;
   return true;
 }
 
-bool JobManager::get_job_result(const std::string &job_id, json &out) {
+bool JobManager::get_job_result(JobID job_id, JobResults &out) {
   std::lock_guard<std::mutex> lk(mutex_);
   auto it = jobs_.find(job_id);
-  if (it == jobs_.end())
+  if (it == jobs_.end()) {
     return false;
-  if (it->second.status != "completed")
+  }
+  if (it->second.job.status() != v1::JOB_STATUS_COMPLETED) {
     return false;
+  }
   out = it->second.result;
   return true;
 }
 
-std::vector<JobInfo> JobManager::list_jobs() {
+std::unordered_map<JobID, JobInfo> JobManager::list_jobs() {
   std::vector<JobInfo> v;
   std::lock_guard<std::mutex> lk(mutex_);
-  v.reserve(jobs_.size());
-  for (auto &kv : jobs_)
-    v.push_back(kv.second);
-  return v;
+  return jobs_;
 }
 
-bool JobManager::cancel_job(const std::string &job_id) {
+bool JobManager::cancel_job(JobID job_id) {
   std::lock_guard<std::mutex> lk(mutex_);
   auto it = jobs_.find(job_id);
-  if (it == jobs_.end())
+  if (it == jobs_.end()) {
     return false;
+  }
   // If queued, remove from queue and mark canceled
-  if (it->second.status == "queued") {
-    auto qit = std::find(queue_.begin(), queue_.end(), job_id);
-    if (qit != queue_.end())
+  if (it->second.job.status() == v1::JOB_STATUS_QUEUED) {
+    auto qit = std::ranges::find(queue_, job_id);
+    if (qit != queue_.end()) {
       queue_.erase(qit);
-    it->second.status = "canceled";
-    it->second.finished_at = std::chrono::system_clock::now();
-    it->second.error = "canceled";
+    }
+    it->second.job.set_status(v1::JOB_STATUS_CANCELLED);
+    *it->second.job.mutable_finished_at() =
+        google::protobuf::util::TimeUtil::GetCurrentTime();
     return true;
   }
   // If running, set status to canceled - cooperation required
-  if (it->second.status == "running") {
-    it->second.status = "canceling";
+  if (it->second.job.status() == v1::JOB_STATUS_RUNNING) {
+    it->second.job.set_status(v1::JOB_STATUS_CANCELING);
     // Worker should check status and abort if possible.
     return true;
   }
@@ -137,26 +129,25 @@ bool JobManager::cancel_job(const std::string &job_id) {
 
 void JobManager::worker_loop() {
   while (true) {
-    std::string jid;
+    JobID jid = 0;
     {
       std::unique_lock<std::mutex> lk(mutex_);
       cv_.wait(lk, [this]() { return !queue_.empty() || !running_; });
-      if (!running_ && queue_.empty())
+      if (!running_ && queue_.empty()) {
         break;
+      }
       if (!queue_.empty()) {
         // Pop and set running (blocking mode - jobs execute sequentially)
         jid = queue_.front();
         queue_.pop_front();
         auto &j = jobs_.at(jid);
-        j.status = "running";
-        j.started_at = std::chrono::system_clock::now();
+        j.job.set_status(v1::JOB_STATUS_RUNNING);
+        *j.job.mutable_started_at() =
+            google::protobuf::util::TimeUtil::GetCurrentTime();
       }
     }
 
-    if (jid.empty())
-      continue;
-
-    LOG_INFO("JOB", "RUN", "Starting job %s", jid.c_str());
+    LOG_INFO("JOB", "RUN", "Starting job %d", jid);
 
     // Execute based on job type
     bool success = false;
@@ -170,11 +161,14 @@ void JobManager::worker_loop() {
     }
 
     try {
-      if (run_info.type == "sleep") {
+      switch (run_info.job.type()) {
+      case v1::JOB_TYPE_SLEEP: {
         // params: duration_ms
         int ms = 100;
         try {
-          ms = run_info.params.value("duration_ms", 100);
+          SleepRequest sleep_req;
+          sleep_req.duration_ms = ms;
+          run_info.params = sleep_req;
         } catch (...) {
         }
         // Check canceling requests periodically
@@ -184,26 +178,26 @@ void JobManager::worker_loop() {
           {
             std::lock_guard<std::mutex> lk(mutex_);
             auto it = jobs_.find(jid);
-            if (it != jobs_.end() && (it->second.status == "canceling" ||
-                                      it->second.status == "canceled")) {
+            if (it != jobs_.end() &&
+                (it->second.job.status() == v1::JOB_STATUS_CANCELING ||
+                 it->second.job.status() == v1::JOB_STATUS_CANCELLED)) {
               throw std::runtime_error("canceled");
             }
           }
           std::this_thread::sleep_for(std::chrono::milliseconds(step));
           slept += step;
         }
-        result["message"] = "slept";
-        result["duration_ms"] = ms;
         success = true;
-      } else if (run_info.type == "measure") {
+      }
+      case v1::JOB_TYPE_MEASURE: {
         // Enqueue-first behavior:
         // 1) Create a Lua state, bind a RuntimeContext in enqueue_mode=true
         // 2) Run the script to parse and enqueue commands quickly
         // 3) Spawn a monitor thread that waits for the context's tokens to be
         //    processed and futures to complete; the worker loop continues to
         //    next job.
-
-        std::string script_path = run_info.params.value("script_path", "");
+        auto &measure_req = std::get<v1::MeasureJobRequest>(run_info.params);
+        std::string script_path = measure_req.script_path();
         if (script_path.empty()) {
           throw std::runtime_error("missing script_path");
         }
@@ -233,124 +227,97 @@ void JobManager::worker_loop() {
         // Check if the script defined a main function (new format)
         sol::optional<sol::function> main_func = lua["main"];
 
-        if (main_func) {
-          // New format: call main function with context
-          LOG_INFO("JOB", "MEASURE",
-                   "Executing script with main function (new format)");
+        if (!main_func.has_value()) {
+          std::string error = "Missing main(ctx, ...) function.";
+          LOG_ERROR("JOB", "MEASURE", error.c_str());
+          throw std::runtime_error(error);
+        }
+        // Check if type_manifest is provided (Teal static typing support)
+        if (measure_req.has_type_manifest()) {
+          const auto &manifest = measure_req.type_manifest();
 
-          // Check if type_manifest is provided (Teal static typing support)
-          if (run_info.params.contains("type_manifest")) {
-            const auto &manifest = run_info.params["type_manifest"];
+          // Build arguments based on manifest
+          std::vector<sol::object> args;
+          args.push_back(
+              sol::make_object(lua, ctx.get())); // First arg is always context
 
-            // Validate manifest structure
-            if (!manifest.contains("parameters") ||
-                !manifest["parameters"].is_array()) {
-              throw std::runtime_error("Invalid type_manifest: missing or "
-                                       "invalid 'parameters' array");
-            }
+          const auto &param_defs = manifest.parameters();
+          for (int i = 1; i < param_defs.size(); ++i) { // Skip first (context)
+            const auto &param = param_defs[i];
+            std::string param_name = param.name();
 
-            // Build arguments based on manifest
-            std::vector<sol::object> args;
-            args.push_back(sol::make_object(
-                lua, ctx.get())); // First arg is always context
-
-            const auto &param_defs = manifest["parameters"];
-            for (size_t i = 1; i < param_defs.size();
-                 ++i) { // Skip first (context)
-              const auto &param = param_defs[i];
-
-              if (!param.contains("name") || !param["name"].is_string()) {
-                throw std::runtime_error(fmt::format(
-                    "Invalid type_manifest: parameter {} missing 'name'", i));
-              }
-
-              std::string param_name = param["name"];
-
-              // Check if this parameter exists in globals
-              if (!run_info.params.contains("globals") ||
-                  !run_info.params["globals"].contains(param_name)) {
-                std::string error_msg =
-                    fmt::format("Missing required parameter '{}' (declared in "
-                                "type_manifest but not provided in globals)",
-                                param_name);
-                LOG_ERROR(
-                    "JOB", "MEASURE",
-                    "Missing required parameter '%s' for typed main function",
-                    param_name.c_str());
-                throw std::runtime_error(error_msg);
-              }
-
-              // Convert JSON value to Lua object
-              sol::object arg =
-                  json_to_lua(lua, run_info.params["globals"][param_name]);
-              args.push_back(arg);
-
-              LOG_INFO("JOB", "MEASURE",
-                       "Passing parameter '%s' to main function (type: %s)",
-                       param_name.c_str(),
-                       param.value("type", "unknown").c_str());
-            }
-
-            // Check for unused globals (warnings)
-            if (run_info.params.contains("globals")) {
-              for (auto it = run_info.params["globals"].begin();
-                   it != run_info.params["globals"].end(); ++it) {
-                std::string global_name = it.key();
-                bool found = false;
-
-                for (size_t i = 1; i < param_defs.size(); ++i) {
-                  if (param_defs[i]["name"] == global_name) {
-                    found = true;
-                    break;
-                  }
-                }
-
-                if (!found) {
-                  LOG_WARN("JOB", "MEASURE",
-                           "Global variable '%s' provided but not used by "
-                           "typed main function (injecting as global)",
-                           global_name.c_str());
-                  // Still inject it as global for backward compatibility
-                  lua[global_name] = json_to_lua(lua, it.value());
-                }
-              }
-            }
-
-            // Call main with unpacked arguments
-            sol::protected_function_result main_result =
-                (*main_func)(sol::as_args(args));
-
-            if (!main_result.valid()) {
-              sol::error err = main_result;
+            // Check if this parameter exists in globals
+            if (!measure_req.globals().map().contains(param_name)) {
               std::string error_msg =
-                  std::string("Script execution error: ") + err.what();
-              if (ctx->has_error()) {
-                error_msg = ctx->get_error() + " (Runtime: " + err.what() + ")";
-              }
+                  fmt::format("Missing required parameter '{}' (declared in "
+                              "type_manifest but not provided in globals)",
+                              param_name);
+              LOG_ERROR(
+                  "JOB", "MEASURE",
+                  "Missing required parameter '%s' for typed main function",
+                  param_name.c_str());
               throw std::runtime_error(error_msg);
             }
-          } else {
-            // Legacy: call main with just context parameter
-            sol::protected_function_result main_result =
-                (*main_func)(ctx.get());
 
-            if (!main_result.valid()) {
-              sol::error err = main_result;
-              std::string error_msg =
-                  std::string("Script execution error: ") + err.what();
-              // If context:error() was also called, include both messages
-              if (ctx->has_error()) {
-                error_msg = ctx->get_error() + " (Runtime: " + err.what() + ")";
+            // Convert JSON value to Lua object
+            sol::object arg = variable_to_lua(
+                lua, &measure_req.globals().map().at(param_name));
+            args.push_back(arg);
+
+            LOG_INFO("JOB", "MEASURE",
+                     "Passing parameter '%s' to main function (type: %s)",
+                     param_name.c_str(), LuaTypes_Name(param.type()).c_str());
+          }
+
+          // Check for unused globals (warnings)
+          for (const auto &it : measure_req.globals().map()) {
+            std::string global_name = it.first;
+            bool found = false;
+
+            for (int i = 1; i < param_defs.size(); ++i) {
+              if (param_defs[i].name() == global_name) {
+                found = true;
+                break;
               }
-              throw std::runtime_error(error_msg);
+            }
+
+            if (!found) {
+              LOG_WARN("JOB", "MEASURE",
+                       "Global variable '%s' provided but not used by "
+                       "typed main function (injecting as global)",
+                       global_name.c_str());
+              // Still inject it as global for backward compatibility
+              lua[global_name] = variable_to_lua(lua, &it.second);
             }
           }
+
+          // Call main with unpacked arguments
+          sol::protected_function_result main_result =
+              (*main_func)(sol::as_args(args));
+
+          if (!main_result.valid()) {
+            sol::error err = main_result;
+            std::string error_msg =
+                std::string("Script execution error: ") + err.what();
+            if (ctx->has_error()) {
+              error_msg = ctx->get_error() + " (Runtime: " + err.what() + ")";
+            }
+            throw std::runtime_error(error_msg);
+          }
         } else {
-          // Old format: script executed at load time (backward compatibility)
-          LOG_WARN(
-              "JOB", "MEASURE",
-              "DEPRECATED: Script uses compatibility mode (no main function). "
-              "Please migrate to new format with main(ctx) function.");
+          // Legacy: call main with just context parameter
+          sol::protected_function_result main_result = (*main_func)(ctx.get());
+
+          if (!main_result.valid()) {
+            sol::error err = main_result;
+            std::string error_msg =
+                std::string("Script execution error: ") + err.what();
+            // If context:error() was also called, include both messages
+            if (ctx->has_error()) {
+              error_msg = ctx->get_error() + " (Runtime: " + err.what() + ")";
+            }
+            throw std::runtime_error(error_msg);
+          }
         }
 
         // Check for explicit errors from context:error()
@@ -362,9 +329,12 @@ void JobManager::worker_loop() {
         // Collect results directly
         result = ctx->collect_results_json();
         success = true;
-      } else {
+      }
+      default: {
         // unknown job type
-        throw std::runtime_error("unknown job type: " + run_info.type);
+        throw std::runtime_error("unknown job type: " +
+                                 std::to_string(run_info.job.type()));
+      }
       }
     } catch (const std::exception &e) {
       success = false;
@@ -380,18 +350,18 @@ void JobManager::worker_loop() {
       if (it != jobs_.end()) {
         // Update status based on success
         if (success) {
-          it->second.status = "completed";
-          it->second.result = result;
+          it->second.job.set_status(v1::JOB_STATUS_COMPLETED);
+          it->second.job.set_result(result);
         } else {
-          it->second.status = "failed";
-          it->second.error = err;
+          it->second.job.set_status(v1::JOB_STATUS_FAILED);
         }
-        it->second.finished_at = std::chrono::system_clock::now();
+        *it->second.job.mutable_finished_at() =
+            google::protobuf::util::TimeUtil::GetCurrentTime();
       }
     }
 
-    LOG_INFO("JOB", "DONE", "Job %s dispatched (type=%s)", jid.c_str(),
-             run_info.type.c_str());
+    LOG_INFO("JOB", "DONE", "Job %d dispatched (type=%s)", jid,
+             JobType_Name(run_info.job.type()).c_str());
   }
 }
 

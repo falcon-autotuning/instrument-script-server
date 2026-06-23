@@ -1,4 +1,5 @@
 #include "instrument-script-server/server/CommandHandlers.hpp"
+#include "instrument-script-server/ErrorCodes.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include "instrument-script-server/plugin/PluginLoader.hpp"
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
@@ -6,6 +7,7 @@
 #include "instrument-script-server/server/JobManager.hpp"
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
+#include "instserver/server/v1/daemon_messages.pb.h"
 #include <fmt/format.h>
 #include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-data.h>
@@ -146,39 +148,66 @@ namespace instserver::server {
 // The environment variable INSTRUMENT_SCRIPT_SERVER_RPC_PORT can be used to set
 // this port from outside.
 constexpr int DEFAULT_PORT = 8555;
+template <typename Range>
+sol::object array_to_lua(sol::state_view lua, const Range &range) {
+  sol::table t = lua.create_table();
+  int idx = 1;
+  for (const auto &v : range) {
+    t[idx++] = v;
+  }
+  return sol::make_object(lua, t);
+}
+sol::object variable_to_lua(sol::state_view lua, const v1::VariableValue *var) {
 
-sol::object json_to_lua(sol::state_view lua, const json &json_value) {
-  switch (json_value.type()) {
-  case json::value_t::null:
+  switch (var->value_case()) {
+
+  case v1::VariableValue::kIsNil:
     return sol::make_object(lua, sol::nil);
-  case json::value_t::boolean:
-    return sol::make_object(lua, json_value.get<bool>());
-  case json::value_t::number_integer:
-    return sol::make_object(lua, json_value.get<int64_t>());
-  case json::value_t::number_unsigned:
-    return sol::make_object(lua, json_value.get<uint64_t>());
-  case json::value_t::number_float:
-    return sol::make_object(lua, json_value.get<double>());
-  case json::value_t::string:
-    return sol::make_object(lua, json_value.get<std::string>());
-  case json::value_t::array: {
+
+  case v1::VariableValue::kI:
+    return sol::make_object(lua, var->i());
+
+  case v1::VariableValue::kD:
+    return sol::make_object(lua, var->d());
+
+  case v1::VariableValue::kB:
+    return sol::make_object(lua, var->b());
+
+  case v1::VariableValue::kS:
+    return sol::make_object(lua, var->s());
+
+  case v1::VariableValue::kIArray:
+    return array_to_lua(lua, var->i_array().values());
+
+  case v1::VariableValue::kDArray:
+    return array_to_lua(lua, var->d_array().values());
+
+  case v1::VariableValue::kBArray:
+    return array_to_lua(lua, var->b_array().values());
+
+  case v1::VariableValue::kSArray:
+    return array_to_lua(lua, var->s_array().values());
+
+  case v1::VariableValue::kDbArray:
+    return array_to_lua(lua, var->db_array().values());
+
+  case v1::VariableValue::kCsArray:
+    return array_to_lua(lua, var->cs_array().values());
+
+  case v1::VariableValue::kMArray:
+    return array_to_lua(lua, var->m_array().values());
+
+  case v1::VariableValue::kMMap: {
     sol::table t = lua.create_table();
-    std::size_t idx = 1;
-    for (const auto &elem : json_value) {
-      t[idx++] = json_to_lua(lua, elem);
+    for (const auto &[key, val] : var->m_map().values()) {
+      t[key] = variable_to_lua(lua, &val);
     }
     return sol::make_object(lua, t);
   }
-  case json::value_t::object: {
-    sol::table t = lua.create_table();
-    for (auto it = json_value.begin(); it != json_value.end(); ++it) {
-      t[it.key()] = json_to_lua(lua, it.value());
-    }
-    return sol::make_object(lua, t);
-  }
+
+  case v1::VariableValue::VALUE_NOT_SET:
   default:
-    // fallback: stringify
-    return sol::make_object(lua, json_value.dump());
+    return sol::make_object(lua, sol::nil);
   }
 }
 
@@ -227,11 +256,24 @@ void load_optional_lua_libs(sol::state &lua) {
     }
   }
 }
-/*
-  Each handler expects a params JSON object with keys as described below
-  and fills `out` with a JSON response containing at minimum {"ok":
-  true|false}
-*/
+int handle_daemon_status(const DaemonStatusRequest & /*req*/,
+                         DaemonStatusResponse *resp) {
+  bool running = ServerDaemon::is_already_running();
+
+  auto *stdrp = resp->mutable_standard_response();
+  stdrp->set_ok(true);
+  resp->set_running(running);
+
+  if (running) {
+    int pid = ServerDaemon::get_daemon_pid();
+    resp->set_pid(pid);
+    stdrp->set_message(fmt::format("daemon running (pid={})", pid));
+  } else {
+    stdrp->set_message("daemon not running");
+  }
+
+  return 0;
+}
 
 int handle_daemon(const json &params, json &out) {
   out = json::object();
@@ -392,128 +434,119 @@ int handle_daemon(const json &params, json &out) {
     return 0;
   }
 
-  if (action == "status") {
-    bool running = ServerDaemon::is_already_running();
-
-    out["ok"] = true;
-    out["running"] = running;
-
-    if (running) {
-      int pid = ServerDaemon::get_daemon_pid();
-      out["pid"] = pid;
-      out["message"] = fmt::format("daemon running (pid={})", pid);
-    } else {
-      out["message"] = "daemon not running";
-    }
-
-    return 0;
-  }
-
   out["ok"] = false;
   out["error"] = "Unknown daemon action";
   return 1;
 }
 
-int handle_start(const json &params, json &out) {
-  out = json::object();
-  std::string config_path = params.value("config_path", "");
-  std::string custom_plugin = params.value("plugin", "");
-  std::string log_level = params.value("log_level", "info");
+int handle_start_instrument(const StartInstrumentRequest &req,
+                            StartInstrumentResponse *resp) {
+
+  const std::string &config_path = req.config_path();
+  std::string plugin_path;
+  if (req.has_plugin_path()) {
+    plugin_path = req.plugin_path();
+  }
+  auto *stdrp = resp->mutable_standard_response();
+  auto *err = stdrp->mutable_error();
 
   if (config_path.empty()) {
-    out["ok"] = false;
-    out["error"] = "missing config_path";
+    stdrp->set_ok(false);
+    auto *err = stdrp->mutable_error();
+    err->set_message("missing config_path");
+    err->set_code(ErrorCode::ERROR_CODE_INVALID_ARGUMENT);
     return 1;
   }
 
   try {
-    // If a custom plugin path was provided, try to load it via PluginLoader.
-    if (!custom_plugin.empty()) {
-      if (!std::filesystem::exists(custom_plugin)) {
-        out["ok"] = false;
-        out["error"] = "plugin file not found";
+    if (!plugin_path.empty()) {
+      if (!std::filesystem::exists(plugin_path)) {
+        stdrp->set_ok(false);
+        err->set_message("plugin file not found");
+        err->set_code(ErrorCode::ERROR_CODE_FILE_DOES_NOT_EXIST);
         return 1;
       }
 
-      plugin::PluginLoader loader(custom_plugin);
+      plugin::PluginLoader loader(plugin_path);
       if (!loader.is_loaded()) {
-        out["ok"] = false;
-        out["error"] = "failed to load plugin";
+        stdrp->set_ok(false);
+        err->set_message("failed to load plugin");
+        err->set_code(ErrorCode::ERROR_CODE_PLUGIN_CRASH);
         return 1;
       }
 
       auto metadata = loader.get_metadata();
       plugin::PluginRegistry::instance().load_plugin(metadata.protocol_type,
-                                                     custom_plugin);
+                                                     plugin_path);
     }
 
     auto &registry = InstrumentRegistry::instance();
     bool ok = registry.create_instrument(config_path);
-    out["ok"] = ok;
+    stdrp->set_ok(ok);
     if (!ok) {
-      out["error"] = "failed to create instrument";
+      err->set_message("failed to create instrument");
+      err->set_code(ErrorCode::ERROR_CODE_INSTRUMENT_CRASH);
       return 1;
-    }
-
-    auto instruments = registry.list_instruments();
-    if (!instruments.empty()) {
-      out["instrument"] = instruments.back();
     }
 
     return 0;
   } catch (const std::exception &e) {
-    out["ok"] = false;
-    out["error"] = std::string("exception: ") + e.what();
+    stdrp->set_ok(false);
+    err->set_message(std::string("exception: ") + e.what());
+    err->set_code(ErrorCode::ERROR_CODE_RUNTIME);
     return 1;
   }
 }
 
-int handle_stop(const json &params, json &out) {
-  out = json::object();
-  std::string name = params.value("name", "");
+int handle_stop_instrument(const StopInstrumentRequest &req,
+                           StopInstrumentResponse *resp) {
+
+  const std::string &name = req.instrument_name();
+  auto *stdrp = resp->mutable_standard_response();
+  auto *err = stdrp->mutable_error();
   if (name.empty()) {
-    out["ok"] = false;
-    out["error"] = "missing name";
+    stdrp->set_ok(false);
+    err->set_message("missing instrument_name");
+    err->set_code(ErrorCode::ERROR_CODE_INVALID_ARGUMENT);
     return 1;
   }
 
   auto &registry = InstrumentRegistry::instance();
   if (!registry.has_instrument(name)) {
-    out["ok"] = false;
-    out["error"] = "instrument not found";
+    stdrp->set_ok(false);
+    err->set_message("instrument not found");
+    err->set_code(ErrorCode::ERROR_CODE_RUNTIME);
     return 1;
   }
 
   registry.remove_instrument(name);
-  out["ok"] = true;
+  stdrp->set_ok(true);
   return 0;
 }
 
-int handle_status(const json &params, json &out) {
-  out = json::object();
-  std::string name = params.value("name", "");
+int handle_instrument_status(const InstrumentStatusRequest &req,
+                             InstrumentStatusResponse *resp) {
+  const std::string &name = req.instrument_name();
+  auto *stdrp = resp->mutable_standard_response();
+  auto *err = stdrp->mutable_error();
   if (name.empty()) {
-    out["ok"] = false;
-    out["error"] = "missing name";
+    stdrp->set_ok(false);
+    err->set_message("missing instrument_name");
+    err->set_code(ErrorCode::ERROR_CODE_INVALID_ARGUMENT);
     return 1;
   }
 
   auto &registry = InstrumentRegistry::instance();
   auto proxy = registry.get_instrument(name);
   if (!proxy) {
-    out["ok"] = false;
-    out["error"] = "instrument not found";
+    stdrp->set_ok(false);
+    err->set_message("instrument not found");
+    err->set_code(ErrorCode::ERROR_CODE_RUNTIME);
     return 1;
   }
 
-  out["ok"] = true;
-  out["name"] = name;
-  out["alive"] = proxy->is_alive();
-  auto stats = proxy->get_stats();
-  out["stats"] = {{"commands_sent", stats.commands_sent},
-                  {"commands_completed", stats.commands_completed},
-                  {"commands_failed", stats.commands_failed},
-                  {"commands_timeout", stats.commands_timeout}};
+  stdrp->set_ok(true);
+  *resp->mutable_stats() = proxy->get_stats();
   return 0;
 }
 
@@ -539,14 +572,15 @@ sol::object callstack_from_serialized(sol::state &lua,
   return obj;
 }
 
-int handle_list(const json &params, json &out) {
-  (void)params;
-  out = json::object();
+int handle_list_instruments(const ListInstrumentsRequest & /*req*/,
+                            ListInstrumentsResponse *resp) {
   auto &registry = InstrumentRegistry::instance();
   auto instruments = registry.list_instruments();
-  // RPC handler reutrn success even if the list is empty
-  out["ok"] = true;
-  out["instruments"] = instruments;
+  auto *stdrp = resp->mutable_standard_response();
+  stdrp->set_ok(true);
+  for (const auto &name : instruments) {
+    resp->add_instrument_name(name);
+  }
   return 0;
 }
 
@@ -1080,14 +1114,15 @@ __context_schema_version = nil
   }
 }
 
-int handle_discover(const json &params, json &out) {
-  out = json::object();
+int handle_discover(const DiscoverRequest &req, DiscoverResponse *resp) {
+  auto *stdrp = resp->mutable_standard_response();
+  auto *err = stdrp->mutable_error();
 
   std::vector<std::string> search_paths;
 
-  if (params.contains("paths") && params["paths"].is_array()) {
-    for (const auto &p : params["paths"]) {
-      search_paths.push_back(p.get<std::string>());
+  if (req.plugin_paths().size() > 0) {
+    for (const auto &p : req.plugin_paths()) {
+      search_paths.push_back(p);
     }
   } else {
 #ifdef _WIN32
@@ -1112,10 +1147,13 @@ int handle_discover(const json &params, json &out) {
   });
 
   auto protocols = plugin_registry.list_protocols();
-
-  out["ok"] = true;
-  out["protocols"] = protocols;
-  out["paths"] = search_paths;
+  stdrp->set_ok(false);
+  for (const auto &name : protocols) {
+    resp->add_plugin_names(name);
+  }
+  for (const auto &p : req.plugin_paths()) {
+    resp->add_paths(p);
+  }
 
   return 0;
 }
@@ -1153,38 +1191,19 @@ int handle_submit_measure(const json &params, json &out) {
   return 0;
 }
 
-int handle_job_status(const json &params, json &out) {
-  out = json::object();
-  std::string jid = params.value("job_id", "");
-  if (jid.empty()) {
-    out["ok"] = false;
-    out["error"] = "missing job_id";
-    return 1;
-  }
+int handle_job_status(const JobStatusRequest &req, JobStatusResponse *resp) {
+  auto *stdrp = resp->mutable_standard_response();
+  auto *err = stdrp->mutable_error();
+  uint32_t jid = req.job_id();
   JobInfo info;
   if (!JobManager::instance().get_job_info(jid, info)) {
-    out["ok"] = false;
-    out["error"] = "job not found";
+    stdrp->set_ok(false);
+    err->set_message("job not found");
+    err->set_code(ERROR_CODE_RUNTIME);
     return 1;
   }
-  out["ok"] = true;
-  out["job_id"] = info.id;
-  out["status"] = info.status;
-  out["created_at"] = std::chrono::duration_cast<std::chrono::milliseconds>(
-                          info.created_at.time_since_epoch())
-                          .count();
-  if (info.status == "running" || info.status == "completed" ||
-      info.status == "failed" || info.status == "canceled") {
-    out["started_at"] = std::chrono::duration_cast<std::chrono::milliseconds>(
-                            info.started_at.time_since_epoch())
-                            .count();
-  }
-  if (info.status == "completed" || info.status == "failed" ||
-      info.status == "canceled") {
-    out["finished_at"] = std::chrono::duration_cast<std::chrono::milliseconds>(
-                             info.finished_at.time_since_epoch())
-                             .count();
-  }
+  stdrp->set_ok(true);
+  *resp->mutable_job() = info.job;
   return 0;
 }
 
@@ -1224,37 +1243,26 @@ int handle_job_result(const json &params, json &out) {
   return 0;
 }
 
-int handle_job_list(const json &params, json &out) {
-  (void)params;
-  out = json::object();
+int handle_job_list(const JobListRequest & /*req*/, JobListResponse *resp) {
+  auto *stdrp = resp->mutable_standard_response();
+  auto *err = stdrp->mutable_error();
   auto jobs = JobManager::instance().list_jobs();
-  out["ok"] = true;
-  out["jobs"] = json::array();
+  stdrp->set_ok(true);
   for (const auto &j : jobs) {
-    json ji;
-    ji["job_id"] = j.id;
-    ji["type"] = j.type;
-    ji["status"] = j.status;
-    ji["created_at"] = std::chrono::duration_cast<std::chrono::milliseconds>(
-                           j.created_at.time_since_epoch())
-                           .count();
-    out["jobs"].push_back(ji);
+    resp->mutable_jobs()->emplace(j.first, j.second.job);
   }
   return 0;
 }
 
-int handle_job_cancel(const json &params, json &out) {
-  out = json::object();
-  std::string jid = params.value("job_id", "");
-  if (jid.empty()) {
-    out["ok"] = false;
-    out["error"] = "missing job_id";
-    return 1;
-  }
+int handle_cancel_job(const CancelJobRequest &req, CancelJobResponse *resp) {
+  auto *stdrp = resp->mutable_standard_response();
+  auto *err = stdrp->mutable_error();
+  JobID jid = req.job_id();
   bool ok = JobManager::instance().cancel_job(jid);
-  out["ok"] = ok;
+  stdrp->set_ok(ok);
   if (!ok) {
-    out["error"] = "failed to cancel job (maybe already finished)";
+    err->set_message("failed to cancel job (maybe already finished)");
+    err->set_code(v1::ERROR_CODE_RUNTIME);
   }
   return ok ? 0 : 1;
 }

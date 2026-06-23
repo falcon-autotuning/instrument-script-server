@@ -117,6 +117,7 @@ endif()
 # Find dependencies
 find_package(Threads       REQUIRED)
 find_package(Lua           REQUIRED)
+find_package(Protobuf      REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(yaml-cpp      CONFIG REQUIRED)
 find_package(sol2          CONFIG REQUIRED)
@@ -138,33 +139,39 @@ endif()
 
 configure_file(${CMAKE_SOURCE_DIR}/src/embedded_schemas.cpp.in
                ${CMAKE_BINARY_DIR}/embedded_schemas.cpp @ONLY)
+add_subdirectory(proto)
 
 # Core library
 add_library(
-  instrument-script-server-core SHARED
-  src/SchemaValidator.cpp
-  src/version.cpp
-  src/ipc/SharedQueue.cpp
-  src/ipc/ProcessManager.cpp
-  src/ipc/DataBufferManager.cpp
-  src/plugin/PluginLoader.cpp
-  src/plugin/PluginRegistry.cpp
-  src/server/InstrumentRegistry.cpp
-  src/server/InstrumentWorkerProxy.cpp
-  src/server/RuntimeContext.cpp
-  src/server/SyncCoordinator.cpp
-  src/server/ApiRefResolver.cpp
-  src/server/ServerDaemon.cpp
-  src/server/HttpRpcServer.cpp
-  src/server/CommandHandlers.cpp
-  src/server/JobManager.cpp
-  src/server/InstrumentCommand.cpp
-  src/server/ParsingTools.cpp
-  src/GlobalConfig.cpp
-  ${CMAKE_BINARY_DIR}/embedded_schemas.cpp)
+  instrument-script-server-core 
+    SHARED
+      src/SchemaValidator.cpp
+      src/version.cpp
+      src/ipc/SharedQueue.cpp
+      src/ipc/ProcessManager.cpp
+      src/ipc/DataBufferManager.cpp
+      src/plugin/PluginLoader.cpp
+      src/plugin/PluginRegistry.cpp
+      src/server/InstrumentRegistry.cpp
+      src/server/InstrumentWorkerProxy.cpp
+      src/server/RuntimeContext.cpp
+      src/server/SyncCoordinator.cpp
+      src/server/ApiRefResolver.cpp
+      src/server/ServerDaemon.cpp
+      src/server/HttpRpcServer.cpp
+      src/server/CommandHandlers.cpp
+      src/server/JobManager.cpp
+      src/server/InstrumentCommand.cpp
+      src/server/ParsingTools.cpp
+      src/GlobalConfig.cpp
+      ${CMAKE_BINARY_DIR}/embedded_schemas.cpp
+)
 
-set_target_properties(instrument-script-server-core
-                      PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(
+  instrument-script-server-core
+    PROPERTIES 
+      POSITION_INDEPENDENT_CODE ON
+)
 
 # CRITICAL FOR WINDOWS: Define export symbol for DLL This matches the symbol
 # checked in include/instrument-script-server/export.h
@@ -190,15 +197,18 @@ target_link_libraries(
     instrument-data::instrument-data
     instrument-call-stack::instrument-call-stack
     instrument-call-stack::instrument-call-stack-lua
+    instserver-proto 
 )
 
 # Per-target include directories (avoid global include_directories)
 target_include_directories(
   instrument-script-server-core
-  PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-         $<INSTALL_INTERFACE:include>
-         $<$<BOOL:${LUA_INCLUDE_DIR}>:$<BUILD_INTERFACE:${LUA_INCLUDE_DIR}>>
-         $<$<BOOL:${SOL2_INCLUDE_DIR}>:$<BUILD_INTERFACE:${SOL2_INCLUDE_DIR}>>)
+  PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    $<$<BOOL:${LUA_INCLUDE_DIR}>:$<BUILD_INTERFACE:${LUA_INCLUDE_DIR}>>
+    $<$<BOOL:${SOL2_INCLUDE_DIR}>:$<BUILD_INTERFACE:${SOL2_INCLUDE_DIR}>>
+)
 
 add_executable(instrument-script-server src/server/instrument_server_main.cpp)
 add_executable(instrument-worker src/worker_main.cpp)

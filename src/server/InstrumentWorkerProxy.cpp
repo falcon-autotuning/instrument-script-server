@@ -3,6 +3,7 @@
 #include "instrument-script-server/ipc/SharedQueue.hpp"
 #include "instrument-script-server/server/InstrumentCommand.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
+#include "instserver/server/v1/daemon_messages.pb.h"
 #include <fmt/format.h>
 #include <instrument-log/inst_logging.h>
 
@@ -265,7 +266,7 @@ InstrumentWorkerProxy::execute(InstrumentCommand cmd) {
     }
   } else {
     std::lock_guard lock(stats_mutex_);
-    stats_.commands_sent++;
+    stats_.set_commands_sent(stats_.commands_sent() + 1);
   }
 
   return future;
@@ -299,7 +300,7 @@ InstrumentWorkerProxy::execute_sync(InstrumentCommand cmd,
   LOG_ERROR(instrument_name_.c_str(), "PROXY", "Sync timeout\n");
 
   std::lock_guard lock(stats_mutex_);
-  stats_.commands_timeout++;
+  stats_.set_commands_timeout(stats_.commands_timeout() + 1);
 
   return timeout_resp;
 }
@@ -311,7 +312,7 @@ bool InstrumentWorkerProxy::is_alive() const {
   return get_process_manager().is_alive(worker_pid_);
 }
 
-InstrumentWorkerProxy::Stats InstrumentWorkerProxy::get_stats() const {
+server::v1::InstrumentStats InstrumentWorkerProxy::get_stats() const {
   std::lock_guard lock(stats_mutex_);
   return stats_;
 }
@@ -383,7 +384,7 @@ void InstrumentWorkerProxy::handle_ipc_message(const ipc::IPCMessage &msg) {
         pending_responses_.erase(it);
 
         std::lock_guard<std::mutex> stats_lock(stats_mutex_);
-        stats_.commands_failed++;
+        stats_.set_commands_failed(stats_.commands_failed() + 1);
       }
     }
     break;
@@ -440,9 +441,9 @@ void InstrumentWorkerProxy::handle_response_message(
 
     std::lock_guard<std::mutex> stats_lock(stats_mutex_);
     if (resp.error_code == ErrorCode::NONE) {
-      stats_.commands_completed++;
+      stats_.set_commands_completed(stats_.commands_completed() + 1);
     } else {
-      stats_.commands_failed++;
+      stats_.set_commands_failed(stats_.commands_failed() + 1);
     }
 
   } else {

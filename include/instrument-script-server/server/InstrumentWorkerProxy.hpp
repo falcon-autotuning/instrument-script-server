@@ -5,7 +5,7 @@
 #include "instrument-script-server/ipc/SharedQueue.hpp"
 #include "instrument-script-server/server/InstrumentCommand.hpp"
 #include "instrument-script-server/server/ParsingTools.hpp"
-#include "instrument-script-server/server/SyncCoordinator.hpp"
+#include "instserver/server/v1/daemon_messages.pb.h"
 
 #include <atomic>
 #include <filesystem>
@@ -48,13 +48,7 @@ public:
   const std::string &name() const { return instrument_name_; }
 
   /// Get statistics
-  struct Stats {
-    uint64_t commands_sent{0};
-    uint64_t commands_completed{0};
-    uint64_t commands_failed{0};
-    uint64_t commands_timeout{0};
-  };
-  Stats get_stats() const;
+  server::v1::InstrumentStats get_stats() const;
 
   /// Send SYNC_CONTINUE message to worker
   void send_sync_continue(uint64_t sync_token);
@@ -98,7 +92,7 @@ private:
 
   // Stats
   mutable std::mutex stats_mutex_;
-  Stats stats_;
+  server::v1::InstrumentStats stats_;
 
   // Message ID counter
   std::atomic<uint64_t> next_message_id_{1};

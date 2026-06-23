@@ -1,7 +1,7 @@
 #include "instrument-script-server/server/HttpRpcServer.hpp"
 #include "instrument-script-server/server/CommandHandlers.hpp"
+#include "instserver/server/v1/daemon_messages.pb.h"
 #include <instrument-log/inst_logging.h>
-#include <nlohmann/json.hpp>
 
 #ifdef _WIN32
 #include "instrument-script-server/compat/WinSock.hpp"
@@ -19,8 +19,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-
-using json = nlohmann::json;
 
 namespace instserver::server {
 
@@ -110,7 +108,7 @@ int parse_content_length(const std::string &headers) {
 void send_http_response(int fd, int status_code, const std::string &body) {
   std::ostringstream resp;
   resp << "HTTP/1.0 " << status_code << " \r\n";
-  resp << "Content-Type: application/json\r\n";
+  resp << "Content-Type: application/x-protobuf\r\n";
   resp << "Content-Length: " << body.size() << "\r\n";
   resp << "Connection: close\r\n";
   resp << "\r\n";
@@ -323,10 +321,13 @@ void HttpRpcServer::run_loop(uint16_t port) {
     std::istringstream hs(headers);
     std::string request_line;
     std::getline(hs, request_line);
-    if (!request_line.empty() && request_line.back() == '\r')
+    if (!request_line.empty() && request_line.back() == '\r') {
       request_line.pop_back();
+    }
 
-    std::string method, path, proto;
+    std::string method;
+    std::string path;
+    std::string proto;
     {
       std::istringstream rl(request_line);
       rl >> method >> path >> proto;
@@ -359,72 +360,141 @@ void HttpRpcServer::run_loop(uint16_t port) {
 
     // We only support POST /rpc
     if (!(method == "POST" && (path == "/rpc" || path == "/rpc/"))) {
-      json resp_json;
-      resp_json["ok"] = false;
-      resp_json["error"] = "Only POST /rpc is supported";
-      send_http_response(client_socket, 404, resp_json.dump());
+      v1::RpcResponse resp;
+      auto *err = resp.mutable_error();
+      err->mutable_standard_response()->set_ok(false);
+      err->mutable_standard_response()->set_message(
+          "Only POST /rpc is supported");
+
+      std::string out;
+      resp.SerializeToString(&out);
+      send_http_response(client_socket, 404, out);
       close_socket(client_socket);
       continue;
     }
 
     try {
-      auto req = json::parse(body);
-      std::string command = req.value("command", "");
-      json params = req.value("params", json::object());
+      v1::RpcRequest req;
 
-      json resp;
-      resp["ok"] = false;
+      if (!req.ParseFromString(body)) {
+        v1::RpcResponse resp;
 
-      // Dispatch to full command handlers (including job endpoints)
-      int rc = 1;
-      if (command == "list") {
-        rc = server::handle_list(params, resp);
-      } else if (command == "status") {
-        rc = server::handle_status(params, resp);
-      } else if (command == "start") {
-        rc = server::handle_start(params, resp);
-      } else if (command == "stop") {
-        rc = server::handle_stop(params, resp);
-      } else if (command == "daemon") {
-        rc = server::handle_daemon(params, resp);
-      } else if (command == "measure") {
-        rc = server::handle_measure(params, resp);
-      } else if (command == "discover") {
-        rc = server::handle_discover(params, resp);
-      } else if (command == "submit_job") {
-        rc = server::handle_submit_job(params, resp);
-      } else if (command == "submit_measure") {
-        rc = server::handle_submit_measure(params, resp);
-      } else if (command == "job_status") {
-        rc = server::handle_job_status(params, resp);
-      } else if (command == "job_result") {
-        rc = server::handle_job_result(params, resp);
-      } else if (command == "job_list") {
-        rc = server::handle_job_list(params, resp);
-      } else if (command == "job_cancel") {
-        rc = server::handle_job_cancel(params, resp);
-      } else if (command == "list_buffers") {
-        rc = server::handle_list_buffers(params, resp);
-      } else if (command == "release_buffer") {
-        rc = server::handle_release_buffer(params, resp);
-      } else if (command == "get_buffer_metadata") {
-        rc = server::handle_get_buffer_metadata(params, resp);
-      } else if (command == "read_buffer") {
-        rc = server::handle_read_buffer(params, resp);
-      } else {
-        resp["ok"] = false;
-        resp["error"] = "unknown command";
-        rc = 1;
+        auto *err = resp.mutable_error();
+        err->mutable_standard_response()->set_ok(false);
+        err->mutable_standard_response()->set_message(
+            "failed to parse request");
+
+        std::string out;
+        resp.SerializeToString(&out);
+
+        send_http_response(client_socket, 400, out);
+        close_socket(client_socket);
+        continue;
       }
 
-      // Translate rc to HTTP status
+      v1::RpcResponse resp;
+      int rc = 0;
+
+      switch (req.request_case()) {
+
+      case v1::RpcRequest::kDaemonStatus:
+        rc = handle_daemon_status(req.daemon_status(),
+                                  resp.mutable_daemon_status());
+        break;
+
+      case v1::RpcRequest::kStartInstrument:
+        rc = handle_start_instrument(req.start_instrument(),
+                                     resp.mutable_start_instrument());
+        break;
+
+      case v1::RpcRequest::kStopInstrument:
+        rc = handle_stop_instrument(req.stop_instrument(),
+                                    resp.mutable_stop_instrument());
+        break;
+
+      case v1::RpcRequest::kInstrumentStatus:
+        rc = handle_instrument_status(req.instrument_status(),
+                                      resp.mutable_instrument_status());
+        break;
+
+      case v1::RpcRequest::kListInstrument:
+        rc = handle_list_instruments(req.list_instrument(),
+                                     resp.mutable_list_instrument());
+        break;
+
+      case v1::RpcRequest::kMeasureJob:
+        rc = handle_measure_job(req.measure_job(), resp.mutable_measure_job());
+        break;
+
+      case v1::RpcRequest::kJobStatus:
+        rc = handle_job_status(req.job_status(), resp.mutable_job_status());
+        break;
+
+      case v1::RpcRequest::kMeasureJobResult:
+        rc = handle_measure_job_result(req.measure_job_result(),
+                                       resp.mutable_measure_job_result());
+        break;
+
+      case v1::RpcRequest::kJobList:
+        rc = handle_job_list(req.job_list(), resp.mutable_job_list());
+        break;
+
+      case v1::RpcRequest::kCancelJob:
+        rc = handle_cancel_job(req.cancel_job(), resp.mutable_cancel_job());
+        break;
+
+      case v1::RpcRequest::kDiscover:
+        rc = handle_discover(req.discover(), resp.mutable_discover());
+        break;
+
+      case v1::RpcRequest::kListDataBuffers:
+        rc = handle_list_buffers(req.list_data_buffers(),
+                                 resp.mutable_list_data_buffers());
+        break;
+
+      case v1::RpcRequest::kReleaseBuffer:
+        rc = handle_release_buffer(req.release_buffer(),
+                                   resp.mutable_release_buffer());
+        break;
+
+      case v1::RpcRequest::kGetBufferMetadata:
+        rc = handle_get_buffer_metadata(req.get_buffer_metadata(),
+                                        resp.mutable_get_buffer_metadata());
+        break;
+
+      case v1::RpcRequest::kDaemonStop:
+        rc = handle_daemon_stop(req.daemon_stop(), nullptr);
+        break;
+
+      case v1::RpcRequest::REQUEST_NOT_SET:
+      default:
+        rc = 1;
+        {
+          auto *err = resp.mutable_error();
+          err->mutable_standard_response()->set_ok(false);
+          err->mutable_standard_response()->set_message("unknown request type");
+        }
+        break;
+      }
+      std::string out;
+      resp.SerializeToString(&out);
+
       int http_status = (rc == 0) ? 200 : 500;
-      send_http_response(client_socket, http_status, resp.dump());
+      send_http_response(client_socket, http_status, out);
+
     } catch (const std::exception &e) {
-      json err;
-      err["ok"] = false;
-      err["error"] = std::string("exception: ") + e.what();
-      send_http_response(client_socket, 500, err.dump());
+
+      v1::RpcResponse resp;
+
+      auto *err = resp.mutable_error();
+      err->mutable_standard_response()->set_ok(false);
+      err->mutable_standard_response()->set_message(std::string("exception: ") +
+                                                    e.what());
+
+      std::string out;
+      resp.SerializeToString(&out);
+
+      send_http_response(client_socket, 500, out);
     }
 
     close_socket(client_socket);
