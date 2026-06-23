@@ -30,12 +30,12 @@ message DaemonStatusRequest {}
 message DaemonStatusResponse {
   StandardResponse standard_response = 1;
   bool running = 2;
-  optional uint32 pid = 3;
+  uint32 pid = 3; // 0 == unset
 }
 
 message StartInstrumentRequest {
   string config_path = 1;
-  optional string plugin_path = 2;
+  string plugin_path = 2;
 }
 message StartInstrumentResponse {
   StandardResponse standard_response = 1;
@@ -59,7 +59,7 @@ message InstrumentStats {
 }
 message InstrumentStatusResponse {
   StandardResponse standard_response = 1;
-  optional InstrumentStats stats = 3;
+  InstrumentStats stats = 3;
 }
 
 message ListInstrumentsRequest {}
@@ -88,7 +88,7 @@ enum LuaTypes {
 }
 message Parameter {
   string name = 1;
-  optional LuaTypes type = 2;
+  LuaTypes type = 2;
 }
 message TypeManifest {
   repeated Parameter parameters = 1;
@@ -145,8 +145,8 @@ message MeasureJobRequest {
   string script_path = 1;
   Globals globals = 2;
   bool block_inject_globals = 3;
-  optional TypeManifest type_manifest = 4;
-  optional uint32 context_schema_version = 5;
+  TypeManifest type_manifest = 4;
+  uint32 context_schema_version = 5; // 0 == unset
 }
 message MeasureJobResponse {
   StandardResponse standard_response = 1;
@@ -173,9 +173,9 @@ enum JobType {
 message Job {
   JobType type = 1;
   JobStatus status = 2;
-  optional google.protobuf.Timestamp created_at = 3;
-  optional google.protobuf.Timestamp started_at = 4;
-  optional google.protobuf.Timestamp finished_at = 5;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp started_at = 4;
+  google.protobuf.Timestamp finished_at = 5;
 }
 message JobStatusResponse {
   StandardResponse standard_response = 1;
@@ -197,7 +197,7 @@ message TypedParameter {
   string name = 1;
   LuaTypes type = 2;
   VariableValue value = 3;
-  optional DataBufferMetadata dbmeta = 4; // Additional metadata for DataBuffer
+  DataBufferMetadata dbmeta = 4; // Additional metadata for DataBuffer
 }
 message CommandResult {
   string instrument_name = 1;
@@ -251,7 +251,7 @@ message GetBufferMetadataRequest {
 }
 message GetBufferMetadataResponse {
   StandardResponse standard_response = 1;
-  optional DataBufferMetadata meta = 2;
+  DataBufferMetadata meta = 2;
 }
 // ReadBuffer needs to be handled in the CLI process since it streams all the data to cout
 

@@ -288,7 +288,7 @@ int handle_start_instrument(const StartInstrumentRequest &req,
 
   const std::string &config_path = req.config_path();
   std::string plugin_path;
-  if (req.has_plugin_path()) {
+  if (req.plugin_path() != "") {
     plugin_path = req.plugin_path();
   }
   auto *stdrp = resp->mutable_standard_response();
