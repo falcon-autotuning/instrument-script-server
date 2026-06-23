@@ -1,6 +1,7 @@
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
 #include <algorithm>
 #include <cstring>
+#include <google/protobuf/util/time_util.h>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
 #include <optional>
@@ -17,9 +18,9 @@ namespace instserver::ipc {
 
 bool DataBufferManager::contains_buffer_unsafe(
     const std::string &buffer_id) const {
-  return std::any_of(
-      active_buffers_.begin(), active_buffers_.end(),
-      [&buffer_id](const auto &pair) { return pair.first == buffer_id; });
+  return std::ranges::any_of(active_buffers_, [&buffer_id](const auto &pair) {
+    return pair.first == buffer_id;
+  });
 }
 DataBufferManager &DataBufferManager::instance() {
   static DataBufferManager manager;
@@ -60,7 +61,7 @@ void DataBufferManager::save_buffer(const std::string &buffer_id) {
   }
 }
 
-std::optional<DataBufferMetadata>
+std::optional<server::v1::DataBufferMetadata>
 DataBufferManager::get_metadata(const std::string &buffer_id) const {
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -92,17 +93,17 @@ DataBufferManager::get_metadata(const std::string &buffer_id) const {
   if (auto pos = cmd_id_view.find('\0'); pos != std::string_view::npos) {
     cmd_id_view = cmd_id_view.substr(0, pos);
   }
-  DataBufferMetadata metadata;
-  metadata.buffer_id = std::string(buf_id_view);
-  metadata.instrument_name = std::string(inst_name_view);
-  metadata.command_id = std::string(cmd_id_view);
+  server::v1::DataBufferMetadata metadata;
+  metadata.set_instrument_name(std::string(inst_name_view));
+  metadata.set_command_id(std::string(cmd_id_view));
 
-  metadata.data_type = c_meta.type;
-  metadata.element_count = c_meta.element_count;
-  metadata.byte_size = c_meta.byte_size;
-  metadata.timestamp_ms = c_meta.timestamp_ms;
-  metadata.description = "";
-  metadata.dimensions = {c_meta.element_count};
+  metadata.set_data_type(c_meta.type);
+  metadata.set_element_count(c_meta.element_count);
+  metadata.set_byte_size(c_meta.byte_size);
+
+  *metadata.mutable_captured_at() =
+      google::protobuf::util::TimeUtil::MillisecondsToTimestamp(
+          (int64_t)c_meta.timestamp_ms);
   return metadata;
 }
 
@@ -110,9 +111,10 @@ void DataBufferManager::release_buffer(const std::string &buffer_id) {
   bool found = false;
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto loc = std::find_if(
-        active_buffers_.begin(), active_buffers_.end(),
-        [&buffer_id](const auto &pair) { return pair.first == buffer_id; });
+    auto loc =
+        std::ranges::find_if(active_buffers_, [&buffer_id](const auto &pair) {
+          return pair.first == buffer_id;
+        });
     if (loc != active_buffers_.end()) {
       active_buffers_.erase(loc);
       found = true;

@@ -1267,22 +1267,16 @@ int handle_cancel_job(const CancelJobRequest &req, CancelJobResponse *resp) {
   return ok ? 0 : 1;
 }
 
-int handle_list_buffers(const json &params, json &out) {
-  (void)params;
-  out = json::object();
+int handle_list_buffers(const ListDataBuffersRequest &req,
+                        ListDataBuffersResponse *resp) {
+  auto *stdrp = resp->mutable_standard_response();
+  auto *err = stdrp->mutable_error();
   auto &mgr = ipc::DataBufferManager::instance();
   auto buffers = mgr.list_buffers();
-  out["ok"] = true;
-  out["buffers"] = json::array();
+  stdrp->set_ok(true);
   for (const auto &id : buffers) {
-    if (auto meta_opt = mgr.get_metadata(id)) {
-      auto meta = *meta_opt;
-      json b;
-      b["buffer_id"] = id;
-      b["element_count"] = meta.element_count;
-      b["byte_size"] = meta.byte_size;
-      b["data_type"] = meta.data_type;
-      out["buffers"].push_back(b);
+    if (auto meta = mgr.get_metadata(id)) {
+      resp->mutable_buffers()->emplace(id, *meta.value());
     }
   }
   return 0;

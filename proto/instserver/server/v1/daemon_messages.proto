@@ -188,6 +188,9 @@ message DataBufferMetadata {
   uint32 element_count = 1;
   uint32 data_type = 2; // INST_DATA_<...>
   uint64 byte_size = 3;
+  google.protobuf.Timestamp captured_at = 4;
+  string command_id = 5;
+  string instrument_name = 6;
 }
 message TypedParameter {
   string name = 1;
