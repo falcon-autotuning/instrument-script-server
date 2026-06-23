@@ -99,7 +99,7 @@ struct INSTRUMENT_SERVER_API CallResult {
   std::string command_id;
   CallStackPtr target{nullptr, instrument_call_stack_free};
   std::vector<Variable> params;
-  std::chrono::steady_clock::time_point executed_at;
+  std::chrono::system_clock::time_point executed_at;
 
   std::vector<Variable> returns;
 

@@ -10,6 +10,7 @@ enum ErrorCode {
   ERROR_CODE_FILE_DOES_NOT_EXIST = 3;
   ERROR_CODE_PLUGIN_CRASH = 4;
   ERROR_CODE_INSTRUMENT_CRASH = 5;
+  ERROR_CODE_BUFFER_NOT_FOUND = 6;
 }
 message ErrorDetails {
   ErrorCode code = 1;
@@ -206,7 +207,6 @@ message CommandResult {
 }
 message MeasureJobResultResponse {
   StandardResponse standard_response = 1;
-  uint32 job_id = 2;
   JobStatus status = 3;
   repeated CommandResult results = 4;
 }

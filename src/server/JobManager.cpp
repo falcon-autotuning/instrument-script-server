@@ -1,8 +1,5 @@
 #include "instrument-script-server/server/JobManager.hpp"
 #include "instrument-script-server/server/CommandHandlers.hpp"
-#include "instrument-script-server/server/InstrumentRegistry.hpp"
-#include "instrument-script-server/server/RuntimeContext.hpp"
-#include "instrument-script-server/server/ServerDaemon.hpp"
 #include "instserver/server/v1/daemon_messages.pb.h"
 #include <algorithm>
 #include <chrono>
@@ -128,7 +125,7 @@ bool JobManager::cancel_job(JobID job_id) {
 }
 
 void JobManager::worker_loop() {
-  while (true) {
+  while (running_) {
     JobID jid = 0;
     {
       std::unique_lock<std::mutex> lk(mutex_);
@@ -162,18 +159,16 @@ void JobManager::worker_loop() {
 
     try {
       switch (run_info.job.type()) {
+
       case v1::JOB_TYPE_SLEEP: {
-        // params: duration_ms
-        int ms = 100;
-        try {
-          SleepRequest sleep_req;
-          sleep_req.duration_ms = ms;
-          run_info.params = sleep_req;
-        } catch (...) {
-        }
-        // Check canceling requests periodically
+        auto sleep_req = std::get<SleepRequest>(run_info.params);
+
+        SleepResponse sleep_resp;
+
+        int ms = sleep_req.duration_ms;
         int slept = 0;
         const int step = 20;
+
         while (slept < ms) {
           {
             std::lock_guard<std::mutex> lk(mutex_);
@@ -184,164 +179,41 @@ void JobManager::worker_loop() {
               throw std::runtime_error("canceled");
             }
           }
+
           std::this_thread::sleep_for(std::chrono::milliseconds(step));
           slept += step;
         }
+
+        run_info.result = sleep_resp;
         success = true;
+        break;
       }
+
       case v1::JOB_TYPE_MEASURE: {
-        // Enqueue-first behavior:
-        // 1) Create a Lua state, bind a RuntimeContext in enqueue_mode=true
-        // 2) Run the script to parse and enqueue commands quickly
-        // 3) Spawn a monitor thread that waits for the context's tokens to be
-        //    processed and futures to complete; the worker loop continues to
-        //    next job.
-        auto &measure_req = std::get<v1::MeasureJobRequest>(run_info.params);
-        std::string script_path = measure_req.script_path();
-        if (script_path.empty()) {
-          throw std::runtime_error("missing script_path");
+        const auto &req = std::get<v1::MeasureJobRequest>(run_info.params);
+
+        v1::MeasureJobResultResponse resp;
+
+        int rc = handle_measure(req, &resp);
+
+        if (rc != 0) {
+          throw std::runtime_error("measure job failed");
         }
 
-        // Prepare Lua state and runtime context (blocking mode -
-        // enqueue_mode=false) This allows users to perform math on measurement
-        // results in Lua
-        sol::state lua;
-        lua.open_libraries(sol::lib::base, sol::lib::math, sol::lib::table,
-                           sol::lib::string, sol::lib::io, sol::lib::os);
-
-        // Load optional Lua libraries (was missing before)
-        load_optional_lua_libs(lua);
-
-        auto &sync = ServerDaemon::instance().sync_coordinator();
-        auto ctx =
-            bind_runtime_context(lua, InstrumentRegistry::instance(), sync);
-
-        // Load the script file
-        auto load_result = lua.safe_script_file(script_path);
-        if (!load_result.valid()) {
-          sol::error err = load_result;
-          throw std::runtime_error(std::string("Script load error: ") +
-                                   err.what());
-        }
-
-        // Check if the script defined a main function (new format)
-        sol::optional<sol::function> main_func = lua["main"];
-
-        if (!main_func.has_value()) {
-          std::string error = "Missing main(ctx, ...) function.";
-          LOG_ERROR("JOB", "MEASURE", error.c_str());
-          throw std::runtime_error(error);
-        }
-        // Check if type_manifest is provided (Teal static typing support)
-        if (measure_req.has_type_manifest()) {
-          const auto &manifest = measure_req.type_manifest();
-
-          // Build arguments based on manifest
-          std::vector<sol::object> args;
-          args.push_back(
-              sol::make_object(lua, ctx.get())); // First arg is always context
-
-          const auto &param_defs = manifest.parameters();
-          for (int i = 1; i < param_defs.size(); ++i) { // Skip first (context)
-            const auto &param = param_defs[i];
-            std::string param_name = param.name();
-
-            // Check if this parameter exists in globals
-            if (!measure_req.globals().map().contains(param_name)) {
-              std::string error_msg =
-                  fmt::format("Missing required parameter '{}' (declared in "
-                              "type_manifest but not provided in globals)",
-                              param_name);
-              LOG_ERROR(
-                  "JOB", "MEASURE",
-                  "Missing required parameter '%s' for typed main function",
-                  param_name.c_str());
-              throw std::runtime_error(error_msg);
-            }
-
-            // Convert JSON value to Lua object
-            sol::object arg = variable_to_lua(
-                lua, &measure_req.globals().map().at(param_name));
-            args.push_back(arg);
-
-            LOG_INFO("JOB", "MEASURE",
-                     "Passing parameter '%s' to main function (type: %s)",
-                     param_name.c_str(), LuaTypes_Name(param.type()).c_str());
-          }
-
-          // Check for unused globals (warnings)
-          for (const auto &it : measure_req.globals().map()) {
-            std::string global_name = it.first;
-            bool found = false;
-
-            for (int i = 1; i < param_defs.size(); ++i) {
-              if (param_defs[i].name() == global_name) {
-                found = true;
-                break;
-              }
-            }
-
-            if (!found) {
-              LOG_WARN("JOB", "MEASURE",
-                       "Global variable '%s' provided but not used by "
-                       "typed main function (injecting as global)",
-                       global_name.c_str());
-              // Still inject it as global for backward compatibility
-              lua[global_name] = variable_to_lua(lua, &it.second);
-            }
-          }
-
-          // Call main with unpacked arguments
-          sol::protected_function_result main_result =
-              (*main_func)(sol::as_args(args));
-
-          if (!main_result.valid()) {
-            sol::error err = main_result;
-            std::string error_msg =
-                std::string("Script execution error: ") + err.what();
-            if (ctx->has_error()) {
-              error_msg = ctx->get_error() + " (Runtime: " + err.what() + ")";
-            }
-            throw std::runtime_error(error_msg);
-          }
-        } else {
-          // Legacy: call main with just context parameter
-          sol::protected_function_result main_result = (*main_func)(ctx.get());
-
-          if (!main_result.valid()) {
-            sol::error err = main_result;
-            std::string error_msg =
-                std::string("Script execution error: ") + err.what();
-            // If context:error() was also called, include both messages
-            if (ctx->has_error()) {
-              error_msg = ctx->get_error() + " (Runtime: " + err.what() + ")";
-            }
-            throw std::runtime_error(error_msg);
-          }
-        }
-
-        // Check for explicit errors from context:error()
-        if (ctx->has_error()) {
-          throw std::runtime_error(ctx->get_error());
-        }
-
-        // Blocking mode: script has completed execution synchronously
-        // Collect results directly
-        result = ctx->collect_results_json();
+        run_info.result = resp;
         success = true;
+        break;
       }
-      default: {
-        // unknown job type
-        throw std::runtime_error("unknown job type: " +
-                                 std::to_string(run_info.job.type()));
+
+      default:
+        throw std::runtime_error(
+            "unknown job type: " +
+            std::string(v1::JobType_Name(run_info.job.type())));
       }
-      }
+
     } catch (const std::exception &e) {
       success = false;
       err = e.what();
-    } catch (...) {
-      success = false;
-      err = "unknown exception";
     }
 
     {

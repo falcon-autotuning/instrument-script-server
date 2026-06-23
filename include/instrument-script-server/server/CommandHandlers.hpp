@@ -11,10 +11,6 @@ INSTRUMENT_SERVER_API sol::object variable_to_lua(sol::state_view,
 
 INSTRUMENT_SERVER_API void load_optional_lua_libs(sol::state &);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Protobuf-based handlers
-// ─────────────────────────────────────────────────────────────────────────────
-
 using namespace instserver::server::v1;
 
 INSTRUMENT_SERVER_API int handle_daemon_status(const DaemonStatusRequest &req,
@@ -36,15 +32,18 @@ INSTRUMENT_SERVER_API int
 handle_list_instruments(const ListInstrumentsRequest &req,
                         ListInstrumentsResponse *resp);
 
+INSTRUMENT_SERVER_API int handle_measure(const MeasureJobRequest &req,
+                                         MeasureJobResultResponse *resp);
+
 INSTRUMENT_SERVER_API int handle_measure_job(const MeasureJobRequest &req,
-                                             MeasureJobResponse *resp); // TODO:
+                                             MeasureJobResponse *resp);
 
 INSTRUMENT_SERVER_API int handle_job_status(const JobStatusRequest &req,
                                             JobStatusResponse *resp);
 
 INSTRUMENT_SERVER_API int
 handle_measure_job_result(const MeasureJobResultRequest &req,
-                          MeasureJobResultResponse *resp); // TODO:
+                          MeasureJobResultResponse *resp);
 
 INSTRUMENT_SERVER_API int handle_job_list(const JobListRequest &req,
                                           JobListResponse *resp);
@@ -58,13 +57,12 @@ INSTRUMENT_SERVER_API int handle_discover(const DiscoverRequest &req,
 INSTRUMENT_SERVER_API int handle_list_buffers(const ListDataBuffersRequest &req,
                                               ListDataBuffersResponse *resp);
 
-INSTRUMENT_SERVER_API int
-handle_release_buffer(const ReleaseBufferRequest &req,
-                      ReleaseBufferResponse *resp); // TODO:
+INSTRUMENT_SERVER_API int handle_release_buffer(const ReleaseBufferRequest &req,
+                                                ReleaseBufferResponse *resp);
 
 INSTRUMENT_SERVER_API int
 handle_get_buffer_metadata(const GetBufferMetadataRequest &req,
-                           GetBufferMetadataResponse *resp); // TODO:
+                           GetBufferMetadataResponse *resp);
 
 // Special case (no response message)
 INSTRUMENT_SERVER_API int
