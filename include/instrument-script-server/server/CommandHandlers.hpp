@@ -55,9 +55,8 @@ INSTRUMENT_SERVER_API int handle_cancel_job(const CancelJobRequest &req,
 INSTRUMENT_SERVER_API int handle_discover(const DiscoverRequest &req,
                                           DiscoverResponse *resp);
 
-INSTRUMENT_SERVER_API int
-handle_list_buffers(const ListDataBuffersRequest &req,
-                    ListDataBuffersResponse *resp); // TODO:
+INSTRUMENT_SERVER_API int handle_list_buffers(const ListDataBuffersRequest &req,
+                                              ListDataBuffersResponse *resp);
 
 INSTRUMENT_SERVER_API int
 handle_release_buffer(const ReleaseBufferRequest &req,

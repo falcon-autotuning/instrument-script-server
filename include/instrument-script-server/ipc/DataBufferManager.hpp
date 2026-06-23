@@ -1,8 +1,8 @@
 #pragma once
 
 #include "instrument-script-server/export.h"
+#include "instserver/server/v1/daemon_messages.pb.h"
 #include <cstddef>
-#include <cstdint>
 #include <instrument-data.h>
 #include <instrument-plugin.h>
 #include <list>
@@ -13,21 +13,6 @@
 
 namespace instserver::ipc {
 
-/// Metadata about a data buffer
-struct INSTRUMENT_SERVER_API DataBufferMetadata {
-  std::string buffer_id;       // Unique identifier
-  std::string instrument_name; // Source instrument
-  std::string command_id;      // Command that generated this data
-  ArrayType data_type;         // Type of data
-  size_t element_count;        // Number of elements
-  size_t byte_size;            // Total size in bytes
-  uint64_t timestamp_ms;       // When data was captured
-  std::string description;     // Optional description
-
-  // For multi-dimensional data
-  std::vector<size_t> dimensions; // e.g., [1024, 512] for 2D array
-};
-
 /// Manages shared memory buffers for large data transfers
 class INSTRUMENT_SERVER_API DataBufferManager {
 public:
@@ -37,7 +22,7 @@ public:
   void save_buffer(const std::string &buffer_id);
 
   /// Get buffer metadata
-  std::optional<DataBufferMetadata>
+  std::optional<server::v1::DataBufferMetadata>
   get_metadata(const std::string &buffer_id) const;
 
   /// Release buffer (decrements ref count)
