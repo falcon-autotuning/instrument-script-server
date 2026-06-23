@@ -90,9 +90,9 @@ int handle_measure(const json &params, json &out) {
   }
   
   out = json::parse(json_str);
-  out["ok"] = out["standard_response"]["ok"];
-  if (out.contains("standard_response") && out["standard_response"].contains("error") && out["standard_response"]["error"].contains("message")) {
-    out["error"] = out["standard_response"]["error"]["message"];
+  out["ok"] = resp.standard_response().ok();
+  if (resp.standard_response().has_error() && !resp.standard_response().error().message().empty()) {
+    out["error"] = resp.standard_response().error().message();
   }
   return rc;
 }
