@@ -54,12 +54,12 @@ int main(int argc, char **argv) {
 
     auto result = options.parse(argc, argv);
 
-    if (result.count("help")) {
+    if (result.contains("help")) {
       std::cout << options.help() << "\n";
       return 0;
     }
 
-    if (result.count("version")) {
+    if (result.contains("version")) {
       std::cout << "instrument-script-server version 1.2.0\n";
       return 0;
     }

@@ -1,6 +1,8 @@
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
-#include "instrument-script-server/server/ServerDaemon.hpp"
+#include <bits/chrono.h>
 #include <chrono>
+#include <cstdlib>
+#include <fstream>
 #include <gtest/gtest.h>
 #include <sstream>
 #include <string>
@@ -13,19 +15,60 @@
 #define popen _popen
 #define pclose _pclose
 #endif
+namespace {
+int get_pid_from_file(const std::string &path) {
+  std::ifstream ifs(path);
+  int pid = 0;
+  if (!(ifs >> pid)) {
+    return -1;
+  }
+  return pid;
+}
+
+bool process_alive(int pid) {
+#ifdef _WIN32
+  HANDLE h = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+  if (!h)
+    return false;
+
+  DWORD code;
+  GetExitCodeProcess(h, &code);
+  CloseHandle(h);
+  return code == STILL_ACTIVE;
+#else
+  return (kill(pid, 0) == 0);
+#endif
+}
+int extract_pid(std::string input) {
+  nlohmann::json json = nlohmann::json::parse(input);
+  if (json.contains("pid") && !json["pid"].is_null()) {
+    return json["pid"];
+  }
+  return -1;
+}
+bool extract_running(std::string input) {
+  nlohmann::json json = nlohmann::json::parse(input);
+  if (json.contains("running") && !json["running"].is_null()) {
+    return json["running"];
+  }
+  return false;
+}
+} // namespace
 
 static std::string bin_path = ISS_BIN_PATH;
 class CLITest : public ::testing::Test {
 protected:
+  void SetUp() override {
+    // ensure stopped beforehand
+    std::system((bin_path + " daemon stop").c_str());
+    std::this_thread::sleep_for(200ms);
+  }
   void TearDown() override {
     // Clean up after each test - use public API only
-    auto &daemon = instserver::ServerDaemon::instance();
     auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
     plugin_registry.unload_all();
-    if (daemon.is_running()) {
-      daemon.stop();
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
+    std::system((bin_path + " daemon stop").c_str());
+    std::this_thread::sleep_for(200ms);
   }
   // Run a command and return the exit code
   static std::pair<int, std::string> run_command(const std::string &args) {
@@ -202,3 +245,66 @@ TEST_F(CLITest, StartInstrument) {
 // they persist
 // TODO: Need to perform a measurement directly from the CLI on a running
 // instrument and check the output
+
+TEST_F(CLITest, StartCreatesProcessAndPidFile) {
+  int rc = std::system((bin_path + " daemon start --json").c_str());
+  // std::cout << "The start result is " << out << "\n";
+  std::string out;
+  int pid = -1;
+  std::this_thread::sleep_for(200ms);
+  auto [exit_code, output] = run_command(bin_path + " daemon status --json");
+  std::cout << "The daemon status is " << output << "\n";
+  pid = extract_pid(out);
+  bool running = extract_running(out);
+  EXPECT_TRUE(running);
+
+  EXPECT_GT(pid, 0);
+  EXPECT_TRUE(process_alive(pid));
+  std::system((bin_path + " daemon stop").c_str());
+  std::this_thread::sleep_for(200ms);
+  EXPECT_FALSE(process_alive(pid));
+}
+
+TEST_F(CLITest, RestartWorks) {
+  int rc1 = std::system((bin_path + " daemon start --json").c_str());
+  ASSERT_EQ(rc1, 0);
+  std::this_thread::sleep_for(200ms);
+
+  auto [exit_code1, output1] = run_command(bin_path + " daemon status --json");
+  int pid1 = extract_pid(output1);
+  ASSERT_GT(pid1, 0);
+
+  std::system((bin_path + " daemon stop").c_str());
+  std::this_thread::sleep_for(300ms);
+
+  int rc2 = std::system((bin_path + " daemon start --json").c_str());
+  ASSERT_EQ(rc2, 0);
+  std::this_thread::sleep_for(200ms);
+
+  auto [exit_code2, output2] = run_command(bin_path + " daemon status --json");
+  int pid2 = extract_pid(output2);
+  ASSERT_GT(pid2, 0);
+
+  EXPECT_NE(pid1, pid2);
+
+  std::system((bin_path + " daemon stop").c_str());
+}
+
+TEST_F(CLITest, MultipleStartsDoNotDuplicate) {
+  int rc1 = std::system((bin_path + " daemon start --json").c_str());
+  ASSERT_EQ(rc1, 0);
+  std::this_thread::sleep_for(200ms);
+  auto [exit_code1, output1] = run_command(bin_path + " daemon status --json");
+  int pid1 = extract_pid(output1);
+  ASSERT_GT(pid1, 0);
+
+  int rc2 = std::system((bin_path + " daemon start --json").c_str());
+  ASSERT_EQ(rc2, 0);
+  auto [exit_code2, output2] = run_command(bin_path + " daemon status --json");
+  int pid2 = extract_pid(output2);
+  ASSERT_GT(pid2, 0);
+  std::this_thread::sleep_for(200ms);
+
+  EXPECT_EQ(pid1, pid2); // same daemon
+  std::system((bin_path + " daemon stop").c_str());
+}
