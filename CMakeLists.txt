@@ -158,7 +158,7 @@ add_library(
       src/server/SyncCoordinator.cpp
       src/server/ApiRefResolver.cpp
       src/server/ServerDaemon.cpp
-      src/server/HttpRpcServer.cpp
+      src/server/GrpcServer.cpp
       src/server/CommandHandlers.cpp
       src/server/JobManager.cpp
       src/server/InstrumentCommand.cpp
@@ -198,6 +198,7 @@ target_link_libraries(
     instrument-call-stack::instrument-call-stack
     instrument-call-stack::instrument-call-stack-lua
     instserver-proto 
+    gRPC::grpc++
 )
 
 # Per-target include directories (avoid global include_directories)

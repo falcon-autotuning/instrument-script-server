@@ -1,5 +1,5 @@
 #include "instrument-script-server/server/ServerDaemon.hpp"
-#include "instrument-script-server/server/HttpRpcServer.hpp"
+#include "instrument-script-server/server/GrpcServer.hpp"
 #include <csignal>
 #include <instrument-log/inst_logging.h>
 
@@ -489,7 +489,7 @@ bool ServerDaemon::start() {
 
   // If an RPC port is configured, start RPC server
   if (rpc_port_ > 0) {
-    rpc_server_ = new server::HttpRpcServer();
+    rpc_server_ = new server::GrpcServer();
     if (!rpc_server_->start(rpc_port_)) {
       LOG_ERROR("DAEMON", "RPC", "Failed to start RPC server on port %d",
                 rpc_port_);

@@ -13,9 +13,9 @@
 
 namespace instserver {
 
-/// Forward-declare HttpRpcServer
+/// Forward-declare GrpcServer
 namespace server {
-class HttpRpcServer;
+class GrpcServer;
 }
 
 /// Server daemon that manages instrument registry and accepts commands
@@ -76,7 +76,7 @@ private:
   std::unique_ptr<SyncCoordinator> sync_coordinator_;
 
   // RPC listener
-  server::HttpRpcServer *rpc_server_{nullptr};
+  server::GrpcServer *rpc_server_{nullptr};
   uint16_t rpc_port_{0};
 
   // Shutdown pipe handles (platform-specific)

@@ -19,8 +19,11 @@ target_include_directories(instserver-proto
     $<INSTALL_INTERFACE:include>
 )
 
+find_package(gRPC CONFIG REQUIRED)
+
 target_link_libraries(instserver-proto
   PUBLIC protobuf::libprotobuf
+         gRPC::grpc++
 )
 
 protobuf_generate(
@@ -30,10 +33,19 @@ protobuf_generate(
   PROTOS ${PROTO_FILES}
 )
 
+protobuf_generate(
+  TARGET instserver-proto
+  LANGUAGE grpc
+  GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
+  PLUGIN "protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
+  IMPORT_DIRS ${PROTO_ROOT}
+  PROTOS ${PROTO_FILES}
+)
+
 install(
   DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/instserver
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  FILES_MATCHING PATTERN "*.pb.h"
+  FILES_MATCHING PATTERN "*.pb.h" PATTERN "*.grpc.pb.h"
 )
 
 install(TARGETS instserver-proto

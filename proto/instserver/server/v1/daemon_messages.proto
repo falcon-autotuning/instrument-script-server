@@ -296,3 +296,21 @@ message RpcResponse {
     RpcError error = 100;
   }
 }
+
+service DaemonService {
+  rpc DaemonStatus(DaemonStatusRequest) returns (DaemonStatusResponse);
+  rpc StartInstrument(StartInstrumentRequest) returns (StartInstrumentResponse);
+  rpc StopInstrument(StopInstrumentRequest) returns (StopInstrumentResponse);
+  rpc InstrumentStatus(InstrumentStatusRequest) returns (InstrumentStatusResponse);
+  rpc ListInstruments(ListInstrumentsRequest) returns (ListInstrumentsResponse);
+  rpc MeasureJob(MeasureJobRequest) returns (MeasureJobResponse);
+  rpc JobStatus(JobStatusRequest) returns (JobStatusResponse);
+  rpc MeasureJobResult(MeasureJobResultRequest) returns (MeasureJobResultResponse);
+  rpc JobList(JobListRequest) returns (JobListResponse);
+  rpc CancelJob(CancelJobRequest) returns (CancelJobResponse);
+  rpc Discover(DiscoverRequest) returns (DiscoverResponse);
+  rpc ListDataBuffers(ListDataBuffersRequest) returns (ListDataBuffersResponse);
+  rpc ReleaseBuffer(ReleaseBufferRequest) returns (ReleaseBufferResponse);
+  rpc GetBufferMetadata(GetBufferMetadataRequest) returns (GetBufferMetadataResponse);
+  rpc StopDaemon(DaemonStop) returns (StandardResponse);
+}

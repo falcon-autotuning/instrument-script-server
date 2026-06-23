@@ -1,14 +1,21 @@
 #pragma once
 
-#include <atomic>
+#include "instrument-script-server/export.h"
+#include <memory>
 #include <thread>
+#include <atomic>
+#include <cstdint>
+
+namespace grpc {
+class Server;
+}
 
 namespace instserver::server {
 
-class HttpRpcServer {
+class INSTRUMENT_SERVER_API GrpcServer {
 public:
-  HttpRpcServer();
-  ~HttpRpcServer();
+  GrpcServer();
+  ~GrpcServer();
 
   // Start server on loopback with given port. Returns true if started.
   bool start(uint16_t port);
@@ -22,10 +29,10 @@ public:
 private:
   void run_loop(uint16_t port);
 
-  std::atomic<bool> running_;
+  std::atomic<bool> running_{false};
   std::thread server_thread_;
-  uint16_t bound_port_;
-  int listen_fd_{-1}; // Listening socket FD for proper cleanup
+  uint16_t bound_port_{0};
+  std::unique_ptr<grpc::Server> server_;
 };
 
 } // namespace instserver::server
