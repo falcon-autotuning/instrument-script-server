@@ -1,9 +1,9 @@
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include <bits/chrono.h>
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -130,8 +130,6 @@ protected:
   }
   void TearDown() override {
     // Clean up after each test - use public API only
-    auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
-    plugin_registry.unload_all();
     std::system((bin_path + " daemon stop").c_str());
     std::string pid_file = get_runtime_dir() + "/server.pid";
     for (int i = 0; i < 30; ++i) {

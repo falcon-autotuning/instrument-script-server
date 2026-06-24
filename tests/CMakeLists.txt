@@ -48,7 +48,6 @@ add_executable(
   integration_tests
   integration/test_daemon_integration.cpp
   integration/test_parallel_execution.cpp
-  # integration/test_cli_commands.cpp
   integration/test_instrument_registry.cpp
   integration/test_measurement_scripts.cpp
   integration/test_visa_large_data.cpp
@@ -91,6 +90,17 @@ if(BUILD_C_CLIENT)
     GTest::gtest_main
   )
 endif()
+if(BUILD_CLI)
+  add_executable(test_cli
+    integration/test_cli_commands.cpp
+  )
+  target_link_libraries(test_cli
+    PRIVATE
+      nlohmann_json::nlohmann_json
+      GTest::gtest
+      GTest::gtest_main
+  )
+endif()
 
 foreach(tgt unit_tests integration_tests perf_tests)
   target_include_directories(${tgt} PRIVATE
@@ -106,6 +116,9 @@ set(ALL_TEST_TARGETS
 
 if(BUILD_C_CLIENT)
   list(APPEND ALL_TEST_TARGETS test_client_c_api)
+endif()
+if(BUILD_CLI)
+  list(APPEND ALL_TEST_TARGETS test_cli)
 endif()
 foreach(tgt ${ALL_TEST_TARGETS})
   target_compile_definitions(${tgt} PRIVATE
@@ -126,11 +139,9 @@ foreach(tgt ${ALL_TEST_TARGETS})
   endif()
 endforeach()
 if(BUILD_CLI)
-  foreach(tgt ${ALL_TEST_TARGETS})
-    target_compile_definitions(${tgt} PRIVATE
+  target_compile_definitions(test_cli PRIVATE
     ISS_BIN_PATH="$<TARGET_FILE:instrument-script-server>"
   )
-  endforeach()
 endif()
 
 add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
