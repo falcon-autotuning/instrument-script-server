@@ -1,6 +1,7 @@
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/JobManager.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
+#include "instserver/server/v1/daemon_messages.pb.h"
 #include <chrono>
 #include <fstream>
 #include <gtest/gtest.h>
@@ -10,19 +11,23 @@
 using json = nlohmann::json;
 using namespace instserver;
 
-static bool wait_for_job_complete(const std::string &job_id,
+static bool wait_for_job_complete(const server::JobID &job_id,
                                   int timeout_ms = 5000) {
   auto start = std::chrono::steady_clock::now();
   while (true) {
     instserver::server::JobInfo info;
     if (instserver::server::JobManager::instance().get_job_info(job_id, info)) {
-      if (info.status == "completed" || info.status == "failed" ||
-          info.status == "canceled")
-        return info.status == "completed";
+      if (info.job.status() == server::v1::JOB_STATUS_COMPLETED ||
+          info.job.status() == server::v1::JOB_STATUS_FAILED ||
+          info.job.status() == server::v1::JOB_STATUS_CANCELLED) {
+        return info.job.status() ==
+               instserver::server::v1::JOB_STATUS_COMPLETED;
+      }
     }
     if (std::chrono::steady_clock::now() - start >
-        std::chrono::milliseconds(timeout_ms))
+        std::chrono::milliseconds(timeout_ms)) {
       return false;
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
   }
 }
@@ -60,13 +65,10 @@ TEST(SyncBarrierTest, UnusedInstrumentsReceiveBarrierNOP) {
   }
 
   // Submit measure job (enqueue-first)
-  json params;
-  params["script_path"] = script_path;
-  std::string job_id =
-      instserver::server::JobManager::instance().submit_measure(script_path,
-                                                                params);
-  ASSERT_FALSE(job_id.empty());
-
+  server::v1::MeasureJobRequest req{};
+  req.set_script_path(script_path);
+  server::JobID job_id =
+      instserver::server::JobManager::instance().submit_measure(req);
   // Wait for completion
   ASSERT_TRUE(wait_for_job_complete(job_id, 10000));
 
@@ -80,8 +82,8 @@ TEST(SyncBarrierTest, UnusedInstrumentsReceiveBarrierNOP) {
   auto s1 = p1->get_stats();
   auto s2 = p2->get_stats();
 
-  EXPECT_GT(s1.commands_sent, 0u);
-  EXPECT_GT(s2.commands_sent, 0u);
+  EXPECT_GT(s1.commands_sent(), 0u);
+  EXPECT_GT(s2.commands_sent(), 0u);
 
   // Cleanup
   registry.remove_instrument("MockInstrument1");
