@@ -34,7 +34,7 @@ struct CLIOutput {
 
   template <typename Fn> void output_proto(Fn fn) { outputs.push_back(fn()); }
 
-  int emit() const {
+  [[nodiscard]] int emit() const {
     if (json_mode) {
       nlohmann::json j;
 
@@ -384,7 +384,7 @@ int main(int argc, char **argv) {
         return out.emit();
       }
 
-      out.message("daemon started");
+      out.message("Daemon started");
 
       out.output({{"pid", detected_pid}, {"running", true}});
 
@@ -406,7 +406,8 @@ int main(int argc, char **argv) {
       int stop_rc = instrument_server_client_stop_daemon(client, &req, &resp);
 
       if (stop_rc != 0) {
-        out.error("Failed to send stop request to daemon");
+        out.error("Failed to send stop request to daemon: " +
+                  std::to_string(stop_rc));
         instrument_server_client_destroy(client);
         return out.emit();
       }

@@ -16,7 +16,9 @@
 #define pclose _pclose
 #endif
 using namespace std::chrono_literals;
+
 namespace {
+const std::string bin_path = ISS_BIN_PATH;
 std::string get_runtime_dir() {
   const char *forced = getenv("INSTRUMENT_SERVER_RUNTIME_DIR");
 #ifdef _WIN32
@@ -111,79 +113,47 @@ bool extract_running(std::string input) {
   }
   return false;
 }
-} // namespace
+// Run a command and return the exit code
+std::pair<int, std::string> run_command(const std::string &args) {
+  std::string cmd = args + " 2>&1";
 
-static std::string bin_path = ISS_BIN_PATH;
-class CLITest : public ::testing::Test {
-protected:
-  void SetUp() override {
-    // ensure stopped beforehand
-    std::system((bin_path + " daemon stop").c_str());
-    std::string pid_file = get_runtime_dir() + "/server.pid";
-    for (int i = 0; i < 30; ++i) {
-      int pid = get_pid_from_file(pid_file);
-      if (pid <= 0 || !process_alive(pid)) {
-        break;
-      }
-      std::this_thread::sleep_for(100ms);
-    }
+  FILE *pipe = popen(cmd.c_str(), "r");
+  if (pipe == nullptr) {
+    return {-1, ""};
   }
-  void TearDown() override {
-    // Clean up after each test - use public API only
-    std::system((bin_path + " daemon stop").c_str());
-    std::string pid_file = get_runtime_dir() + "/server.pid";
-    for (int i = 0; i < 30; ++i) {
-      int pid = get_pid_from_file(pid_file);
-      if (pid <= 0 || !process_alive(pid)) {
-        break;
-      }
-      std::this_thread::sleep_for(100ms);
-    }
+
+  std::ostringstream output;
+  char buffer[256];
+  while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+    output << buffer;
   }
-  // Run a command and return the exit code
-  static std::pair<int, std::string> run_command(const std::string &args) {
-    std::string cmd = args + " 2>&1";
 
-    FILE *pipe = popen(cmd.c_str(), "r");
-    if (pipe == nullptr) {
-      return {-1, ""};
-    }
-
-    std::ostringstream output;
-    char buffer[256];
-    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-      output << buffer;
-    }
-
-    int exit_code = pclose(pipe);
+  int exit_code = pclose(pipe);
 
 #ifndef _WIN32
-    if (WIFEXITED(exit_code)) {
-      exit_code = WEXITSTATUS(exit_code);
+  if (WIFEXITED(exit_code)) {
+    exit_code = WEXITSTATUS(exit_code);
+  }
+#endif
+
+  return {exit_code, output.str()};
+}
+std::pair<int, std::string> run_iss(const std::string &args) {
+  return run_command("\"" + bin_path + "\" " + args);
+}
+bool wait_for_daemon_stopped() {
+  for (int i = 0; i < 30; ++i) {
+    auto [_, out] = run_iss("daemon status --json");
+    if (!extract_running(out)) {
+      return true;
     }
-#endif
-
-    return {exit_code, output.str()};
+    std::this_thread::sleep_for(100ms);
   }
-  static std::pair<int, std::string> run_iss(const std::string &args) {
-    return run_command("\"" + bin_path + "\" " + args);
-  }
-  static std::string has_instrument_processes() {
-#ifdef _WIN32
-    auto [code, output] =
-        run_command("tasklist | findstr /i instrument-script-server");
-#else
-    auto [code, output] =
-        run_command("pgrep -f 'instrument-script-server-daemon' | grep -v " +
-                    std::to_string(getpid()));
-#endif
+  return false;
+}
+} // namespace
 
-    // No output = no processes
-    return output;
-  }
-};
-
-TEST_F(CLITest, HelpCommand) {
+TEST(CLITestNoAutostart, HelpCommand) {
   auto [exit_code, output] = run_iss("--help");
 
   // Help command should succeed
@@ -201,31 +171,17 @@ TEST_F(CLITest, HelpCommand) {
   EXPECT_TRUE(has_help_content)
       << "Help output doesn't contain expected content";
 }
-
-TEST_F(CLITest, DaemonStatusWhenNotRunning) {
-  // Stop any running daemon first
-  run_command("daemon stop");
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
+TEST(CLITestNoAutostart, DaemonStatusWhenNotRunning) {
   auto [exit_code, output] = run_iss("daemon status");
 
   // When daemon is not running, status command should return non-zero
-  // (or succeed but report daemon is not running)
-  // The exact behavior depends on implementation, so we just verify it executed
   EXPECT_NE(exit_code, 0) << "Command failed to execute";
   EXPECT_NE(exit_code, -1) << "Command failed to execute";
 
   // Output should indicate status
   EXPECT_FALSE(output.empty()) << "Status command produced no output";
 }
-
-TEST_F(CLITest, DaemonStartStop) {
-  // Stop any running daemon first
-  run_iss("daemon stop");
-
-  std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
+TEST(CLITestNoAutostart, DaemonStartStop) {
   auto [exit_code, output] = run_iss("daemon start --json");
 
   // When daemon is not running, start command should return non-zero
@@ -237,28 +193,46 @@ TEST_F(CLITest, DaemonStartStop) {
   EXPECT_FALSE(output.empty()) << "Start command produced no output";
 
   // Should contain instument started
-  bool started = output.find("daemon started") != std::string::npos;
+  bool started = output.find("Daemon started") != std::string::npos;
 
   EXPECT_TRUE(started) << "Daemon was not started with an output message: "
                        << output;
 
   int pid = extract_pid(output);
+  EXPECT_TRUE(pid >= 0) << "Weird PID output" << pid;
 
   run_iss("daemon stop");
-  // Give processes time to shut down
-  bool alive = true;
+  std::this_thread::sleep_for(100ms);
+  EXPECT_TRUE(wait_for_daemon_stopped()) << "Daemon never stopped";
+}
+TEST(CLITestNoAutostart, StartCreatesProcessAndPidFile) {
+  auto [start_exit, start_out] = run_iss("daemon start --json");
+  std::this_thread::sleep_for(200ms);
+  auto [exit_code, output] = run_iss("daemon status --json");
+  int pid = extract_pid(output);
+  bool running = extract_running(output);
+  EXPECT_TRUE(running) << "The daemon status is " << output;
+
+  EXPECT_GT(pid, 0);
+  EXPECT_TRUE(process_alive(pid));
+  run_iss("daemon stop");
   for (int i = 0; i < 30; ++i) {
-    if (pid <= 0 || !process_alive(pid)) {
-      alive = false;
+    if (!process_alive(pid)) {
       break;
     }
     std::this_thread::sleep_for(100ms);
   }
-
-  // Verify daemon process is gone
-  EXPECT_FALSE(alive) << "Daemon process is still alive: " << pid;
+  EXPECT_FALSE(process_alive(pid));
 }
 
+class CLITest : public ::testing::Test {
+protected:
+  void SetUp() override { std::system((bin_path + " daemon start").c_str()); }
+  void TearDown() override {
+    std::system((bin_path + " daemon stop").c_str());
+    EXPECT_TRUE(wait_for_daemon_stopped()) << "Daemon never stopped";
+  }
+};
 TEST_F(CLITest, ListPlugins) {
   auto [exit_code, output] = run_iss("discover");
 
@@ -268,6 +242,7 @@ TEST_F(CLITest, ListPlugins) {
 
   // Should produce some output (even if just "No plugins" or empty list)
   // Don't require specific output as it depends on installed plugins
+  EXPECT_NE(output, "") << "There was no output";
 }
 
 TEST_F(CLITest, ListInstrumentsWhenNoneRunning) {
@@ -279,17 +254,10 @@ TEST_F(CLITest, ListInstrumentsWhenNoneRunning) {
 
   // Should produce some output (even if just "No instruments" or empty list)
   // Don't require specific output as it depends on running instruments
+  EXPECT_NE(output, "") << "There was no output";
 }
 
 TEST_F(CLITest, StartInstrument) {
-  // Start the background daemon process for the ISS
-  int pid = -1;
-  {
-    auto [exit_code, output] = run_iss("daemon start --json");
-    EXPECT_EQ(exit_code, 0) << "daemon start failed to execute";
-    pid = extract_pid(output);
-  }
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   // Start an instrument
   {
     auto [exit_code, output] = run_iss(
@@ -313,29 +281,9 @@ TEST_F(CLITest, StartInstrument) {
     EXPECT_TRUE(stopped) << "The MockInstrument1 has failed to stop: "
                          << output;
   }
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  // Shutdown the daemon process
-  run_iss("daemon stop");
-  bool alive = true;
-  for (int i = 0; i < 30; ++i) {
-    if (pid <= 0 || !process_alive(pid)) {
-      alive = false;
-      break;
-    }
-    std::this_thread::sleep_for(100ms);
-  }
-  EXPECT_FALSE(alive) << "Daemon process is still alive: " << pid;
 }
 
 TEST_F(CLITest, StartInstruments) {
-  // Start the background daemon process for the ISS
-  int pid = -1;
-  {
-    auto [exit_code, output] = run_iss("daemon start --json");
-    EXPECT_EQ(exit_code, 0) << "daemon start failed to execute";
-    pid = extract_pid(output);
-  }
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
   // Start an instrument
   {
     auto [exit_code, output] = run_iss(
@@ -382,49 +330,9 @@ TEST_F(CLITest, StartInstruments) {
     EXPECT_TRUE(stopped) << "The MockInstrument2 has failed to stop: "
                          << output;
   }
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  // Shutdown the daemon process
-  run_iss("daemon stop");
-  bool alive = true;
-  for (int i = 0; i < 30; ++i) {
-    if (pid <= 0 || !process_alive(pid)) {
-      alive = false;
-      break;
-    }
-    std::this_thread::sleep_for(100ms);
-  }
-  EXPECT_FALSE(alive) << "Daemon process is still alive: " << pid;
-}
-
-// TODO: Need to perform a measurement directly from the CLI on a running
-// instrument and check the output
-
-TEST_F(CLITest, StartCreatesProcessAndPidFile) {
-  auto [start_exit, start_out] = run_iss("daemon start --json");
-  int pid = -1;
-  std::this_thread::sleep_for(200ms);
-  auto [exit_code, output] = run_iss("daemon status --json");
-  std::cout << "The daemon status is " << output << "\n";
-  pid = extract_pid(output);
-  bool running = extract_running(output);
-  EXPECT_TRUE(running);
-
-  EXPECT_GT(pid, 0);
-  EXPECT_TRUE(process_alive(pid));
-  run_iss("daemon stop");
-  for (int i = 0; i < 30; ++i) {
-    if (!process_alive(pid)) {
-      break;
-    }
-    std::this_thread::sleep_for(100ms);
-  }
-  EXPECT_FALSE(process_alive(pid));
 }
 
 TEST_F(CLITest, RestartWorks) {
-  auto [exit_code1, output1] = run_iss("daemon start --json");
-  std::this_thread::sleep_for(200ms);
-
   auto [status_code1, status_out1] = run_iss("daemon status --json");
   int pid1 = extract_pid(status_out1);
   ASSERT_GT(pid1, 0);
@@ -440,13 +348,9 @@ TEST_F(CLITest, RestartWorks) {
   ASSERT_GT(pid2, 0);
 
   EXPECT_NE(pid1, pid2);
-
-  run_iss("daemon stop");
 }
 
 TEST_F(CLITest, MultipleStartsDoNotDuplicate) {
-  auto [exit_code1, output1] = run_iss("daemon start --json");
-  std::this_thread::sleep_for(200ms);
   auto [status_code1, status_out1] = run_iss("daemon status --json");
   int pid1 = extract_pid(status_out1);
   ASSERT_GT(pid1, 0);
@@ -458,5 +362,6 @@ TEST_F(CLITest, MultipleStartsDoNotDuplicate) {
   std::this_thread::sleep_for(200ms);
 
   EXPECT_EQ(pid1, pid2); // same daemon
-  run_iss("daemon stop");
 }
+// TODO: Need to perform a measurement directly from the CLI on a running
+// instrument and check the output
