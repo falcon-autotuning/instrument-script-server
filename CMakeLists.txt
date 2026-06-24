@@ -64,8 +64,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Build Options
 option(BUILD_TESTS "Build tests" OFF)
 option(BUILD_C_CLIENT "Build C99 gRPC client wrapper" OFF)
+option(BUILD_CLI "Build ISS CLI" OFF)
 # Performance options
 option(USE_CCACHE "Enable ccache or sccache if available" ON)
+
+if(BUILD_CLI AND NOT BUILD_C_CLIENT)
+  message(STATUS "Enabling BUILD_C_CLIENT because BUILD_CLI is ON")
+  set(BUILD_C_CLIENT ON CACHE BOOL "" FORCE)
+endif()
 
 # Windows-specific definitions
 if(WIN32)
@@ -220,6 +226,9 @@ add_executable(validate-quantum-dot-config
 add_executable(template-expander src/template_expander.cpp)
 add_executable(generate-instrument-config
                  src/instrument_configuration_generator.cpp)
+if(BUILD_CLI)
+  add_executable(instrument-script-server src/instrument_server_main.cpp)
+endif()
 foreach(target
         instrument-script-server-daemon
         validate-instrument-api
@@ -236,26 +245,34 @@ target_link_libraries(instrument-worker
     instrument-plugin-api::instrument-plugin-api-host
 )
 if(BUILD_C_CLIENT)
-
   add_library(instrument-script-server-client STATIC
-  src/client/instrument-server-client.cpp
-)
+    src/client/instrument-server-client.cpp
+  )
 
   target_link_libraries(instrument-script-server-client
-  PUBLIC
-    instserver-proto-c
-    instserver-proto
-    gRPC::grpc++
-)
-
+    PUBLIC
+      instserver-proto-c
+      instserver-proto
+      gRPC::grpc++
+  )
   target_include_directories(instrument-script-server-client
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
-
+    PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+      $<INSTALL_INTERFACE:include>
+  )
 endif()
-
+if(BUILD_CLI)
+  target_link_libraries(instrument-script-server
+    PRIVATE
+      instrument-script-server-client
+      instrument-script-server-core
+  )
+  target_include_directories(instrument-script-server
+    PRIVATE
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+      $<INSTALL_INTERFACE:include>
+  )
+endif()
 
 # Tests
 if(BUILD_TESTS)
@@ -292,6 +309,12 @@ install(TARGETS
     generate-instrument-config
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+if(BUILD_CLI)
+  install(TARGETS instrument-script-server
+    EXPORT instrument-script-server-targets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  )
+endif()
 
 install(
   DIRECTORY include/instrument-script-server
