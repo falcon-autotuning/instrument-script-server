@@ -5,7 +5,6 @@
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
 #include <optional>
-
 #ifdef _WIN32
 #include <process.h>
 #define getpid _getpid
