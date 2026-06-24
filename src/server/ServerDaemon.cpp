@@ -561,12 +561,15 @@ void ServerDaemon::stop() {
       // Ignore logging errors during shutdown
     }
 
-    // Signal threads to exit. We set running_ false BEFORE joining so both
-    // daemon_loop() and shutdown_listener_loop() see the flag and exit their
-    // poll loops naturally. We must NOT close the pipe fd here because
-    // shutdown_listener_loop() may still be mid-read on that fd; closing it
-    // while the thread runs causes a race (bad-fd / EBADF).
+    // Signal threads to exit first.
     running_.store(false);
+
+    // Remove the PID file BEFORE stopping the gRPC server so that by the
+    // time the gRPC port goes silent (and callers see the daemon as "stopped"),
+    // any subsequent `daemon start` will NOT find a stale PID file and will
+    // be able to proceed immediately. This eliminates the race between
+    // wait_for_daemon_stopped() returning true and the PID file being gone.
+    remove_pid_file();
 
     // Stop instruments and RPC server while still holding the lock.
     InstrumentRegistry::instance().stop_all();
@@ -578,7 +581,7 @@ void ServerDaemon::stop() {
     }
   } // Lock released here
 
-  // Join threads first so we know no thread is touching the pipe fd.
+  // Join threads so no thread is still touching the pipe fd.
   if (daemon_thread_ && daemon_thread_->joinable()) {
     daemon_thread_->join();
   }
@@ -586,8 +589,7 @@ void ServerDaemon::stop() {
     shutdown_listener_thread_->join();
   }
 
-  // Now it is safe to close and remove the pipe and PID file.
-  remove_pid_file();
+  // Close and remove the pipe only after threads have fully exited.
   close_shutdown_pipe();
 
   inst_log_shutdown();
