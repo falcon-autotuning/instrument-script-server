@@ -117,7 +117,6 @@ endif()
 # Find dependencies
 find_package(Threads       REQUIRED)
 find_package(Lua           REQUIRED)
-find_package(Protobuf      REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(yaml-cpp      CONFIG REQUIRED)
 find_package(sol2          CONFIG REQUIRED)
@@ -181,7 +180,7 @@ target_compile_definitions(instrument-script-server-core
 # Add version information
 target_compile_definitions(
   instrument-script-server-core
-  PRIVATE
+  PUBLIC
     INSTSERVER_VERSION="${INSTSERVER_VERSION}"
     INSTSERVER_GIT_COMMIT="${INSTSERVER_GIT_COMMIT}"
     INSTSERVER_GIT_TAG="${INSTSERVER_GIT_TAG}")

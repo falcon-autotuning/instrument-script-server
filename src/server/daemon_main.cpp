@@ -7,6 +7,16 @@
 #include <iostream>
 #include <thread>
 
+#ifndef INSTSERVER_VERSION
+#define INSTSERVER_VERSION "v0.0.0"
+#endif
+#ifndef INSTSERVER_GIT_TAG
+#define INSTSERVER_GIT_TAG ""
+#endif
+#ifndef INSTSERVER_GIT_COMMIT
+#define INSTSERVER_GIT_COMMIT "unknown"
+#endif
+
 using namespace instserver;
 
 constexpr int DEFAULT_PORT = 8555;
@@ -48,7 +58,7 @@ int main(int argc, char **argv) {
     cxxopts::Options options("instrument-script-server-daemon",
                              "Instrument Script Server Daemon");
 
-    options.add_options()("h,help", "Show help")("version", "Show version")(
+    options.add_options()("h,help", "Show help")("v,version", "Show version")(
         "log-level", "Log level (trace|debug|info|warn|error)",
         cxxopts::value<std::string>()->default_value("info"));
 
@@ -60,7 +70,19 @@ int main(int argc, char **argv) {
     }
 
     if (result.contains("version")) {
-      std::cout << "instrument-script-server version 1.2.0\n";
+      std::cout << "instrument-script-server-daemon version "
+                << INSTSERVER_VERSION;
+
+      if (std::string(INSTSERVER_GIT_TAG).size() > 0) {
+        std::cout << " (" << INSTSERVER_GIT_TAG << ")";
+      }
+
+      if (std::string(INSTSERVER_GIT_COMMIT) != "unknown") {
+        std::cout << " [" << std::string(INSTSERVER_GIT_COMMIT).substr(0, 7)
+                  << "]";
+      }
+
+      std::cout << "\n";
       return 0;
     }
 

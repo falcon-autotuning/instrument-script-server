@@ -86,19 +86,7 @@ bool extract_running(std::string input) {
 }
 } // namespace
 
-class DaemonIntegrationTest : public ::testing::Test {
-protected:
-  void SetUp() override {
-    // ensure stopped beforehand
-    std::system((bin_path + " daemon stop").c_str());
-    std::this_thread::sleep_for(200ms);
-  }
-
-  void TearDown() override {
-    std::system((bin_path + " daemon stop").c_str());
-    std::this_thread::sleep_for(200ms);
-  }
-};
+class DaemonIntegrationTest : public ::testing::Test {};
 
 TEST_F(DaemonIntegrationTest, StartDaemonHelp) {
   auto [exit_code, output] = run_command(bin_path + " --help");
@@ -116,4 +104,11 @@ TEST_F(DaemonIntegrationTest, StartDaemonOtherHelp) {
       << "Help output doesn't contain expected content: " << output;
 }
 
-// TODO: Add more tests for the arguments like version and log-level
+TEST_F(DaemonIntegrationTest, DaemonVersion) {
+  auto [exit_code, output] = run_command(bin_path + " -v");
+  bool has_help_content =
+      output.find("instrument-script-server-daemon version") !=
+      std::string::npos;
+  EXPECT_TRUE(has_help_content)
+      << "Version output doesn't contain expected content: " << output;
+}
