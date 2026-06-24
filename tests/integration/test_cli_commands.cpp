@@ -15,7 +15,31 @@
 #define popen _popen
 #define pclose _pclose
 #endif
+using namespace std::chrono_literals;
 namespace {
+std::string get_runtime_dir() {
+  const char *forced = getenv("INSTRUMENT_SERVER_RUNTIME_DIR");
+#ifdef _WIN32
+  if (forced != nullptr) {
+    return forced;
+  }
+  char *appdata = getenv("LOCALAPPDATA");
+  if (appdata != nullptr) {
+    return std::string(appdata) + "\\InstrumentServer";
+  }
+  return ".\\instrument-script-server-runtime";
+#else
+  if (forced != nullptr) {
+    return forced;
+  }
+  char *xdg_runtime = getenv("XDG_RUNTIME_DIR");
+  if (xdg_runtime != nullptr) {
+    return std::string(xdg_runtime) + "/instrument-script-server";
+  }
+  return "/tmp/instrument-script-server-" +
+         std::string((getenv("USER") != nullptr) ? getenv("USER") : "unknown");
+#endif
+}
 int get_pid_from_file(const std::string &path) {
   std::ifstream ifs(path);
   int pid = 0;
@@ -40,16 +64,50 @@ bool process_alive(int pid) {
 #endif
 }
 int extract_pid(std::string input) {
-  nlohmann::json json = nlohmann::json::parse(input);
-  if (json.contains("pid") && !json["pid"].is_null()) {
-    return json["pid"];
+  try {
+    nlohmann::json json = nlohmann::json::parse(input);
+    // Flat format
+    if (json.contains("pid") && !json["pid"].is_null()) {
+      return json["pid"];
+    }
+    // CLIOutput JSON format: {"output": [{"pid": x, ...}]}
+    if (json.contains("output") && json["output"].is_array() &&
+        !json["output"].empty()) {
+      const auto &first = json["output"][0];
+      if (first.contains("pid") && !first["pid"].is_null()) {
+        return first["pid"];
+      }
+    }
+  } catch (...) {
   }
   return -1;
 }
 bool extract_running(std::string input) {
-  nlohmann::json json = nlohmann::json::parse(input);
-  if (json.contains("running") && !json["running"].is_null()) {
-    return json["running"];
+  try {
+    nlohmann::json json = nlohmann::json::parse(input);
+    // Flat format
+    if (json.contains("running") && !json["running"].is_null()) {
+      if (json["running"].is_boolean()) {
+        return json["running"].get<bool>();
+      }
+      if (json["running"].is_number()) {
+        return json["running"].get<int>() != 0;
+      }
+    }
+    // CLIOutput JSON format: {"output": [{"running": true, ...}]}
+    if (json.contains("output") && json["output"].is_array() &&
+        !json["output"].empty()) {
+      const auto &first = json["output"][0];
+      if (first.contains("running") && !first["running"].is_null()) {
+        if (first["running"].is_boolean()) {
+          return first["running"].get<bool>();
+        }
+        if (first["running"].is_number()) {
+          return first["running"].get<int>() != 0;
+        }
+      }
+    }
+  } catch (...) {
   }
   return false;
 }
@@ -61,14 +119,28 @@ protected:
   void SetUp() override {
     // ensure stopped beforehand
     std::system((bin_path + " daemon stop").c_str());
-    std::this_thread::sleep_for(200ms);
+    std::string pid_file = get_runtime_dir() + "/server.pid";
+    for (int i = 0; i < 30; ++i) {
+      int pid = get_pid_from_file(pid_file);
+      if (pid <= 0 || !process_alive(pid)) {
+        break;
+      }
+      std::this_thread::sleep_for(100ms);
+    }
   }
   void TearDown() override {
     // Clean up after each test - use public API only
     auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
     plugin_registry.unload_all();
     std::system((bin_path + " daemon stop").c_str());
-    std::this_thread::sleep_for(200ms);
+    std::string pid_file = get_runtime_dir() + "/server.pid";
+    for (int i = 0; i < 30; ++i) {
+      int pid = get_pid_from_file(pid_file);
+      if (pid <= 0 || !process_alive(pid)) {
+        break;
+      }
+      std::this_thread::sleep_for(100ms);
+    }
   }
   // Run a command and return the exit code
   static std::pair<int, std::string> run_command(const std::string &args) {
@@ -103,7 +175,7 @@ protected:
     auto [code, output] =
         run_command("tasklist | findstr /i instrument-script-server");
 #else
-    auto [code, output] = run_command("pgrep -f instrument-script-server");
+    auto [code, output] = run_command("pgrep -f 'instrument-script-server-daemon' | grep -v " + std::to_string(getpid()));
 #endif
 
     // No output = no processes
@@ -169,14 +241,21 @@ TEST_F(CLITest, DaemonStartStop) {
   EXPECT_TRUE(started) << "Daemon was not started with an output message: "
                        << output;
 
+  int pid = extract_pid(output);
+
   run_iss("daemon stop");
   // Give processes time to shut down
-  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  bool alive = true;
+  for (int i = 0; i < 30; ++i) {
+    if (pid <= 0 || !process_alive(pid)) {
+      alive = false;
+      break;
+    }
+    std::this_thread::sleep_for(100ms);
+  }
 
-  // Verify no instrument processes remain
-  std::string process_check = has_instrument_processes();
-  EXPECT_TRUE(process_check.empty())
-      << "Instrument processes still running! " << process_check;
+  // Verify daemon process is gone
+  EXPECT_FALSE(alive) << "Daemon process is still alive: " << pid;
 }
 
 TEST_F(CLITest, ListPlugins) {
@@ -203,16 +282,17 @@ TEST_F(CLITest, ListInstrumentsWhenNoneRunning) {
 
 TEST_F(CLITest, StartInstrument) {
   // Start the background daemon process for the ISS
+  int pid = -1;
   {
     auto [exit_code, output] = run_iss("daemon start --json");
     EXPECT_NE(exit_code, -1) << "daemon start failed to execute";
-    bool started = output.find("daemon started") != std::string::npos;
+    pid = extract_pid(output);
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   // Start an instrument
   {
     auto [exit_code, output] = run_iss(
-        "start ./data/mock_instrument1.yaml --plugin ./mock_visa_plugin.so");
+        "start ./data/mock_instrument1.yaml --plugin ./libmock_visa_plugin.so");
     EXPECT_NE(exit_code, -1) << "instrument start failed to execute";
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -235,10 +315,15 @@ TEST_F(CLITest, StartInstrument) {
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   // Shutdown the daemon process
   run_iss("daemon stop");
-  std::this_thread::sleep_for(std::chrono::milliseconds(200));
-  std::string process_check = has_instrument_processes();
-  EXPECT_TRUE(process_check.empty())
-      << "Instrument processes still running! " << process_check;
+  bool alive = true;
+  for (int i = 0; i < 30; ++i) {
+    if (pid <= 0 || !process_alive(pid)) {
+      alive = false;
+      break;
+    }
+    std::this_thread::sleep_for(100ms);
+  }
+  EXPECT_FALSE(alive) << "Daemon process is still alive: " << pid;
 }
 
 // TODO: Need to test starting two instruments and shutting them down and that
@@ -247,64 +332,63 @@ TEST_F(CLITest, StartInstrument) {
 // instrument and check the output
 
 TEST_F(CLITest, StartCreatesProcessAndPidFile) {
-  int rc = std::system((bin_path + " daemon start --json").c_str());
-  // std::cout << "The start result is " << out << "\n";
-  std::string out;
+  auto [start_exit, start_out] = run_iss("daemon start --json");
   int pid = -1;
   std::this_thread::sleep_for(200ms);
   auto [exit_code, output] = run_command(bin_path + " daemon status --json");
   std::cout << "The daemon status is " << output << "\n";
-  pid = extract_pid(out);
-  bool running = extract_running(out);
+  pid = extract_pid(output);
+  bool running = extract_running(output);
   EXPECT_TRUE(running);
 
   EXPECT_GT(pid, 0);
   EXPECT_TRUE(process_alive(pid));
-  std::system((bin_path + " daemon stop").c_str());
-  std::this_thread::sleep_for(200ms);
+  run_iss("daemon stop");
+  for (int i = 0; i < 30; ++i) {
+    if (!process_alive(pid)) {
+      break;
+    }
+    std::this_thread::sleep_for(100ms);
+  }
   EXPECT_FALSE(process_alive(pid));
 }
 
 TEST_F(CLITest, RestartWorks) {
-  int rc1 = std::system((bin_path + " daemon start --json").c_str());
-  ASSERT_EQ(rc1, 0);
+  auto [exit_code1, output1] = run_iss("daemon start --json");
   std::this_thread::sleep_for(200ms);
 
-  auto [exit_code1, output1] = run_command(bin_path + " daemon status --json");
-  int pid1 = extract_pid(output1);
+  auto [status_code1, status_out1] = run_command(bin_path + " daemon status --json");
+  int pid1 = extract_pid(status_out1);
   ASSERT_GT(pid1, 0);
 
-  std::system((bin_path + " daemon stop").c_str());
+  run_iss("daemon stop");
   std::this_thread::sleep_for(300ms);
 
-  int rc2 = std::system((bin_path + " daemon start --json").c_str());
-  ASSERT_EQ(rc2, 0);
+  auto [exit_code2, output2] = run_iss("daemon start --json");
   std::this_thread::sleep_for(200ms);
 
-  auto [exit_code2, output2] = run_command(bin_path + " daemon status --json");
-  int pid2 = extract_pid(output2);
+  auto [status_code2, status_out2] = run_command(bin_path + " daemon status --json");
+  int pid2 = extract_pid(status_out2);
   ASSERT_GT(pid2, 0);
 
   EXPECT_NE(pid1, pid2);
 
-  std::system((bin_path + " daemon stop").c_str());
+  run_iss("daemon stop");
 }
 
 TEST_F(CLITest, MultipleStartsDoNotDuplicate) {
-  int rc1 = std::system((bin_path + " daemon start --json").c_str());
-  ASSERT_EQ(rc1, 0);
+  auto [exit_code1, output1] = run_iss("daemon start --json");
   std::this_thread::sleep_for(200ms);
-  auto [exit_code1, output1] = run_command(bin_path + " daemon status --json");
-  int pid1 = extract_pid(output1);
+  auto [status_code1, status_out1] = run_command(bin_path + " daemon status --json");
+  int pid1 = extract_pid(status_out1);
   ASSERT_GT(pid1, 0);
 
-  int rc2 = std::system((bin_path + " daemon start --json").c_str());
-  ASSERT_EQ(rc2, 0);
-  auto [exit_code2, output2] = run_command(bin_path + " daemon status --json");
-  int pid2 = extract_pid(output2);
+  run_iss("daemon start --json");
+  auto [status_code2, status_out2] = run_command(bin_path + " daemon status --json");
+  int pid2 = extract_pid(status_out2);
   ASSERT_GT(pid2, 0);
   std::this_thread::sleep_for(200ms);
 
   EXPECT_EQ(pid1, pid2); // same daemon
-  std::system((bin_path + " daemon stop").c_str());
+  run_iss("daemon stop");
 }

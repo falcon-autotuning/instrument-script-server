@@ -1,6 +1,10 @@
 #include "instrument-script-server/instrument-script-server-client.h"
+#include "instrument-script-server/ipc/DataBufferManager.hpp"
+#include "instrument-script-server/server/CommandHandlers.hpp"
 #include "instrument-script-server/version.hpp"
+#include <filesystem>
 #include <inst_logging.h>
+#include <instrument-data.h>
 #include <iostream>
 #include <spdlog/spdlog.h>
 #ifndef _WIN32
@@ -55,6 +59,8 @@ struct CLIOutput {
 };
 
 using namespace instserver;
+using namespace instserver::server;
+using namespace instserver::server::v1;
 
 static volatile bool g_running = true;
 
@@ -62,7 +68,7 @@ namespace {
 uint16_t get_port() {
   const char *env = std::getenv("INSTRUMENT_SCRIPT_SERVER_RPC_PORT");
   if (!env)
-    return 50051;
+    return 8555;
   return static_cast<uint16_t>(std::stoi(env));
 }
 
@@ -74,10 +80,77 @@ void die(const std::string &msg) {
   std::cerr << msg << "\n";
   std::exit(1);
 }
+template <typename T> std::vector<T> make_vector(const void *data, size_t n) {
+  const T *ptr = static_cast<const T *>(data);
+  return std::vector<T>(ptr, ptr + n);
+}
+
+// ReadBuffer is handled in the CLI process (data is read directly from shared
+// memory, not via RPC). Buffer metadata is fetched via handle_get_buffer_metadata.
+static int local_read_buffer(const std::string &buffer_id,
+                             nlohmann::json &out) {
+  out = nlohmann::json::object();
+
+  GetBufferMetadataRequest meta_req;
+  meta_req.set_buffer_id(buffer_id);
+  GetBufferMetadataResponse meta_resp;
+  if (handle_get_buffer_metadata(meta_req, &meta_resp) != 0 ||
+      !meta_resp.standard_response().ok()) {
+    out["ok"] = false;
+    out["error"] = "buffer not found: " + buffer_id;
+    return 1;
+  }
+
+  const auto &meta = meta_resp.meta();
+  uint32_t element_count = meta.element_count();
+  uint32_t data_type = meta.data_type();
+
+  // Get raw data from shared memory via C API (instrument-data.h)
+  DataBuffer *buf = data_manager_get_buffer(buffer_id.c_str());
+  if (!buf) {
+    out["ok"] = false;
+    out["error"] = "buffer data not found: " + buffer_id;
+    return 1;
+  }
+
+  void *data = data_buffer_data(buf);
+  size_t n = static_cast<size_t>(element_count);
+
+  out["ok"] = true;
+  out["buffer_id"] = buffer_id;
+  out["element_count"] = n;
+
+  if (data_type == INST_DATA_FLOAT64) {
+    out["data"] = make_vector<double>(data, n);
+    out["data_type"] = "float64";
+  } else if (data_type == INST_DATA_FLOAT32) {
+    auto fvec = make_vector<float>(data, n);
+    out["data"] = std::vector<double>(fvec.begin(), fvec.end());
+    out["data_type"] = "float32";
+  } else {
+    out["ok"] = false;
+    out["error"] = "unsupported buffer data type for export";
+    return 1;
+  }
+  return 0;
+}
 } // namespace
 void signal_handler(int sig) {
   (void)sig;
   g_running = false;
+}
+
+// Returns the path to instrument-script-server-daemon, preferring co-location
+// with this binary (argv[0]), then falling back to the bare name (PATH lookup).
+static std::string get_daemon_path(const char *argv0) {
+  if (argv0) {
+    std::filesystem::path self(argv0);
+    auto sibling = self.parent_path() / "instrument-script-server-daemon";
+    if (std::filesystem::exists(sibling)) {
+      return sibling.string();
+    }
+  }
+  return "instrument-script-server-daemon";
 }
 
 void print_usage() {
@@ -224,7 +297,7 @@ int main(int argc, char **argv) {
   }
 
   std::string command = argv[1];
-  int rc;
+  int rc = 0;
   CLIOutput out{};
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
@@ -302,9 +375,9 @@ int main(int argc, char **argv) {
           close(devnull);
         }
 
-        execlp("instrument-script-server-daemon",
-               "instrument-script-server-daemon", "--log-level",
-               log_level.c_str(), nullptr);
+        std::string daemon_path = get_daemon_path(argv[0]);
+        execl(daemon_path.c_str(), daemon_path.c_str(), "--log-level",
+              log_level.empty() ? "info" : log_level.c_str(), nullptr);
 
         _exit(1); // exec failed
       }
@@ -344,7 +417,7 @@ int main(int argc, char **argv) {
         return out.emit();
       }
 
-      out.message("Daemon started");
+      out.message("daemon started");
 
       out.output({{"pid", detected_pid}, {"running", true}});
 
@@ -363,9 +436,9 @@ int main(int argc, char **argv) {
 
       Instserver__Server__V1__StandardResponse *resp = nullptr;
 
-      int rc = instrument_server_client_stop_daemon(client, &req, &resp);
+      int stop_rc = instrument_server_client_stop_daemon(client, &req, &resp);
 
-      if (rc != 0 || resp == nullptr) {
+      if (stop_rc != 0 || resp == nullptr) {
         out.error("Failed to send stop request to daemon");
         instrument_server_client_destroy(client);
         return out.emit();
@@ -398,9 +471,9 @@ int main(int argc, char **argv) {
 
       Instserver__Server__V1__DaemonStatusResponse *resp = nullptr;
 
-      int rc = instrument_server_client_daemon_status(client, &req, &resp);
+      int status_rc = instrument_server_client_daemon_status(client, &req, &resp);
 
-      if (rc != 0 || resp == nullptr) {
+      if (status_rc != 0 || resp == nullptr) {
         out.error("Daemon unreachable");
         instrument_server_client_destroy(client);
         return out.emit();
@@ -432,38 +505,71 @@ int main(int argc, char **argv) {
       out.error("Usage: instrument-script-server daemon <start|stop|status>");
       return out.emit();
     }
+  } // end case ISS_CLI_Command::DAEMON
 
   case ISS_CLI_Command::START: {
-    if (argc < 2) {
+    if (argc < 3) {
       std::cerr << "Usage: instrument-script-server start <config> [--plugin "
                    "<path>] "
                    "[--log-level <level>]\n";
       rc = 1;
       break;
     }
-    std::string config_path = argv[2];
-    nlohmann::json params;
-    params["config_path"] = config_path;
-    for (int i = 3; i < argc; ++i) {
-      std::string arg = argv[i];
-      if (arg == "--plugin" && i + 1 < argc) {
-        params["plugin"] = argv[++i];
-      } else if (arg == "--log-level" && i + 1 < argc) {
-        params["log_level"] = argv[++i];
+    auto *client = connect_client();
+    bool use_rpc = false;
+    if (client) {
+      Instserver__Server__V1__DaemonStatusRequest sreq =
+          INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+      Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+      if (instrument_server_client_daemon_status(client, &sreq, &sresp) == 0 && sresp && sresp->running) {
+        use_rpc = true;
       }
+      if (sresp) instrument_server_client_free_response(sresp);
     }
 
-    nlohmann::json out;
-    rc = server::handle_start(params, out);
-    if (!out.is_null()) {
-      if (out.contains("error")) {
-        std::cerr << out["error"].get<std::string>() << "\n";
+    if (use_rpc) {
+      Instserver__Server__V1__StartInstrumentRequest req =
+          INSTSERVER__SERVER__V1__START_INSTRUMENT_REQUEST__INIT;
+      req.config_path = argv[2];
+      for (int i = 3; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--plugin" && i + 1 < argc) {
+          req.plugin_path = argv[++i];
+        }
       }
-      if (out.contains("instrument")) {
-        std::cout << "Started instrument: "
-                  << out["instrument"].get<std::string>() << "\n";
+      Instserver__Server__V1__StartInstrumentResponse *resp = nullptr;
+      int call_rc = instrument_server_client_start_instrument(client, &req, &resp);
+      if (call_rc != 0 || resp == nullptr) {
+        std::cerr << "Failed to send start instrument request to daemon\n";
+        rc = 1;
+      } else if (!resp->standard_response || !resp->standard_response->ok) {
+        std::cerr << (resp->standard_response && resp->standard_response->error ?
+                      resp->standard_response->error->message : "Unknown error starting instrument") << "\n";
+        rc = 1;
+      } else {
+        std::cout << "Instrument started successfully\n";
+        rc = 0;
+      }
+      if (resp) instrument_server_client_free_response(resp);
+    } else {
+      StartInstrumentRequest req;
+      req.set_config_path(argv[2]);
+      for (int i = 3; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--plugin" && i + 1 < argc) {
+          req.set_plugin_path(argv[++i]);
+        }
+      }
+      StartInstrumentResponse resp;
+      rc = handle_start_instrument(req, &resp);
+      if (!resp.standard_response().ok()) {
+        std::cerr << resp.standard_response().error().message() << "\n";
+        rc = 1;
+      } else {
+        std::cout << "Instrument started successfully\n";
       }
     }
+    if (client) instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::STOP: {
@@ -472,17 +578,50 @@ int main(int argc, char **argv) {
       std::cerr << "Usage: instrument-script-server stop <name>\n";
       return 1;
     }
-    params["name"] = argv[2];
-    rc = server::handle_stop(params, out);
-    if (!out.is_null()) {
-      if (out.contains("error")) {
-        std::cerr << out["error"].get<std::string>() << "\n";
+    auto *client = connect_client();
+    bool use_rpc = false;
+    if (client) {
+      Instserver__Server__V1__DaemonStatusRequest sreq =
+          INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+      Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+      if (instrument_server_client_daemon_status(client, &sreq, &sresp) == 0 && sresp && sresp->running) {
+        use_rpc = true;
+      }
+      if (sresp) instrument_server_client_free_response(sresp);
+    }
+
+    if (use_rpc) {
+      Instserver__Server__V1__StopInstrumentRequest req =
+          INSTSERVER__SERVER__V1__STOP_INSTRUMENT_REQUEST__INIT;
+      req.instrument_name = argv[2];
+      Instserver__Server__V1__StopInstrumentResponse *resp = nullptr;
+      int call_rc = instrument_server_client_stop_instrument(client, &req, &resp);
+      if (call_rc != 0 || resp == nullptr) {
+        std::cerr << "Failed to send stop request to daemon\n";
+        rc = 1;
+      } else if (!resp->standard_response || !resp->standard_response->ok) {
+        std::cerr << (resp->standard_response && resp->standard_response->error ?
+                      resp->standard_response->error->message : "Unknown error stopping instrument") << "\n";
+        rc = 1;
       } else {
-        std::cout << "Stopped instrument: " << params["name"].get<std::string>()
-                  << "\n";
+        std::cout << "Stopped instrument: " << argv[2] << "\n";
+        rc = 0;
+      }
+      if (resp) instrument_server_client_free_response(resp);
+    } else {
+      StopInstrumentRequest req;
+      req.set_instrument_name(argv[2]);
+      StopInstrumentResponse resp;
+      rc = handle_stop_instrument(req, &resp);
+      if (!resp.standard_response().ok()) {
+        std::cerr << resp.standard_response().error().message() << "\n";
+        rc = 1;
+      } else {
+        std::cout << "Stopped instrument: " << argv[2] << "\n";
       }
     }
-    return rc;
+    if (client) instrument_server_client_destroy(client);
+    break;
   }
   case ISS_CLI_Command::STATUS: {
     if (argc < 3) {
@@ -491,136 +630,246 @@ int main(int argc, char **argv) {
       rc = 1;
       break;
     }
-    params["name"] = argv[2];
-    rc = server::handle_status(params, out);
-    if (!out.is_null()) {
-      if (out.contains("error")) {
-        std::cerr << out["error"].get<std::string>() << "\n";
+    auto *client = connect_client();
+    bool use_rpc = false;
+    if (client) {
+      Instserver__Server__V1__DaemonStatusRequest sreq =
+          INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+      Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+      if (instrument_server_client_daemon_status(client, &sreq, &sresp) == 0 && sresp && sresp->running) {
+        use_rpc = true;
+      }
+      if (sresp) instrument_server_client_free_response(sresp);
+    }
+
+    if (use_rpc) {
+      Instserver__Server__V1__InstrumentStatusRequest req =
+          INSTSERVER__SERVER__V1__INSTRUMENT_STATUS_REQUEST__INIT;
+      req.instrument_name = argv[2];
+      Instserver__Server__V1__InstrumentStatusResponse *resp = nullptr;
+      int call_rc = instrument_server_client_instrument_status(client, &req, &resp);
+      if (call_rc != 0 || resp == nullptr) {
+        std::cerr << "Failed to get instrument status from daemon\n";
+        rc = 1;
+      } else if (!resp->standard_response || !resp->standard_response->ok) {
+        std::cerr << (resp->standard_response && resp->standard_response->error ?
+                      resp->standard_response->error->message : "Unknown error getting status") << "\n";
+        rc = 1;
       } else {
-        std::cout << "Instrument: " << out.value("name", "") << "\n";
-        std::cout << "  Status: "
-                  << (out.value("alive", false) ? "RUNNING" : "STOPPED")
-                  << "\n";
-        if (out.contains("stats")) {
-          auto s = out["stats"];
-          std::cout << "  Commands sent: " << s.value("commands_sent", 0)
-                    << "\n";
+        std::cout << "Instrument: " << argv[2] << "\n";
+        std::cout << "  Status: RUNNING\n";
+        if (resp->stats) {
+          std::cout << "  Commands sent: " << resp->stats->commands_sent << "\n";
+        }
+        rc = 0;
+      }
+      if (resp) instrument_server_client_free_response(resp);
+    } else {
+      InstrumentStatusRequest req;
+      req.set_instrument_name(argv[2]);
+      InstrumentStatusResponse resp;
+      rc = handle_instrument_status(req, &resp);
+      if (!resp.standard_response().ok()) {
+        std::cerr << resp.standard_response().error().message() << "\n";
+        rc = 1;
+      } else {
+        std::cout << "Instrument: " << argv[2] << "\n";
+        std::cout << "  Status: RUNNING\n";
+        if (resp.has_stats()) {
+          std::cout << "  Commands sent: " << resp.stats().commands_sent() << "\n";
         }
       }
     }
+    if (client) instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::LIST: {
-    rc = server::handle_list(params, out);
-    if (!out.is_null() && out.contains("instruments")) {
-      auto arr = out["instruments"];
-      if (arr.empty()) {
+    auto *client = connect_client();
+    bool use_rpc = false;
+    if (client) {
+      Instserver__Server__V1__DaemonStatusRequest sreq =
+          INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+      Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+      if (instrument_server_client_daemon_status(client, &sreq, &sresp) == 0 && sresp && sresp->running) {
+        use_rpc = true;
+      }
+      if (sresp) instrument_server_client_free_response(sresp);
+    }
+
+    if (use_rpc) {
+      Instserver__Server__V1__ListInstrumentsRequest req =
+          INSTSERVER__SERVER__V1__LIST_INSTRUMENTS_REQUEST__INIT;
+      Instserver__Server__V1__ListInstrumentsResponse *resp = nullptr;
+      int call_rc = instrument_server_client_list_instruments(client, &req, &resp);
+      if (call_rc != 0 || resp == nullptr) {
+        std::cerr << "Failed to list instruments from daemon\n";
+        rc = 1;
+      } else if (!resp->standard_response || !resp->standard_response->ok) {
+        std::cerr << (resp->standard_response && resp->standard_response->error ?
+                      resp->standard_response->error->message : "Unknown error listing instruments") << "\n";
+        rc = 1;
+      } else {
+        if (resp->n_instrument_name == 0) {
+          std::cout << "No instruments running\n";
+          rc = 1;
+        } else {
+          std::cout << "Running instruments:\n";
+          for (size_t i = 0; i < resp->n_instrument_name; ++i) {
+            std::cout << "  " << resp->instrument_name[i] << "\n";
+          }
+          rc = 0;
+        }
+      }
+      if (resp) instrument_server_client_free_response(resp);
+    } else {
+      ListInstrumentsRequest req;
+      ListInstrumentsResponse resp;
+      rc = handle_list_instruments(req, &resp);
+      if (!resp.standard_response().ok()) {
+        std::cerr << resp.standard_response().error().message() << "\n";
+        rc = 1;
+        break;
+      }
+      if (resp.instrument_name().empty()) {
         std::cout << "No instruments running\n";
         rc = 1;
         break;
       }
       std::cout << "Running instruments:\n";
-      for (auto &name : arr) {
-        std::cout << "  " << name.get<std::string>() << "\n";
+      for (const auto &name : resp.instrument_name()) {
+        std::cout << "  " << name << "\n";
       }
       rc = 0;
-      break;
     }
+    if (client) instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::MEASURE: {
     if (argc < 3) {
       std::cerr << "Error: measure requires script path\n";
       std::cerr << "Usage: instrument-script-server measure <script> [--json] ";
-      std::cerr << "Usage instrument-script-server measure <script>"
-                   "[--globals <string>]"
-                   "[--block_inject_globals]"
-                   "[--context_schema_version <x.y.z>]"
-                   "[--json]"
-                   "[--log-level <level>]\n";
+      std::cerr << "       [--globals <json_string>] [--json] [--log-level <level>]\n";
       rc = 1;
       break;
     }
-    params["script_path"] = argv[2];
+    MeasureJobRequest req;
+    req.set_script_path(argv[2]);
+    bool json_output = false;
     for (int i = 3; i < argc; ++i) {
       std::string arg = argv[i];
-      if (arg == "--log-level" && i + 1 < argc) {
-        params["log_level"] = argv[++i];
-      } else if (arg == "--json") {
-        params["json"] = true;
-      } else if (arg == "--globals" && i + 1 < argc) {
-        params["globals"] = argv[++i];
-      } else if (arg == "--block_inject_globals" && i + 1 < argc) {
-        params["block_inject_globals"] = true;
-      } else if (arg == "--context_schema_version" && i + 1 < argc) {
-        params["context_schema_version"] = argv[++i];
+      if (arg == "--json") {
+        json_output = true;
       }
+      // Note: --globals, --block_inject_globals, --context_schema_version
+      // require additional protobuf fields; skipped for now
     }
-    rc = server::handle_measure(params, out);
-    if (!out.is_null()) {
-      if (!out.value("ok", false)) {
-        std::cerr << out.value("error", "measure failed") << "\n";
-      } else if (params.value("json", false)) {
-        std::cout << out.dump(2) << "\n";
-      } else {
-        std::cout << "Measurement complete\n";
+    MeasureJobResultResponse resp;
+    rc = handle_measure(req, &resp);
+    if (!resp.standard_response().ok()) {
+      std::cerr << resp.standard_response().error().message() << "\n";
+      rc = 1;
+    } else if (json_output) {
+      // Serialize results to JSON
+      nlohmann::json j;
+      j["ok"] = true;
+      j["status"] = resp.status();
+      nlohmann::json results = nlohmann::json::array();
+      for (const auto &res : resp.results()) {
+        nlohmann::json r;
+        r["instrument"] = res.instrument_name();
+        r["verb"] = res.verb();
+        results.push_back(r);
       }
+      j["results"] = results;
+      std::cout << j.dump(2) << "\n";
+    } else {
+      std::cout << "Measurement complete\n";
     }
     break;
   }
   case ISS_CLI_Command::DISCOVER: {
-    if (argc > 2) {
-      params["paths"] = nlohmann::json::array();
-      for (int i = 2; i < argc; ++i) {
-        params["paths"].push_back(argv[i]);
+    auto *client = connect_client();
+    bool use_rpc = false;
+    if (client) {
+      Instserver__Server__V1__DaemonStatusRequest sreq =
+          INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+      Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+      if (instrument_server_client_daemon_status(client, &sreq, &sresp) == 0 && sresp && sresp->running) {
+        use_rpc = true;
       }
+      if (sresp) instrument_server_client_free_response(sresp);
     }
-    rc = server::handle_discover(params, out);
-    if (!out.is_null()) {
-      if (out.contains("protocols")) {
-        auto p = out["protocols"];
-        std::cout << "Found " << p.size() << " plugin(s):\n";
-        for (auto &proto : p) {
-          std::cout << "  " << proto.get<std::string>() << "\n";
+
+    if (use_rpc) {
+      Instserver__Server__V1__DiscoverRequest req =
+          INSTSERVER__SERVER__V1__DISCOVER_REQUEST__INIT;
+      std::vector<char*> paths;
+      for (int i = 2; i < argc; ++i) {
+        paths.push_back(argv[i]);
+      }
+      req.n_plugin_paths = paths.size();
+      req.plugin_paths = paths.data();
+
+      Instserver__Server__V1__DiscoverResponse *resp = nullptr;
+      int call_rc = instrument_server_client_discover(client, &req, &resp);
+      if (call_rc != 0 || resp == nullptr) {
+        std::cerr << "Failed to discover plugins from daemon\n";
+        rc = 1;
+      } else if (!resp->standard_response || !resp->standard_response->ok) {
+        std::cerr << (resp->standard_response && resp->standard_response->error ?
+                      resp->standard_response->error->message : "Unknown error discovering plugins") << "\n";
+        rc = 1;
+      } else {
+        if (resp->n_plugin_names == 0) {
+          std::cout << "No plugins discovered\n";
+        } else {
+          std::cout << "Discovered plugins:\n";
+          for (size_t i = 0; i < resp->n_plugin_names; ++i) {
+            std::cout << "  " << resp->plugin_names[i] << "\n";
+          }
+        }
+        rc = 0;
+      }
+      if (resp) instrument_server_client_free_response(resp);
+    } else {
+      DiscoverRequest req;
+      for (int i = 2; i < argc; ++i) {
+        req.add_plugin_paths(argv[i]);
+      }
+      DiscoverResponse resp;
+      rc = handle_discover(req, &resp);
+      if (!resp.standard_response().ok()) {
+        std::cerr << resp.standard_response().error().message() << "\n";
+        rc = 1;
+      } else {
+        std::cout << "Found " << resp.paths().size() << " plugin(s):\n";
+        for (const auto &path : resp.paths()) {
+          std::cout << "  " << path << "\n";
         }
       }
     }
+    if (client) instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::LIST_BUFFERS: {
-    if (command == "list-buffers") {
-      nlohmann::json params;
-      nlohmann::json out;
-      int rc = server::handle_list_buffers(params, out);
-      if (!out.is_null()) {
-        if (!out.value("ok", false)) {
-          std::cerr << out.value("error", "Failed to list buffers") << "\n";
-        } else if (out.contains("buffers")) {
-          auto arr = out["buffers"];
-          if (arr.empty()) {
-            std::cout << "No active shared memory buffers\n";
-          } else {
-            std::cout << "Active Shared Memory Buffers:\n";
-            for (auto &buf_id : arr) {
-              nlohmann::json meta_params;
-              nlohmann::json meta_out;
-              meta_params["buffer_id"] = buf_id.get<std::string>();
-              if (server::handle_get_buffer_metadata(meta_params, meta_out) ==
-                      0 &&
-                  meta_out.value("ok", false)) {
-                std::cout << "  - " << buf_id.get<std::string>() << " ("
-                          << meta_out.value("element_count", 0ULL)
-                          << " elements, " << meta_out.value("data_type", "")
-                          << ")\n";
-              } else {
-                std::cout << "  - " << buf_id.get<std::string>() << "\n";
-              }
-            }
-          }
-        }
+    ListDataBuffersRequest req;
+    ListDataBuffersResponse resp;
+    rc = handle_list_buffers(req, &resp);
+    if (!resp.standard_response().ok()) {
+      std::cerr << resp.standard_response().error().message() << "\n";
+      rc = 1;
+    } else if (resp.buffers().empty()) {
+      std::cout << "No active shared memory buffers\n";
+    } else {
+      std::cout << "Active Shared Memory Buffers:\n";
+      for (const auto &kv : resp.buffers()) {
+        const auto &meta = kv.second;
+        std::cout << "  - " << kv.first
+                  << " (" << meta.element_count() << " elements, type="
+                  << meta.data_type() << ")\n";
       }
-      break;
     }
+    break;
   }
   case ISS_CLI_Command::BUFFER_METADATA: {
     if (argc < 3) {
@@ -630,21 +879,20 @@ int main(int argc, char **argv) {
       rc = 1;
       break;
     }
-    nlohmann::json params;
-    params["buffer_id"] = argv[2];
-    nlohmann::json out;
-    int rc = server::handle_get_buffer_metadata(params, out);
-    if (!out.is_null()) {
-      if (!out.value("ok", false)) {
-        std::cerr << out.value("error", "Failed to get buffer metadata")
-                  << "\n";
-      } else {
-        std::cout << "Buffer Metadata:\n";
-        std::cout << "  ID: " << argv[2] << "\n";
-        std::cout << "  Elements: " << out.value("element_count", 0ULL) << "\n";
-        std::cout << "  Type: " << out.value("data_type", "") << "\n";
-        std::cout << "  Size: " << out.value("bytes", 0ULL) << " bytes\n";
-      }
+    GetBufferMetadataRequest req;
+    req.set_buffer_id(argv[2]);
+    GetBufferMetadataResponse resp;
+    rc = handle_get_buffer_metadata(req, &resp);
+    if (!resp.standard_response().ok()) {
+      std::cerr << resp.standard_response().error().message() << "\n";
+      rc = 1;
+    } else {
+      const auto &meta = resp.meta();
+      std::cout << "Buffer Metadata:\n";
+      std::cout << "  ID: " << argv[2] << "\n";
+      std::cout << "  Elements: " << meta.element_count() << "\n";
+      std::cout << "  Type: " << meta.data_type() << "\n";
+      std::cout << "  Size: " << meta.byte_size() << " bytes\n";
     }
     break;
   }
@@ -656,24 +904,22 @@ int main(int argc, char **argv) {
       rc = 1;
       break;
     }
-    params["buffer_id"] = argv[2];
-    bool json_output = false;
+    bool json_output_rb = false;
     for (int i = 3; i < argc; ++i) {
       if (std::string(argv[i]) == "--json") {
-        json_output = true;
+        json_output_rb = true;
       }
     }
-    rc = server::handle_read_buffer(params, out);
-    if (!out.is_null()) {
-      if (!out.value("ok", false)) {
-        std::cerr << out.value("error", "Failed to read buffer") << "\n";
-      } else if (json_output) {
-        std::cout << out.dump(2) << "\n";
-      } else if (out.contains("data")) {
-        auto data = out["data"];
-        for (size_t i = 0; i < data.size(); ++i) {
-          std::cout << "[" << i << "] " << data[i] << "\n";
-        }
+    nlohmann::json rb_out;
+    rc = local_read_buffer(argv[2], rb_out);
+    if (!rb_out.value("ok", false)) {
+      std::cerr << rb_out.value("error", "Failed to read buffer") << "\n";
+    } else if (json_output_rb) {
+      std::cout << rb_out.dump(2) << "\n";
+    } else if (rb_out.contains("data")) {
+      auto data = rb_out["data"];
+      for (size_t i = 0; i < data.size(); ++i) {
+        std::cout << "[" << i << "] " << data[i] << "\n";
       }
     }
     break;
@@ -686,14 +932,15 @@ int main(int argc, char **argv) {
       rc = 1;
       break;
     }
-    params["buffer_id"] = argv[2];
-    rc = server::handle_release_buffer(params, out);
-    if (!out.is_null()) {
-      if (!out.value("ok", false)) {
-        std::cerr << out.value("error", "Failed to release buffer") << "\n";
-      } else {
-        std::cout << "Released buffer: " << argv[2] << "\n";
-      }
+    ReleaseBufferRequest req;
+    req.set_buffer_id(argv[2]);
+    ReleaseBufferResponse resp;
+    rc = handle_release_buffer(req, &resp);
+    if (!resp.standard_response().ok()) {
+      std::cerr << resp.standard_response().error().message() << "\n";
+      rc = 1;
+    } else {
+      std::cout << "Released buffer: " << argv[2] << "\n";
     }
     break;
   }
@@ -714,59 +961,6 @@ int main(int argc, char **argv) {
     print_usage();
     rc = 1;
   }
-    return rc;
   }
-  }
-  int handle_read_buffer(const json &params, json &out) {
-    out = json::object();
-
-    std::string buffer_id = params.value("buffer_id", "");
-    if (buffer_id.empty()) {
-      out["ok"] = false;
-      out["error"] = "missing buffer_id";
-      return 1;
-    }
-
-    DataBuffer *buf = data_manager_get_buffer(buffer_id.c_str());
-    if (buf == nullptr) {
-      out["ok"] = false;
-      out["error"] = "buffer not found: " + buffer_id;
-      return 1;
-    }
-
-    void *data = data_buffer_data(buf);
-    size_t n = data_buffer_element_count(buf);
-
-    out["ok"] = true;
-    out["buffer_id"] = buffer_id;
-    out["element_count"] = n;
-
-    // get metadata (since as_floatXX is gone)
-    auto meta_opt = ipc::DataBufferManager::instance().get_metadata(buffer_id);
-    if (!meta_opt) {
-      out["ok"] = false;
-      out["error"] = "metadata not found";
-      return 1;
-    }
-
-    const auto &meta = *meta_opt;
-
-    if (meta.data_type() == INST_DATA_FLOAT64) {
-      out["data"] = make_vector<double>(data, n);
-      out["data_type"] = INST_DATA_FLOAT64;
-
-    } else if (meta.data_type() == INST_DATA_FLOAT32) {
-      auto fvec = make_vector<float>(data, n);
-
-      std::vector<double> converted(fvec.begin(), fvec.end());
-      out["data"] = std::move(converted);
-      out["data_type"] = INST_DATA_FLOAT64;
-
-    } else {
-      out["ok"] = false;
-      out["error"] = "unsupported buffer data type for JSON export";
-      return 1;
-    }
-
-    return 0;
-  }
+  return rc;
+}

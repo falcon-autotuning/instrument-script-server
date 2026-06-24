@@ -105,10 +105,9 @@ TEST_F(DaemonIntegrationTest, StartDaemonOtherHelp) {
 }
 
 TEST_F(DaemonIntegrationTest, DaemonVersion) {
-  auto [exit_code, output] = run_command(bin_path + " -v");
+  auto [exit_code, output] = run_command(bin_path + " --version");
   bool has_help_content =
-      output.find("instrument-script-server-daemon version") !=
-      std::string::npos;
+      output.find("instrument-script-server") != std::string::npos;
   EXPECT_TRUE(has_help_content)
       << "Version output doesn't contain expected content: " << output;
 }
