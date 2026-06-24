@@ -1,12 +1,80 @@
-#include "instrument-script-server/server/CommandHandlers.hpp"
+#include "instrument-script-server/instrument-script-server-client.h"
 #include "instrument-script-server/version.hpp"
+#include <inst_logging.h>
 #include <iostream>
 #include <spdlog/spdlog.h>
+#ifndef _WIN32
+#include <fcntl.h>
+#include <unistd.h>
+#endif
+#include <nlohmann/json.hpp>
+
+struct CLIOutput {
+  bool json_mode = false;
+
+  std::vector<std::string> messages;
+  std::vector<std::string> errors;
+  std::vector<nlohmann::json> outputs;
+
+  void message(const std::string &msg) { messages.push_back(msg); }
+
+  void error(const std::string &msg) { errors.push_back(msg); }
+
+  void output(const nlohmann::json &obj) { outputs.push_back(obj); }
+
+  template <typename Fn> void output_proto(Fn fn) { outputs.push_back(fn()); }
+
+  int emit() const {
+    if (json_mode) {
+      nlohmann::json j;
+
+      j["ok"] = errors.empty();
+
+      if (!messages.empty())
+        j["message"] = messages;
+
+      if (!errors.empty())
+        j["error"] = errors;
+
+      if (!outputs.empty())
+        j["output"] = outputs;
+
+      std::cout << j.dump(2) << "\n";
+    } else {
+      for (const auto &msg : messages) {
+        std::cout << msg << "\n";
+      }
+
+      for (const auto &err : errors) {
+        std::cerr << err << "\n";
+      }
+    }
+
+    return errors.empty() ? 0 : 1;
+  }
+};
 
 using namespace instserver;
 
 static volatile bool g_running = true;
 
+namespace {
+uint16_t get_port() {
+  const char *env = std::getenv("INSTRUMENT_SCRIPT_SERVER_RPC_PORT");
+  if (!env)
+    return 50051;
+  return static_cast<uint16_t>(std::stoi(env));
+}
+
+instrument_server_client_t *connect_client() {
+  return instrument_server_client_create(get_port());
+}
+
+void die(const std::string &msg) {
+  std::cerr << msg << "\n";
+  std::exit(1);
+}
+} // namespace
 void signal_handler(int sig) {
   (void)sig;
   g_running = false;
@@ -26,8 +94,6 @@ void print_usage() {
       << "  list                               List running instruments\n";
   std::cout << "\nMeasurement:\n";
   std::cout << "  measure <script>  [--globals <string>]"
-               "[--block_inject_globals]"
-               "[--context_schema_version <x.y.z>]"
                "[--json]\n";
   std::cout << "                               Run Lua measurement script\n";
   std::cout << "\nUtilities:\n";
@@ -43,7 +109,7 @@ void print_usage() {
                "memory buffer\n";
   std::cout << "\nOptions:\n";
   std::cout << "  --log-level <level>  Log level (default: info)\n";
-  std::cout << "  --version            Show version information\n";
+  std::cout << "  --version, -v        Show version information\n";
   std::cout << "  --help, -h           Show this help message\n";
   std::cout << "\nWorkflow:\n";
   std::cout << "  1. Start daemon:\n";
@@ -122,6 +188,33 @@ constexpr ISS_CLI_Command parse_command(std::string_view str) {
   }
   return ISS_CLI_Command::UNKNOWN;
 }
+enum class SUB_DAEMON : std::uint8_t { START, STOP, STATUS, UNKNOWN };
+struct SubDaemonEntry {
+  SUB_DAEMON cmd;
+  std::string_view name;
+};
+constexpr SUB_DAEMON parse_sub_daemon(const std::string &s) {
+  if (s == "start")
+    return SUB_DAEMON::START;
+  if (s == "stop")
+    return SUB_DAEMON::STOP;
+  if (s == "status")
+    return SUB_DAEMON::STATUS;
+  return SUB_DAEMON::UNKNOWN;
+}
+constexpr uint8_t parse_log_level(const std::string &s) {
+  if (s == "trace")
+    return INST_LOG_TRACE;
+  if (s == "debug")
+    return INST_LOG_DEBUG;
+  if (s == "info")
+    return INST_LOG_INFO;
+  if (s == "warn")
+    return INST_LOG_WARN;
+  if (s == "error")
+    return INST_LOG_ERROR;
+  throw std::runtime_error("Invalid log level: " + s);
+}
 } // namespace
 
 int main(int argc, char **argv) {
@@ -132,47 +225,207 @@ int main(int argc, char **argv) {
 
   std::string command = argv[1];
   int rc;
-  nlohmann::json params;
-  nlohmann::json out;
+  CLIOutput out{};
   switch (parse_command(command)) {
   case ISS_CLI_Command::DAEMON: {
     // subcommand is positional 0
     if (argc < 3) {
-      std::cerr
-          << "Usage: instrument-script-server daemon <start|stop|status>\n";
-      rc = 1;
-      break;
+      out.error("Usage: instrument-script-server daemon <start|stop|status>");
+      return out.emit();
     }
     std::string action = argv[2];
-    params["action"] = action;
-
-    // parse options
-    bool json_output = false;
-    for (int i = 3; i < argc; ++i) {
-      std::string arg = argv[i];
-      if (arg == "--log-level" && i + 1 < argc) {
-        params["log_level"] = argv[++i];
+    switch (parse_sub_daemon(action)) {
+    case SUB_DAEMON::START: {
+      std::string log_level;
+      for (int i = 3; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--log-level" && i + 1 < argc) {
+          log_level = argv[i + 1];
+          parse_log_level(log_level);
+          break;
+        }
       }
-      if (arg == "--json") {
-        json_output = true;
+#ifdef _WIN32
+      char exe_path[MAX_PATH];
+      GetModuleFileNameA(NULL, exe_path, MAX_PATH);
+
+      std::string cmd = "instrument-script-server-daemon";
+
+      if (!log_level.empty()) {
+        cmd += " --log-level " + log_level;
       }
+
+      // IMPORTANT: must be mutable
+      std::vector<char> cmd_buf(cmd.begin(), cmd.end());
+      cmd_buf.push_back('\0');
+
+      STARTUPINFOA si{};
+      PROCESS_INFORMATION pi{};
+      si.cb = sizeof(si);
+
+      BOOL ok = CreateProcessA(NULL, cmd_buf.data(), NULL, NULL, FALSE,
+                               DETACHED_PROCESS | CREATE_NO_WINDOW, NULL, NULL,
+                               &si, &pi);
+
+      if (!ok) {
+        std::cerr << "Child daemon launch failed\n";
+        return 1;
+      }
+
+      CloseHandle(pi.hThread);
+      CloseHandle(pi.hProcess);
+
+#else
+      pid_t child_pid = fork();
+
+      if (child_pid < 0) {
+        std::cerr << "Child daemon fork failed" << "\n";
+        return 1;
+      }
+
+      if (child_pid == 0) {
+        // Child process
+        setsid();
+
+        int devnull = open("/dev/null", O_RDWR);
+        if (devnull >= 0) {
+          dup2(devnull, STDIN_FILENO);
+          dup2(devnull, STDOUT_FILENO);
+          dup2(devnull, STDERR_FILENO);
+          close(devnull);
+        }
+
+        execlp("instrument-script-server-daemon",
+               "instrument-script-server-daemon", "--log-level",
+               log_level.c_str(), nullptr);
+
+        _exit(1); // exec failed
+      }
+#endif
+      int detected_pid = -1;
+      bool running = false;
+
+      for (int i = 0; i < 20; ++i) {
+        auto *client = instrument_server_client_create(get_port());
+
+        if (client) {
+          Instserver__Server__V1__DaemonStatusRequest req =
+              INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+
+          Instserver__Server__V1__DaemonStatusResponse *resp = nullptr;
+
+          if (instrument_server_client_daemon_status(client, &req, &resp) ==
+              0) {
+            running = resp->running;
+            detected_pid = resp->pid;
+
+            instrument_server_client_free_response(resp);
+            instrument_server_client_destroy(client);
+
+            if (running)
+              break;
+          } else {
+            instrument_server_client_destroy(client);
+          }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
+
+      if (!running) {
+        out.error("Daemon failed to start");
+        return out.emit();
+      }
+
+      out.message("Daemon started");
+
+      out.output({{"pid", detected_pid}, {"running", true}});
+
+      return out.emit();
+    }
+    case SUB_DAEMON::STOP: {
+      auto *client = instrument_server_client_create(get_port());
+
+      if (!client) {
+        std::cerr << "Failed to connect to daemon\n";
+        return 1;
+      }
+
+      Instserver__Server__V1__DaemonStop req =
+          INSTSERVER__SERVER__V1__DAEMON_STOP__INIT;
+
+      Instserver__Server__V1__StandardResponse *resp = nullptr;
+
+      int rc = instrument_server_client_stop_daemon(client, &req, &resp);
+
+      if (rc != 0 || resp == nullptr) {
+        out.error("Failed to send stop request to daemon");
+        instrument_server_client_destroy(client);
+        return out.emit();
+      }
+
+      if (!resp->ok) {
+        out.error("Daemon reported failure while stopping");
+        instrument_server_client_free_response(resp);
+        instrument_server_client_destroy(client);
+        return out.emit();
+      }
+
+      out.message("Daemon stopped");
+
+      instrument_server_client_free_response(resp);
+      instrument_server_client_destroy(client);
+
+      return out.emit();
+    }
+    case SUB_DAEMON::STATUS: {
+      auto *client = instrument_server_client_create(get_port());
+
+      if (!client) {
+        out.error("Failed to connect to daemon");
+        return out.emit();
+      }
+
+      Instserver__Server__V1__DaemonStatusRequest req =
+          INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+
+      Instserver__Server__V1__DaemonStatusResponse *resp = nullptr;
+
+      int rc = instrument_server_client_daemon_status(client, &req, &resp);
+
+      if (rc != 0 || resp == nullptr) {
+        out.error("Daemon unreachable");
+        instrument_server_client_destroy(client);
+        return out.emit();
+      }
+
+      if (!resp->standard_response || !resp->standard_response->ok) {
+        out.error("Invalid response from daemon");
+        instrument_server_client_free_response(resp);
+        instrument_server_client_destroy(client);
+        return out.emit();
+      }
+
+      out.message("Daemon status retrieved");
+
+      out.output_proto([&]() {
+        nlohmann::json j;
+        j["running"] = resp->running;
+        j["pid"] = resp->pid;
+        return j;
+      });
+
+      instrument_server_client_free_response(resp);
+      instrument_server_client_destroy(client);
+
+      return out.emit();
+    }
+    case SUB_DAEMON::UNKNOWN:
+    default:
+      out.error("Usage: instrument-script-server daemon <start|stop|status>");
+      return out.emit();
     }
 
-    int rc = server::handle_daemon(params, out);
-    if (out.is_null()) {
-      break;
-    }
-    if (json_output) {
-      std::cout << out.dump() << "\n";
-      break;
-    }
-    if (out.contains("error")) {
-      std::cerr << out["error"].get<std::string>() << "\n";
-    } else if (out.contains("message")) {
-      std::cout << out["message"].get<std::string>() << "\n";
-    }
-    break;
-  }
   case ISS_CLI_Command::START: {
     if (argc < 2) {
       std::cerr << "Usage: instrument-script-server start <config> [--plugin "
@@ -456,207 +709,209 @@ int main(int argc, char **argv) {
   }
     return rc;
   }
-}
-int handle_read_buffer(const json &params, json &out) {
-  out = json::object();
-
-  std::string buffer_id = params.value("buffer_id", "");
-  if (buffer_id.empty()) {
-    out["ok"] = false;
-    out["error"] = "missing buffer_id";
-    return 1;
   }
+  int handle_read_buffer(const json &params, json &out) {
+    out = json::object();
 
-  DataBuffer *buf = data_manager_get_buffer(buffer_id.c_str());
-  if (buf == nullptr) {
-    out["ok"] = false;
-    out["error"] = "buffer not found: " + buffer_id;
-    return 1;
+    std::string buffer_id = params.value("buffer_id", "");
+    if (buffer_id.empty()) {
+      out["ok"] = false;
+      out["error"] = "missing buffer_id";
+      return 1;
+    }
+
+    DataBuffer *buf = data_manager_get_buffer(buffer_id.c_str());
+    if (buf == nullptr) {
+      out["ok"] = false;
+      out["error"] = "buffer not found: " + buffer_id;
+      return 1;
+    }
+
+    void *data = data_buffer_data(buf);
+    size_t n = data_buffer_element_count(buf);
+
+    out["ok"] = true;
+    out["buffer_id"] = buffer_id;
+    out["element_count"] = n;
+
+    // get metadata (since as_floatXX is gone)
+    auto meta_opt = ipc::DataBufferManager::instance().get_metadata(buffer_id);
+    if (!meta_opt) {
+      out["ok"] = false;
+      out["error"] = "metadata not found";
+      return 1;
+    }
+
+    const auto &meta = *meta_opt;
+
+    if (meta.data_type() == INST_DATA_FLOAT64) {
+      out["data"] = make_vector<double>(data, n);
+      out["data_type"] = INST_DATA_FLOAT64;
+
+    } else if (meta.data_type() == INST_DATA_FLOAT32) {
+      auto fvec = make_vector<float>(data, n);
+
+      std::vector<double> converted(fvec.begin(), fvec.end());
+      out["data"] = std::move(converted);
+      out["data_type"] = INST_DATA_FLOAT64;
+
+    } else {
+      out["ok"] = false;
+      out["error"] = "unsupported buffer data type for JSON export";
+      return 1;
+    }
+
+    return 0;
   }
+  int handle_daemon(const json &params, json &out) {
+    out = json::object();
+    std::string action = params.value("action", "");
 
-  void *data = data_buffer_data(buf);
-  size_t n = data_buffer_element_count(buf);
+    auto &daemon = ServerDaemon::instance();
 
-  out["ok"] = true;
-  out["buffer_id"] = buffer_id;
-  out["element_count"] = n;
-
-  // get metadata (since as_floatXX is gone)
-  auto meta_opt = ipc::DataBufferManager::instance().get_metadata(buffer_id);
-  if (!meta_opt) {
-    out["ok"] = false;
-    out["error"] = "metadata not found";
-    return 1;
-  }
-
-  const auto &meta = *meta_opt;
-
-  if (meta.data_type() == INST_DATA_FLOAT64) {
-    out["data"] = make_vector<double>(data, n);
-    out["data_type"] = INST_DATA_FLOAT64;
-
-  } else if (meta.data_type() == INST_DATA_FLOAT32) {
-    auto fvec = make_vector<float>(data, n);
-
-    std::vector<double> converted(fvec.begin(), fvec.end());
-    out["data"] = std::move(converted);
-    out["data_type"] = INST_DATA_FLOAT64;
-
-  } else {
-    out["ok"] = false;
-    out["error"] = "unsupported buffer data type for JSON export";
-    return 1;
-  }
-
-  return 0;
-}
-int handle_daemon(const json &params, json &out) {
-  out = json::object();
-  std::string action = params.value("action", "");
-
-  auto &daemon = ServerDaemon::instance();
-
-  if (action == "start") {
-    int pid = -1;
+    if (action == "start") {
+      int pid = -1;
 
 #ifdef _WIN32
-    char exe_path[MAX_PATH];
-    GetModuleFileNameA(NULL, exe_path, MAX_PATH);
+      char exe_path[MAX_PATH];
+      GetModuleFileNameA(NULL, exe_path, MAX_PATH);
 
-    std::string cmd = std::string(exe_path) + " daemon run";
+      std::string cmd = std::string(exe_path) + " daemon run";
 
-    STARTUPINFOA si{};
-    si.cb = sizeof(si);
-    PROCESS_INFORMATION pi{};
+      STARTUPINFOA si{};
+      si.cb = sizeof(si);
+      PROCESS_INFORMATION pi{};
 
-    BOOL ok = CreateProcessA(NULL, cmd.data(), NULL, NULL, FALSE,
-                             DETACHED_PROCESS | CREATE_NO_WINDOW, NULL, NULL,
-                             &si, &pi);
+      BOOL ok = CreateProcessA(NULL, cmd.data(), NULL, NULL, FALSE,
+                               DETACHED_PROCESS | CREATE_NO_WINDOW, NULL, NULL,
+                               &si, &pi);
 
-    if (!ok) {
-      out["ok"] = false;
-      out["error"] = "Failed to launch daemon process";
-      return 1;
-    }
+      if (!ok) {
+        out["ok"] = false;
+        out["error"] = "Failed to launch daemon process";
+        return 1;
+      }
 
-    // ✅ Get PID directly on Windows
-    pid = static_cast<int>(pi.dwProcessId);
+      // ✅ Get PID directly on Windows
+      pid = static_cast<int>(pi.dwProcessId);
 
-    CloseHandle(pi.hThread);
-    CloseHandle(pi.hProcess);
+      CloseHandle(pi.hThread);
+      CloseHandle(pi.hProcess);
 
 #else
-    pid_t child_pid = fork();
+      pid_t child_pid = fork();
 
-    if (child_pid < 0) {
-      out["ok"] = false;
-      out["error"] = "fork failed";
-      return 1;
-    }
-
-    if (child_pid == 0) {
-      // Child process
-      setsid();
-
-      int devnull = open("/dev/null", O_RDWR);
-      if (devnull >= 0) {
-        dup2(devnull, STDIN_FILENO);
-        dup2(devnull, STDOUT_FILENO);
-        dup2(devnull, STDERR_FILENO);
-        close(devnull);
+      if (child_pid < 0) {
+        out["ok"] = false;
+        out["error"] = "fork failed";
+        return 1;
       }
 
-      char exe_path[1024];
-      ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
-      if (len > 0) {
-        exe_path[len] = '\0';
-        execl(exe_path, exe_path, "daemon", "run", nullptr);
+      if (child_pid == 0) {
+        // Child process
+        setsid();
+
+        int devnull = open("/dev/null", O_RDWR);
+        if (devnull >= 0) {
+          dup2(devnull, STDIN_FILENO);
+          dup2(devnull, STDOUT_FILENO);
+          dup2(devnull, STDERR_FILENO);
+          close(devnull);
+        }
+
+        char exe_path[1024];
+        ssize_t len =
+            readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+        if (len > 0) {
+          exe_path[len] = '\0';
+          execl(exe_path, exe_path, "daemon", "run", nullptr);
+        }
+
+        _exit(1); // exec failed
       }
 
-      _exit(1); // exec failed
-    }
-
-    // ✅ Parent already knows PID
-    pid = static_cast<int>(child_pid);
+      // ✅ Parent already knows PID
+      pid = static_cast<int>(child_pid);
 #endif
 
-    // ✅ Optional: wait for daemon to write PID file (ensures it's fully
-    // started)
-    for (int i = 0; i < 20; ++i) {
-      int file_pid = ServerDaemon::get_daemon_pid();
-      if (file_pid > 0) {
-        pid = file_pid;
-        break;
+      // ✅ Optional: wait for daemon to write PID file (ensures it's fully
+      // started)
+      for (int i = 0; i < 20; ++i) {
+        int file_pid = ServerDaemon::get_daemon_pid();
+        if (file_pid > 0) {
+          pid = file_pid;
+          break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+      if (pid <= 0) {
+        out["ok"] = false;
+        out["error"] = "daemon not started";
+        return 1;
+      }
+
+      out["pid"] = pid;
+      out["ok"] = true;
+      out["message"] = "daemon started";
+      return 0;
     }
 
-    if (pid <= 0) {
-      out["ok"] = false;
-      out["error"] = "daemon not started";
-      return 1;
-    }
+    if (action == "run") {
+      // ---- Logging setup ----
+      std::string log_level = params.value("log_level", "info");
+      uint8_t level = INST_LOG_INFO;
 
-    out["pid"] = pid;
-    out["ok"] = true;
-    out["message"] = "daemon started";
-    return 0;
-  }
+      if (log_level == "trace") {
+        level = INST_LOG_TRACE;
+      } else if (log_level == "debug") {
+        level = INST_LOG_DEBUG;
+      } else if (log_level == "warn") {
+        level = INST_LOG_WARN;
+      } else if (log_level == "error") {
+        level = INST_LOG_ERROR;
+      }
 
-  if (action == "run") {
-    // ---- Logging setup ----
-    std::string log_level = params.value("log_level", "info");
-    uint8_t level = INST_LOG_INFO;
+      inst_log_init("instrument_server.log", level, "instrument",
+                    10 * 1024 * 1024, 3);
 
-    if (log_level == "trace") {
-      level = INST_LOG_TRACE;
-    } else if (log_level == "debug") {
-      level = INST_LOG_DEBUG;
-    } else if (log_level == "warn") {
-      level = INST_LOG_WARN;
-    } else if (log_level == "error") {
-      level = INST_LOG_ERROR;
-    }
+      LOG_INFO("DAEMON", "RUN", "Entered daemon run mode");
 
-    inst_log_init("instrument_server.log", level, "instrument",
-                  10 * 1024 * 1024, 3);
+      // ---- RPC port config ----
+      const char *rpc_port_env =
+          std::getenv("INSTRUMENT_SCRIPT_SERVER_RPC_PORT");
 
-    LOG_INFO("DAEMON", "RUN", "Entered daemon run mode");
-
-    // ---- RPC port config ----
-    const char *rpc_port_env = std::getenv("INSTRUMENT_SCRIPT_SERVER_RPC_PORT");
-
-    if ((rpc_port_env != nullptr) && rpc_port_env[0] != 0) {
-      try {
-        int port = std::stoi(rpc_port_env);
-        if (port > 0 && port <= 65535) {
-          daemon.set_rpc_port(static_cast<uint16_t>(port));
-        } else {
+      if ((rpc_port_env != nullptr) && rpc_port_env[0] != 0) {
+        try {
+          int port = std::stoi(rpc_port_env);
+          if (port > 0 && port <= 65535) {
+            daemon.set_rpc_port(static_cast<uint16_t>(port));
+          } else {
+            daemon.set_rpc_port(DEFAULT_PORT);
+          }
+        } catch (...) {
           daemon.set_rpc_port(DEFAULT_PORT);
         }
-      } catch (...) {
-        daemon.set_rpc_port(DEFAULT_PORT);
       }
+
+      bool ok = daemon.start();
+      LOG_INFO("DAEMON", "RUN", "daemon.start() returned %d", ok);
+
+      if (!ok) {
+        out["ok"] = false;
+        out["error"] = "daemon start failed";
+        return 1;
+      }
+
+      while (daemon.is_running()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
+
+      daemon.stop();
+      return 0;
     }
 
-    bool ok = daemon.start();
-    LOG_INFO("DAEMON", "RUN", "daemon.start() returned %d", ok);
-
-    if (!ok) {
-      out["ok"] = false;
-      out["error"] = "daemon start failed";
-      return 1;
-    }
-
-    while (daemon.is_running()) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    daemon.stop();
-    return 0;
+    out["ok"] = false;
+    out["error"] = "Unknown daemon action";
+    return 1;
   }
-
-  out["ok"] = false;
-  out["error"] = "Unknown daemon action";
-  return 1;
-}
