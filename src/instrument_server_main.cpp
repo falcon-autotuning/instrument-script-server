@@ -468,7 +468,7 @@ int main(int argc, char **argv) {
       return 1;
     }
     auto *client = connect_client();
-    if (!client) {
+    if (client == nullptr) {
       std::cerr << "Failed to connect to daemon\n";
       return 1;
     }
@@ -476,15 +476,17 @@ int main(int argc, char **argv) {
         INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
     Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
     if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 ||
-        !sresp || !sresp->running) {
+        (sresp == nullptr) || (sresp->running == 0)) {
       std::cerr << "Daemon is not running. Please start the daemon first.\n";
-      if (sresp)
+      if (sresp != nullptr) {
         instrument_server_client_free_response(sresp);
+      }
       instrument_server_client_destroy(client);
       return 1;
     }
-    if (sresp)
+    if (sresp != nullptr) {
       instrument_server_client_free_response(sresp);
+    }
 
     Instserver__Server__V1__StartInstrumentRequest req =
         INSTSERVER__SERVER__V1__START_INSTRUMENT_REQUEST__INIT;
@@ -505,8 +507,10 @@ int main(int argc, char **argv) {
     if (call_rc != 0 || resp == nullptr) {
       std::cerr << "Failed to send start instrument request to daemon\n";
       rc = 1;
-    } else if (!resp->standard_response || !resp->standard_response->ok) {
-      std::cerr << (resp->standard_response && resp->standard_response->error
+    } else if ((resp->standard_response == nullptr) ||
+               (resp->standard_response->ok == 0)) {
+      std::cerr << ((resp->standard_response != nullptr) &&
+                            (resp->standard_response->error != nullptr)
                         ? resp->standard_response->error->message
                         : "Unknown error starting instrument")
                 << "\n";
@@ -515,8 +519,9 @@ int main(int argc, char **argv) {
       std::cout << "Instrument started successfully\n";
       rc = 0;
     }
-    if (resp)
+    if (resp != nullptr) {
       instrument_server_client_free_response(resp);
+    }
     instrument_server_client_destroy(client);
     break;
   }
@@ -527,7 +532,7 @@ int main(int argc, char **argv) {
       return 1;
     }
     auto *client = connect_client();
-    if (!client) {
+    if (client == nullptr) {
       std::cerr << "Failed to connect to daemon\n";
       return 1;
     }
@@ -535,15 +540,17 @@ int main(int argc, char **argv) {
         INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
     Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
     if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 ||
-        !sresp || !sresp->running) {
+        (sresp == nullptr) || (sresp->running == 0)) {
       std::cerr << "Daemon is not running. Please start the daemon first.\n";
-      if (sresp)
+      if (sresp != nullptr) {
         instrument_server_client_free_response(sresp);
+      }
       instrument_server_client_destroy(client);
       return 1;
     }
-    if (sresp)
+    if (sresp != nullptr) {
       instrument_server_client_free_response(sresp);
+    }
 
     Instserver__Server__V1__StopInstrumentRequest req =
         INSTSERVER__SERVER__V1__STOP_INSTRUMENT_REQUEST__INIT;
@@ -551,10 +558,12 @@ int main(int argc, char **argv) {
     Instserver__Server__V1__StopInstrumentResponse *resp = nullptr;
     int call_rc = instrument_server_client_stop_instrument(client, &req, &resp);
     if (call_rc != 0 || resp == nullptr) {
-      std::cerr << "Failed to send stop request to daemon\n";
+      std::cerr << "Failed to send instrument stop request to daemon\n";
       rc = 1;
-    } else if (!resp->standard_response || !resp->standard_response->ok) {
-      std::cerr << (resp->standard_response && resp->standard_response->error
+    } else if ((resp->standard_response == nullptr) ||
+               (resp->standard_response->ok == 0)) {
+      std::cerr << ((resp->standard_response != nullptr) &&
+                            (resp->standard_response->error != nullptr)
                         ? resp->standard_response->error->message
                         : "Unknown error stopping instrument")
                 << "\n";
