@@ -215,25 +215,33 @@ struct SubDaemonEntry {
   std::string_view name;
 };
 constexpr SUB_DAEMON parse_sub_daemon(const std::string &s) {
-  if (s == "start")
+  if (s == "start") {
     return SUB_DAEMON::START;
-  if (s == "stop")
+  }
+  if (s == "stop") {
     return SUB_DAEMON::STOP;
-  if (s == "status")
+  }
+  if (s == "status") {
     return SUB_DAEMON::STATUS;
+  }
   return SUB_DAEMON::UNKNOWN;
 }
 constexpr uint8_t parse_log_level(const std::string &s) {
-  if (s == "trace")
+  if (s == "trace") {
     return INST_LOG_TRACE;
-  if (s == "debug")
+  }
+  if (s == "debug") {
     return INST_LOG_DEBUG;
-  if (s == "info")
+  }
+  if (s == "info") {
     return INST_LOG_INFO;
-  if (s == "warn")
+  }
+  if (s == "warn") {
     return INST_LOG_WARN;
-  if (s == "error")
+  }
+  if (s == "error") {
     return INST_LOG_ERROR;
+  }
   throw std::runtime_error("Invalid log level: " + s);
 }
 } // namespace
@@ -278,7 +286,7 @@ int main(int argc, char **argv) {
       // Use the client-side gRPC check so we don't depend on server headers
       // and so we correctly detect a running daemon even if PID file cleanup
       // is racing (the gRPC check reflects actual daemon liveness).
-      if (instrument_server_client_is_daemon_running(get_port())) {
+      if (instrument_server_client_is_daemon_running(get_port()) != 0) {
         out.error("Daemon is already running on port " +
                   std::to_string(get_port()));
         return out.emit();
@@ -340,13 +348,13 @@ int main(int argc, char **argv) {
         _exit(1); // exec failed
       }
 #endif
-      int detected_pid = -1;
+      uint32_t detected_pid = -1;
       bool running = false;
 
       for (int i = 0; i < 20; ++i) {
         auto *client = instrument_server_client_create(get_port());
 
-        if (client) {
+        if (client != nullptr) {
           Instserver__Server__V1__DaemonStatusRequest req =
               INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
 
@@ -354,14 +362,15 @@ int main(int argc, char **argv) {
 
           if (instrument_server_client_daemon_status(client, &req, &resp) ==
               0) {
-            running = resp->running;
+            running = (resp->running != 0);
             detected_pid = resp->pid;
 
             instrument_server_client_free_response(resp);
             instrument_server_client_destroy(client);
 
-            if (running)
+            if (running) {
               break;
+            }
           } else {
             instrument_server_client_destroy(client);
           }
@@ -384,7 +393,7 @@ int main(int argc, char **argv) {
     case SUB_DAEMON::STOP: {
       auto *client = instrument_server_client_create(get_port());
 
-      if (!client) {
+      if (client == nullptr) {
         out.error("Failed to connect to daemon");
         return out.emit();
       }
@@ -396,15 +405,8 @@ int main(int argc, char **argv) {
 
       int stop_rc = instrument_server_client_stop_daemon(client, &req, &resp);
 
-      if (stop_rc != 0 || resp == nullptr) {
+      if (stop_rc != 0) {
         out.error("Failed to send stop request to daemon");
-        instrument_server_client_destroy(client);
-        return out.emit();
-      }
-
-      if (!resp->ok) {
-        out.error("Daemon reported failure while stopping");
-        instrument_server_client_free_response(resp);
         instrument_server_client_destroy(client);
         return out.emit();
       }
@@ -419,7 +421,7 @@ int main(int argc, char **argv) {
     case SUB_DAEMON::STATUS: {
       auto *client = instrument_server_client_create(get_port());
 
-      if (!client) {
+      if (client == nullptr) {
         out.error("Failed to connect to daemon");
         return out.emit();
       }
@@ -438,14 +440,15 @@ int main(int argc, char **argv) {
         return out.emit();
       }
 
-      if (!resp->standard_response || !resp->standard_response->ok) {
+      if ((resp->standard_response == nullptr) ||
+          (resp->standard_response->ok == 0)) {
         out.error("Invalid response from daemon");
         instrument_server_client_free_response(resp);
         instrument_server_client_destroy(client);
         return out.emit();
       }
 
-      if (resp->running) {
+      if (resp->running != 0) {
         out.message("Daemon is running (PID: " + std::to_string(resp->pid) +
                     ")");
       } else {
@@ -812,8 +815,7 @@ int main(int argc, char **argv) {
     // require it. If the daemon is not running we just report no plugins.
     auto *client = connect_client();
     bool daemon_available =
-        client &&
-        instrument_server_client_is_daemon_running(get_port());
+        client && instrument_server_client_is_daemon_running(get_port());
 
     Instserver__Server__V1__DiscoverRequest req =
         INSTSERVER__SERVER__V1__DISCOVER_REQUEST__INIT;

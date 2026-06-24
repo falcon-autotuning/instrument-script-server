@@ -55,8 +55,7 @@ void instrument_server_client_destroy(instrument_server_client_t *client) {
 
 int instrument_server_client_is_daemon_running(uint16_t port) {
   std::string addr = "127.0.0.1:" + std::to_string(port);
-  auto channel =
-      grpc::CreateChannel(addr, grpc::InsecureChannelCredentials());
+  auto channel = grpc::CreateChannel(addr, grpc::InsecureChannelCredentials());
   auto stub = v1::DaemonService::NewStub(channel);
 
   grpc::ClientContext ctx;
@@ -75,8 +74,9 @@ int instrument_server_client_is_daemon_running(uint16_t port) {
 }
 
 void instrument_server_client_free_response(void *msg) {
-  if (!msg)
+  if (msg == nullptr) {
     return;
+  }
   protobuf_c_message_free_unpacked((ProtobufCMessage *)msg, nullptr);
 }
 

@@ -254,51 +254,6 @@ message GetBufferMetadataResponse {
 }
 // ReadBuffer needs to be handled in the CLI process since it streams all the data to cout
 
-message RpcError {
-  StandardResponse standard_response = 1;
-}
-
-// The total all possible requests to the daemon
-message RpcRequest {
-  oneof request {
-    DaemonStatusRequest daemon_status = 1;
-    StartInstrumentRequest start_instrument = 2;
-    StopInstrumentRequest stop_instrument = 3;
-    InstrumentStatusRequest instrument_status = 4;
-    ListInstrumentsRequest list_instrument = 5;
-    MeasureJobRequest measure_job = 6;
-    JobStatusRequest job_status = 7;
-    MeasureJobResultRequest measure_job_result = 8;
-    JobListRequest job_list = 9;
-    CancelJobRequest cancel_job = 10;
-    DiscoverRequest discover = 11;
-    ListDataBuffersRequest list_data_buffers = 12;
-    ReleaseBufferRequest release_buffer = 13;
-    GetBufferMetadataRequest get_buffer_metadata = 14;
-    DaemonStop daemon_stop = 100;
-  }
-}
-// The total all possible responses from the daemon
-message RpcResponse {
-  oneof response {
-    DaemonStatusResponse daemon_status = 1;
-    StartInstrumentResponse start_instrument = 2;
-    StopInstrumentResponse stop_instrument = 3;
-    InstrumentStatusResponse instrument_status = 4;
-    ListInstrumentsResponse list_instrument = 5;
-    MeasureJobResponse measure_job = 6;
-    JobStatusResponse job_status = 7;
-    MeasureJobResultResponse measure_job_result = 8;
-    JobListResponse job_list = 9;
-    CancelJobResponse cancel_job = 10;
-    DiscoverResponse discover = 11;
-    ListDataBuffersResponse list_data_buffers = 12;
-    ReleaseBufferResponse release_buffer = 13;
-    GetBufferMetadataResponse get_buffer_metadata = 14;
-    RpcError error = 100;
-  }
-}
-
 service DaemonService {
   rpc DaemonStatus(DaemonStatusRequest) returns (DaemonStatusResponse);
   rpc StartInstrument(StartInstrumentRequest) returns (StartInstrumentResponse);
@@ -314,5 +269,5 @@ service DaemonService {
   rpc ListDataBuffers(ListDataBuffersRequest) returns (ListDataBuffersResponse);
   rpc ReleaseBuffer(ReleaseBufferRequest) returns (ReleaseBufferResponse);
   rpc GetBufferMetadata(GetBufferMetadataRequest) returns (GetBufferMetadataResponse);
-  rpc StopDaemon(DaemonStop) returns (StandardResponse);
+  rpc StopDaemon(DaemonStop) returns (StandardResponse); // expects no response ever
 }
