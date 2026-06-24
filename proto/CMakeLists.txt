@@ -157,7 +157,7 @@ if(BUILD_C_CLIENT)
   )
 
   target_link_libraries(instserver-proto-c
-    PRIVATE protobuf-c::protobuf-c
+    PUBLIC protobuf-c::protobuf-c
   )
 
 endif()

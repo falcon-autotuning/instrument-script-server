@@ -7,6 +7,9 @@
 #ifndef _WIN32
 #include <fcntl.h>
 #include <unistd.h>
+#else
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #endif
 #include <nlohmann/json.hpp>
 #ifndef INSTSERVER_VERSION
@@ -292,24 +295,22 @@ int main(int argc, char **argv) {
         return out.emit();
       }
 #ifdef _WIN32
-      char exe_path[MAX_PATH];
-      GetModuleFileNameA(NULL, exe_path, MAX_PATH);
-
-      std::string cmd = "instrument-script-server-daemon";
+      std::string cmd = "instrument-script-server-daemon.exe";
 
       if (!log_level.empty()) {
         cmd += " --log-level " + log_level;
       }
 
-      // IMPORTANT: must be mutable
-      std::vector<char> cmd_buf(cmd.begin(), cmd.end());
-      cmd_buf.push_back('\0');
-
       STARTUPINFOA si{};
       PROCESS_INFORMATION pi{};
       si.cb = sizeof(si);
 
-      BOOL ok = CreateProcessA(NULL, cmd_buf.data(), NULL, NULL, FALSE,
+      std::string exe = get_daemon_path(argv[0]);
+
+      std::vector<char> cmd_buf(exe.begin(), exe.end());
+      cmd_buf.push_back('\0');
+
+      BOOL ok = CreateProcessA(exe.c_str(), cmd_buf.data(), NULL, NULL, FALSE,
                                DETACHED_PROCESS | CREATE_NO_WINDOW, NULL, NULL,
                                &si, &pi);
 
