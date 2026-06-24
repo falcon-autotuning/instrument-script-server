@@ -58,7 +58,7 @@ if(BUILD_C_CLIENT)
   FetchContent_Declare(
     protobuf_c_src
     GIT_REPOSITORY https://github.com/protobuf-c/protobuf-c.git
-    GIT_TAG v1.4.1  # stable release
+    GIT_TAG v1.5.2
   )
 
   # Try system first
