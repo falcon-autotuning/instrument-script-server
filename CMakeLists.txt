@@ -63,7 +63,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Build Options
 option(BUILD_TESTS "Build tests" OFF)
-
+option(BUILD_C_CLIENT "Build C99 gRPC client wrapper" OFF)
 # Performance options
 option(USE_CCACHE "Enable ccache or sccache if available" ON)
 
@@ -142,7 +142,7 @@ add_subdirectory(proto)
 
 # Core library
 add_library(
-  instrument-script-server-core 
+  instrument-script-server-core
     SHARED
       src/SchemaValidator.cpp
       src/version.cpp
@@ -168,7 +168,7 @@ add_library(
 
 set_target_properties(
   instrument-script-server-core
-    PROPERTIES 
+    PROPERTIES
       POSITION_INDEPENDENT_CODE ON
 )
 
@@ -196,14 +196,14 @@ target_link_libraries(
     instrument-data::instrument-data
     instrument-call-stack::instrument-call-stack
     instrument-call-stack::instrument-call-stack-lua
-    instserver-proto 
+    instserver-proto
     gRPC::grpc++
 )
 
 # Per-target include directories (avoid global include_directories)
 target_include_directories(
   instrument-script-server-core
-  PUBLIC 
+  PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
     $<$<BOOL:${LUA_INCLUDE_DIR}>:$<BUILD_INTERFACE:${LUA_INCLUDE_DIR}>>
@@ -235,6 +235,26 @@ target_link_libraries(instrument-worker
     instrument-script-server-core
     instrument-plugin-api::instrument-plugin-api-host
 )
+if(BUILD_C_CLIENT)
+
+  add_library(instrument-script-server-client STATIC
+  src/client/instrument-server-client.cpp
+)
+
+  target_link_libraries(instrument-script-server-client
+  PUBLIC
+    instserver-proto-c
+    instserver-proto
+    gRPC::grpc++
+)
+
+  target_include_directories(instrument-script-server-client
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+endif()
 
 
 # Tests
@@ -254,6 +274,13 @@ install(TARGETS instrument-script-server-core
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+if(BUILD_C_CLIENT)
+  install(TARGETS instrument-script-server-client
+    EXPORT instrument-script-server-targets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+endif()
 
 install(TARGETS
     instrument-script-server-daemon

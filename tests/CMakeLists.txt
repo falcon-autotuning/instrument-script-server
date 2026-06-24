@@ -78,6 +78,19 @@ target_link_libraries(perf_tests PRIVATE
   GTest::gtest
   GTest::gtest_main
 )
+if(BUILD_C_CLIENT)
+  add_executable(test_client_c_api
+  unit/test_client.cpp
+  )
+  target_link_libraries(test_client_c_api
+  PRIVATE
+    instrument-script-server-client
+    instserver-proto-c
+    instserver-proto
+    GTest::gtest
+    GTest::gtest_main
+  )
+endif()
 
 foreach(tgt unit_tests integration_tests perf_tests)
   target_include_directories(${tgt} PRIVATE
@@ -85,8 +98,16 @@ foreach(tgt unit_tests integration_tests perf_tests)
   )
 endforeach()
 
+set(ALL_TEST_TARGETS
+  unit_tests
+  integration_tests
+  perf_tests
+)
 
-foreach(tgt unit_tests integration_tests perf_tests)
+if(BUILD_C_CLIENT)
+  list(APPEND ALL_TEST_TARGETS test_client_c_api)
+endif()
+foreach(tgt ${ALL_TEST_TARGETS})
   target_compile_definitions(${tgt} PRIVATE
     TEST_DATA_DIR="$<JOIN:$<TARGET_FILE_DIR:${tgt}>/data,>"
     ISS_DAEMON_PATH="$<TARGET_FILE:instrument-script-server-daemon>"
