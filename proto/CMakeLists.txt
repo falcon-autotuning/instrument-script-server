@@ -49,9 +49,7 @@ protobuf_generate(
 )
 
 if(BUILD_C_CLIENT)
-
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(PROTOBUF_C REQUIRED libprotobuf-c)
+  find_package(protobuf-c CONFIG REQUIRED)
 
   set(PROTO_C_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/c)
   file(MAKE_DIRECTORY ${PROTO_C_OUT_DIR})
@@ -79,7 +77,6 @@ if(BUILD_C_CLIENT)
         google/protobuf/timestamp.proto
 
     DEPENDS ${PROTO_FILES}
-
     COMMENT "Generating protobuf-c sources"
     VERBATIM
   )
@@ -89,27 +86,16 @@ if(BUILD_C_CLIENT)
   )
 
   add_library(instserver-proto-c STATIC ${PROTO_C_SRCS})
-
   add_dependencies(instserver-proto-c generate-proto-c)
-
-  set_target_properties(instserver-proto-c PROPERTIES
-    POSITION_INDEPENDENT_CODE ON
-  )
 
   target_include_directories(instserver-proto-c
     PUBLIC
       $<BUILD_INTERFACE:${PROTO_C_OUT_DIR}>
       $<INSTALL_INTERFACE:include>
-    PRIVATE
-      ${PROTOBUF_C_INCLUDE_DIRS}
   )
 
   target_link_libraries(instserver-proto-c
-    PRIVATE ${PROTOBUF_C_LIBRARIES}
-  )
-
-  target_compile_options(instserver-proto-c
-    PRIVATE ${PROTOBUF_C_CFLAGS_OTHER}
+    PRIVATE protobuf-c::protobuf-c
   )
 
 endif()
