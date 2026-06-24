@@ -486,7 +486,11 @@ int main(int argc, char **argv) {
         return out.emit();
       }
 
-      out.message("Daemon status retrieved");
+      if (resp->running) {
+        out.message("Daemon is running (PID: " + std::to_string(resp->pid) + ")");
+      } else {
+        out.message("Daemon is not running");
+      }
 
       out.output_proto([&]() {
         nlohmann::json j;
