@@ -11,6 +11,8 @@
 #define ISS_BIN_PATH "instrument-script-server"
 #endif
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #define popen _popen
 #define pclose _pclose
 #endif
@@ -52,7 +54,7 @@ int get_pid_from_file(const std::string &path) {
 
 bool process_alive(int pid) {
 #ifdef _WIN32
-  HANDLE h = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+  HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
   if (!h)
     return false;
 
