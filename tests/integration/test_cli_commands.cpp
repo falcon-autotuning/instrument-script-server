@@ -335,7 +335,7 @@ TEST_F(CLITest, StartCreatesProcessAndPidFile) {
   auto [start_exit, start_out] = run_iss("daemon start --json");
   int pid = -1;
   std::this_thread::sleep_for(200ms);
-  auto [exit_code, output] = run_command(bin_path + " daemon status --json");
+  auto [exit_code, output] = run_iss("daemon status --json");
   std::cout << "The daemon status is " << output << "\n";
   pid = extract_pid(output);
   bool running = extract_running(output);
@@ -357,7 +357,7 @@ TEST_F(CLITest, RestartWorks) {
   auto [exit_code1, output1] = run_iss("daemon start --json");
   std::this_thread::sleep_for(200ms);
 
-  auto [status_code1, status_out1] = run_command(bin_path + " daemon status --json");
+  auto [status_code1, status_out1] = run_iss("daemon status --json");
   int pid1 = extract_pid(status_out1);
   ASSERT_GT(pid1, 0);
 
@@ -367,7 +367,7 @@ TEST_F(CLITest, RestartWorks) {
   auto [exit_code2, output2] = run_iss("daemon start --json");
   std::this_thread::sleep_for(200ms);
 
-  auto [status_code2, status_out2] = run_command(bin_path + " daemon status --json");
+  auto [status_code2, status_out2] = run_iss("daemon status --json");
   int pid2 = extract_pid(status_out2);
   ASSERT_GT(pid2, 0);
 
@@ -379,12 +379,12 @@ TEST_F(CLITest, RestartWorks) {
 TEST_F(CLITest, MultipleStartsDoNotDuplicate) {
   auto [exit_code1, output1] = run_iss("daemon start --json");
   std::this_thread::sleep_for(200ms);
-  auto [status_code1, status_out1] = run_command(bin_path + " daemon status --json");
+  auto [status_code1, status_out1] = run_iss("daemon status --json");
   int pid1 = extract_pid(status_out1);
   ASSERT_GT(pid1, 0);
 
   run_iss("daemon start --json");
-  auto [status_code2, status_out2] = run_command(bin_path + " daemon status --json");
+  auto [status_code2, status_out2] = run_iss("daemon status --json");
   int pid2 = extract_pid(status_out2);
   ASSERT_GT(pid2, 0);
   std::this_thread::sleep_for(200ms);

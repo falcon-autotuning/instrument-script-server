@@ -270,9 +270,13 @@ int handle_daemon_status(const DaemonStatusRequest & /*req*/,
 }
 
 int handle_daemon_stop(const DaemonStop & /*req*/, void * /*unused*/) {
+  if (!ServerDaemon::is_already_running()) {
+    std::cout << "daemon not running" << "\n";
+    return 0;
+  }
   // Stop daemon asynchronously so RPC can return success first
   std::thread([]() {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
     ServerDaemon::instance().stop();
   }).detach();
   std::cout << "daemon stopped" << "\n";

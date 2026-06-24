@@ -531,12 +531,16 @@ int main(int argc, char **argv) {
       Instserver__Server__V1__StartInstrumentRequest req =
           INSTSERVER__SERVER__V1__START_INSTRUMENT_REQUEST__INIT;
       req.config_path = argv[2];
+      std::string log_level = "info";
       for (int i = 3; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--plugin" && i + 1 < argc) {
           req.plugin_path = argv[++i];
+        } else if (arg == "--log-level" && i + 1 < argc) {
+          log_level = argv[++i];
         }
       }
+      req.log_level = const_cast<char*>(log_level.c_str());
       Instserver__Server__V1__StartInstrumentResponse *resp = nullptr;
       int call_rc = instrument_server_client_start_instrument(client, &req, &resp);
       if (call_rc != 0 || resp == nullptr) {
@@ -554,12 +558,16 @@ int main(int argc, char **argv) {
     } else {
       StartInstrumentRequest req;
       req.set_config_path(argv[2]);
+      std::string log_level = "info";
       for (int i = 3; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--plugin" && i + 1 < argc) {
           req.set_plugin_path(argv[++i]);
+        } else if (arg == "--log-level" && i + 1 < argc) {
+          log_level = argv[++i];
         }
       }
+      req.set_log_level(log_level);
       StartInstrumentResponse resp;
       rc = handle_start_instrument(req, &resp);
       if (!resp.standard_response().ok()) {
