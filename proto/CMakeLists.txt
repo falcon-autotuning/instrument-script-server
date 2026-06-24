@@ -49,49 +49,79 @@ protobuf_generate(
 )
 
 if(BUILD_C_CLIENT)
+
   find_package(protobuf-c CONFIG REQUIRED)
 
+  # Locate protoc-gen-c (cross-platform safe)
+  find_program(PROTOC_GEN_C protoc-gen-c
+    REQUIRED
+    HINTS "${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/tools/protobuf-c"
+  )
+
+  function(protobuf_generate_c TARGET OUT_DIR)
+    cmake_parse_arguments(ARG "" "" "PROTOS" ${ARGN})
+
+    if(NOT ARG_PROTOS)
+      message(FATAL_ERROR "protobuf_generate_c requires PROTOS")
+    endif()
+
+    set(generated_srcs "")
+    set(generated_hdrs "")
+
+    foreach(proto ${ARG_PROTOS})
+      get_filename_component(proto_name ${proto} NAME_WE)
+
+      if(proto MATCHES "^${PROTO_ROOT}")
+        file(RELATIVE_PATH rel_path ${PROTO_ROOT} ${proto})
+      else()
+        file(RELATIVE_PATH rel_path ${Protobuf_INCLUDE_DIRS} ${proto})
+      endif()
+      get_filename_component(rel_dir ${rel_path} DIRECTORY)
+
+      set(c_file "${OUT_DIR}/${rel_dir}/${proto_name}.pb-c.c")
+      set(h_file "${OUT_DIR}/${rel_dir}/${proto_name}.pb-c.h")
+
+      list(APPEND generated_srcs ${c_file})
+      list(APPEND generated_hdrs ${h_file})
+
+      add_custom_command(
+        OUTPUT ${c_file} ${h_file}
+
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${OUT_DIR}/${rel_dir}
+
+        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+          --proto_path=${PROTO_ROOT}
+          --proto_path=${Protobuf_INCLUDE_DIRS}
+          --plugin=protoc-gen-c=${PROTOC_GEN_C}
+          --c_out=${OUT_DIR}
+          ${rel_path}
+
+        DEPENDS ${proto}
+
+        COMMENT "Generating protobuf-c: ${rel_path}"
+        VERBATIM
+      )
+    endforeach()
+
+    target_sources(${TARGET} PRIVATE ${generated_srcs})
+    target_include_directories(${TARGET}
+      PUBLIC
+        $<BUILD_INTERFACE:${OUT_DIR}>
+        $<INSTALL_INTERFACE:include>
+    )
+  endfunction()
+
   set(PROTO_C_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/c)
-  file(MAKE_DIRECTORY ${PROTO_C_OUT_DIR})
 
-  set(PROTO_BASENAME instserver/server/v1/daemon_messages)
+  add_library(instserver-proto-c STATIC)
+  add_dependencies(instserver-proto-c instserver-proto) # optional ordering
 
-  set(PROTO_C_SRCS
-    ${PROTO_C_OUT_DIR}/${PROTO_BASENAME}.pb-c.c
-    ${PROTO_C_OUT_DIR}/google/protobuf/timestamp.pb-c.c
-  )
-
-  set(PROTO_C_HDRS
-    ${PROTO_C_OUT_DIR}/${PROTO_BASENAME}.pb-c.h
-    ${PROTO_C_OUT_DIR}/google/protobuf/timestamp.pb-c.h
-  )
-
-  add_custom_command(
-    OUTPUT ${PROTO_C_SRCS} ${PROTO_C_HDRS}
-
-    COMMAND ${Protobuf_PROTOC_EXECUTABLE}
-        --proto_path=${PROTO_ROOT}
-        --proto_path=${Protobuf_INCLUDE_DIRS}
-        --c_out=${PROTO_C_OUT_DIR}
-        instserver/server/v1/daemon_messages.proto
-        google/protobuf/timestamp.proto
-
-    DEPENDS ${PROTO_FILES}
-    COMMENT "Generating protobuf-c sources"
-    VERBATIM
-  )
-
-  add_custom_target(generate-proto-c
-    DEPENDS ${PROTO_C_SRCS} ${PROTO_C_HDRS}
-  )
-
-  add_library(instserver-proto-c STATIC ${PROTO_C_SRCS})
-  add_dependencies(instserver-proto-c generate-proto-c)
-
-  target_include_directories(instserver-proto-c
-    PUBLIC
-      $<BUILD_INTERFACE:${PROTO_C_OUT_DIR}>
-      $<INSTALL_INTERFACE:include>
+  protobuf_generate_c(
+    instserver-proto-c
+    ${PROTO_C_OUT_DIR}
+    PROTOS
+      ${PROTO_FILES}
+      ${Protobuf_INCLUDE_DIRS}/google/protobuf/timestamp.proto
   )
 
   target_link_libraries(instserver-proto-c
@@ -108,10 +138,9 @@ install(
     PATTERN "*.grpc.pb.h"
 )
 
-# Only install protobuf-c headers if enabled
 if(BUILD_C_CLIENT)
   install(
-    DIRECTORY ${PROTO_C_OUT_DIR}/
+    DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/c/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.pb-c.h"
   )
