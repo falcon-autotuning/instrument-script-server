@@ -552,7 +552,7 @@ void ServerDaemon::stop() {
   }
 
   // We're in the daemon process - do full cleanup
-  { // Scope for lock_guard
+  {
     std::lock_guard<std::mutex> lock(mutex_);
 
     try {
@@ -561,29 +561,34 @@ void ServerDaemon::stop() {
       // Ignore logging errors during shutdown
     }
 
+    // Signal threads to exit. We set running_ false BEFORE joining so both
+    // daemon_loop() and shutdown_listener_loop() see the flag and exit their
+    // poll loops naturally. We must NOT close the pipe fd here because
+    // shutdown_listener_loop() may still be mid-read on that fd; closing it
+    // while the thread runs causes a race (bad-fd / EBADF).
     running_.store(false);
 
-    // Stop instruments
+    // Stop instruments and RPC server while still holding the lock.
     InstrumentRegistry::instance().stop_all();
 
-    // Stop RPC server
     if (rpc_server_ != nullptr) {
       rpc_server_->stop();
       delete rpc_server_;
       rpc_server_ = nullptr;
     }
-
-    remove_pid_file();
-    close_shutdown_pipe();
   } // Lock released here
 
-  // Join threads outside the mutex
+  // Join threads first so we know no thread is touching the pipe fd.
   if (daemon_thread_ && daemon_thread_->joinable()) {
     daemon_thread_->join();
   }
   if (shutdown_listener_thread_ && shutdown_listener_thread_->joinable()) {
     shutdown_listener_thread_->join();
   }
+
+  // Now it is safe to close and remove the pipe and PID file.
+  remove_pid_file();
+  close_shutdown_pipe();
 
   inst_log_shutdown();
 }

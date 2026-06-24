@@ -273,6 +273,16 @@ int main(int argc, char **argv) {
           break;
         }
       }
+
+      // Refuse to start a second daemon process if one is already running.
+      // Use the client-side gRPC check so we don't depend on server headers
+      // and so we correctly detect a running daemon even if PID file cleanup
+      // is racing (the gRPC check reflects actual daemon liveness).
+      if (instrument_server_client_is_daemon_running(get_port())) {
+        out.error("Daemon is already running on port " +
+                  std::to_string(get_port()));
+        return out.emit();
+      }
 #ifdef _WIN32
       char exe_path[MAX_PATH];
       GetModuleFileNameA(NULL, exe_path, MAX_PATH);
@@ -439,7 +449,8 @@ int main(int argc, char **argv) {
         out.message("Daemon is running (PID: " + std::to_string(resp->pid) +
                     ")");
       } else {
-        out.message("Daemon is not running");
+        // Report not-running as an error so exit code is non-zero
+        out.error("Daemon is not running");
       }
 
       out.output_proto([&]() {
@@ -797,24 +808,12 @@ int main(int argc, char **argv) {
     break;
   }
   case ISS_CLI_Command::DISCOVER: {
+    // discover can optionally use the daemon if it's running, but does not
+    // require it. If the daemon is not running we just report no plugins.
     auto *client = connect_client();
-    if (!client) {
-      std::cerr << "Failed to connect to daemon\n";
-      return 1;
-    }
-    Instserver__Server__V1__DaemonStatusRequest sreq =
-        INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
-    Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
-    if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 ||
-        !sresp || !sresp->running) {
-      std::cerr << "Daemon is not running. Please start the daemon first.\n";
-      if (sresp)
-        instrument_server_client_free_response(sresp);
-      instrument_server_client_destroy(client);
-      return 1;
-    }
-    if (sresp)
-      instrument_server_client_free_response(sresp);
+    bool daemon_available =
+        client &&
+        instrument_server_client_is_daemon_running(get_port());
 
     Instserver__Server__V1__DiscoverRequest req =
         INSTSERVER__SERVER__V1__DISCOVER_REQUEST__INIT;

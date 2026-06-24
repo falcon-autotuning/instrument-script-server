@@ -96,6 +96,18 @@ instrument_server_client_t *instrument_server_client_create(uint16_t port);
  */
 void instrument_server_client_destroy(instrument_server_client_t *client);
 
+/**
+ * @brief Check whether a daemon is currently reachable and running.
+ *
+ * Attempts a gRPC DaemonStatus call on the given port. Returns 1 if the
+ * daemon responds and reports itself running, 0 otherwise. This is a
+ * lightweight liveness check that does not require any server-side headers.
+ *
+ * @param port gRPC server port (e.g. 8555)
+ * @return 1 if daemon is running, 0 if not reachable or not running
+ */
+int instrument_server_client_is_daemon_running(uint16_t port);
+
 /* ========================= */
 /* Generic free */
 /* ========================= */

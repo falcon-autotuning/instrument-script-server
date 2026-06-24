@@ -3,6 +3,7 @@
 #include "instserver/server/v1/daemon_messages.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
 
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -50,6 +51,27 @@ instrument_server_client_t *instrument_server_client_create(uint16_t port) {
 
 void instrument_server_client_destroy(instrument_server_client_t *client) {
   delete client;
+}
+
+int instrument_server_client_is_daemon_running(uint16_t port) {
+  std::string addr = "127.0.0.1:" + std::to_string(port);
+  auto channel =
+      grpc::CreateChannel(addr, grpc::InsecureChannelCredentials());
+  auto stub = v1::DaemonService::NewStub(channel);
+
+  grpc::ClientContext ctx;
+  // Use a short deadline so we fail fast when the daemon is not running
+  ctx.set_deadline(std::chrono::system_clock::now() +
+                   std::chrono::milliseconds(500));
+
+  v1::DaemonStatusRequest req;
+  v1::DaemonStatusResponse resp;
+  auto status = stub->DaemonStatus(&ctx, req, &resp);
+
+  if (!status.ok()) {
+    return 0;
+  }
+  return resp.running() ? 1 : 0;
 }
 
 void instrument_server_client_free_response(void *msg) {
