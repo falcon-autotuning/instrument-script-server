@@ -251,6 +251,7 @@ if(BUILD_C_CLIENT)
 
   target_link_libraries(instrument-script-server-client
     PUBLIC
+      protobuf-c::protobuf-c
       instserver-proto-c
       instserver-proto
       gRPC::grpc++
