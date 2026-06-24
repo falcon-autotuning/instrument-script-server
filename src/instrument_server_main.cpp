@@ -226,6 +226,13 @@ int main(int argc, char **argv) {
   std::string command = argv[1];
   int rc;
   CLIOutput out{};
+  for (int i = 1; i < argc; ++i) {
+    std::string arg = argv[i];
+    if (arg == "--json") {
+      out.json_mode = true;
+      break;
+    }
+  }
   switch (parse_command(command)) {
   case ISS_CLI_Command::DAEMON: {
     // subcommand is positional 0
@@ -268,8 +275,8 @@ int main(int argc, char **argv) {
                                &si, &pi);
 
       if (!ok) {
-        std::cerr << "Child daemon launch failed\n";
-        return 1;
+        out.error("Child daemon launch failed");
+        return out.emit();
       }
 
       CloseHandle(pi.hThread);
@@ -279,8 +286,8 @@ int main(int argc, char **argv) {
       pid_t child_pid = fork();
 
       if (child_pid < 0) {
-        std::cerr << "Child daemon fork failed" << "\n";
-        return 1;
+        out.error("Child daemon fork failed");
+        return out.emit();
       }
 
       if (child_pid == 0) {
@@ -347,8 +354,8 @@ int main(int argc, char **argv) {
       auto *client = instrument_server_client_create(get_port());
 
       if (!client) {
-        std::cerr << "Failed to connect to daemon\n";
-        return 1;
+        out.error("Failed to connect to daemon");
+        return out.emit();
       }
 
       Instserver__Server__V1__DaemonStop req =
@@ -762,156 +769,4 @@ int main(int argc, char **argv) {
     }
 
     return 0;
-  }
-  int handle_daemon(const json &params, json &out) {
-    out = json::object();
-    std::string action = params.value("action", "");
-
-    auto &daemon = ServerDaemon::instance();
-
-    if (action == "start") {
-      int pid = -1;
-
-#ifdef _WIN32
-      char exe_path[MAX_PATH];
-      GetModuleFileNameA(NULL, exe_path, MAX_PATH);
-
-      std::string cmd = std::string(exe_path) + " daemon run";
-
-      STARTUPINFOA si{};
-      si.cb = sizeof(si);
-      PROCESS_INFORMATION pi{};
-
-      BOOL ok = CreateProcessA(NULL, cmd.data(), NULL, NULL, FALSE,
-                               DETACHED_PROCESS | CREATE_NO_WINDOW, NULL, NULL,
-                               &si, &pi);
-
-      if (!ok) {
-        out["ok"] = false;
-        out["error"] = "Failed to launch daemon process";
-        return 1;
-      }
-
-      // ✅ Get PID directly on Windows
-      pid = static_cast<int>(pi.dwProcessId);
-
-      CloseHandle(pi.hThread);
-      CloseHandle(pi.hProcess);
-
-#else
-      pid_t child_pid = fork();
-
-      if (child_pid < 0) {
-        out["ok"] = false;
-        out["error"] = "fork failed";
-        return 1;
-      }
-
-      if (child_pid == 0) {
-        // Child process
-        setsid();
-
-        int devnull = open("/dev/null", O_RDWR);
-        if (devnull >= 0) {
-          dup2(devnull, STDIN_FILENO);
-          dup2(devnull, STDOUT_FILENO);
-          dup2(devnull, STDERR_FILENO);
-          close(devnull);
-        }
-
-        char exe_path[1024];
-        ssize_t len =
-            readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
-        if (len > 0) {
-          exe_path[len] = '\0';
-          execl(exe_path, exe_path, "daemon", "run", nullptr);
-        }
-
-        _exit(1); // exec failed
-      }
-
-      // ✅ Parent already knows PID
-      pid = static_cast<int>(child_pid);
-#endif
-
-      // ✅ Optional: wait for daemon to write PID file (ensures it's fully
-      // started)
-      for (int i = 0; i < 20; ++i) {
-        int file_pid = ServerDaemon::get_daemon_pid();
-        if (file_pid > 0) {
-          pid = file_pid;
-          break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-      }
-
-      if (pid <= 0) {
-        out["ok"] = false;
-        out["error"] = "daemon not started";
-        return 1;
-      }
-
-      out["pid"] = pid;
-      out["ok"] = true;
-      out["message"] = "daemon started";
-      return 0;
-    }
-
-    if (action == "run") {
-      // ---- Logging setup ----
-      std::string log_level = params.value("log_level", "info");
-      uint8_t level = INST_LOG_INFO;
-
-      if (log_level == "trace") {
-        level = INST_LOG_TRACE;
-      } else if (log_level == "debug") {
-        level = INST_LOG_DEBUG;
-      } else if (log_level == "warn") {
-        level = INST_LOG_WARN;
-      } else if (log_level == "error") {
-        level = INST_LOG_ERROR;
-      }
-
-      inst_log_init("instrument_server.log", level, "instrument",
-                    10 * 1024 * 1024, 3);
-
-      LOG_INFO("DAEMON", "RUN", "Entered daemon run mode");
-
-      // ---- RPC port config ----
-      const char *rpc_port_env =
-          std::getenv("INSTRUMENT_SCRIPT_SERVER_RPC_PORT");
-
-      if ((rpc_port_env != nullptr) && rpc_port_env[0] != 0) {
-        try {
-          int port = std::stoi(rpc_port_env);
-          if (port > 0 && port <= 65535) {
-            daemon.set_rpc_port(static_cast<uint16_t>(port));
-          } else {
-            daemon.set_rpc_port(DEFAULT_PORT);
-          }
-        } catch (...) {
-          daemon.set_rpc_port(DEFAULT_PORT);
-        }
-      }
-
-      bool ok = daemon.start();
-      LOG_INFO("DAEMON", "RUN", "daemon.start() returned %d", ok);
-
-      if (!ok) {
-        out["ok"] = false;
-        out["error"] = "daemon start failed";
-        return 1;
-      }
-
-      while (daemon.is_running()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      }
-
-      daemon.stop();
-      return 0;
-    }
-
-    out["ok"] = false;
-    out["error"] = "Unknown daemon action";
-    return 1;
   }
