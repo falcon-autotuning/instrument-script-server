@@ -9,6 +9,7 @@
 #include "instrument-script-server/server/SyncCoordinator.hpp"
 #include <filesystem>
 #include <fstream>
+#include <google/protobuf/util/json_util.h>
 #include <gtest/gtest.h>
 #include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-call-stack/instrument-call-stack.h>
@@ -16,37 +17,38 @@
 #include <instrument-log/inst_logging.h>
 #include <instrument-plugin.h>
 #include <nlohmann/json.hpp>
+#include <numbers>
 #include <sol/sol.hpp>
-#include <google/protobuf/util/json_util.h>
-constexpr double PI = 3.14159265358979323846;
+constexpr double PI = std::numbers::pi;
 namespace v1 = instserver::server::v1;
 using namespace instserver;
 using namespace instserver::test;
 using json = nlohmann::json;
 
-bool local_read_buffer(const std::string &id, std::vector<double> &out_data, uint64_t &out_count, uint32_t &out_type) {
+bool local_read_buffer(const std::string &id, std::vector<double> &out_data,
+                       uint64_t &out_count, uint32_t &out_type) {
   auto &mgr = ipc::DataBufferManager::instance();
   auto meta_opt = mgr.get_metadata(id);
   if (!meta_opt.has_value()) {
     return false;
   }
-  
+
   DataBuffer *buf = data_manager_get_buffer(id.c_str());
   if (buf == nullptr) {
     return false;
   }
-  
+
   void *data = data_buffer_data(buf);
   size_t n = data_buffer_element_count(buf);
-  
+
   out_count = n;
   out_type = meta_opt->data_type();
-  
+
   if (out_type == INST_DATA_FLOAT64) {
-    const double *ptr = static_cast<const double *>(data);
+    const auto *ptr = static_cast<const double *>(data);
     out_data.assign(ptr, ptr + n);
   } else if (out_type == INST_DATA_FLOAT32) {
-    const float *ptr = static_cast<const float *>(data);
+    const auto *ptr = static_cast<const float *>(data);
     out_data.assign(ptr, ptr + n);
   } else {
     data_manager_release_buffer(id.c_str());
@@ -574,7 +576,8 @@ commands:
       std::vector<double> data;
       uint64_t count = 0;
       uint32_t dtype = 0;
-      bool read_ok = local_read_buffer(results[0].returns[0].value.str_val, data, count, dtype);
+      bool read_ok = local_read_buffer(results[0].returns[0].value.str_val,
+                                       data, count, dtype);
       ASSERT_TRUE(read_ok);
       EXPECT_EQ(dtype, INST_DATA_FLOAT64);
       ASSERT_GE(data.size(), 100);
@@ -589,7 +592,8 @@ commands:
       std::vector<double> data;
       uint64_t count = 0;
       uint32_t dtype = 0;
-      bool read_ok = local_read_buffer(results[1].returns[0].value.str_val, data, count, dtype);
+      bool read_ok = local_read_buffer(results[1].returns[0].value.str_val,
+                                       data, count, dtype);
       ASSERT_TRUE(read_ok);
       ASSERT_GE(data.size(), 100);
       for (size_t i = 0; i < 100; ++i) {
@@ -626,7 +630,8 @@ commands:
       std::vector<double> data;
       uint64_t count = 0;
       uint32_t dtype = 0;
-      bool read_ok = local_read_buffer(results[0].returns[0].value.str_val, data, count, dtype);
+      bool read_ok = local_read_buffer(results[0].returns[0].value.str_val,
+                                       data, count, dtype);
       EXPECT_FALSE(read_ok);
     }
   }
@@ -738,8 +743,10 @@ commands:
   std::string json_str;
   google::protobuf::util::JsonPrintOptions options;
   options.preserve_proto_field_names = true;
-  auto status = google::protobuf::util::MessageToJsonString(measure_resp, &json_str, options);
-  ASSERT_TRUE(status.ok()) << "Failed to convert response to JSON: " << status.ToString();
+  auto status = google::protobuf::util::MessageToJsonString(measure_resp,
+                                                            &json_str, options);
+  ASSERT_TRUE(status.ok()) << "Failed to convert response to JSON: "
+                           << status.ToString();
 
   nlohmann::json out = nlohmann::json::parse(json_str);
   out["ok"] = out["standard_response"]["ok"];
@@ -826,8 +833,7 @@ commands:
     v1::ReleaseBufferResponse release_resp;
     int release_rc = server::handle_release_buffer(release_req, &release_resp);
 
-    ASSERT_EQ(release_rc, 0)
-        << "handle_release_buffer failed!";
+    ASSERT_EQ(release_rc, 0) << "handle_release_buffer failed!";
     EXPECT_TRUE(release_resp.standard_response().ok());
   };
 

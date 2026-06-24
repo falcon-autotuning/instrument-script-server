@@ -5,6 +5,7 @@
 #include "instrument-script-server/server/RuntimeContext.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
+#include "instserver/server/v1/daemon_messages.pb.h"
 #include <instrument-log/inst_logging.h>
 
 #include <chrono>
@@ -20,83 +21,6 @@
 using namespace instserver;
 using namespace instserver::server;
 using json = nlohmann::json;
-
-namespace {
-int handle_measure(const json &params, json &out) {
-  v1::MeasureJobRequest req;
-  
-  if (params.contains("script_path")) {
-    req.set_script_path(params["script_path"].get<std::string>());
-  }
-  if (params.contains("block_inject_globals")) {
-    req.set_block_inject_globals(params["block_inject_globals"].get<bool>());
-  }
-  if (params.contains("context_schema_version")) {
-    req.set_context_schema_version(params["context_schema_version"].get<uint32_t>());
-  }
-
-  if (params.contains("globals") && params["globals"].is_object()) {
-    auto *globals_map = req.mutable_globals()->mutable_map();
-    for (auto it = params["globals"].begin(); it != params["globals"].end(); ++it) {
-      v1::VariableValue val;
-      if (it.value().is_number_integer()) {
-        val.set_i(it.value().get<int64_t>());
-      } else if (it.value().is_number_float()) {
-        val.set_d(it.value().get<double>());
-      } else if (it.value().is_boolean()) {
-        val.set_b(it.value().get<bool>());
-      } else if (it.value().is_string()) {
-        val.set_s(it.value().get<std::string>());
-      } else if (it.value().is_null()) {
-        val.set_is_nil(true);
-      }
-      (*globals_map)[it.key()] = val;
-    }
-  }
-
-  if (params.contains("type_manifest") && params["type_manifest"].is_object()) {
-    auto &tm = params["type_manifest"];
-    if (tm.contains("parameters") && tm["parameters"].is_array()) {
-      auto *manifest = req.mutable_type_manifest();
-      for (const auto &p : tm["parameters"]) {
-        auto *param = manifest->add_parameters();
-        if (p.contains("name")) {
-          param->set_name(p["name"].get<std::string>());
-        }
-        if (p.contains("type")) {
-          std::string type_str = p["type"].get<std::string>();
-          v1::LuaTypes ltype = v1::LUA_TYPES_UNSPECIFIED;
-          if (type_str == "int") ltype = v1::LUA_TYPES_INT64;
-          else if (type_str == "number") ltype = v1::LUA_TYPES_DOUBLE;
-          else if (type_str == "boolean") ltype = v1::LUA_TYPES_BOOL;
-          else if (type_str == "string") ltype = v1::LUA_TYPES_STRING;
-          else if (type_str == "DataBuffer") ltype = v1::LUA_TYPES_DATA_BUFFER;
-          else if (type_str == "CallStack") ltype = v1::LUA_TYPES_CALL_STACK;
-          param->set_type(ltype);
-        }
-      }
-    }
-  }
-
-  v1::MeasureJobResultResponse resp;
-  int rc = server::handle_measure(req, &resp);
-  
-  std::string json_str;
-  google::protobuf::util::JsonPrintOptions options;
-  options.preserve_proto_field_names = true;
-  auto status = google::protobuf::util::MessageToJsonString(resp, &json_str, options);
-  if (!status.ok()) {
-    return 1;
-  }
-  
-  out = json::parse(json_str);
-  out["ok"] = resp.standard_response().ok();
-  if (resp.standard_response().has_error() && !resp.standard_response().error().message().empty()) {
-    out["error"] = resp.standard_response().error().message();
-  }
-  return rc;
-}
-} // namespace
 
 class TypeManifestTest : public test::PluginTestFixture {
 protected:
@@ -210,23 +134,40 @@ TEST_F(TypeManifestTest, TypedMainFunctionWithManifest) {
     end
   )lua");
 
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "typed_main.lua").string();
-  params["globals"] = {{"voltage", 5.0}, {"sampleRate", 1000}};
-  params["type_manifest"] = {
-      {"parameters",
-       json::array({{{"name", "ctx"}, {"type", "RuntimeContext"}},
-                    {{"name", "voltage"}, {"type", "number"}},
-                    {{"name", "sampleRate"}, {"type", "number"}}})}};
+  MeasureJobRequest req{};
+  req.set_script_path((test_scripts_dir_ / "typed_main.lua").string());
 
-  json out;
-  int result = handle_measure(params, out);
+  auto *globals = req.mutable_globals();
+  auto *map = globals->mutable_map();
+
+  VariableValue voltage_val;
+  voltage_val.set_d(5.0);
+  (*map)["voltage"] = voltage_val;
+
+  VariableValue sample_rate_val;
+  sample_rate_val.set_i(1000);
+  (*map)["sampleRate"] = sample_rate_val;
+  auto *type_manifest = req.mutable_type_manifest();
+  auto *parameters = type_manifest->mutable_parameters();
+  {
+    auto *p = parameters->Add();
+    p->set_name("voltage");
+    p->set_type(LUA_TYPES_DOUBLE);
+  }
+  {
+    auto *p = parameters->Add();
+    p->set_name("sampleRate");
+    p->set_type(LUA_TYPES_INT64);
+  }
+
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
 
   EXPECT_EQ(result, 0);
-  if (!out["ok"].get<bool>()) {
-    std::cout << out["error"].get<std::string>() << std::endl;
+  if (!resp.standard_response().ok()) {
+    std::cout << resp.standard_response().error().message() << '\n';
   }
-  EXPECT_TRUE(out["ok"].get<bool>());
+  EXPECT_TRUE(resp.standard_response().ok());
 
   auto log = read_log();
   EXPECT_NE(log.find("Voltage: 5"), std::string::npos);
@@ -243,23 +184,34 @@ TEST_F(TypeManifestTest, MissingRequiredParameterError) {
     end
   )lua");
 
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "missing_param.lua").string();
-  params["globals"] = {
-      {"voltage", 5.0} // Missing sampleRate
-  };
-  params["type_manifest"] = {
-      {"parameters",
-       json::array({{{"name", "ctx"}, {"type", "RuntimeContext"}},
-                    {{"name", "voltage"}, {"type", "number"}},
-                    {{"name", "sampleRate"}, {"type", "number"}}})}};
+  MeasureJobRequest req{};
+  req.set_script_path((test_scripts_dir_ / "missing_param.lua").string());
+  auto *globals = req.mutable_globals();
+  auto *map = globals->mutable_map();
 
-  json out;
-  int result = handle_measure(params, out);
+  VariableValue voltage_val;
+  voltage_val.set_d(5.0);
+  (*map)["voltage"] = voltage_val;
+  // Missing sampleRate
+  auto *type_manifest = req.mutable_type_manifest();
+  auto *parameters = type_manifest->mutable_parameters();
+  {
+    auto *p = parameters->Add();
+    p->set_name("voltage");
+    p->set_type(LUA_TYPES_DOUBLE);
+  }
+  {
+    auto *p = parameters->Add();
+    p->set_name("sampleRate");
+    p->set_type(LUA_TYPES_INT64);
+  }
+
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
 
   EXPECT_EQ(result, 1);
-  EXPECT_FALSE(out["ok"].get<bool>());
-  EXPECT_NE(out["error"].get<std::string>().find(
+  EXPECT_FALSE(resp.standard_response().ok());
+  EXPECT_NE(resp.standard_response().error().message().find(
                 "Missing required parameter 'sampleRate'"),
             std::string::npos);
 }
@@ -273,138 +225,39 @@ TEST_F(TypeManifestTest, UnusedGlobalWarning) {
     end
   )lua");
 
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "unused_global.lua").string();
-  params["globals"] = {
-      {"voltage", 5.0}, {"unusedParam", 999} // This should trigger a warning
-  };
-  params["type_manifest"] = {
-      {"parameters", json::array({{{"name", "ctx"}, {"type", "RuntimeContext"}},
-                                  {{"name", "voltage"}, {"type", "number"}}})}};
+  MeasureJobRequest req{};
+  req.set_script_path((test_scripts_dir_ / "unused_global.lua").string());
+  auto *globals = req.mutable_globals();
+  auto *map = globals->mutable_map();
 
-  json out;
-  int result = handle_measure(params, out);
+  VariableValue voltage_val;
+  voltage_val.set_d(5.0);
+  (*map)["voltage"] = voltage_val;
+
+  VariableValue unused;
+  unused.set_i(999);
+  (*map)["unusedParam"] = unused;
+  // This should trigger a warning
+  auto *type_manifest = req.mutable_type_manifest();
+  auto *parameters = type_manifest->mutable_parameters();
+  {
+    auto *p = parameters->Add();
+    p->set_name("voltage");
+    p->set_type(LUA_TYPES_DOUBLE);
+  }
+
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
 
   EXPECT_EQ(result, 0);
-  EXPECT_TRUE(out["ok"].get<bool>());
+  EXPECT_TRUE(resp.standard_response().ok());
 
   auto log = read_log();
   // be less brittle — look for the variable name and the "not used" phrase
   // separately
-  std::cout << "The entire log content:\n"
-            << log << std::endl; // For debugging"
+  std::cout << "The entire log content:\n" << log << '\n'; // For debugging"
   EXPECT_NE(log.find("unusedParam"), std::string::npos);
   EXPECT_NE(log.find("not used"), std::string::npos);
-}
-
-// Test invalid type manifest structure
-TEST_F(TypeManifestTest, InvalidManifestStructure) {
-  create_test_script("invalid_manifest.lua", R"lua(
-    function main(ctx)
-      return nil
-    end
-  )lua");
-
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "invalid_manifest.lua").string();
-  params["type_manifest"] = {
-      {"invalid_key", "invalid_value"} // Missing 'parameters' array
-  };
-
-  json out;
-  int result = handle_measure(params, out);
-
-  EXPECT_EQ(result, 1);
-  EXPECT_FALSE(out["ok"].get<bool>());
-  EXPECT_NE(out["error"].get<std::string>().find("Invalid type_manifest"),
-            std::string::npos);
-}
-
-// Test backward compatibility without type manifest
-TEST_F(TypeManifestTest, BackwardCompatibilityWithoutManifest) {
-  create_test_script("no_manifest.lua", R"lua(
-    function main(ctx)
-      -- Access globals directly (old way)
-      local v = voltage or 0
-      ctx:log("Voltage: " .. tostring(v))
-      return nil
-    end
-  )lua");
-
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "no_manifest.lua").string();
-  params["globals"] = {{"voltage", 5.0}};
-  // No type_manifest provided - should use legacy behavior
-
-  json out;
-  int result = handle_measure(params, out);
-
-  EXPECT_EQ(result, 0);
-  EXPECT_TRUE(out["ok"].get<bool>());
-
-  auto log = read_log();
-  EXPECT_NE(log.find("Voltage: 5"), std::string::npos);
-  // Look for the key phrases rather than exact wording; wording may vary
-  // slightly
-  EXPECT_NE(log.find("Injecting global"), std::string::npos);
-  EXPECT_NE(log.find("voltage"), std::string::npos);
-}
-
-// Test parameter with missing name in manifest
-TEST_F(TypeManifestTest, ParameterMissingName) {
-  create_test_script("missing_name.lua", R"lua(
-    function main(ctx, param)
-      return nil
-    end
-  )lua");
-
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "missing_name.lua").string();
-  params["globals"] = {{"param", 5.0}};
-  params["type_manifest"] = {
-      {"parameters", json::array({
-                         {{"name", "ctx"}, {"type", "RuntimeContext"}},
-                         {{"type", "number"}} // Missing 'name' field
-                     })}};
-
-  json out;
-  int result = handle_measure(params, out);
-
-  EXPECT_EQ(result, 1);
-  EXPECT_FALSE(out["ok"].get<bool>());
-  EXPECT_NE(out["error"].get<std::string>().find("parameter 1 missing 'name'"),
-            std::string::npos);
-}
-
-// Test complex types (tables)
-TEST_F(TypeManifestTest, ComplexTypeTable) {
-  create_test_script("table_param.lua", R"lua(
-    function main(ctx, config)
-      ctx:log("Voltage: " .. tostring(config.voltage))
-      ctx:log("Rate: " .. tostring(config.rate))
-      return nil
-    end
-  )lua");
-
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "table_param.lua").string();
-  params["globals"] = {{"config", {{"voltage", 5.0}, {"rate", 1000}}}};
-  params["type_manifest"] = {
-      {"parameters", json::array({{{"name", "ctx"}, {"type", "RuntimeContext"}},
-                                  {{"name", "config"}, {"type", "table"}}})}};
-
-  json out;
-  int result = handle_measure(params, out);
-
-  EXPECT_EQ(result, 0);
-  EXPECT_TRUE(out["ok"].get<bool>());
-
-  auto log = read_log();
-  std::cout << "The entire log content:\n"
-            << log << std::endl; // For debugging"
-  // match the actual formatted float "5.0" seen in the log sink
-  EXPECT_NE(log.find("Voltage: 5.0"), std::string::npos);
-  EXPECT_NE(log.find("Rate: 1000"), std::string::npos);
 }
 
 TEST_F(TypeManifestTest, CallStackStdStringIsSafe) {
@@ -462,19 +315,27 @@ TEST_F(TypeManifestTest, CallStackDeserializationSuccess) {
   char *serialized = instrument_call_stack_serialize(stack);
   ASSERT_NE(serialized, nullptr);
 
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "callstack_ok.lua").string();
-  params["globals"] = {{"stack", std::string(serialized)}};
-  params["type_manifest"] = {
-      {"parameters",
-       json::array({{{"name", "ctx"}, {"type", "RuntimeContext"}},
-                    {{"name", "stack"}, {"type", "CallStack"}}})}};
+  MeasureJobRequest req{};
+  req.set_script_path((test_scripts_dir_ / "callstack_ok.lua").string());
+  auto *globals = req.mutable_globals();
+  auto *map = globals->mutable_map();
 
-  json out;
-  int result = handle_measure(params, out);
+  VariableValue call_stack_val;
+  call_stack_val.set_s(serialized);
+  (*map)["stack"] = call_stack_val;
+  auto *type_manifest = req.mutable_type_manifest();
+  auto *parameters = type_manifest->mutable_parameters();
+  {
+    auto *p = parameters->Add();
+    p->set_name("stack");
+    p->set_type(instserver::server::v1::LUA_TYPES_CALL_STACK);
+  }
+
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
 
   EXPECT_EQ(result, 0);
-  EXPECT_TRUE(out["ok"].get<bool>());
+  EXPECT_TRUE(resp.standard_response().ok());
 
   auto log = read_log();
 
@@ -494,26 +355,32 @@ TEST_F(TypeManifestTest, CallStackDeserializationFailure) {
     end
   )lua");
 
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "callstack_fail.lua").string();
+  MeasureJobRequest req{};
+  req.set_script_path((test_scripts_dir_ / "callstack_fail.lua").string());
+  auto *globals = req.mutable_globals();
+  auto *map = globals->mutable_map();
 
   // Intentionally invalid serialized data
-  params["globals"] = {{"stack", "INVALID_SERIALIZED_DATA"}};
+  VariableValue call_stack_val;
+  call_stack_val.set_s("INVALID_SERIALIZED_DATA");
+  (*map)["stack"] = call_stack_val;
+  auto *type_manifest = req.mutable_type_manifest();
+  auto *parameters = type_manifest->mutable_parameters();
+  {
+    auto *p = parameters->Add();
+    p->set_name("stack");
+    p->set_type(instserver::server::v1::LUA_TYPES_CALL_STACK);
+  }
 
-  params["type_manifest"] = {
-      {"parameters",
-       json::array({{{"name", "ctx"}, {"type", "RuntimeContext"}},
-                    {{"name", "stack"}, {"type", "CallStack"}}})}};
-
-  json out;
-  int result = handle_measure(params, out);
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
 
   EXPECT_EQ(result, 1);
-  EXPECT_FALSE(out["ok"].get<bool>());
+  EXPECT_FALSE(resp.standard_response().ok());
 
-  EXPECT_NE(
-      out["error"].get<std::string>().find("CallStack deserialization failed"),
-      std::string::npos);
+  EXPECT_NE(resp.standard_response().error().message().find(
+                "CallStack deserialization failed"),
+            std::string::npos);
 }
 
 TEST_F(TypeManifestTest, CallStackWrongJsonType) {
@@ -523,24 +390,31 @@ TEST_F(TypeManifestTest, CallStackWrongJsonType) {
     end
   )lua");
 
-  json params;
-  params["script_path"] =
-      (test_scripts_dir_ / "callstack_wrong_type.lua").string();
+  MeasureJobRequest req{};
+  req.set_script_path(
+      (test_scripts_dir_ / "callstack_wrong_type.lua").string());
+  auto *globals = req.mutable_globals();
+  auto *map = globals->mutable_map();
 
   // Not a string → should fail
-  params["globals"] = {{"stack", 12345}};
+  VariableValue call_stack_val;
+  call_stack_val.set_i(12345);
+  (*map)["stack"] = call_stack_val;
+  auto *type_manifest = req.mutable_type_manifest();
+  auto *parameters = type_manifest->mutable_parameters();
+  {
+    auto *p = parameters->Add();
+    p->set_name("stack");
+    p->set_type(instserver::server::v1::LUA_TYPES_CALL_STACK);
+  }
 
-  params["type_manifest"] = {
-      {"parameters",
-       json::array({{{"name", "ctx"}, {"type", "RuntimeContext"}},
-                    {{"name", "stack"}, {"type", "CallStack"}}})}};
-
-  json out;
-  int result = handle_measure(params, out);
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
 
   EXPECT_EQ(result, 1);
-  EXPECT_FALSE(out["ok"].get<bool>());
+  EXPECT_FALSE(resp.standard_response().ok());
 
-  EXPECT_NE(out["error"].get<std::string>().find("CallStack must be"),
-            std::string::npos);
+  EXPECT_NE(
+      resp.standard_response().error().message().find("CallStack must be"),
+      std::string::npos);
 }

@@ -43,7 +43,7 @@ void DataBufferManager::save_buffer(const std::string &buffer_id) {
     return;
   }
 
-  SharedMetadata c_meta;
+  SharedMetadata c_meta{};
   if (!data_manager_get_metadata(buffer_id.c_str(), &c_meta)) {
     LOG_ERROR("DataBufferManager", buffer_id.c_str(),
               "No metadata found during save\n");

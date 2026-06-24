@@ -21,20 +21,15 @@ namespace v1 = instserver::server::v1;
 namespace {
 int handle_measure(const json &params, json &out) {
   v1::MeasureJobRequest req;
-  
+
   if (params.contains("script_path")) {
     req.set_script_path(params["script_path"].get<std::string>());
-  }
-  if (params.contains("block_inject_globals")) {
-    req.set_block_inject_globals(params["block_inject_globals"].get<bool>());
-  }
-  if (params.contains("context_schema_version")) {
-    req.set_context_schema_version(params["context_schema_version"].get<uint32_t>());
   }
 
   if (params.contains("globals") && params["globals"].is_object()) {
     auto *globals_map = req.mutable_globals()->mutable_map();
-    for (auto it = params["globals"].begin(); it != params["globals"].end(); ++it) {
+    for (auto it = params["globals"].begin(); it != params["globals"].end();
+         ++it) {
       v1::VariableValue val;
       if (it.value().is_number_integer()) {
         val.set_i(it.value().get<int64_t>());
@@ -63,12 +58,18 @@ int handle_measure(const json &params, json &out) {
         if (p.contains("type")) {
           std::string type_str = p["type"].get<std::string>();
           v1::LuaTypes ltype = v1::LUA_TYPES_UNSPECIFIED;
-          if (type_str == "int") ltype = v1::LUA_TYPES_INT64;
-          else if (type_str == "number") ltype = v1::LUA_TYPES_DOUBLE;
-          else if (type_str == "boolean") ltype = v1::LUA_TYPES_BOOL;
-          else if (type_str == "string") ltype = v1::LUA_TYPES_STRING;
-          else if (type_str == "DataBuffer") ltype = v1::LUA_TYPES_DATA_BUFFER;
-          else if (type_str == "CallStack") ltype = v1::LUA_TYPES_CALL_STACK;
+          if (type_str == "int")
+            ltype = v1::LUA_TYPES_INT64;
+          else if (type_str == "number")
+            ltype = v1::LUA_TYPES_DOUBLE;
+          else if (type_str == "boolean")
+            ltype = v1::LUA_TYPES_BOOL;
+          else if (type_str == "string")
+            ltype = v1::LUA_TYPES_STRING;
+          else if (type_str == "DataBuffer")
+            ltype = v1::LUA_TYPES_DATA_BUFFER;
+          else if (type_str == "CallStack")
+            ltype = v1::LUA_TYPES_CALL_STACK;
           param->set_type(ltype);
         }
       }
@@ -77,18 +78,20 @@ int handle_measure(const json &params, json &out) {
 
   v1::MeasureJobResultResponse resp;
   int rc = server::handle_measure(req, &resp);
-  
+
   std::string json_str;
   google::protobuf::util::JsonPrintOptions options;
   options.preserve_proto_field_names = true;
-  auto status = google::protobuf::util::MessageToJsonString(resp, &json_str, options);
+  auto status =
+      google::protobuf::util::MessageToJsonString(resp, &json_str, options);
   if (!status.ok()) {
     return 1;
   }
-  
+
   out = json::parse(json_str);
   out["ok"] = resp.standard_response().ok();
-  if (resp.standard_response().has_error() && !resp.standard_response().error().message().empty()) {
+  if (resp.standard_response().has_error() &&
+      !resp.standard_response().error().message().empty()) {
     out["error"] = resp.standard_response().error().message();
   }
   return rc;

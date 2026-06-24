@@ -497,8 +497,7 @@ int handle_measure(const MeasureJobRequest &req,
           lua, ctx_shared.get())); // First arg is always context
 
       const auto &param_defs = manifest.parameters();
-      for (int i = 1; i < param_defs.size(); ++i) { // Skip first (context)
-        const auto &param = param_defs[i];
+      for (const auto &param : param_defs) {
         std::string param_name = param.name();
 
         // Check if this parameter exists in globals
@@ -514,13 +513,7 @@ int handle_measure(const MeasureJobRequest &req,
         }
 
         // Convert JSON value to Lua object
-        sol::object arg =
-            variable_to_lua(lua, &req.globals().map().at(param_name));
-        args.push_back(arg);
-
-        LOG_INFO("SERVER", "MEASURE",
-                 "Passing parameter '%s' to main function (type: %s)",
-                 param_name.c_str(), LuaTypes_Name(param.type()).c_str());
+        sol::object arg;
         const auto &value = req.globals().map().find(param_name)->second;
         auto type = param.type();
 

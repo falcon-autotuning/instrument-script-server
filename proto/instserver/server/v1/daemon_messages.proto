@@ -144,9 +144,7 @@ message Globals {
 message MeasureJobRequest {
   string script_path = 1;
   Globals globals = 2;
-  bool block_inject_globals = 3;
-  TypeManifest type_manifest = 4;
-  uint32 context_schema_version = 5; // 0 == unset
+  TypeManifest type_manifest = 3;
 }
 message MeasureJobResponse {
   StandardResponse standard_response = 1;
