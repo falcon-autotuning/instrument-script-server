@@ -19,7 +19,8 @@ public:
   }
 
   /// Create instrument from config file
-  bool create_instrument(const std::string &config_path);
+  bool create_instrument(const std::string &config_path,
+                         const std::string &log_level = "info");
 
   /// Get instrument proxy
   std::shared_ptr<InstrumentWorkerProxy>

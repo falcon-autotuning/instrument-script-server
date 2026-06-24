@@ -321,7 +321,7 @@ int handle_start_instrument(const StartInstrumentRequest &req,
     }
 
     auto &registry = InstrumentRegistry::instance();
-    bool ok = registry.create_instrument(config_path);
+    bool ok = registry.create_instrument(config_path, req.log_level());
     stdrp->set_ok(ok);
     if (!ok) {
       err->set_message("failed to create instrument");

@@ -76,6 +76,7 @@ ProcessManager::~ProcessManager() { cleanup_all(); }
 ProcessId
 ProcessManager::spawn_worker(const std::filesystem::path &instrument_config,
                              const std::filesystem::path &plugin,
+                             const std::string &log_level,
                              const std::string &worker_executable) {
   LOG_INFO("PROCESS", "SPAWN",
            "Spawning worker for instrument with config: %s with plugin: %s",
@@ -98,7 +99,7 @@ ProcessManager::spawn_worker(const std::filesystem::path &instrument_config,
   }
 
   std::vector<std::string> args = {resolved_worker, instrument_config.string(),
-                                   plugin.string()};
+                                   plugin.string(), "--log-level", log_level};
 
   std::string instrument_name;
   YAML::Node doc;

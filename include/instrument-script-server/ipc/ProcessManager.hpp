@@ -40,6 +40,7 @@ public:
   ProcessId
   spawn_worker(const std::filesystem::path &instrument_config,
                const std::filesystem::path &plugin,
+               const std::string &log_level,
                const std::string &worker_executable = "instrument-worker");
 
   /// Check if process is alive
