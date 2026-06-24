@@ -67,6 +67,29 @@ if(BUILD_C_CLIENT)
   # Only build fallback if missing
   if(WIN32 AND NOT PROTOC_GEN_C)
     FetchContent_MakeAvailable(protobuf_c_src)
+
+    # protoc-gen-c is in this source file in protobuf-c repo
+    add_executable(protoc-gen-c
+    ${protobuf_c_src_SOURCE_DIR}/protoc-gen-c/c_generator.c
+    ${protobuf_c_src_SOURCE_DIR}/protoc-gen-c/c_helpers.c
+    ${protobuf_c_src_SOURCE_DIR}/protoc-gen-c/c_field.cc
+    ${protobuf_c_src_SOURCE_DIR}/protoc-gen-c/c_file.cc
+    ${protobuf_c_src_SOURCE_DIR}/protoc-gen-c/c_message.cc
+    ${protobuf_c_src_SOURCE_DIR}/protoc-gen-c/c_service.cc
+  )
+
+    target_include_directories(protoc-gen-c PRIVATE
+    ${protobuf_c_src_SOURCE_DIR}
+    ${protobuf_c_src_SOURCE_DIR}/protobuf-c
+  )
+
+    target_link_libraries(protoc-gen-c PRIVATE
+    protobuf::libprotobuf
+  )
+
+    # now we can use it
+    set(PROTOC_GEN_C $<TARGET_FILE:protoc-gen-c>)
+
   endif()
 
   # Fallback to built target
@@ -111,8 +134,8 @@ if(BUILD_C_CLIENT)
       set(_plugin_dep "")
       if(TARGET protoc-gen-c)
         set(_plugin_dep protoc-gen-c)
-      elseif(TARGET protobuf-c::protoc-gen-c)
-        set(_plugin_dep protobuf-c::protoc-gen-c)
+      else()
+        set(_plugin_dep "")
       endif()
 
       add_custom_command(
