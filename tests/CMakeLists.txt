@@ -111,7 +111,6 @@ foreach(tgt ${ALL_TEST_TARGETS})
   target_compile_definitions(${tgt} PRIVATE
     TEST_DATA_DIR="$<JOIN:$<TARGET_FILE_DIR:${tgt}>/data,>"
     ISS_DAEMON_PATH="$<TARGET_FILE:instrument-script-server-daemon>"
-    ISS_BIN_PATH="$<TARGET_FILE:instrument-script-server>"
     TEST_PLUGIN_DIR="$<TARGET_FILE_DIR:mock_visa_plugin>"
   )
   add_test(NAME ${tgt} COMMAND ${tgt})
@@ -126,7 +125,13 @@ foreach(tgt ${ALL_TEST_TARGETS})
     )
   endif()
 endforeach()
-
+if(BUILD_CLI)
+  foreach(tgt ${ALL_TEST_TARGETS})
+    target_compile_definitions(${tgt} PRIVATE
+    ISS_BIN_PATH="$<TARGET_FILE:instrument-script-server>"
+  )
+  endforeach()
+endif()
 
 add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
 add_library(mock_visa_plugin SHARED mocks/mock_visa_plugin.c)

@@ -42,7 +42,8 @@ static nlohmann::json yaml_to_json(const YAML::Node &node) {
   return nullptr;
 }
 
-bool InstrumentRegistry::create_instrument(const std::string &config_path) {
+bool InstrumentRegistry::create_instrument(const std::string &config_path,
+                                           const std::string &log_level) {
   LOG_INFO("REGISTRY", "CREATE", "Loading instrument from: %s",
            config_path.c_str());
   YAML::Node config_yaml;
@@ -90,7 +91,7 @@ bool InstrumentRegistry::create_instrument(const std::string &config_path) {
   bool exists = false;
   {
     std::lock_guard lock(mutex_);
-    exists = instruments_.count(name) != 0U;
+    exists = instruments_.contains(name);
   }
 
   if (exists) {
@@ -105,7 +106,7 @@ bool InstrumentRegistry::create_instrument(const std::string &config_path) {
 
   // Create worker proxy with JSON strings
   auto proxy = std::make_shared<InstrumentWorkerProxy>(
-      name, plugin, std::filesystem::path(config_path));
+      name, plugin, std::filesystem::path(config_path), log_level);
 
   if (!proxy->start()) {
     LOG_ERROR("REGISTRY", "CREATE", "Failed to start worker for:  %s",

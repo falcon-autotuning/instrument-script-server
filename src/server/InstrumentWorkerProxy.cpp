@@ -25,8 +25,10 @@ static ipc::ProcessManager &get_process_manager() {
 
 InstrumentWorkerProxy::InstrumentWorkerProxy(std::string instrument_name,
                                              std::filesystem::path plugin,
-                                             std::filesystem::path config)
-    : instrument_name_(std::move(instrument_name)), plugin_(std::move(plugin)),
+                                             std::filesystem::path config,
+                                             std::string log_level)
+    : instrument_name_(std::move(instrument_name)),
+      log_level_(std::move(log_level)), plugin_(std::move(plugin)),
       instrument_config_(std::move(config)) {}
 
 InstrumentWorkerProxy::~InstrumentWorkerProxy() { stop(); }
@@ -44,7 +46,8 @@ bool InstrumentWorkerProxy::start() {
   }
 
   // Spawn worker process
-  worker_pid_ = get_process_manager().spawn_worker(instrument_config_, plugin_);
+  worker_pid_ = get_process_manager().spawn_worker(instrument_config_, plugin_,
+                                                   log_level_);
 
   if (worker_pid_ == 0) {
     LOG_ERROR(instrument_name_.c_str(), "PROXY",

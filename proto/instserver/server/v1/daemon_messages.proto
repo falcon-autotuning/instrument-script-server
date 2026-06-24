@@ -36,6 +36,7 @@ message DaemonStatusResponse {
 message StartInstrumentRequest {
   string config_path = 1;
   string plugin_path = 2;
+  string log_level = 3;
 }
 message StartInstrumentResponse {
   StandardResponse standard_response = 1;

@@ -24,7 +24,8 @@ class INSTRUMENT_SERVER_API InstrumentWorkerProxy {
 public:
   InstrumentWorkerProxy(std::string instrument_name,
                         std::filesystem::path plugin,
-                        std::filesystem::path config);
+                        std::filesystem::path config,
+                        std::string log_level = "info");
 
   ~InstrumentWorkerProxy();
 
@@ -74,6 +75,7 @@ private:
   std::string instrument_name_;
   std::filesystem::path instrument_config_;
   std::filesystem::path plugin_;
+  std::string log_level_;
   APICommands commands_;
 
   std::unique_ptr<ipc::SharedQueue> ipc_queue_;

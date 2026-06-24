@@ -5,7 +5,9 @@
 #include "instrument-script-server/plugin/PluginLoader.hpp"
 #include "instrument-script-server/server/InstrumentCommand.hpp"
 #include "instrument-script-server/server/ParsingTools.hpp"
+#include <algorithm>
 #include <csignal>
+#include <cxxopts.hpp>
 #include <filesystem>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
@@ -14,8 +16,19 @@
 #include <plugin-host.h>
 #include <queue>
 #include <thread>
+#include <unordered_map>
 #include <variant>
 #include <yaml-cpp/yaml.h>
+
+#ifndef INSTSERVER_VERSION
+#define INSTSERVER_VERSION "v0.0.0"
+#endif
+#ifndef INSTSERVER_GIT_TAG
+#define INSTSERVER_GIT_TAG ""
+#endif
+#ifndef INSTSERVER_GIT_COMMIT
+#define INSTSERVER_GIT_COMMIT "unknown"
+#endif
 
 #ifdef _WIN32
 #include <io.h>
@@ -664,46 +677,122 @@ private:
     ipc_queue_.reset();
   }
 };
-
+constexpr uint8_t parse_log_level(const std::string &s) {
+  if (s == "trace") {
+    return INST_LOG_TRACE;
+  }
+  if (s == "debug") {
+    return INST_LOG_DEBUG;
+  }
+  if (s == "info") {
+    return INST_LOG_INFO;
+  }
+  if (s == "warn") {
+    return INST_LOG_WARN;
+  }
+  if (s == "error") {
+    return INST_LOG_ERROR;
+  }
+  throw std::runtime_error("Invalid log level: " + s);
+}
+void print_usage(const cxxopts::Options &options) {
+  std::cout << options.help() << "\n";
+}
 } // namespace
 
 int main(int argc, char **argv) {
-  if (argc < 3) {
-    std::cerr << "Usage: " << argv[0]
-              << " <instrument_config_path> <plugin_path>\n";
-    return 1;
-  }
-  const std::filesystem::path instrument_config =
-      std::filesystem::path(argv[1]);
-  const std::filesystem::path plugin = std::filesystem::path(argv[2]);
-  InstrumentConfig config;
   try {
-    config = load_config(instrument_config);
-  } catch (const std::exception &e) {
-    std::fprintf(stderr, "[WORKER] Failed to load config '%s': %s\n",
-                 instrument_config.string().c_str(), e.what());
-    return 1;
-  }
-  const std::string log_file = "worker_" + config.name + ".log";
-  inst_log_init(log_file.c_str(), INST_LOG_DEBUG, "instrument",
-                10 * 1024 * 1024, // 10 MB
-                3);               // rotate 3 files
-  std::unordered_map<std::string, Command> instrument_commands;
-  const std::filesystem::path api_path =
-      instrument_config.parent_path() / config.api_ref;
-  try {
-    instrument_commands = load_api(api_path);
-  } catch (const std::exception &e) {
-    LOG_ERROR(config.name.c_str(), "WORKER_MAIN", "Invalid api '%s': %s\n",
-              api_path.c_str(), e.what());
-    return 1;
-  }
+    cxxopts::Options options("instrument-worker", "Instrument Worker Process");
 
-  LOG_DEBUG(config.name.c_str(), "WORKER_MAIN", "Worker starting");
-  LOG_DEBUG(config.name.c_str(), "WORKER_MAIN", "Plugin: %s", plugin.c_str());
-  strncpy(g_instrument_name_buf, config.name.c_str(),
-          sizeof(g_instrument_name_buf) - 1);
-  g_instrument_name_buf[sizeof(g_instrument_name_buf) - 1] = '\0';
+    options.add_options()("h,help", "Show help")("v,version", "Show version")(
+        "log-level", "Log level (trace|debug|info|warn|error)",
+        cxxopts::value<std::string>()->default_value("info"))(
+        "instrument_config", "Instrument config path",
+        cxxopts::value<std::string>())("plugin", "Plugin path",
+                                       cxxopts::value<std::string>());
+
+    options.parse_positional({"instrument_config", "plugin"});
+
+    auto result = options.parse(argc, argv);
+
+    if (result.contains("help")) {
+      print_usage(options);
+      return 0;
+    }
+
+    if (result.contains("version")) {
+      std::cout << "instrument-worker " << INSTSERVER_VERSION;
+
+      if (std::string(INSTSERVER_GIT_TAG).size() > 0) {
+        std::cout << " (" << INSTSERVER_GIT_TAG << ")";
+      }
+
+      if (std::string(INSTSERVER_GIT_COMMIT) != "unknown") {
+        std::cout << " [" << std::string(INSTSERVER_GIT_COMMIT).substr(0, 7)
+                  << "]";
+      }
+
+      std::cout << "\n";
+      return 0;
+    }
+
+    if (!result.contains("instrument_config") || !result.contains("plugin")) {
+      std::cerr << "Missing required arguments\n";
+      print_usage(options);
+      return 1;
+    }
+
+    const std::filesystem::path instrument_config =
+        result["instrument_config"].as<std::string>();
+
+    const std::filesystem::path plugin = result["plugin"].as<std::string>();
+
+    std::string log_level_str = result["log-level"].as<std::string>();
+
+    std::ranges::transform(log_level_str, log_level_str.begin(), ::tolower);
+
+    uint8_t log_level = INST_LOG_INFO;
+
+    try {
+      log_level = parse_log_level(log_level_str);
+    } catch (const std::exception &e) {
+      std::cerr << "[WORKER] " << e.what() << "\n";
+      return 1;
+    }
+
+    InstrumentConfig config;
+    try {
+      config = load_config(instrument_config);
+    } catch (const std::exception &e) {
+      std::cerr << "[WORKER] Failed to load config '" << instrument_config
+                << "': " << e.what() << "\n";
+      return 1;
+    }
+
+    const std::string log_file = "worker_" + config.name + ".log";
+
+    inst_log_init(log_file.c_str(), log_level, "instrument", 10 * 1024 * 1024,
+                  3);
+
+    std::unordered_map<std::string, Command> instrument_commands;
+
+    const std::filesystem::path api_path =
+        instrument_config.parent_path() / config.api_ref;
+
+    try {
+      instrument_commands = load_api(api_path);
+    } catch (const std::exception &e) {
+      LOG_ERROR(config.name.c_str(), "WORKER_MAIN", "Invalid api '%s': %s\n",
+                api_path.c_str(), e.what());
+      return 1;
+    }
+
+    LOG_DEBUG(config.name.c_str(), "WORKER_MAIN", "Worker starting");
+    LOG_DEBUG(config.name.c_str(), "WORKER_MAIN", "Plugin: %s", plugin.c_str());
+
+    strncpy(g_instrument_name_buf, config.name.c_str(),
+            sizeof(g_instrument_name_buf) - 1);
+    g_instrument_name_buf[sizeof(g_instrument_name_buf) - 1] = '\0';
 
 #if defined(__has_feature)
 #if __has_feature(address_sanitizer)
@@ -712,36 +801,48 @@ int main(int argc, char **argv) {
 #endif
 
 #ifndef USING_ASAN
-  std::signal(SIGSEGV, crash_signal_handler);
-  std::signal(SIGABRT, crash_signal_handler);
-  std::signal(SIGFPE, crash_signal_handler);
+    std::signal(SIGSEGV, crash_signal_handler);
+    std::signal(SIGABRT, crash_signal_handler);
+    std::signal(SIGFPE, crash_signal_handler);
 #endif
 
-  std::signal(SIGINT, signal_handler);
-  std::signal(SIGTERM, signal_handler);
+    std::signal(SIGINT, signal_handler);
+    std::signal(SIGTERM, signal_handler);
 
-  try {
-    InstrumentWorker worker(config, plugin.string(), instrument_commands);
-    int rc = worker.run();
+    try {
+      InstrumentWorker worker(config, plugin.string(), instrument_commands);
 
-    LOG_INFO(config.name.c_str(), "WORKER_MAIN", "Worker exited with code %d",
-             rc);
+      int rc = worker.run();
 
-    inst_log_flush();
-    return rc;
+      LOG_INFO(config.name.c_str(), "WORKER_MAIN", "Worker exited with code %d",
+               rc);
+
+      inst_log_flush();
+      return rc;
+
+    } catch (const std::exception &e) {
+      LOG_ERROR(config.name.c_str(), "WORKER_MAIN", "Fatal error: %s\n",
+                e.what());
+      inst_log_flush();
+      return 1;
+
+    } catch (...) {
+      LOG_ERROR(config.name.c_str(), "WORKER_MAIN",
+                "Fatal unknown exception\n");
+      inst_log_flush();
+      return 1;
+    }
+
+  } catch (const cxxopts::exceptions::exception &e) {
+    std::cerr << "Argument error: " << e.what() << "\n";
+    return 1;
 
   } catch (const std::exception &e) {
-    LOG_ERROR(config.name.c_str(), "WORKER_MAIN",
-              "Fatal error (std::exception): %s\n", e.what());
-
-    inst_log_flush();
+    std::cerr << "Fatal error: " << e.what() << "\n";
     return 1;
 
   } catch (...) {
-    LOG_ERROR(config.name.c_str(), "WORKER_MAIN",
-              "Fatal error: unknown exception type escaped main()\n");
-
-    inst_log_flush();
+    std::cerr << "Fatal error: unknown exception\n";
     return 1;
   }
 }
