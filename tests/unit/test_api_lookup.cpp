@@ -21,7 +21,7 @@ protected:
                   3);          // rotation count
     PluginTestFixture::SetUp();
     registry_ = &InstrumentRegistry::instance();
-    test_data_dir_ = std::filesystem::current_path() / "data";
+    test_data_dir_ = TEST_DATA_DIR;
     config_path_ = test_data_dir_ / "mock_instrument1.yaml";
     if (!std::filesystem::exists(config_path_)) {
       GTEST_SKIP() << "Config not found at: " << config_path_;

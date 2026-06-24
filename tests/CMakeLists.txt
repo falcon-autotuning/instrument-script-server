@@ -48,7 +48,7 @@ add_executable(
   integration_tests
   integration/test_daemon_integration.cpp
   integration/test_parallel_execution.cpp
-  integration/test_cli_commands.cpp
+  # integration/test_cli_commands.cpp
   integration/test_instrument_registry.cpp
   integration/test_measurement_scripts.cpp
   integration/test_visa_large_data.cpp

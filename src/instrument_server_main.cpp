@@ -1,7 +1,4 @@
 #include "instrument-script-server/instrument-script-server-client.h"
-#include "instrument-script-server/ipc/DataBufferManager.hpp"
-#include "instrument-script-server/server/CommandHandlers.hpp"
-#include "instrument-script-server/version.hpp"
 #include <filesystem>
 #include <inst_logging.h>
 #include <instrument-data.h>
@@ -58,10 +55,6 @@ struct CLIOutput {
   }
 };
 
-using namespace instserver;
-using namespace instserver::server;
-using namespace instserver::server::v1;
-
 static volatile bool g_running = true;
 
 namespace {
@@ -79,60 +72,6 @@ instrument_server_client_t *connect_client() {
 void die(const std::string &msg) {
   std::cerr << msg << "\n";
   std::exit(1);
-}
-template <typename T> std::vector<T> make_vector(const void *data, size_t n) {
-  const T *ptr = static_cast<const T *>(data);
-  return std::vector<T>(ptr, ptr + n);
-}
-
-// ReadBuffer is handled in the CLI process (data is read directly from shared
-// memory, not via RPC). Buffer metadata is fetched via handle_get_buffer_metadata.
-static int local_read_buffer(const std::string &buffer_id,
-                             nlohmann::json &out) {
-  out = nlohmann::json::object();
-
-  GetBufferMetadataRequest meta_req;
-  meta_req.set_buffer_id(buffer_id);
-  GetBufferMetadataResponse meta_resp;
-  if (handle_get_buffer_metadata(meta_req, &meta_resp) != 0 ||
-      !meta_resp.standard_response().ok()) {
-    out["ok"] = false;
-    out["error"] = "buffer not found: " + buffer_id;
-    return 1;
-  }
-
-  const auto &meta = meta_resp.meta();
-  uint32_t element_count = meta.element_count();
-  uint32_t data_type = meta.data_type();
-
-  // Get raw data from shared memory via C API (instrument-data.h)
-  DataBuffer *buf = data_manager_get_buffer(buffer_id.c_str());
-  if (!buf) {
-    out["ok"] = false;
-    out["error"] = "buffer data not found: " + buffer_id;
-    return 1;
-  }
-
-  void *data = data_buffer_data(buf);
-  size_t n = static_cast<size_t>(element_count);
-
-  out["ok"] = true;
-  out["buffer_id"] = buffer_id;
-  out["element_count"] = n;
-
-  if (data_type == INST_DATA_FLOAT64) {
-    out["data"] = make_vector<double>(data, n);
-    out["data_type"] = "float64";
-  } else if (data_type == INST_DATA_FLOAT32) {
-    auto fvec = make_vector<float>(data, n);
-    out["data"] = std::vector<double>(fvec.begin(), fvec.end());
-    out["data_type"] = "float32";
-  } else {
-    out["ok"] = false;
-    out["error"] = "unsupported buffer data type for export";
-    return 1;
-  }
-  return 0;
 }
 } // namespace
 void signal_handler(int sig) {
@@ -513,447 +452,532 @@ int main(int argc, char **argv) {
 
   case ISS_CLI_Command::START: {
     if (argc < 3) {
-      std::cerr << "Usage: instrument-script-server start <config> [--plugin "
-                   "<path>] "
-                   "[--log-level <level>]\n";
-      rc = 1;
-      break;
+      std::cerr << "Usage: instrument-script-server start <config> [--plugin <path>] [--log-level <level>]\n";
+      return 1;
     }
     auto *client = connect_client();
-    bool use_rpc = false;
-    if (client) {
-      Instserver__Server__V1__DaemonStatusRequest sreq =
-          INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
-      Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
-      if (instrument_server_client_daemon_status(client, &sreq, &sresp) == 0 && sresp && sresp->running) {
-        use_rpc = true;
-      }
+    if (!client) {
+      std::cerr << "Failed to connect to daemon\n";
+      return 1;
+    }
+    Instserver__Server__V1__DaemonStatusRequest sreq = INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+    Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+    if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 || !sresp || !sresp->running) {
+      std::cerr << "Daemon is not running. Please start the daemon first.\n";
       if (sresp) instrument_server_client_free_response(sresp);
+      instrument_server_client_destroy(client);
+      return 1;
     }
+    if (sresp) instrument_server_client_free_response(sresp);
 
-    if (use_rpc) {
-      Instserver__Server__V1__StartInstrumentRequest req =
-          INSTSERVER__SERVER__V1__START_INSTRUMENT_REQUEST__INIT;
-      req.config_path = argv[2];
-      std::string log_level = "info";
-      for (int i = 3; i < argc; ++i) {
-        std::string arg = argv[i];
-        if (arg == "--plugin" && i + 1 < argc) {
-          req.plugin_path = argv[++i];
-        } else if (arg == "--log-level" && i + 1 < argc) {
-          log_level = argv[++i];
-        }
-      }
-      req.log_level = const_cast<char*>(log_level.c_str());
-      Instserver__Server__V1__StartInstrumentResponse *resp = nullptr;
-      int call_rc = instrument_server_client_start_instrument(client, &req, &resp);
-      if (call_rc != 0 || resp == nullptr) {
-        std::cerr << "Failed to send start instrument request to daemon\n";
-        rc = 1;
-      } else if (!resp->standard_response || !resp->standard_response->ok) {
-        std::cerr << (resp->standard_response && resp->standard_response->error ?
-                      resp->standard_response->error->message : "Unknown error starting instrument") << "\n";
-        rc = 1;
-      } else {
-        std::cout << "Instrument started successfully\n";
-        rc = 0;
-      }
-      if (resp) instrument_server_client_free_response(resp);
-    } else {
-      StartInstrumentRequest req;
-      req.set_config_path(argv[2]);
-      std::string log_level = "info";
-      for (int i = 3; i < argc; ++i) {
-        std::string arg = argv[i];
-        if (arg == "--plugin" && i + 1 < argc) {
-          req.set_plugin_path(argv[++i]);
-        } else if (arg == "--log-level" && i + 1 < argc) {
-          log_level = argv[++i];
-        }
-      }
-      req.set_log_level(log_level);
-      StartInstrumentResponse resp;
-      rc = handle_start_instrument(req, &resp);
-      if (!resp.standard_response().ok()) {
-        std::cerr << resp.standard_response().error().message() << "\n";
-        rc = 1;
-      } else {
-        std::cout << "Instrument started successfully\n";
+    Instserver__Server__V1__StartInstrumentRequest req = INSTSERVER__SERVER__V1__START_INSTRUMENT_REQUEST__INIT;
+    req.config_path = argv[2];
+    std::string log_level = "info";
+    for (int i = 3; i < argc; ++i) {
+      std::string arg = argv[i];
+      if (arg == "--plugin" && i + 1 < argc) {
+        req.plugin_path = argv[++i];
+      } else if (arg == "--log-level" && i + 1 < argc) {
+        log_level = argv[++i];
       }
     }
-    if (client) instrument_server_client_destroy(client);
+    req.log_level = const_cast<char*>(log_level.c_str());
+    Instserver__Server__V1__StartInstrumentResponse *resp = nullptr;
+    int call_rc = instrument_server_client_start_instrument(client, &req, &resp);
+    if (call_rc != 0 || resp == nullptr) {
+      std::cerr << "Failed to send start instrument request to daemon\n";
+      rc = 1;
+    } else if (!resp->standard_response || !resp->standard_response->ok) {
+      std::cerr << (resp->standard_response && resp->standard_response->error ?
+                    resp->standard_response->error->message : "Unknown error starting instrument") << "\n";
+      rc = 1;
+    } else {
+      std::cout << "Instrument started successfully\n";
+      rc = 0;
+    }
+    if (resp) instrument_server_client_free_response(resp);
+    instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::STOP: {
     if (argc < 3) {
-      std::cerr << "Error: stop requires instrument name\n";
-      std::cerr << "Usage: instrument-script-server stop <name>\n";
+      std::cerr << "Error: stop requires instrument name\nUsage: instrument-script-server stop <name>\n";
       return 1;
     }
     auto *client = connect_client();
-    bool use_rpc = false;
-    if (client) {
-      Instserver__Server__V1__DaemonStatusRequest sreq =
-          INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
-      Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
-      if (instrument_server_client_daemon_status(client, &sreq, &sresp) == 0 && sresp && sresp->running) {
-        use_rpc = true;
-      }
+    if (!client) {
+      std::cerr << "Failed to connect to daemon\n";
+      return 1;
+    }
+    Instserver__Server__V1__DaemonStatusRequest sreq = INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+    Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+    if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 || !sresp || !sresp->running) {
+      std::cerr << "Daemon is not running. Please start the daemon first.\n";
       if (sresp) instrument_server_client_free_response(sresp);
+      instrument_server_client_destroy(client);
+      return 1;
     }
+    if (sresp) instrument_server_client_free_response(sresp);
 
-    if (use_rpc) {
-      Instserver__Server__V1__StopInstrumentRequest req =
-          INSTSERVER__SERVER__V1__STOP_INSTRUMENT_REQUEST__INIT;
-      req.instrument_name = argv[2];
-      Instserver__Server__V1__StopInstrumentResponse *resp = nullptr;
-      int call_rc = instrument_server_client_stop_instrument(client, &req, &resp);
-      if (call_rc != 0 || resp == nullptr) {
-        std::cerr << "Failed to send stop request to daemon\n";
-        rc = 1;
-      } else if (!resp->standard_response || !resp->standard_response->ok) {
-        std::cerr << (resp->standard_response && resp->standard_response->error ?
-                      resp->standard_response->error->message : "Unknown error stopping instrument") << "\n";
-        rc = 1;
-      } else {
-        std::cout << "Stopped instrument: " << argv[2] << "\n";
-        rc = 0;
-      }
-      if (resp) instrument_server_client_free_response(resp);
+    Instserver__Server__V1__StopInstrumentRequest req = INSTSERVER__SERVER__V1__STOP_INSTRUMENT_REQUEST__INIT;
+    req.instrument_name = argv[2];
+    Instserver__Server__V1__StopInstrumentResponse *resp = nullptr;
+    int call_rc = instrument_server_client_stop_instrument(client, &req, &resp);
+    if (call_rc != 0 || resp == nullptr) {
+      std::cerr << "Failed to send stop request to daemon\n";
+      rc = 1;
+    } else if (!resp->standard_response || !resp->standard_response->ok) {
+      std::cerr << (resp->standard_response && resp->standard_response->error ?
+                    resp->standard_response->error->message : "Unknown error stopping instrument") << "\n";
+      rc = 1;
     } else {
-      StopInstrumentRequest req;
-      req.set_instrument_name(argv[2]);
-      StopInstrumentResponse resp;
-      rc = handle_stop_instrument(req, &resp);
-      if (!resp.standard_response().ok()) {
-        std::cerr << resp.standard_response().error().message() << "\n";
-        rc = 1;
-      } else {
-        std::cout << "Stopped instrument: " << argv[2] << "\n";
-      }
+      std::cout << "Stopped instrument: " << argv[2] << "\n";
+      rc = 0;
     }
-    if (client) instrument_server_client_destroy(client);
+    if (resp) instrument_server_client_free_response(resp);
+    instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::STATUS: {
     if (argc < 3) {
-      std::cerr << "Error: status requires instrument name\n";
-      std::cerr << "Usage: instrument-script-server status <name>\n";
-      rc = 1;
-      break;
+      std::cerr << "Error: status requires instrument name\nUsage: instrument-script-server status <name>\n";
+      return 1;
     }
     auto *client = connect_client();
-    bool use_rpc = false;
-    if (client) {
-      Instserver__Server__V1__DaemonStatusRequest sreq =
-          INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
-      Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
-      if (instrument_server_client_daemon_status(client, &sreq, &sresp) == 0 && sresp && sresp->running) {
-        use_rpc = true;
-      }
+    if (!client) {
+      std::cerr << "Failed to connect to daemon\n";
+      return 1;
+    }
+    Instserver__Server__V1__DaemonStatusRequest sreq = INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+    Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+    if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 || !sresp || !sresp->running) {
+      std::cerr << "Daemon is not running. Please start the daemon first.\n";
       if (sresp) instrument_server_client_free_response(sresp);
+      instrument_server_client_destroy(client);
+      return 1;
     }
+    if (sresp) instrument_server_client_free_response(sresp);
 
-    if (use_rpc) {
-      Instserver__Server__V1__InstrumentStatusRequest req =
-          INSTSERVER__SERVER__V1__INSTRUMENT_STATUS_REQUEST__INIT;
-      req.instrument_name = argv[2];
-      Instserver__Server__V1__InstrumentStatusResponse *resp = nullptr;
-      int call_rc = instrument_server_client_instrument_status(client, &req, &resp);
-      if (call_rc != 0 || resp == nullptr) {
-        std::cerr << "Failed to get instrument status from daemon\n";
-        rc = 1;
-      } else if (!resp->standard_response || !resp->standard_response->ok) {
-        std::cerr << (resp->standard_response && resp->standard_response->error ?
-                      resp->standard_response->error->message : "Unknown error getting status") << "\n";
-        rc = 1;
-      } else {
-        std::cout << "Instrument: " << argv[2] << "\n";
-        std::cout << "  Status: RUNNING\n";
-        if (resp->stats) {
-          std::cout << "  Commands sent: " << resp->stats->commands_sent << "\n";
-        }
-        rc = 0;
-      }
-      if (resp) instrument_server_client_free_response(resp);
+    Instserver__Server__V1__InstrumentStatusRequest req = INSTSERVER__SERVER__V1__INSTRUMENT_STATUS_REQUEST__INIT;
+    req.instrument_name = argv[2];
+    Instserver__Server__V1__InstrumentStatusResponse *resp = nullptr;
+    int call_rc = instrument_server_client_instrument_status(client, &req, &resp);
+    if (call_rc != 0 || resp == nullptr) {
+      std::cerr << "Failed to get instrument status from daemon\n";
+      rc = 1;
+    } else if (!resp->standard_response || !resp->standard_response->ok) {
+      std::cerr << (resp->standard_response && resp->standard_response->error ?
+                    resp->standard_response->error->message : "Unknown error getting status") << "\n";
+      rc = 1;
     } else {
-      InstrumentStatusRequest req;
-      req.set_instrument_name(argv[2]);
-      InstrumentStatusResponse resp;
-      rc = handle_instrument_status(req, &resp);
-      if (!resp.standard_response().ok()) {
-        std::cerr << resp.standard_response().error().message() << "\n";
-        rc = 1;
-      } else {
-        std::cout << "Instrument: " << argv[2] << "\n";
-        std::cout << "  Status: RUNNING\n";
-        if (resp.has_stats()) {
-          std::cout << "  Commands sent: " << resp.stats().commands_sent() << "\n";
-        }
+      std::cout << "Instrument: " << argv[2] << "\n";
+      std::cout << "  Status: RUNNING\n";
+      if (resp->stats) {
+        std::cout << "  Commands sent: " << resp->stats->commands_sent << "\n";
       }
+      rc = 0;
     }
-    if (client) instrument_server_client_destroy(client);
+    if (resp) instrument_server_client_free_response(resp);
+    instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::LIST: {
     auto *client = connect_client();
-    bool use_rpc = false;
-    if (client) {
-      Instserver__Server__V1__DaemonStatusRequest sreq =
-          INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
-      Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
-      if (instrument_server_client_daemon_status(client, &sreq, &sresp) == 0 && sresp && sresp->running) {
-        use_rpc = true;
-      }
-      if (sresp) instrument_server_client_free_response(sresp);
+    if (!client) {
+      std::cerr << "Failed to connect to daemon\n";
+      return 1;
     }
+    Instserver__Server__V1__DaemonStatusRequest sreq = INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+    Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+    if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 || !sresp || !sresp->running) {
+      std::cerr << "Daemon is not running. Please start the daemon first.\n";
+      if (sresp) instrument_server_client_free_response(sresp);
+      instrument_server_client_destroy(client);
+      return 1;
+    }
+    if (sresp) instrument_server_client_free_response(sresp);
 
-    if (use_rpc) {
-      Instserver__Server__V1__ListInstrumentsRequest req =
-          INSTSERVER__SERVER__V1__LIST_INSTRUMENTS_REQUEST__INIT;
-      Instserver__Server__V1__ListInstrumentsResponse *resp = nullptr;
-      int call_rc = instrument_server_client_list_instruments(client, &req, &resp);
-      if (call_rc != 0 || resp == nullptr) {
-        std::cerr << "Failed to list instruments from daemon\n";
-        rc = 1;
-      } else if (!resp->standard_response || !resp->standard_response->ok) {
-        std::cerr << (resp->standard_response && resp->standard_response->error ?
-                      resp->standard_response->error->message : "Unknown error listing instruments") << "\n";
-        rc = 1;
-      } else {
-        if (resp->n_instrument_name == 0) {
-          std::cout << "No instruments running\n";
-          rc = 1;
-        } else {
-          std::cout << "Running instruments:\n";
-          for (size_t i = 0; i < resp->n_instrument_name; ++i) {
-            std::cout << "  " << resp->instrument_name[i] << "\n";
-          }
-          rc = 0;
-        }
-      }
-      if (resp) instrument_server_client_free_response(resp);
+    Instserver__Server__V1__ListInstrumentsRequest req = INSTSERVER__SERVER__V1__LIST_INSTRUMENTS_REQUEST__INIT;
+    Instserver__Server__V1__ListInstrumentsResponse *resp = nullptr;
+    int call_rc = instrument_server_client_list_instruments(client, &req, &resp);
+    if (call_rc != 0 || resp == nullptr) {
+      std::cerr << "Failed to list instruments from daemon\n";
+      rc = 1;
+    } else if (!resp->standard_response || !resp->standard_response->ok) {
+      std::cerr << (resp->standard_response && resp->standard_response->error ?
+                    resp->standard_response->error->message : "Unknown error listing instruments") << "\n";
+      rc = 1;
     } else {
-      ListInstrumentsRequest req;
-      ListInstrumentsResponse resp;
-      rc = handle_list_instruments(req, &resp);
-      if (!resp.standard_response().ok()) {
-        std::cerr << resp.standard_response().error().message() << "\n";
-        rc = 1;
-        break;
-      }
-      if (resp.instrument_name().empty()) {
+      if (resp->n_instrument_name == 0) {
         std::cout << "No instruments running\n";
         rc = 1;
-        break;
+      } else {
+        std::cout << "Running instruments:\n";
+        for (size_t i = 0; i < resp->n_instrument_name; ++i) {
+          std::cout << "  " << resp->instrument_name[i] << "\n";
+        }
+        rc = 0;
       }
-      std::cout << "Running instruments:\n";
-      for (const auto &name : resp.instrument_name()) {
-        std::cout << "  " << name << "\n";
-      }
-      rc = 0;
     }
-    if (client) instrument_server_client_destroy(client);
+    if (resp) instrument_server_client_free_response(resp);
+    instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::MEASURE: {
     if (argc < 3) {
-      std::cerr << "Error: measure requires script path\n";
-      std::cerr << "Usage: instrument-script-server measure <script> [--json] ";
-      std::cerr << "       [--globals <json_string>] [--json] [--log-level <level>]\n";
-      rc = 1;
-      break;
+      std::cerr << "Error: measure requires script path\nUsage: instrument-script-server measure <script> [--json]\n";
+      return 1;
     }
-    MeasureJobRequest req;
-    req.set_script_path(argv[2]);
+    auto *client = connect_client();
+    if (!client) {
+      std::cerr << "Failed to connect to daemon\n";
+      return 1;
+    }
+    Instserver__Server__V1__DaemonStatusRequest sreq = INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+    Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+    if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 || !sresp || !sresp->running) {
+      std::cerr << "Daemon is not running. Please start the daemon first.\n";
+      if (sresp) instrument_server_client_free_response(sresp);
+      instrument_server_client_destroy(client);
+      return 1;
+    }
+    if (sresp) instrument_server_client_free_response(sresp);
+
+    Instserver__Server__V1__MeasureJobRequest req = INSTSERVER__SERVER__V1__MEASURE_JOB_REQUEST__INIT;
+    req.script_path = argv[2];
     bool json_output = false;
     for (int i = 3; i < argc; ++i) {
-      std::string arg = argv[i];
-      if (arg == "--json") {
+      if (std::string(argv[i]) == "--json") {
         json_output = true;
       }
-      // Note: --globals, --block_inject_globals, --context_schema_version
-      // require additional protobuf fields; skipped for now
     }
-    MeasureJobResultResponse resp;
-    rc = handle_measure(req, &resp);
-    if (!resp.standard_response().ok()) {
-      std::cerr << resp.standard_response().error().message() << "\n";
+    Instserver__Server__V1__MeasureJobResponse *resp = nullptr;
+    int call_rc = instrument_server_client_measure_job(client, &req, &resp);
+    if (call_rc != 0 || resp == nullptr) {
+      std::cerr << "Failed to send measure job to daemon\n";
       rc = 1;
-    } else if (json_output) {
-      // Serialize results to JSON
-      nlohmann::json j;
-      j["ok"] = true;
-      j["status"] = resp.status();
-      nlohmann::json results = nlohmann::json::array();
-      for (const auto &res : resp.results()) {
-        nlohmann::json r;
-        r["instrument"] = res.instrument_name();
-        r["verb"] = res.verb();
-        results.push_back(r);
-      }
-      j["results"] = results;
-      std::cout << j.dump(2) << "\n";
+    } else if (!resp->standard_response || !resp->standard_response->ok) {
+      std::cerr << (resp->standard_response && resp->standard_response->error ?
+                    resp->standard_response->error->message : "Unknown error executing measure job") << "\n";
+      rc = 1;
     } else {
-      std::cout << "Measurement complete\n";
+      // Poll job status until complete
+      uint32_t job_id = resp->job_id;
+      bool completed = false;
+      while (!completed) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        Instserver__Server__V1__JobStatusRequest status_req = INSTSERVER__SERVER__V1__JOB_STATUS_REQUEST__INIT;
+        status_req.job_id = job_id;
+        Instserver__Server__V1__JobStatusResponse *status_resp = nullptr;
+        if (instrument_server_client_job_status(client, &status_req, &status_resp) == 0 && status_resp) {
+          if (status_resp->job &&
+              (status_resp->job->status == INSTSERVER__SERVER__V1__JOB_STATUS__JOB_STATUS_COMPLETED ||
+               status_resp->job->status == INSTSERVER__SERVER__V1__JOB_STATUS__JOB_STATUS_FAILED ||
+               status_resp->job->status == INSTSERVER__SERVER__V1__JOB_STATUS__JOB_STATUS_CANCELLED)) {
+            completed = true;
+            if (status_resp->job->status != INSTSERVER__SERVER__V1__JOB_STATUS__JOB_STATUS_COMPLETED) {
+              std::cerr << "Job failed or was cancelled\n";
+              rc = 1;
+            } else {
+              Instserver__Server__V1__MeasureJobResultRequest result_req = INSTSERVER__SERVER__V1__MEASURE_JOB_RESULT_REQUEST__INIT;
+              result_req.job_id = job_id;
+              Instserver__Server__V1__MeasureJobResultResponse *result_resp = nullptr;
+              if (instrument_server_client_measure_job_result(client, &result_req, &result_resp) == 0 && result_resp) {
+                if (json_output) {
+                  nlohmann::json j;
+                  j["ok"] = true;
+                  j["status"] = result_resp->status;
+                  nlohmann::json results = nlohmann::json::array();
+                  for (size_t k = 0; k < result_resp->n_results; ++k) {
+                    nlohmann::json r;
+                    r["instrument"] = result_resp->results[k]->instrument_name;
+                    r["verb"] = result_resp->results[k]->verb;
+                    results.push_back(r);
+                  }
+                  j["results"] = results;
+                  std::cout << j.dump(2) << "\n";
+                } else {
+                  std::cout << "Measurement complete\n";
+                }
+                instrument_server_client_free_response(result_resp);
+              } else {
+                std::cerr << "Failed to fetch measure job results\n";
+                rc = 1;
+              }
+            }
+          }
+          instrument_server_client_free_response(status_resp);
+        } else {
+          std::cerr << "Failed to poll job status\n";
+          rc = 1;
+          break;
+        }
+      }
     }
+    if (resp) instrument_server_client_free_response(resp);
+    instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::DISCOVER: {
     auto *client = connect_client();
-    bool use_rpc = false;
-    if (client) {
-      Instserver__Server__V1__DaemonStatusRequest sreq =
-          INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
-      Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
-      if (instrument_server_client_daemon_status(client, &sreq, &sresp) == 0 && sresp && sresp->running) {
-        use_rpc = true;
-      }
+    if (!client) {
+      std::cerr << "Failed to connect to daemon\n";
+      return 1;
+    }
+    Instserver__Server__V1__DaemonStatusRequest sreq = INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+    Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+    if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 || !sresp || !sresp->running) {
+      std::cerr << "Daemon is not running. Please start the daemon first.\n";
       if (sresp) instrument_server_client_free_response(sresp);
+      instrument_server_client_destroy(client);
+      return 1;
     }
+    if (sresp) instrument_server_client_free_response(sresp);
 
-    if (use_rpc) {
-      Instserver__Server__V1__DiscoverRequest req =
-          INSTSERVER__SERVER__V1__DISCOVER_REQUEST__INIT;
-      std::vector<char*> paths;
-      for (int i = 2; i < argc; ++i) {
-        paths.push_back(argv[i]);
-      }
-      req.n_plugin_paths = paths.size();
-      req.plugin_paths = paths.data();
+    Instserver__Server__V1__DiscoverRequest req = INSTSERVER__SERVER__V1__DISCOVER_REQUEST__INIT;
+    std::vector<char*> paths;
+    for (int i = 2; i < argc; ++i) {
+      paths.push_back(argv[i]);
+    }
+    req.n_plugin_paths = paths.size();
+    req.plugin_paths = paths.data();
 
-      Instserver__Server__V1__DiscoverResponse *resp = nullptr;
-      int call_rc = instrument_server_client_discover(client, &req, &resp);
-      if (call_rc != 0 || resp == nullptr) {
-        std::cerr << "Failed to discover plugins from daemon\n";
-        rc = 1;
-      } else if (!resp->standard_response || !resp->standard_response->ok) {
-        std::cerr << (resp->standard_response && resp->standard_response->error ?
-                      resp->standard_response->error->message : "Unknown error discovering plugins") << "\n";
-        rc = 1;
-      } else {
-        if (resp->n_plugin_names == 0) {
-          std::cout << "No plugins discovered\n";
-        } else {
-          std::cout << "Discovered plugins:\n";
-          for (size_t i = 0; i < resp->n_plugin_names; ++i) {
-            std::cout << "  " << resp->plugin_names[i] << "\n";
-          }
-        }
-        rc = 0;
-      }
-      if (resp) instrument_server_client_free_response(resp);
+    Instserver__Server__V1__DiscoverResponse *resp = nullptr;
+    int call_rc = instrument_server_client_discover(client, &req, &resp);
+    if (call_rc != 0 || resp == nullptr) {
+      std::cerr << "Failed to discover plugins from daemon\n";
+      rc = 1;
+    } else if (!resp->standard_response || !resp->standard_response->ok) {
+      std::cerr << (resp->standard_response && resp->standard_response->error ?
+                    resp->standard_response->error->message : "Unknown error discovering plugins") << "\n";
+      rc = 1;
     } else {
-      DiscoverRequest req;
-      for (int i = 2; i < argc; ++i) {
-        req.add_plugin_paths(argv[i]);
-      }
-      DiscoverResponse resp;
-      rc = handle_discover(req, &resp);
-      if (!resp.standard_response().ok()) {
-        std::cerr << resp.standard_response().error().message() << "\n";
-        rc = 1;
+      if (resp->n_plugin_names == 0) {
+        std::cout << "No plugins discovered\n";
       } else {
-        std::cout << "Found " << resp.paths().size() << " plugin(s):\n";
-        for (const auto &path : resp.paths()) {
-          std::cout << "  " << path << "\n";
+        std::cout << "Discovered plugins:\n";
+        for (size_t i = 0; i < resp->n_plugin_names; ++i) {
+          std::cout << "  " << resp->plugin_names[i] << "\n";
         }
       }
+      rc = 0;
     }
-    if (client) instrument_server_client_destroy(client);
+    if (resp) instrument_server_client_free_response(resp);
+    instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::LIST_BUFFERS: {
-    ListDataBuffersRequest req;
-    ListDataBuffersResponse resp;
-    rc = handle_list_buffers(req, &resp);
-    if (!resp.standard_response().ok()) {
-      std::cerr << resp.standard_response().error().message() << "\n";
+    auto *client = connect_client();
+    if (!client) {
+      std::cerr << "Failed to connect to daemon\n";
+      return 1;
+    }
+    Instserver__Server__V1__DaemonStatusRequest sreq = INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+    Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+    if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 || !sresp || !sresp->running) {
+      std::cerr << "Daemon is not running. Please start the daemon first.\n";
+      if (sresp) instrument_server_client_free_response(sresp);
+      instrument_server_client_destroy(client);
+      return 1;
+    }
+    if (sresp) instrument_server_client_free_response(sresp);
+
+    Instserver__Server__V1__ListDataBuffersRequest req = INSTSERVER__SERVER__V1__LIST_DATA_BUFFERS_REQUEST__INIT;
+    Instserver__Server__V1__ListDataBuffersResponse *resp = nullptr;
+    int call_rc = instrument_server_client_list_data_buffers(client, &req, &resp);
+    if (call_rc != 0 || resp == nullptr) {
+      std::cerr << "Failed to list data buffers from daemon\n";
       rc = 1;
-    } else if (resp.buffers().empty()) {
-      std::cout << "No active shared memory buffers\n";
+    } else if (!resp->standard_response || !resp->standard_response->ok) {
+      std::cerr << (resp->standard_response && resp->standard_response->error ?
+                    resp->standard_response->error->message : "Unknown error listing data buffers") << "\n";
+      rc = 1;
     } else {
-      std::cout << "Active Shared Memory Buffers:\n";
-      for (const auto &kv : resp.buffers()) {
-        const auto &meta = kv.second;
-        std::cout << "  - " << kv.first
-                  << " (" << meta.element_count() << " elements, type="
-                  << meta.data_type() << ")\n";
+      if (resp->n_buffers == 0) {
+        std::cout << "No active shared memory buffers\n";
+      } else {
+        std::cout << "Active Shared Memory Buffers:\n";
+        for (size_t i = 0; i < resp->n_buffers; ++i) {
+          std::cout << "  - " << resp->buffers[i]->key
+                    << " (" << resp->buffers[i]->value->element_count << " elements, type="
+                    << resp->buffers[i]->value->data_type << ")\n";
+        }
       }
     }
+    if (resp) instrument_server_client_free_response(resp);
+    instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::BUFFER_METADATA: {
     if (argc < 3) {
-      std::cerr << "Error: buffer-metadata requires buffer ID\n";
-      std::cerr
-          << "Usage: instrument-script-server buffer-metadata <buffer_id>\n";
-      rc = 1;
-      break;
+      std::cerr << "Error: buffer-metadata requires buffer ID\nUsage: instrument-script-server buffer-metadata <buffer_id>\n";
+      return 1;
     }
-    GetBufferMetadataRequest req;
-    req.set_buffer_id(argv[2]);
-    GetBufferMetadataResponse resp;
-    rc = handle_get_buffer_metadata(req, &resp);
-    if (!resp.standard_response().ok()) {
-      std::cerr << resp.standard_response().error().message() << "\n";
+    auto *client = connect_client();
+    if (!client) {
+      std::cerr << "Failed to connect to daemon\n";
+      return 1;
+    }
+    Instserver__Server__V1__DaemonStatusRequest sreq = INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+    Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+    if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 || !sresp || !sresp->running) {
+      std::cerr << "Daemon is not running. Please start the daemon first.\n";
+      if (sresp) instrument_server_client_free_response(sresp);
+      instrument_server_client_destroy(client);
+      return 1;
+    }
+    if (sresp) instrument_server_client_free_response(sresp);
+
+    Instserver__Server__V1__GetBufferMetadataRequest req = INSTSERVER__SERVER__V1__GET_BUFFER_METADATA_REQUEST__INIT;
+    req.buffer_id = argv[2];
+    Instserver__Server__V1__GetBufferMetadataResponse *resp = nullptr;
+    int call_rc = instrument_server_client_get_buffer_metadata(client, &req, &resp);
+    if (call_rc != 0 || resp == nullptr) {
+      std::cerr << "Failed to get buffer metadata from daemon\n";
+      rc = 1;
+    } else if (!resp->standard_response || !resp->standard_response->ok) {
+      std::cerr << (resp->standard_response && resp->standard_response->error ?
+                    resp->standard_response->error->message : "Unknown error getting buffer metadata") << "\n";
       rc = 1;
     } else {
-      const auto &meta = resp.meta();
       std::cout << "Buffer Metadata:\n";
       std::cout << "  ID: " << argv[2] << "\n";
-      std::cout << "  Elements: " << meta.element_count() << "\n";
-      std::cout << "  Type: " << meta.data_type() << "\n";
-      std::cout << "  Size: " << meta.byte_size() << " bytes\n";
+      std::cout << "  Elements: " << resp->meta->element_count << "\n";
+      std::cout << "  Type: " << resp->meta->data_type << "\n";
+      std::cout << "  Size: " << resp->meta->byte_size << " bytes\n";
     }
+    if (resp) instrument_server_client_free_response(resp);
+    instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::READ_BUFFER: {
     if (argc < 3) {
-      std::cerr << "Error: read-buffer requires buffer ID\n";
-      std::cerr << "Usage: instrument-script-server read-buffer <buffer_id> "
-                   "[--json]\n";
-      rc = 1;
-      break;
+      std::cerr << "Error: read-buffer requires buffer ID\nUsage: instrument-script-server read-buffer <buffer_id> [--json]\n";
+      return 1;
     }
+    // Read buffer reads directly from shared memory in the CLI process.
+    // However, it fetches buffer metadata via gRPC first.
+    auto *client = connect_client();
+    if (!client) {
+      std::cerr << "Failed to connect to daemon\n";
+      return 1;
+    }
+    Instserver__Server__V1__DaemonStatusRequest sreq = INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+    Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+    if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 || !sresp || !sresp->running) {
+      std::cerr << "Daemon is not running. Please start the daemon first.\n";
+      if (sresp) instrument_server_client_free_response(sresp);
+      instrument_server_client_destroy(client);
+      return 1;
+    }
+    if (sresp) instrument_server_client_free_response(sresp);
+
+    Instserver__Server__V1__GetBufferMetadataRequest req = INSTSERVER__SERVER__V1__GET_BUFFER_METADATA_REQUEST__INIT;
+    req.buffer_id = argv[2];
+    Instserver__Server__V1__GetBufferMetadataResponse *resp = nullptr;
+    int call_rc = instrument_server_client_get_buffer_metadata(client, &req, &resp);
+    if (call_rc != 0 || resp == nullptr) {
+      std::cerr << "Failed to get buffer metadata from daemon\n";
+      instrument_server_client_destroy(client);
+      return 1;
+    }
+    if (!resp->standard_response || !resp->standard_response->ok) {
+      std::cerr << (resp->standard_response && resp->standard_response->error ?
+                    resp->standard_response->error->message : "Unknown error getting buffer metadata") << "\n";
+      instrument_server_client_free_response(resp);
+      instrument_server_client_destroy(client);
+      return 1;
+    }
+
+    uint32_t element_count = resp->meta->element_count;
+    uint32_t data_type = resp->meta->data_type;
+    instrument_server_client_free_response(resp);
+    instrument_server_client_destroy(client);
+
     bool json_output_rb = false;
     for (int i = 3; i < argc; ++i) {
       if (std::string(argv[i]) == "--json") {
         json_output_rb = true;
       }
     }
-    nlohmann::json rb_out;
-    rc = local_read_buffer(argv[2], rb_out);
-    if (!rb_out.value("ok", false)) {
-      std::cerr << rb_out.value("error", "Failed to read buffer") << "\n";
-    } else if (json_output_rb) {
-      std::cout << rb_out.dump(2) << "\n";
-    } else if (rb_out.contains("data")) {
-      auto data = rb_out["data"];
-      for (size_t i = 0; i < data.size(); ++i) {
-        std::cout << "[" << i << "] " << data[i] << "\n";
+
+    // Get raw data from shared memory via C API (instrument-data.h)
+    DataBuffer *buf = data_manager_get_buffer(argv[2]);
+    if (!buf) {
+      std::cerr << "buffer data not found: " << argv[2] << "\n";
+      return 1;
+    }
+
+    void *data = data_buffer_data(buf);
+    if (json_output_rb) {
+      nlohmann::json j;
+      j["ok"] = true;
+      j["buffer_id"] = argv[2];
+      j["element_count"] = element_count;
+      nlohmann::json d_arr = nlohmann::json::array();
+      if (data_type == 1) { // INST_DATA_FLOAT64
+        double *ptr = static_cast<double*>(data);
+        for (uint32_t k = 0; k < element_count; ++k) d_arr.push_back(ptr[k]);
+        j["data_type"] = "float64";
+      } else if (data_type == 2) { // INST_DATA_FLOAT32
+        float *ptr = static_cast<float*>(data);
+        for (uint32_t k = 0; k < element_count; ++k) d_arr.push_back(ptr[k]);
+        j["data_type"] = "float32";
+      }
+      j["data"] = d_arr;
+      std::cout << j.dump(2) << "\n";
+    } else {
+      if (data_type == 1) { // INST_DATA_FLOAT64
+        double *ptr = static_cast<double*>(data);
+        for (uint32_t k = 0; k < element_count; ++k) {
+          std::cout << "[" << k << "] " << ptr[k] << "\n";
+        }
+      } else if (data_type == 2) { // INST_DATA_FLOAT32
+        float *ptr = static_cast<float*>(data);
+        for (uint32_t k = 0; k < element_count; ++k) {
+          std::cout << "[" << k << "] " << ptr[k] << "\n";
+        }
       }
     }
     break;
   }
   case ISS_CLI_Command::RELEASE_BUFFER: {
     if (argc < 3) {
-      std::cerr << "Error: release-buffer requires buffer ID\n";
-      std::cerr
-          << "Usage: instrument-script-server release-buffer <buffer_id>\n";
-      rc = 1;
-      break;
+      std::cerr << "Error: release-buffer requires buffer ID\nUsage: instrument-script-server release-buffer <buffer_id>\n";
+      return 1;
     }
-    ReleaseBufferRequest req;
-    req.set_buffer_id(argv[2]);
-    ReleaseBufferResponse resp;
-    rc = handle_release_buffer(req, &resp);
-    if (!resp.standard_response().ok()) {
-      std::cerr << resp.standard_response().error().message() << "\n";
+    auto *client = connect_client();
+    if (!client) {
+      std::cerr << "Failed to connect to daemon\n";
+      return 1;
+    }
+    Instserver__Server__V1__DaemonStatusRequest sreq = INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+    Instserver__Server__V1__DaemonStatusResponse *sresp = nullptr;
+    if (instrument_server_client_daemon_status(client, &sreq, &sresp) != 0 || !sresp || !sresp->running) {
+      std::cerr << "Daemon is not running. Please start the daemon first.\n";
+      if (sresp) instrument_server_client_free_response(sresp);
+      instrument_server_client_destroy(client);
+      return 1;
+    }
+    if (sresp) instrument_server_client_free_response(sresp);
+
+    Instserver__Server__V1__ReleaseBufferRequest req = INSTSERVER__SERVER__V1__RELEASE_BUFFER_REQUEST__INIT;
+    req.buffer_id = argv[2];
+    Instserver__Server__V1__ReleaseBufferResponse *resp = nullptr;
+    int call_rc = instrument_server_client_release_buffer(client, &req, &resp);
+    if (call_rc != 0 || resp == nullptr) {
+      std::cerr << "Failed to release buffer from daemon\n";
+      rc = 1;
+    } else if (!resp->standard_response || !resp->standard_response->ok) {
+      std::cerr << (resp->standard_response && resp->standard_response->error ?
+                    resp->standard_response->error->message : "Unknown error releasing buffer") << "\n";
       rc = 1;
     } else {
       std::cout << "Released buffer: " << argv[2] << "\n";
+      rc = 0;
     }
+    if (resp) instrument_server_client_free_response(resp);
+    instrument_server_client_destroy(client);
     break;
   }
   case ISS_CLI_Command::HELP_SHORT:
@@ -964,7 +988,7 @@ int main(int argc, char **argv) {
   }
   case ISS_CLI_Command::VERSION_SHORT:
   case ISS_CLI_Command::VERSION: {
-    std::cout << "instrument-script-server " << get_full_version() << '\n';
+    std::cout << "instrument-script-server 1.2.0\n";
     rc = 0;
     break;
   }

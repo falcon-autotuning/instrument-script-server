@@ -21,7 +21,7 @@ protected:
     inst_log_init("registry_test.log", INST_LOG_DEBUG, "registry_test",
                   1024 * 1024, // 1 MB
                   3);          // rotation count
-    test_data_dir_ = std::filesystem::current_path() / "data";
+    test_data_dir_ = TEST_DATA_DIR;
 
     // Start daemon for these tests
     auto &daemon = ServerDaemon::instance();
