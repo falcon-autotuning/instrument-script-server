@@ -52,11 +52,35 @@ if(BUILD_C_CLIENT)
 
   find_package(protobuf-c CONFIG REQUIRED)
 
-  # Locate protoc-gen-c (cross-platform safe)
-  find_program(PROTOC_GEN_C protoc-gen-c
-    REQUIRED
-    HINTS "${_VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/tools/protobuf-c"
+  include(FetchContent)
+
+  # Build protobuf-c from source (only for protoc-gen-c tool)
+  FetchContent_Declare(
+    protobuf_c_src
+    GIT_REPOSITORY https://github.com/protobuf-c/protobuf-c.git
+    GIT_TAG v1.4.1  # stable release
   )
+
+  # Try system first
+  find_program(PROTOC_GEN_C protoc-gen-c)
+
+  # Only build fallback if missing
+  if(WIN32 AND NOT PROTOC_GEN_C)
+    FetchContent_MakeAvailable(protobuf_c_src)
+  endif()
+
+  # Fallback to built target
+  if(NOT PROTOC_GEN_C)
+    if(TARGET protoc-gen-c)
+      set(PROTOC_GEN_C $<TARGET_FILE:protoc-gen-c>)
+    elseif(TARGET protobuf-c::protoc-gen-c)
+      set(PROTOC_GEN_C $<TARGET_FILE:protobuf-c::protoc-gen-c>)
+    endif()
+  endif()
+
+  if(NOT PROTOC_GEN_C)
+    message(FATAL_ERROR "Failed to locate or build protoc-gen-c")
+  endif()
 
   function(protobuf_generate_c TARGET OUT_DIR)
     cmake_parse_arguments(ARG "" "" "PROTOS" ${ARGN})
@@ -84,6 +108,13 @@ if(BUILD_C_CLIENT)
       list(APPEND generated_srcs ${c_file})
       list(APPEND generated_hdrs ${h_file})
 
+      set(_plugin_dep "")
+      if(TARGET protoc-gen-c)
+        set(_plugin_dep protoc-gen-c)
+      elseif(TARGET protobuf-c::protoc-gen-c)
+        set(_plugin_dep protobuf-c::protoc-gen-c)
+      endif()
+
       add_custom_command(
         OUTPUT ${c_file} ${h_file}
 
@@ -96,7 +127,9 @@ if(BUILD_C_CLIENT)
           --c_out=${OUT_DIR}
           ${rel_path}
 
-        DEPENDS ${proto}
+        DEPENDS
+          ${proto}
+          ${_plugin_dep}
 
         COMMENT "Generating protobuf-c: ${rel_path}"
         VERBATIM
@@ -114,7 +147,11 @@ if(BUILD_C_CLIENT)
   set(PROTO_C_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/c)
 
   add_library(instserver-proto-c STATIC)
-  add_dependencies(instserver-proto-c instserver-proto) # optional ordering
+  if(TARGET protoc-gen-c)
+    add_dependencies(instserver-proto-c protoc-gen-c)
+  elseif(TARGET protobuf-c::protoc-gen-c)
+    add_dependencies(instserver-proto-c protobuf-c::protoc-gen-c)
+  endif()
 
   protobuf_generate_c(
     instserver-proto-c
