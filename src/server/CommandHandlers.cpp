@@ -1,7 +1,5 @@
 #include "instrument-script-server/server/CommandHandlers.hpp"
-#include "instrument-script-server/ErrorCodes.hpp"
 #include "instrument-script-server/ipc/DataBufferManager.hpp"
-#include "instrument-script-server/plugin/PluginLoader.hpp"
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/JobManager.hpp"
@@ -9,11 +7,10 @@
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include "instserver/server/v1/daemon_messages.pb.h"
 #include <fmt/format.h>
+#include <fstream>
 #include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
-
-#include <fstream>
 #include <instrument-plugin.h>
 #include <sol/sol.hpp>
 #include <string>
@@ -487,104 +484,101 @@ int handle_measure(const MeasureJobRequest &req,
 
     LOG_INFO("SERVER", "MEASURE", "Executing script with main function");
 
-    // Check if type_manifest is provided (Teal static typing support)
-    if (req.has_type_manifest()) {
-      const auto &manifest = req.type_manifest();
+    const auto &manifest = req.type_manifest();
 
-      // Build arguments based on manifest
-      std::vector<sol::object> args;
-      args.push_back(sol::make_object(
-          lua, ctx_shared.get())); // First arg is always context
+    // Build arguments based on manifest
+    std::vector<sol::object> args;
+    args.push_back(
+        sol::make_object(lua, ctx_shared.get())); // First arg is always context
 
-      const auto &param_defs = manifest.parameters();
-      for (const auto &param : param_defs) {
-        std::string param_name = param.name();
+    const auto &param_defs = manifest.parameters();
+    for (const auto &param : param_defs) {
+      std::string param_name = param.name();
 
-        // Check if this parameter exists in globals
-        if (!req.globals().map().contains(param_name)) {
-          std::string error_msg =
-              fmt::format("Missing required parameter '{}' (declared in "
-                          "type_manifest but not provided in globals)",
-                          param_name);
-          LOG_ERROR("SERVER", "MEASURE",
-                    "Missing required parameter '%s' for typed main function",
-                    param_name.c_str());
-          throw std::runtime_error(error_msg);
-        }
-
-        // Convert JSON value to Lua object
-        sol::object arg;
-        const auto &value = req.globals().map().find(param_name)->second;
-        auto type = param.type();
-
-        if (type == v1::LUA_TYPES_CALL_STACK) {
-          // Validate input
-          if (value.value_case() != v1::VariableValue::kS) {
-            stdrp->set_ok(false);
-            err->set_message("CallStack must be a serialized string");
-            err->set_code(v1::ERROR_CODE_RUNTIME);
-            return 1;
-          }
-
-          try {
-            arg = callstack_from_serialized(lua, value.s());
-          } catch (const std::exception &e) {
-            stdrp->set_ok(false);
-            err->set_message(std::string("CallStack deserialization failed: ") +
-                             e.what());
-            err->set_code(v1::ERROR_CODE_RUNTIME);
-            return 1;
-          }
-
-        } else {
-          arg = variable_to_lua(lua, &value);
-        }
-        args.push_back(arg);
-
-        LOG_INFO("SERVER", "MEASURE",
-                 "Passing parameter '%s' to main function (type: %s)",
-                 param_name.c_str(), LuaTypes_Name(param.type()).c_str());
-      }
-
-      // Check for unused globals (warnings)
-      for (const auto &it : req.globals().map()) {
-        std::string global_name = it.first;
-        bool found = false;
-
-        for (int i = 1; i < param_defs.size(); ++i) {
-          if (param_defs[i].name() == global_name) {
-            found = true;
-            break;
-          }
-        }
-
-        if (!found) {
-          LOG_WARN("SERVER", "MEASURE",
-                   "Global variable '%s' provided but not used by typed "
-                   "main function (injecting as global)",
-                   global_name.c_str());
-          // Still inject it as global for backward compatibility
-          lua[global_name] = variable_to_lua(lua, &it.second);
-        }
-      }
-
-      // Call main with unpacked arguments
-      sol::protected_function_result main_result =
-          (*main_func)(sol::as_args(args));
-
-      if (!main_result.valid()) {
-        sol::error result = main_result;
+      // Check if this parameter exists in globals
+      if (!req.globals().map().contains(param_name)) {
         std::string error_msg =
-            std::string("Script execution error: ") + result.what();
-        if (ctx_shared->has_error()) {
-          error_msg =
-              ctx_shared->get_error() + " (Runtime: " + result.what() + ")";
-        }
-        stdrp->set_ok(false);
-        err->set_message(error_msg);
-        err->set_code(v1::ERROR_CODE_RUNTIME);
-        return 1;
+            fmt::format("Missing required parameter '{}' (declared in "
+                        "type_manifest but not provided in globals)",
+                        param_name);
+        LOG_ERROR("SERVER", "MEASURE",
+                  "Missing required parameter '%s' for typed main function",
+                  param_name.c_str());
+        throw std::runtime_error(error_msg);
       }
+
+      // Convert JSON value to Lua object
+      sol::object arg;
+      const auto &value = req.globals().map().find(param_name)->second;
+      auto type = param.type();
+
+      if (type == v1::LUA_TYPES_CALL_STACK) {
+        // Validate input
+        if (value.value_case() != v1::VariableValue::kS) {
+          stdrp->set_ok(false);
+          err->set_message("CallStack must be a serialized string");
+          err->set_code(v1::ERROR_CODE_RUNTIME);
+          return 1;
+        }
+
+        try {
+          arg = callstack_from_serialized(lua, value.s());
+        } catch (const std::exception &e) {
+          stdrp->set_ok(false);
+          err->set_message(std::string("CallStack deserialization failed: ") +
+                           e.what());
+          err->set_code(v1::ERROR_CODE_RUNTIME);
+          return 1;
+        }
+
+      } else {
+        arg = variable_to_lua(lua, &value);
+      }
+      args.push_back(arg);
+
+      LOG_INFO("SERVER", "MEASURE",
+               "Passing parameter '%s' to main function (type: %s)",
+               param_name.c_str(), LuaTypes_Name(param.type()).c_str());
+    }
+
+    // Check for unused globals (warnings)
+    for (const auto &it : req.globals().map()) {
+      std::string global_name = it.first;
+      bool found = false;
+
+      for (int i = 1; i < param_defs.size(); ++i) {
+        if (param_defs[i].name() == global_name) {
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        LOG_WARN("SERVER", "MEASURE",
+                 "Global variable '%s' provided but not used by typed "
+                 "main function (injecting as global)",
+                 global_name.c_str());
+        // Still inject it as global for backward compatibility
+        lua[global_name] = variable_to_lua(lua, &it.second);
+      }
+    }
+
+    // Call main with unpacked arguments
+    sol::protected_function_result main_result =
+        (*main_func)(sol::as_args(args));
+
+    if (!main_result.valid()) {
+      sol::error result = main_result;
+      std::string error_msg =
+          std::string("Script execution error: ") + result.what();
+      if (ctx_shared->has_error()) {
+        error_msg =
+            ctx_shared->get_error() + " (Runtime: " + result.what() + ")";
+      }
+      stdrp->set_ok(false);
+      err->set_message(error_msg);
+      err->set_code(v1::ERROR_CODE_RUNTIME);
+      return 1;
     }
 
     // The main function should return results (optional)
@@ -646,7 +640,7 @@ int handle_measure(const MeasureJobRequest &req,
           auto meta =
               ipc::DataBufferManager::instance().get_metadata(v.value.str_val);
           if (meta.has_value()) {
-            tparam->set_allocated_dbmeta(&meta.value());
+            tparam->mutable_dbmeta()->CopyFrom(meta.value());
           }
           break;
         }
@@ -706,7 +700,7 @@ int handle_discover(const DiscoverRequest &req, DiscoverResponse *resp) {
   });
 
   auto protocols = plugin_registry.list_protocols();
-  stdrp->set_ok(false);
+  stdrp->set_ok(true);
   for (const auto &name : protocols) {
     resp->add_plugin_names(name);
   }

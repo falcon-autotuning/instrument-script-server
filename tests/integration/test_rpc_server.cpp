@@ -1,11 +1,15 @@
 #include "instrument-script-server/plugin/PluginRegistry.hpp"
 #include "instrument-script-server/server/ServerDaemon.hpp"
-#include <gtest/gtest.h>
-#include <grpcpp/grpcpp.h>
 #include "instserver/server/v1/daemon_messages.grpc.pb.h"
 #include <chrono>
+#include <grpcpp/grpcpp.h>
+#include <gtest/gtest.h>
 #include <memory>
 #include <thread>
+
+#ifndef TEST_PLUGIN_DIR
+#define TESTTEST_PLUGIN_DIR "."
+#endif
 
 using namespace instserver::server;
 
@@ -32,7 +36,8 @@ protected:
 
     // Poll the gRPC channel until connected or timeout
     std::string server_address = rpc_host_ + ":" + std::to_string(rpc_port_);
-    auto channel = grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials());
+    auto channel =
+        grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials());
     auto stub = v1::DaemonService::NewStub(channel);
 
     const int timeout_ms = 5000;
@@ -56,8 +61,8 @@ protected:
       if (started_daemon_) {
         daemon.stop();
       }
-      FAIL() << "gRPC server not responding on " << server_address
-             << " after " << timeout_ms << "ms.";
+      FAIL() << "gRPC server not responding on " << server_address << " after "
+             << timeout_ms << "ms.";
     }
   }
 
@@ -78,7 +83,8 @@ protected:
 
 TEST_F(RpcServerTest, ListReturnsOk) {
   std::string server_address = rpc_host_ + ":" + std::to_string(rpc_port_);
-  auto channel = grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials());
+  auto channel =
+      grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials());
   auto stub = v1::DaemonService::NewStub(channel);
 
   grpc::ClientContext context;
@@ -92,11 +98,14 @@ TEST_F(RpcServerTest, ListReturnsOk) {
 
 TEST_F(RpcServerTest, PluginsReturnsOk) {
   std::string server_address = rpc_host_ + ":" + std::to_string(rpc_port_);
-  auto channel = grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials());
+  auto channel =
+      grpc::CreateChannel(server_address, grpc::InsecureChannelCredentials());
   auto stub = v1::DaemonService::NewStub(channel);
 
   grpc::ClientContext context;
   v1::DiscoverRequest req;
+  req.add_plugin_paths(std::filesystem::path(TEST_PLUGIN_DIR).string());
+
   v1::DiscoverResponse resp;
   grpc::Status status = stub->Discover(&context, req, &resp);
 

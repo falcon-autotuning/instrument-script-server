@@ -23,7 +23,9 @@ constexpr double PI = std::numbers::pi;
 namespace v1 = instserver::server::v1;
 using namespace instserver;
 using namespace instserver::test;
-using json = nlohmann::json;
+#ifndef TEST_DATA_DIR
+#define TEST_DATA_DIR "."
+#endif
 
 bool local_read_buffer(const std::string &id, std::vector<double> &out_data,
                        uint64_t &out_count, uint32_t &out_type) {
@@ -58,144 +60,6 @@ bool local_read_buffer(const std::string &id, std::vector<double> &out_data,
   return true;
 }
 
-// Helper function to validate JSON structure for measurement results
-bool validate_measurement_results_json(const json &j, std::string &error) {
-  // Check required top-level fields
-  if (!j.contains("status")) {
-    error = "Missing 'status' field";
-    return false;
-  }
-  if (!j.contains("script")) {
-    error = "Missing 'script' field";
-    return false;
-  }
-  if (!j.contains("results")) {
-    error = "Missing 'results' field";
-    return false;
-  }
-
-  // Validate status
-  if (!j["status"].is_string()) {
-    error = "'status' must be a string";
-    return false;
-  }
-  std::string status = j["status"];
-  if (status != "success" && status != "error") {
-    error = "'status' must be 'success' or 'error'";
-    return false;
-  }
-
-  // Validate script
-  if (!j["script"].is_string()) {
-    error = "'script' must be a string";
-    return false;
-  }
-
-  // Validate results array
-  if (!j["results"].is_array()) {
-    error = "'results' must be an array";
-    return false;
-  }
-
-  // Validate each result in the array
-  int idx = 0;
-  for (const auto &result : j["results"]) {
-    std::string prefix = "results[" + std::to_string(idx) + "]:  ";
-
-    // Check required fields
-    if (!result.contains("index")) {
-      error = prefix + "Missing 'index' field";
-      return false;
-    }
-    if (!result.contains("instrument")) {
-      error = prefix + "Missing 'instrument' field";
-      return false;
-    }
-    if (!result.contains("verb")) {
-      error = prefix + "Missing 'verb' field";
-      return false;
-    }
-    if (!result.contains("params")) {
-      error = prefix + "Missing 'params' field";
-      return false;
-    }
-    if (!result.contains("executed_at_ms")) {
-      error = prefix + "Missing 'executed_at_ms' field";
-      return false;
-    }
-    if (!result.contains("return")) {
-      error = prefix + "Missing 'return' field";
-      return false;
-    }
-
-    // Validate types
-    if (!result["index"].is_number_integer()) {
-      error = prefix + "'index' must be an integer";
-      return false;
-    }
-    if (!result["instrument"].is_string()) {
-      error = prefix + "'instrument' must be a string";
-      return false;
-    }
-    if (!result["verb"].is_string()) {
-      error = prefix + "'verb' must be a string";
-      return false;
-    }
-    if (!result["params"].is_object()) {
-      error = prefix + "'params' must be an object";
-      return false;
-    }
-    if (!result["executed_at_ms"].is_number_integer()) {
-      error = prefix + "'executed_at_ms' must be an integer";
-      return false;
-    }
-
-    // Validate return object
-    const auto &ret = result["return"];
-    if (!ret.is_object()) {
-      error = prefix + "'return' must be an object";
-      return false;
-    }
-    if (!ret.contains("type")) {
-      error = prefix + "'return' must have a 'type' field";
-      return false;
-    }
-    if (!ret["type"].is_string()) {
-      error = prefix + "'return.type' must be a string";
-      return false;
-    }
-
-    std::string ret_type = ret["type"];
-
-    // For buffer type, check required buffer fields
-    if (ret_type == "buffer") {
-      if (!ret.contains("buffer_id") || !ret["buffer_id"].is_string()) {
-        error = prefix + "buffer return must have 'buffer_id' (string)";
-        return false;
-      }
-      if (!ret.contains("element_count") ||
-          !ret["element_count"].is_number_integer()) {
-        error = prefix + "buffer return must have 'element_count' (integer)";
-        return false;
-      }
-      if (!ret.contains("data_type") || !ret["data_type"].is_string()) {
-        error = prefix + "buffer return must have 'data_type' (string)";
-        return false;
-      }
-    } else if (ret_type != "void") {
-      // For non-void, non-buffer types, should have value field
-      if (!ret.contains("value")) {
-        error = prefix + "non-void return must have 'value' field";
-        return false;
-      }
-    }
-
-    idx++;
-  }
-
-  return true;
-}
-
 class MeasurementScriptTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
@@ -205,9 +69,8 @@ protected:
                   1024 * 1024, // 1 MB
                   3);          // rotation count
 
-    test_scripts_dir_ =
-        std::filesystem::current_path() / "data" / "test_scripts";
-    test_configs_dir_ = std::filesystem::current_path() / "data";
+    test_scripts_dir_ = std::filesystem::path(TEST_DATA_DIR) / "test_scripts";
+    test_configs_dir_ = std::filesystem::path(TEST_DATA_DIR);
 
     // Create test scripts directory if needed
     std::filesystem::create_directories(test_scripts_dir_);
@@ -579,7 +442,7 @@ commands:
       bool read_ok = local_read_buffer(results[0].returns[0].value.str_val,
                                        data, count, dtype);
       ASSERT_TRUE(read_ok);
-      EXPECT_EQ(dtype, INST_DATA_FLOAT64);
+      EXPECT_EQ(dtype, INST_DATA_FLOAT32);
       ASSERT_GE(data.size(), 100);
       for (size_t i = 0; i < 100; ++i) {
         double expected = std::sin(2.0 * PI * i / 100.0);
@@ -740,22 +603,7 @@ commands:
   int rc = server::handle_measure(measure_req, &measure_resp);
   ASSERT_EQ(rc, 0);
 
-  std::string json_str;
-  google::protobuf::util::JsonPrintOptions options;
-  options.preserve_proto_field_names = true;
-  auto status = google::protobuf::util::MessageToJsonString(measure_resp,
-                                                            &json_str, options);
-  ASSERT_TRUE(status.ok()) << "Failed to convert response to JSON: "
-                           << status.ToString();
-
-  nlohmann::json out = nlohmann::json::parse(json_str);
-  out["ok"] = out["standard_response"]["ok"];
-  out["script"] = "large_buffer_returns.lua";
-
-  ASSERT_TRUE(out.contains("results"));
-  ASSERT_TRUE(out["results"].is_array());
-
-  const auto &results = out["results"];
+  const auto &results = measure_resp.results();
   // Should have 3 results: 2 large buffer calls + 1 small data call
   EXPECT_EQ(results.size(), 3);
 
@@ -765,28 +613,26 @@ commands:
   if (results.size() >= 2) {
     // Helper lambda to validate outer buffer structure and extract its ID
     auto validate_outer_buffer =
-        [](const nlohmann::json &result, int expected_index,
+        [](const server::v1::CommandResult &result,
            const std::string &step_name) -> std::string {
       SCOPED_TRACE("Failure during payload validation: " + step_name);
 
-      EXPECT_EQ(result.value("index", -1), expected_index);
-      EXPECT_EQ(result.value("instrument", ""), "TestScope");
-      EXPECT_EQ(result.value("verb", ""), "GET_LARGE_DATA");
+      EXPECT_EQ(result.instrument_name(), "TestScope");
+      EXPECT_EQ(result.verb(), "GET_LARGE_DATA");
 
-      EXPECT_TRUE(result.contains("return"));
-      const auto &ret = result["return"];
+      const auto &ret = result.return_(0);
 
-      EXPECT_EQ(ret.value("type", ""), "buffer");
-      EXPECT_FALSE(ret.value("buffer_id", "").empty());
-      EXPECT_GT(ret.value("element_count", 0ULL), 0ULL);
-      EXPECT_EQ(ret.value("data_type", ""), "float32");
+      EXPECT_EQ(ret.type(), server::v1::LUA_TYPES_DATA_BUFFER);
+      EXPECT_FALSE(ret.value().s().empty());
+      EXPECT_GT(ret.dbmeta().element_count(), 0ULL);
+      EXPECT_EQ(ret.dbmeta().data_type(), INST_DATA_FLOAT32);
 
-      return ret.value("buffer_id", "");
+      return ret.value().s();
     };
 
     // Extract and validate both buffers cleanly
-    buf1_id = validate_outer_buffer(results[0], 0, "Buffer 0 Payload");
-    buf2_id = validate_outer_buffer(results[1], 1, "Buffer 1 Payload");
+    buf1_id = validate_outer_buffer(results[0], "Buffer 0 Payload");
+    buf2_id = validate_outer_buffer(results[1], "Buffer 1 Payload");
 
     EXPECT_NE(buf1_id, buf2_id)
         << "Error: Both results returned identical buffer IDs!";
@@ -795,12 +641,9 @@ commands:
   if (results.size() >= 3) {
     // Validate third result (small data)
     const auto &r2 = results[2];
-    EXPECT_EQ(r2.value("index", -1), 2);
-    EXPECT_EQ(r2.value("instrument", ""), "TestScope");
-    EXPECT_EQ(r2.value("verb", ""), "GET_SMALL_DATA");
-    ASSERT_TRUE(r2.contains("return"));
-    EXPECT_EQ(r2["return"].value("type", ""), "float");
-    EXPECT_TRUE(r2["return"].contains("value"));
+    EXPECT_EQ(r2.instrument_name(), "TestScope");
+    EXPECT_EQ(r2.verb(), "GET_SMALL_DATA");
+    EXPECT_EQ(r2.return_(0).type(), server::v1::LUA_TYPES_DOUBLE);
   }
   // Helper lambda for clean, reusable buffer checking with detailed error
   // logging
@@ -815,7 +658,7 @@ commands:
 
     ASSERT_TRUE(read_ok) << "local_read_buffer failed!";
     EXPECT_EQ(count, expected_count);
-    EXPECT_EQ(dtype, INST_DATA_FLOAT64);
+    EXPECT_EQ(dtype, INST_DATA_FLOAT32);
 
     ASSERT_GE(data.size(), 100);
     for (size_t i = 0; i < 100; ++i) {
@@ -839,9 +682,9 @@ commands:
 
   // Recover data and verify contents from the outermost context
   if (!buf1_id.empty() && !buf2_id.empty()) {
-    verify_buffer(buf1_id, results[0]["return"]["element_count"],
+    verify_buffer(buf1_id, results[0].return_(0).dbmeta().element_count(),
                   "First Buffer Verification");
-    verify_buffer(buf2_id, results[1]["return"]["element_count"],
+    verify_buffer(buf2_id, results[1].return_(0).dbmeta().element_count(),
                   "Second Buffer Verification");
 
     // 3. Ownership & Handoff validation:

@@ -12,96 +12,23 @@
 
 #include <google/protobuf/util/json_util.h>
 
+#ifndef TEST_DATA_DIR
+#define TEST_DATA_DIR "."
+#endif
+
 using namespace instserver;
 using namespace instserver::test;
 using namespace instserver::server;
 using json = nlohmann::json;
-namespace v1 = instserver::server::v1;
-
-namespace {
-int handle_measure(const json &params, json &out) {
-  v1::MeasureJobRequest req;
-
-  if (params.contains("script_path")) {
-    req.set_script_path(params["script_path"].get<std::string>());
-  }
-
-  if (params.contains("globals") && params["globals"].is_object()) {
-    auto *globals_map = req.mutable_globals()->mutable_map();
-    for (auto it = params["globals"].begin(); it != params["globals"].end();
-         ++it) {
-      v1::VariableValue val;
-      if (it.value().is_number_integer()) {
-        val.set_i(it.value().get<int64_t>());
-      } else if (it.value().is_number_float()) {
-        val.set_d(it.value().get<double>());
-      } else if (it.value().is_boolean()) {
-        val.set_b(it.value().get<bool>());
-      } else if (it.value().is_string()) {
-        val.set_s(it.value().get<std::string>());
-      } else if (it.value().is_null()) {
-        val.set_is_nil(true);
-      }
-      (*globals_map)[it.key()] = val;
-    }
-  }
-
-  if (params.contains("type_manifest") && params["type_manifest"].is_object()) {
-    auto &tm = params["type_manifest"];
-    if (tm.contains("parameters") && tm["parameters"].is_array()) {
-      auto *manifest = req.mutable_type_manifest();
-      for (const auto &p : tm["parameters"]) {
-        auto *param = manifest->add_parameters();
-        if (p.contains("name")) {
-          param->set_name(p["name"].get<std::string>());
-        }
-        if (p.contains("type")) {
-          std::string type_str = p["type"].get<std::string>();
-          v1::LuaTypes ltype = v1::LUA_TYPES_UNSPECIFIED;
-          if (type_str == "int")
-            ltype = v1::LUA_TYPES_INT64;
-          else if (type_str == "number")
-            ltype = v1::LUA_TYPES_DOUBLE;
-          else if (type_str == "boolean")
-            ltype = v1::LUA_TYPES_BOOL;
-          else if (type_str == "string")
-            ltype = v1::LUA_TYPES_STRING;
-          else if (type_str == "DataBuffer")
-            ltype = v1::LUA_TYPES_DATA_BUFFER;
-          else if (type_str == "CallStack")
-            ltype = v1::LUA_TYPES_CALL_STACK;
-          param->set_type(ltype);
-        }
-      }
-    }
-  }
-
-  v1::MeasureJobResultResponse resp;
-  int rc = server::handle_measure(req, &resp);
-
-  std::string json_str;
-  google::protobuf::util::JsonPrintOptions options;
-  options.preserve_proto_field_names = true;
-  auto status =
-      google::protobuf::util::MessageToJsonString(resp, &json_str, options);
-  if (!status.ok()) {
-    return 1;
-  }
-
-  out = json::parse(json_str);
-  out["ok"] = resp.standard_response().ok();
-  if (resp.standard_response().has_error() &&
-      !resp.standard_response().error().message().empty()) {
-    out["error"] = resp.standard_response().error().message();
-  }
-  return rc;
-}
-} // namespace
 
 class MainFunctionIntegrationTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
     PluginTestFixture::SetUp();
+    auto &daemon = ServerDaemon::instance();
+    if (!daemon.is_running()) {
+      ASSERT_TRUE(daemon.start());
+    }
 
     // Create temp directory for test scripts
     test_scripts_dir_ =
@@ -119,7 +46,7 @@ protected:
     // Start test instruments
     auto &registry = InstrumentRegistry::instance();
 
-    auto config_dir = std::filesystem::current_path() / "data";
+    auto config_dir = std::filesystem::path(TEST_DATA_DIR);
     std::string config1 = (config_dir / "mock_instrument1.yaml").string();
 
     if (std::filesystem::exists(config1)) {
@@ -128,6 +55,10 @@ protected:
   }
 
   void TearDown() override {
+    auto &daemon = ServerDaemon::instance();
+    if (daemon.is_running()) {
+      ASSERT_NO_THROW(daemon.stop());
+    }
     auto &registry = InstrumentRegistry::instance();
     registry.stop_all();
     auto &plugin_registry = instserver::plugin::PluginRegistry::instance();
@@ -139,12 +70,6 @@ protected:
     std::error_code ec;
     std::filesystem::remove_all(test_scripts_dir_, ec);
     std::filesystem::remove(log_path_, ec);
-    // Clean up after each test - use public API only
-    auto &daemon = ServerDaemon::instance();
-    if (daemon.is_running()) {
-      daemon.stop();
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    }
   }
 
   std::string read_log() {
@@ -156,8 +81,8 @@ protected:
     if (!ifs) {
       return "";
     }
-    return std::string((std::istreambuf_iterator<char>(ifs)),
-                       (std::istreambuf_iterator<char>()));
+    return {(std::istreambuf_iterator<char>(ifs)),
+            (std::istreambuf_iterator<char>())};
   }
 
   void create_test_script(const std::string &name, const std::string &content) {
@@ -171,8 +96,7 @@ protected:
   std::filesystem::path log_path_;
 };
 
-// Test new format script with main function
-TEST_F(MainFunctionIntegrationTest, NewFormatWithMainFunction) {
+TEST_F(MainFunctionIntegrationTest, MainFunction) {
   create_test_script("new_format.lua", R"lua(
     function main(ctx)
       ctx:log("New format script")
@@ -180,41 +104,16 @@ TEST_F(MainFunctionIntegrationTest, NewFormatWithMainFunction) {
     end
   )lua");
 
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "new_format.lua").string();
-
-  json out;
-  int result = handle_measure(params, out);
+  MeasureJobRequest req{};
+  req.set_script_path((test_scripts_dir_ / "new_format.lua").string());
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
 
   EXPECT_EQ(result, 0);
-  EXPECT_TRUE(out["ok"].get<bool>());
+  EXPECT_TRUE(resp.standard_response().ok());
 
   auto log = read_log();
   EXPECT_NE(log.find("New format script"), std::string::npos);
-  EXPECT_NE(log.find("main function (new format)"), std::string::npos);
-}
-
-// Test compatibility mode with deprecation warning
-TEST_F(MainFunctionIntegrationTest, CompatibilityModeDeprecationWarning) {
-  create_test_script("old_format.lua", R"lua(
-    context:log("Old format script")
-  )lua");
-
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "old_format.lua").string();
-
-  json out;
-  int result = handle_measure(params, out);
-
-  EXPECT_EQ(result, 0);
-  EXPECT_TRUE(out.contains("error"));
-  EXPECT_NE(out["error"].get<std::string>().find("DEPRECATED"),
-            std::string::npos);
-
-  auto log = read_log();
-  EXPECT_NE(log.find("DEPRECATED"), std::string::npos);
-  EXPECT_NE(log.find("compatibility mode"), std::string::npos);
-  EXPECT_NE(log.find("Old format script"), std::string::npos);
 }
 
 // Test global variable injection with warnings
@@ -227,21 +126,29 @@ TEST_F(MainFunctionIntegrationTest, GlobalVariableInjectionWithWarnings) {
     end
   )lua");
 
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "with_globals.lua").string();
-  params["globals"] = {{"testVoltage", 5.0}, {"sampleRate", 1000}};
+  MeasureJobRequest req{};
+  req.set_script_path((test_scripts_dir_ / "with_globals.lua").string());
 
-  json out;
-  int result = handle_measure(params, out);
+  auto *globals = req.mutable_globals();
+  auto *map = globals->mutable_map();
+
+  VariableValue voltage_val;
+  voltage_val.set_d(5.0);
+  (*map)["testVoltage"] = voltage_val;
+
+  VariableValue sample_rate_val;
+  sample_rate_val.set_i(1000);
+  (*map)["sampleRate"] = sample_rate_val;
+
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
 
   EXPECT_EQ(result, 0);
-  EXPECT_TRUE(out["ok"].get<bool>());
+  EXPECT_TRUE(resp.standard_response().ok());
 
   auto log = read_log();
-  EXPECT_NE(log.find("Injecting global variable 'testVoltage'"),
-            std::string::npos);
-  EXPECT_NE(log.find("Injecting global variable 'sampleRate'"),
-            std::string::npos);
+  EXPECT_NE(log.find("Global variable 'testVoltage'"), std::string::npos);
+  EXPECT_NE(log.find("Global variable 'sampleRate'"), std::string::npos);
   EXPECT_NE(log.find("Test voltage: 5"), std::string::npos);
   EXPECT_NE(log.find("Sample rate: 1000"), std::string::npos);
 }
@@ -256,15 +163,15 @@ TEST_F(MainFunctionIntegrationTest, ContextErrorInNewFormat) {
     end
   )lua");
 
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "with_error.lua").string();
+  MeasureJobRequest req{};
+  req.set_script_path((test_scripts_dir_ / "with_error.lua").string());
 
-  json out;
-  int result = handle_measure(params, out);
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
 
   EXPECT_EQ(result, 1);
-  EXPECT_FALSE(out["ok"].get<bool>());
-  EXPECT_EQ(out["error"].get<std::string>(), "Test error condition");
+  EXPECT_FALSE(resp.standard_response().ok());
+  EXPECT_EQ(resp.standard_response().error().message(), "Test error condition");
 
   auto log = read_log();
   EXPECT_NE(log.find("Test error condition"), std::string::npos);
@@ -281,15 +188,15 @@ TEST_F(MainFunctionIntegrationTest, RuntimeErrorCapture) {
     end
   )lua");
 
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "runtime_error.lua").string();
+  MeasureJobRequest req{};
+  req.set_script_path((test_scripts_dir_ / "runtime_error.lua").string());
 
-  json out;
-  int result = handle_measure(params, out);
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
 
   EXPECT_EQ(result, 1);
-  EXPECT_FALSE(out["ok"].get<bool>());
-  EXPECT_NE(out["error"].get<std::string>().find("runtime error"),
+  EXPECT_FALSE(resp.standard_response().ok());
+  EXPECT_NE(resp.standard_response().error().message().find("runtime error"),
             std::string::npos);
 }
 
@@ -303,17 +210,17 @@ TEST_F(MainFunctionIntegrationTest, CombinedErrorMessages) {
     end
   )lua");
 
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "combined_error.lua").string();
+  MeasureJobRequest req{};
+  req.set_script_path((test_scripts_dir_ / "combined_error.lua").string());
 
-  json out;
-  int result = handle_measure(params, out);
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
 
   EXPECT_EQ(result, 1);
-  EXPECT_FALSE(out["ok"].get<bool>());
+  EXPECT_FALSE(resp.standard_response().ok());
 
   // Should contain both error messages
-  std::string error_msg = out["error"].get<std::string>();
+  std::string error_msg = resp.standard_response().error().message();
   EXPECT_NE(error_msg.find("Context error"), std::string::npos);
   EXPECT_NE(error_msg.find("Runtime"), std::string::npos);
 }
@@ -336,14 +243,14 @@ TEST_F(MainFunctionIntegrationTest, MainReceivesCorrectContextType) {
     end
   )lua");
 
-  json params;
-  params["script_path"] = (test_scripts_dir_ / "context_type.lua").string();
+  MeasureJobRequest req{};
+  req.set_script_path((test_scripts_dir_ / "context_type.lua").string());
 
-  json out;
-  int result = handle_measure(params, out);
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
 
   EXPECT_EQ(result, 0);
-  EXPECT_TRUE(out["ok"].get<bool>());
+  EXPECT_TRUE(resp.standard_response().ok());
 
   auto log = read_log();
   EXPECT_NE(log.find("Context has log method"), std::string::npos);

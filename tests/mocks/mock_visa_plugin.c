@@ -58,17 +58,17 @@ static char instrument_name[PLUGIN_MAX_STRING_LEN] = "";
 
 uint8_t INSTRUMENT_PLUGIN_API plugin_initialize(const PluginConfig *config) {
   if (config == NULL) {
-    VISA_LOG_ERROR("plugin_initialize: invalid config\n");
+    VISA_LOG_ERROR("plugin_initialize: invalid config");
     return 1;
   }
 
-  VISA_LOG_INFO("Initializing for %s\n", config->instrument_name);
+  VISA_LOG_INFO("Initializing for %s", config->instrument_name);
 
   size_t len =
       strlcpy(instrument_name, config->instrument_name, PLUGIN_MAX_STRING_LEN);
 
   if (len >= PLUGIN_MAX_STRING_LEN) {
-    VISA_LOG_ERROR("plugin_initialize: instrument_name truncated (max=%d)\n",
+    VISA_LOG_ERROR("plugin_initialize: instrument_name truncated (max=%d)",
                    PLUGIN_MAX_STRING_LEN);
     return 1;
   }
@@ -174,14 +174,14 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
   strlcpy(var.name, "idn", PLUGIN_MAX_STRING_LEN);
 
   int ret = snprintf(var.value.str_val, PLUGIN_MAX_STRING_LEN,
-                     "Mock VISA OK: %s\n", cmd->command);
+                     "Mock VISA OK: %s", cmd->command);
 
   if (ret < 0) {
-    VISA_LOG_ERROR("Default snprintf failed\n");
+    VISA_LOG_ERROR("Default snprintf failed");
     return 1;
   }
   if (ret >= PLUGIN_MAX_STRING_LEN) {
-    VISA_LOG_ERROR("Default response truncated (max=%d)\n",
+    VISA_LOG_ERROR("Default response truncated (max=%d)",
                    PLUGIN_MAX_STRING_LEN);
     return 1;
   }
@@ -191,7 +191,7 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
 }
 
 void INSTRUMENT_PLUGIN_API plugin_shutdown(void) {
-  VISA_LOG_INFO("Shutting down\n");
+  VISA_LOG_INFO("Shutting down");
 
   strlcpy(instrument_name, "", PLUGIN_MAX_STRING_LEN);
   g_initialized = false;

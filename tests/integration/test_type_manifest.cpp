@@ -20,7 +20,9 @@
 #include <google/protobuf/util/json_util.h>
 using namespace instserver;
 using namespace instserver::server;
-using json = nlohmann::json;
+#ifndef TEST_DATA_DIR
+#define TEST_DATA_DIR "."
+#endif
 
 class TypeManifestTest : public test::PluginTestFixture {
 protected:
@@ -32,9 +34,8 @@ protected:
                   1024 * 1024, // 1 MB
                   3);          // rotation count
 
-    test_scripts_dir_ =
-        std::filesystem::current_path() / "data" / "test_scripts";
-    test_configs_dir_ = std::filesystem::current_path() / "data";
+    test_scripts_dir_ = std::filesystem::path(TEST_DATA_DIR) / "test_scripts";
+    test_configs_dir_ = std::filesystem::path(TEST_DATA_DIR);
 
     // Create test scripts directory if needed
     std::filesystem::create_directories(test_scripts_dir_);

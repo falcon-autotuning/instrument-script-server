@@ -39,18 +39,18 @@ PluginMetadata INSTRUMENT_PLUGIN_API plugin_get_metadata(void) {
 
 uint8_t INSTRUMENT_PLUGIN_API plugin_initialize(const PluginConfig *config) {
   if (config == NULL) {
-    VISA_LOG_ERROR("plugin_initialize: config is NULL\n");
+    VISA_LOG_ERROR("plugin_initialize: config is NULL");
     return 1;
   }
-  VISA_LOG_INFO("Initializing for %s\n", config->instrument_name);
+  VISA_LOG_INFO("Initializing for %s", config->instrument_name);
   int ret = snprintf(instrument_name, PLUGIN_MAX_STRING_LEN, "%s",
                      config->instrument_name);
   if (ret < 0) {
-    VISA_LOG_ERROR("plugin_initialize: snprintf failed\n");
+    VISA_LOG_ERROR("plugin_initialize: snprintf failed");
     return 1;
   }
   if (ret >= PLUGIN_MAX_STRING_LEN) {
-    VISA_LOG_ERROR("plugin_initialize: instrument_name truncated (max=%d)\n",
+    VISA_LOG_ERROR("plugin_initialize: instrument_name truncated (max=%d)",
                    PLUGIN_MAX_STRING_LEN);
     return 1;
   }
@@ -71,7 +71,7 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
     var.type = PARAM_TYPE_DOUBLE;
     strncpy(var.name, "data", PLUGIN_MAX_STRING_LEN - 1);
     var.value.d_val = 42.0;
-    VISA_LOG_INFO("Small data: %f\n", var.value.d_val);
+    VISA_LOG_INFO("Small data: %f", var.value.d_val);
     plugin_response_push(resp, &var);
     return 0;
   }
@@ -82,7 +82,7 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
     const size_t num_points = 10000;
     float *waveform = (float *)malloc(num_points * sizeof(float));
     if (!waveform) {
-      VISA_LOG_ERROR("Failed to allocate waveform data\n");
+      VISA_LOG_ERROR("Failed to allocate waveform data");
       return 2;
     }
 
@@ -97,7 +97,7 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
     free(waveform);
 
     if (buffer_id == NULL) {
-      VISA_LOG_ERROR("Failed to create data buffer\n");
+      VISA_LOG_ERROR("Failed to create data buffer");
       return 3;
     }
 
@@ -109,7 +109,7 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
         snprintf(var.value.str_val, PLUGIN_MAX_STRING_LEN, "%s", buffer_id);
     if (err < 0 || err >= PLUGIN_MAX_STRING_LEN) {
       VISA_LOG_ERROR(
-          "Failed to allocate string for the GET_LARGE_DATA command\n");
+          "Failed to allocate string for the GET_LARGE_DATA command");
       return 4;
     }
     plugin_response_push(resp, &var);
@@ -124,7 +124,7 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
   int err = snprintf(var.value.str_val, PLUGIN_MAX_STRING_LEN,
                      "Mock response: %s\n", cmd->command);
   if (err < 0 || err >= PLUGIN_MAX_STRING_LEN) {
-    VISA_LOG_ERROR("Failed to allocate string for %s command\n", cmd->command);
+    VISA_LOG_ERROR("Failed to allocate string for %s command", cmd->command);
     return 3;
   }
   plugin_response_push(resp, &var);
@@ -132,10 +132,10 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
 }
 
 void INSTRUMENT_PLUGIN_API plugin_shutdown(void) {
-  VISA_LOG_INFO("Shutting down\n");
+  VISA_LOG_INFO("Shutting down");
   int err = snprintf(instrument_name, PLUGIN_MAX_STRING_LEN, "");
   if (err < 0 || err >= PLUGIN_MAX_STRING_LEN) {
-    VISA_LOG_ERROR("Could not deallocate the instrument_name\n");
+    VISA_LOG_ERROR("Could not deallocate the instrument_name");
   }
   g_initialized = 0;
 }
