@@ -245,6 +245,7 @@ target_link_libraries(instrument-worker
     instrument-plugin-api::instrument-plugin-api-host
 )
 if(BUILD_C_CLIENT)
+  find_package(protobuf-c CONFIG REQUIRED)
   add_library(instrument-script-server-client STATIC
     src/client/instrument-server-client.cpp
   )

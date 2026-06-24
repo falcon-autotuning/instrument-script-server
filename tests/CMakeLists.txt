@@ -86,6 +86,7 @@ if(BUILD_C_CLIENT)
     instrument-script-server-client
     instserver-proto-c
     instserver-proto
+    protobuf-c::protobuf-c
     GTest::gtest
     GTest::gtest_main
   )
