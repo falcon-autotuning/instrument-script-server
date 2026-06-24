@@ -175,7 +175,9 @@ protected:
     auto [code, output] =
         run_command("tasklist | findstr /i instrument-script-server");
 #else
-    auto [code, output] = run_command("pgrep -f 'instrument-script-server-daemon' | grep -v " + std::to_string(getpid()));
+    auto [code, output] =
+        run_command("pgrep -f 'instrument-script-server-daemon' | grep -v " +
+                    std::to_string(getpid()));
 #endif
 
     // No output = no processes
@@ -213,6 +215,7 @@ TEST_F(CLITest, DaemonStatusWhenNotRunning) {
   // When daemon is not running, status command should return non-zero
   // (or succeed but report daemon is not running)
   // The exact behavior depends on implementation, so we just verify it executed
+  EXPECT_NE(exit_code, 0) << "Command failed to execute";
   EXPECT_NE(exit_code, -1) << "Command failed to execute";
 
   // Output should indicate status
@@ -230,7 +233,7 @@ TEST_F(CLITest, DaemonStartStop) {
   // When daemon is not running, start command should return non-zero
   // The json should print all the information as a json blob
   // The exact behavior depends on implementation, so we just verify it executed
-  EXPECT_NE(exit_code, -1) << "Command failed to execute";
+  EXPECT_EQ(exit_code, 0) << "Command failed to execute";
 
   // Output should indicate status
   EXPECT_FALSE(output.empty()) << "Start command produced no output";
@@ -285,7 +288,7 @@ TEST_F(CLITest, StartInstrument) {
   int pid = -1;
   {
     auto [exit_code, output] = run_iss("daemon start --json");
-    EXPECT_NE(exit_code, -1) << "daemon start failed to execute";
+    EXPECT_EQ(exit_code, 0) << "daemon start failed to execute";
     pid = extract_pid(output);
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -293,13 +296,13 @@ TEST_F(CLITest, StartInstrument) {
   {
     auto [exit_code, output] = run_iss(
         "start ./data/mock_instrument1.yaml --plugin ./libmock_visa_plugin.so");
-    EXPECT_NE(exit_code, -1) << "instrument start failed to execute";
+    EXPECT_EQ(exit_code, 0) << "instrument start failed to execute";
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
   // Check that the instrument is still running
   {
     auto [exit_code, output] = run_iss("status MockInstrument1");
-    EXPECT_NE(exit_code, -1) << "instrument status failed to execute";
+    EXPECT_EQ(exit_code, 0) << "instrument status failed to execute";
     bool running = (output.find("RUNNING") != std::string::npos);
     EXPECT_TRUE(running) << "The MockInstrument1 has stopped running: "
                          << output;
@@ -307,7 +310,7 @@ TEST_F(CLITest, StartInstrument) {
   // Shutdown the instrument
   {
     auto [exit_code, output] = run_iss("stop MockInstrument1");
-    EXPECT_NE(exit_code, -1) << "instrument stop failed to execute";
+    EXPECT_EQ(exit_code, 0) << "instrument stop failed to execute";
     bool stopped = (output.find("Stopped instrument") != std::string::npos);
     EXPECT_TRUE(stopped) << "The MockInstrument1 has failed to stop: "
                          << output;
@@ -326,8 +329,75 @@ TEST_F(CLITest, StartInstrument) {
   EXPECT_FALSE(alive) << "Daemon process is still alive: " << pid;
 }
 
-// TODO: Need to test starting two instruments and shutting them down and that
-// they persist
+TEST_F(CLITest, StartInstruments) {
+  // Start the background daemon process for the ISS
+  int pid = -1;
+  {
+    auto [exit_code, output] = run_iss("daemon start --json");
+    EXPECT_EQ(exit_code, 0) << "daemon start failed to execute";
+    pid = extract_pid(output);
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // Start an instrument
+  {
+    auto [exit_code, output] = run_iss(
+        "start ./data/mock_instrument1.yaml --plugin ./libmock_visa_plugin.so");
+    EXPECT_EQ(exit_code, 0) << "instrument start failed to execute";
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // Check that the instrument is still running
+  {
+    auto [exit_code, output] = run_iss("status MockInstrument1");
+    EXPECT_EQ(exit_code, 0) << "instrument status failed to execute";
+    bool running = (output.find("RUNNING") != std::string::npos);
+    EXPECT_TRUE(running) << "The MockInstrument1 has stopped running: "
+                         << output;
+  }
+  // Start another instrument
+  {
+    auto [exit_code, output] = run_iss(
+        "start ./data/mock_instrument2.yaml --plugin ./libmock_visa_plugin.so");
+    EXPECT_EQ(exit_code, 0) << "instrument start failed to execute";
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // Check that the instrument is still running
+  {
+    auto [exit_code, output] = run_iss("status MockInstrument2");
+    EXPECT_EQ(exit_code, 0) << "instrument status failed to execute";
+    bool running = (output.find("RUNNING") != std::string::npos);
+    EXPECT_TRUE(running) << "The MockInstrument2 has stopped running: "
+                         << output;
+  }
+  // Shutdown the first instrument
+  {
+    auto [exit_code, output] = run_iss("stop MockInstrument1");
+    EXPECT_EQ(exit_code, 0) << "instrument stop failed to execute";
+    bool stopped = (output.find("Stopped instrument") != std::string::npos);
+    EXPECT_TRUE(stopped) << "The MockInstrument1 has failed to stop: "
+                         << output;
+  }
+  // Shutdown the second instrument
+  {
+    auto [exit_code, output] = run_iss("stop MockInstrument2");
+    EXPECT_EQ(exit_code, 0) << "instrument stop failed to execute";
+    bool stopped = (output.find("Stopped instrument") != std::string::npos);
+    EXPECT_TRUE(stopped) << "The MockInstrument2 has failed to stop: "
+                         << output;
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  // Shutdown the daemon process
+  run_iss("daemon stop");
+  bool alive = true;
+  for (int i = 0; i < 30; ++i) {
+    if (pid <= 0 || !process_alive(pid)) {
+      alive = false;
+      break;
+    }
+    std::this_thread::sleep_for(100ms);
+  }
+  EXPECT_FALSE(alive) << "Daemon process is still alive: " << pid;
+}
+
 // TODO: Need to perform a measurement directly from the CLI on a running
 // instrument and check the output
 
