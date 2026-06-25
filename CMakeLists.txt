@@ -57,7 +57,7 @@ else()
   message(STATUS "Git tag: (none found)")
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -245,12 +245,14 @@ target_link_libraries(instrument-worker
     instrument-plugin-api::instrument-plugin-api-host
 )
 if(BUILD_C_CLIENT)
+  find_package(protobuf-c CONFIG REQUIRED)
   add_library(instrument-script-server-client STATIC
     src/client/instrument-server-client.cpp
   )
 
   target_link_libraries(instrument-script-server-client
     PUBLIC
+      protobuf-c::protobuf-c
       instserver-proto-c
       instserver-proto
       gRPC::grpc++
