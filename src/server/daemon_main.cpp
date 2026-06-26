@@ -121,7 +121,13 @@ int main(int argc, char **argv) {
 
     LOG_INFO("DAEMON", "RUN", "Daemon running on port %d", port);
 
-    while (g_running && daemon.is_running()) {
+    while (true) {
+      if (!g_running) {
+        break; // Ctrl+C
+      }
+      if (!daemon.is_running()) {
+        break; // pipe/RPC
+      }
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 

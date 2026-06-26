@@ -184,7 +184,13 @@ void JobManager::worker_loop() {
           slept += step;
         }
 
-        run_info.result = sleep_resp;
+        {
+          std::lock_guard<std::mutex> lk(mutex_);
+          auto it = jobs_.find(jid);
+          if (it != jobs_.end()) {
+            it->second.result = sleep_resp;
+          }
+        }
         success = true;
         break;
       }
@@ -196,11 +202,16 @@ void JobManager::worker_loop() {
 
         int rc = handle_measure(req, &resp);
 
+        {
+          std::lock_guard<std::mutex> lk(mutex_);
+          auto it = jobs_.find(jid);
+          if (it != jobs_.end()) {
+            it->second.result = resp;
+          }
+        }
         if (rc != 0) {
           throw std::runtime_error("measure job failed");
         }
-
-        run_info.result = resp;
         success = true;
         break;
       }
@@ -210,7 +221,6 @@ void JobManager::worker_loop() {
             "unknown job type: " +
             std::string(v1::JobType_Name(run_info.job.type())));
       }
-
     } catch (const std::exception &e) {
       success = false;
       err = e.what();

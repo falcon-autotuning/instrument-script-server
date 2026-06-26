@@ -1,6 +1,7 @@
 #include "instrument-script-server/server/ServerDaemon.hpp"
 #include "instrument-script-server/server/GrpcServer.hpp"
-#include <csignal>
+#include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include <cstring>
 #include <instrument-log/inst_logging.h>
 
 #include <filesystem>
@@ -15,6 +16,7 @@
 #define getpid _getpid
 #else
 #include <cerrno>
+#include <csignal>
 #include <fcntl.h>
 #include <sys/file.h>
 #include <sys/stat.h>
@@ -22,6 +24,12 @@
 #endif
 
 namespace {
+// Shutdown pipe handles (platform-specific)
+#ifdef _WIN32
+HANDLE shutdown_pipe_{INVALID_HANDLE_VALUE};
+#else
+int shutdown_pipe_fd_{-1};
+#endif
 // Platform-specific paths
 std::string get_runtime_dir() {
   const char *forced = getenv("INSTRUMENT_SERVER_RUNTIME_DIR");
@@ -49,6 +57,13 @@ std::string get_runtime_dir() {
 }
 } // namespace
 namespace instserver {
+std::string get_shutdown_pipe_path() {
+#ifdef _WIN32
+  return "\\\\.\\pipe\\instrument-server-shutdown";
+#else
+  return get_runtime_dir() + "/shutdown.pipe";
+#endif
+}
 
 ServerDaemon &ServerDaemon::instance() {
   static ServerDaemon daemon;
@@ -74,17 +89,7 @@ ServerDaemon::~ServerDaemon() {
   // unique_ptr destructor will delete the thread objects after detach
 }
 
-std::string ServerDaemon::get_pid_file_path() {
-  return get_runtime_dir() + "/server.pid";
-}
-
-std::string ServerDaemon::get_shutdown_pipe_path() {
-#ifdef _WIN32
-  return "\\\\.\\pipe\\instrument-server-shutdown";
-#else
-  return get_runtime_dir() + "/shutdown.pipe";
-#endif
-}
+std::string get_pid_file_path() { return get_runtime_dir() + "/server.pid"; }
 
 bool ServerDaemon::is_already_running() {
   std::string pid_file = get_pid_file_path();
@@ -136,7 +141,7 @@ int ServerDaemon::get_daemon_pid() {
   return pid;
 }
 
-bool ServerDaemon::create_pid_file() {
+bool create_pid_file() {
   std::string runtime_dir = get_runtime_dir();
 
   try {
@@ -246,7 +251,7 @@ bool ServerDaemon::create_pid_file() {
   return true;
 }
 
-void ServerDaemon::remove_pid_file() {
+void remove_pid_file() {
   std::string pid_file = get_pid_file_path();
 
   if (std::filesystem::exists(pid_file)) {
@@ -259,7 +264,7 @@ void ServerDaemon::remove_pid_file() {
   }
 }
 
-bool ServerDaemon::create_shutdown_pipe() {
+bool create_shutdown_pipe() {
 #ifdef _WIN32
   // Create named pipe on Windows
   std::string pipe_name = get_shutdown_pipe_path();
@@ -314,7 +319,7 @@ bool ServerDaemon::create_shutdown_pipe() {
 #endif
 }
 
-void ServerDaemon::close_shutdown_pipe() {
+void close_shutdown_pipe() {
 #ifdef _WIN32
   if (shutdown_pipe_ != INVALID_HANDLE_VALUE) {
     CloseHandle(shutdown_pipe_);
@@ -403,7 +408,7 @@ void ServerDaemon::shutdown_listener_loop() {
   LOG_INFO("DAEMON", "SHUTDOWN_LISTENER", "Shutdown listener exited");
 }
 
-void ServerDaemon::signal_shutdown_pipe() {
+void signal_shutdown_pipe() {
   std::string pipe_path = get_shutdown_pipe_path();
 
 #ifdef _WIN32
@@ -530,37 +535,9 @@ bool ServerDaemon::start() {
 }
 
 void ServerDaemon::stop() {
-  // Check if we're in the daemon process BEFORE acquiring lock
-  bool is_daemon_process = running_.load();
-
-  if (!is_daemon_process) {
-    // We're in a CLI/test process trying to stop the daemon
-    int daemon_pid = get_daemon_pid();
-    if (daemon_pid > 0) {
-      LOG_INFO("DAEMON", "STOP",
-               "Signaling daemon process (PID: %ld) to stop via pipe",
-               (long)daemon_pid);
-
-      signal_shutdown_pipe();
-
-      // Give daemon time to shutdown gracefully
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    } else {
-      std::cerr << "No daemon PID found. Already stopped" << "\n";
-    }
-    return;
-  }
-
-  // We're in the daemon process - do full cleanup
   {
     std::lock_guard<std::mutex> lock(mutex_);
-
-    try {
-      LOG_INFO("DAEMON", "STOP", "Stopping server daemon (graceful shutdown)");
-    } catch (...) {
-      // Ignore logging errors during shutdown
-    }
-
+    LOG_INFO("DAEMON", "STOP", "Stopping server daemon (graceful shutdown)");
     // Signal threads to exit first.
     running_.store(false);
 
@@ -579,7 +556,7 @@ void ServerDaemon::stop() {
       delete rpc_server_;
       rpc_server_ = nullptr;
     }
-  } // Lock released here
+  }
 
   // Join threads so no thread is still touching the pipe fd.
   if (daemon_thread_ && daemon_thread_->joinable()) {
@@ -594,5 +571,4 @@ void ServerDaemon::stop() {
 
   inst_log_shutdown();
 }
-
 } // namespace instserver

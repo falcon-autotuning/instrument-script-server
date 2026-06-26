@@ -276,8 +276,8 @@ int handle_daemon_stop(const DaemonStop & /*req*/, void * /*unused*/) {
   }
   // Stop daemon asynchronously so RPC can return success first
   std::thread([]() {
-    std::this_thread::sleep_for(std::chrono::milliseconds(250));
-    ServerDaemon::instance().stop();
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    signal_shutdown_pipe();
   }).detach();
   std::cout << "daemon stopped" << "\n";
   return 0;
@@ -437,6 +437,7 @@ int handle_measure(const MeasureJobRequest &req,
     stdrp->set_ok(false);
     err->set_message("Missing script_path");
     err->set_code(v1::ERROR_CODE_INVALID_ARGUMENT);
+    resp->set_status(v1::JOB_STATUS_FAILED);
     return 1;
   }
   LOG_INFO("SERVER", "MEASURE", "Script: %s", script_path.c_str());
@@ -447,6 +448,7 @@ int handle_measure(const MeasureJobRequest &req,
     stdrp->set_ok(false);
     err->set_message("No instruments are running");
     err->set_code(v1::ERROR_CODE_RUNTIME);
+    resp->set_status(v1::JOB_STATUS_FAILED);
     return 1;
   }
   auto &sync = ServerDaemon::instance().sync_coordinator();
@@ -474,6 +476,7 @@ int handle_measure(const MeasureJobRequest &req,
       stdrp->set_ok(false);
       err->set_message(std::string("Script load error: ") + result.what());
       err->set_code(v1::ERROR_CODE_RUNTIME);
+      resp->set_status(v1::JOB_STATUS_FAILED);
       return 1;
     }
 
@@ -521,6 +524,7 @@ int handle_measure(const MeasureJobRequest &req,
           stdrp->set_ok(false);
           err->set_message("CallStack must be a serialized string");
           err->set_code(v1::ERROR_CODE_RUNTIME);
+          resp->set_status(v1::JOB_STATUS_FAILED);
           return 1;
         }
 
@@ -531,6 +535,7 @@ int handle_measure(const MeasureJobRequest &req,
           err->set_message(std::string("CallStack deserialization failed: ") +
                            e.what());
           err->set_code(v1::ERROR_CODE_RUNTIME);
+          resp->set_status(v1::JOB_STATUS_FAILED);
           return 1;
         }
 
@@ -581,6 +586,7 @@ int handle_measure(const MeasureJobRequest &req,
       stdrp->set_ok(false);
       err->set_message(error_msg);
       err->set_code(v1::ERROR_CODE_RUNTIME);
+      resp->set_status(v1::JOB_STATUS_FAILED);
       return 1;
     }
 
@@ -659,13 +665,16 @@ int handle_measure(const MeasureJobRequest &req,
       stdrp->set_ok(false);
       err->set_message(ctx_shared->get_error());
       err->set_code(ERROR_CODE_RUNTIME);
+      resp->set_status(v1::JOB_STATUS_FAILED);
       return 1;
     }
+    resp->set_status(v1::JOB_STATUS_COMPLETED);
     return 0;
   } catch (const std::exception &e) {
     stdrp->set_ok(false);
     err->set_message(std::string("exception: ") + e.what());
     err->set_code(ERROR_CODE_RUNTIME);
+    resp->set_status(v1::JOB_STATUS_FAILED);
     return 1;
   }
 }
@@ -785,8 +794,9 @@ int handle_measure_job_result(const MeasureJobResultRequest &req,
   }
 
   const auto &measure_resp = std::get<v1::MeasureJobResultResponse>(result);
-  *resp = measure_resp;
-  stdrp->set_ok(true);
+  resp->mutable_results()->CopyFrom(measure_resp.results());
+  resp->mutable_standard_response()->set_ok(true);
+  resp->set_status(measure_resp.status());
   return 0;
 }
 

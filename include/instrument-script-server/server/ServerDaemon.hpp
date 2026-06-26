@@ -2,7 +2,6 @@
 #pragma once
 #include "instrument-script-server/export.h"
 
-#include "instrument-script-server/server/InstrumentRegistry.hpp"
 #include "instrument-script-server/server/SyncCoordinator.hpp"
 
 #include <atomic>
@@ -17,6 +16,14 @@ namespace instserver {
 namespace server {
 class GrpcServer;
 }
+// Gets the shutdown pipe for the server daemon process
+std::string INSTRUMENT_SERVER_API get_shutdown_pipe_path();
+bool INSTRUMENT_SERVER_API create_shutdown_pipe();
+void INSTRUMENT_SERVER_API close_shutdown_pipe();
+void INSTRUMENT_SERVER_API remove_pid_file();
+std::string INSTRUMENT_SERVER_API get_pid_file_path();
+bool INSTRUMENT_SERVER_API create_pid_file();
+void INSTRUMENT_SERVER_API signal_shutdown_pipe();
 
 /// Server daemon that manages instrument registry and accepts commands
 class INSTRUMENT_SERVER_API ServerDaemon {
@@ -38,12 +45,6 @@ public:
   /// Get the configured RPC port (0 if not set)
   [[nodiscard]] uint16_t rpc_port() const { return rpc_port_; }
 
-  /// Get the PID file path
-  static std::string get_pid_file_path();
-
-  /// Get the shutdown pipe path
-  static std::string get_shutdown_pipe_path();
-
   /// Check if another instance is running
   static bool is_already_running();
 
@@ -61,11 +62,6 @@ private:
 
   void daemon_loop();
   void shutdown_listener_loop();
-  bool create_pid_file();
-  void remove_pid_file();
-  bool create_shutdown_pipe();
-  void close_shutdown_pipe();
-  void signal_shutdown_pipe();
 
   // running_ is atomic for the hot path polling (daemon_loop)
   std::atomic<bool> running_{false};
@@ -78,13 +74,6 @@ private:
   // RPC listener
   server::GrpcServer *rpc_server_{nullptr};
   uint16_t rpc_port_{0};
-
-  // Shutdown pipe handles (platform-specific)
-#ifdef _WIN32
-  HANDLE shutdown_pipe_{INVALID_HANDLE_VALUE};
-#else
-  int shutdown_pipe_fd_{-1};
-#endif
 };
 
 } // namespace instserver

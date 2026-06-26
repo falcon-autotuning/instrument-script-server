@@ -38,7 +38,15 @@ struct CLIOutput {
 
   template <typename ProtoT> void output_proto_message(const ProtoT &msg) {
     std::string json;
-    google::protobuf::util::MessageToJsonString(msg, &json);
+
+    auto status = google::protobuf::util::MessageToJsonString(msg, &json);
+
+    if (!status.ok()) {
+      errors.push_back("Failed to serialize protobuf to JSON: " +
+                       std::string(status.message()));
+      return;
+    }
+
     outputs.push_back(nlohmann::json::parse(json));
   }
 
@@ -419,8 +427,6 @@ int main(int argc, char **argv) {
         }
 #endif
         bool running = false;
-        instserver::client::v1::DaemonStatusResponse resp;
-
         for (int i = 0; i < 20; ++i) {
           try {
             instserver::client::InstrumentServerClient client(get_port());
@@ -428,6 +434,7 @@ int main(int argc, char **argv) {
             auto resp = client.daemon_status(req);
             if (resp.running()) {
               running = true;
+              out.output_proto_message(resp);
               break;
             }
           } catch (...) {
@@ -435,7 +442,6 @@ int main(int argc, char **argv) {
           }
           std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
-        out.output_proto_message(resp);
 
         if (!running) {
           out.error("Daemon failed to start");
@@ -449,12 +455,14 @@ int main(int argc, char **argv) {
           instserver::client::v1::DaemonStop req;
           auto resp = client.stop_daemon(req);
           out.output_proto_message(resp);
-          if (resp.has_error()) {
-            out.error(resp.error().message());
-          } else {
-            out.error("Failed to stop daemon");
+          if (!resp.ok()) {
+            if (resp.has_error()) {
+              out.error(resp.error().message());
+            } else {
+              out.error("RPC failed");
+            }
+            return;
           }
-          return;
           out.message("Daemon stopped");
         });
       }
@@ -546,7 +554,7 @@ int main(int argc, char **argv) {
           return;
         }
         if (resp.value().instrument_name().empty()) {
-          out.message("No instruments running");
+          out.error("No instruments running");
         } else {
           out.message("Running instruments:");
           for (const auto &name : resp.value().instrument_name()) {
@@ -564,44 +572,47 @@ int main(int argc, char **argv) {
       return with_client(out, [&](auto &client) {
         instserver::client::v1::MeasureJobRequest req;
         req.set_script_path(argv[2]);
-        auto resp = client.measure_job(req);
-        if (!resp.standard_response().ok()) {
-          out.error(resp.standard_response().error().message());
-          out.output_proto_message(resp);
+        auto resp = call_rpc(out, [&] { return client.measure_job(req); });
+        if (!resp.has_value()) {
           return;
         }
-        uint32_t job_id = resp.job_id();
+        uint32_t job_id = resp.value().job_id();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
         while (true) {
-          std::this_thread::sleep_for(std::chrono::milliseconds(100));
           instserver::client::v1::JobStatusRequest status_req;
           status_req.set_job_id(job_id);
-          auto status_resp = client.job_status(status_req);
-          if (!status_resp.has_job()) {
-            out.error("Invalid job status response");
-            out.output_proto_message(resp);
+
+          auto status_resp =
+              call_rpc(out, [&] { return client.job_status(status_req); });
+
+          if (!status_resp.has_value()) {
             return;
           }
-          auto status = status_resp.job().status();
+          if (!status_resp.value().has_job()) {
+            out.error("Invalid job status response");
+            return;
+          }
+          auto status = status_resp.value().job().status();
           if (status == instserver::client::v1::JobStatus::JOB_STATUS_FAILED ||
               status ==
                   instserver::client::v1::JobStatus::JOB_STATUS_CANCELLED) {
             out.error("Job failed or was cancelled");
-            out.output_proto_message(resp);
             return;
           }
-          if (status ==
+          if (status !=
               instserver::client::v1::JobStatus::JOB_STATUS_COMPLETED) {
-            instserver::client::v1::MeasureJobResultRequest result_req;
-            result_req.set_job_id(job_id);
-            out.output_proto_message(resp);
-            auto result_resp = client.measure_job_result(result_req);
-            if (!result_resp.standard_response().ok()) {
-              out.error(result_resp.standard_response().error().message());
-              return;
-            }
-            out.message("Measurement complete");
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+          }
+          instserver::client::v1::MeasureJobResultRequest result_req;
+          result_req.set_job_id(job_id);
+          auto result_resp = call_rpc(
+              out, [&] { return client.measure_job_result(result_req); });
+          if (!result_resp.has_value()) {
             return;
           }
+          out.message("Measurement complete");
+          return;
         }
       });
     }
@@ -670,9 +681,9 @@ int main(int argc, char **argv) {
     }
     case ISS_CLI_Command::READ_BUFFER: {
       if (argc < 3) {
-        out.error(
-            "Error: read-buffer requires buffer ID\n"
-            "Usage: instrument-script-server read-buffer <buffer_id> [--json]");
+        out.error("Error: read-buffer requires buffer ID\n"
+                  "Usage: instrument-script-server read-buffer <buffer_id> "
+                  "[--json]");
         return out.emit();
       }
       return with_client(out, [&](auto &client) {
