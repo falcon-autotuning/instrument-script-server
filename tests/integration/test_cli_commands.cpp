@@ -1,18 +1,8 @@
-// test_cli_commands.cpp
-//
-// CLI integration tests.
-//
-// Test suites:
-//   CLITestNoAutostart – tests that manage the daemon themselves (or need it absent)
-//   CLITest            – fixture: daemon started in SetUp / stopped in TearDown
-//                        (no instrument pre-started; each test starts what it needs)
 
-#include <chrono>
 #include <cstdlib>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
-#include <set>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -35,8 +25,8 @@
 using namespace std::chrono_literals;
 
 namespace {
-const std::string bin_path  = ISS_BIN_PATH;
-const std::string data_dir  = TEST_DATA_DIR;
+const std::string bin_path = ISS_BIN_PATH;
+const std::string data_dir = TEST_DATA_DIR;
 const std::string mock_plugin = "./libmock_visa_plugin.so";
 
 std::string get_runtime_dir() {
@@ -116,18 +106,28 @@ std::pair<int, std::string> run_iss(const std::string &args) {
 int extract_pid(const std::string &input) {
   try {
     nlohmann::json json = nlohmann::json::parse(input);
+
     if (json.contains("pid") && !json["pid"].is_null()) {
       return json["pid"];
     }
+
     if (json.contains("output") && json["output"].is_array() &&
         !json["output"].empty()) {
+
       const auto &first = json["output"][0];
+
       if (first.contains("pid") && !first["pid"].is_null()) {
         return first["pid"];
       }
     }
-  } catch (...) {
+
+  } catch (const nlohmann::json::parse_error &e) {
+    std::cerr << "JSON parse error: " << e.what() << "\n";
+  } catch (const std::exception &e) {
+    std::cerr << "Error processing JSON: " << e.what() << "\n";
   }
+  std::cout << "The JSON that should have contained 'pid' looks like:\n"
+            << input << "\n";
   return -1;
 }
 
@@ -189,7 +189,7 @@ std::string extract_first_buffer_id(const std::string &output) {
     if (dash == std::string::npos)
       continue;
     auto id_start = dash + 2;
-    auto id_end   = line.find(' ', id_start);
+    auto id_end = line.find(' ', id_start);
     if (id_end == std::string::npos)
       id_end = line.size();
     auto id = line.substr(id_start, id_end - id_start);
@@ -213,12 +213,13 @@ TEST(CLITestNoAutostart, HelpCommand) {
                            output.find("Commands") != std::string::npos ||
                            output.find("Options") != std::string::npos ||
                            output.find("help") != std::string::npos);
-  EXPECT_TRUE(has_help_content) << "Help output doesn't contain expected content";
+  EXPECT_TRUE(has_help_content)
+      << "Help output doesn't contain expected content";
 }
 
 TEST(CLITestNoAutostart, DaemonStatusWhenNotRunning) {
   auto [exit_code, output] = run_iss("daemon status");
-  EXPECT_NE(exit_code, 0)  << "Expected non-zero when daemon not running";
+  EXPECT_NE(exit_code, 0) << "Expected non-zero when daemon not running";
   EXPECT_NE(exit_code, -1) << "Command failed to execute";
   EXPECT_FALSE(output.empty()) << "Status command produced no output";
 }
@@ -228,14 +229,14 @@ TEST(CLITestNoAutostart, DaemonStartStop) {
   EXPECT_EQ(exit_code, 0) << "daemon start failed:\n" << output;
   EXPECT_FALSE(output.empty()) << "Start command produced no output";
   EXPECT_NE(output.find("Daemon started"), std::string::npos)
-      << "No 'Daemon started' message:\n" << output;
-
-  int pid = extract_pid(output);
-  EXPECT_TRUE(pid >= 0) << "Weird PID: " << pid;
-
-  run_iss("daemon stop");
-  std::this_thread::sleep_for(100ms);
-  EXPECT_TRUE(wait_for_daemon_stopped()) << "Daemon never stopped";
+      << "No 'Daemon started' message:\n"
+      << output;
+  {
+    auto [exit_code, output] = run_iss("daemon stop");
+    EXPECT_EQ(exit_code, 0) << "daemon stop failed:\n" << output;
+    std::this_thread::sleep_for(100ms);
+    EXPECT_TRUE(wait_for_daemon_stopped()) << "Daemon never stopped";
+  }
 }
 
 TEST(CLITestNoAutostart, StartCreatesProcessAndPidFile) {
@@ -253,7 +254,7 @@ TEST(CLITestNoAutostart, StartCreatesProcessAndPidFile) {
   EXPECT_GT(pid, 0);
   EXPECT_TRUE(process_alive(pid));
 
-  run_iss("daemon stop");
+  EXPECT_EQ(exit_code, 0) << "daemon stop failed:\n" << output;
   for (int i = 0; i < 30; ++i) {
     if (!process_alive(pid)) {
       break;
@@ -275,7 +276,8 @@ protected:
         << "Daemon never became reachable in SetUp";
   }
   void TearDown() override {
-    std::system((bin_path + " daemon stop").c_str());
+    auto [exit_code, output] = run_iss("daemon stop");
+    EXPECT_EQ(exit_code, 0) << "daemon stop failed:\n" << output;
     EXPECT_TRUE(wait_for_daemon_stopped()) << "Daemon never stopped";
   }
 };
@@ -287,12 +289,14 @@ TEST_F(CLITest, RestartWorks) {
   int pid1 = extract_pid(status_out1);
   ASSERT_GT(pid1, 0);
 
-  run_iss("daemon stop");
+  auto [exit_code, output] = run_iss("daemon stop");
+  EXPECT_EQ(exit_code, 0) << "daemon stop failed:\n" << output;
   ASSERT_TRUE(wait_for_daemon_stopped()) << "First daemon never stopped";
 
   auto [exit_code2, output2] = run_iss("daemon start --json");
   ASSERT_EQ(exit_code2, 0) << "Second daemon start failed:\n" << output2;
-  ASSERT_TRUE(wait_for_daemon_started()) << "Second daemon never became reachable";
+  ASSERT_TRUE(wait_for_daemon_started())
+      << "Second daemon never became reachable";
 
   auto [status_code2, status_out2] = run_iss("daemon status --json");
   int pid2 = extract_pid(status_out2);
@@ -335,55 +339,58 @@ TEST_F(CLITest, StartInstrument) {
   {
     auto [exit_code, output] = run_iss(
         "start " + data_dir + "/mock_instrument1.yaml --plugin " + mock_plugin);
-    EXPECT_EQ(exit_code, 0)
-        << "Instrument start failed, output:\n" << output;
+    EXPECT_EQ(exit_code, 0) << "Instrument start failed, output:\n" << output;
   }
   std::this_thread::sleep_for(100ms);
   {
     auto [exit_code, output] = run_iss("status MockInstrument1");
     EXPECT_EQ(exit_code, 0) << "instrument status failed";
     EXPECT_NE(output.find("RUNNING"), std::string::npos)
-        << "MockInstrument1 not RUNNING:\n" << output;
+        << "MockInstrument1 not RUNNING:\n"
+        << output;
   }
   std::this_thread::sleep_for(300ms);
   {
     auto [exit_code, output] = run_iss("stop MockInstrument1");
     EXPECT_EQ(exit_code, 0) << "instrument stop failed";
     EXPECT_NE(output.find("Stopped instrument"), std::string::npos)
-        << "MockInstrument1 did not stop:\n" << output;
+        << "MockInstrument1 did not stop:\n"
+        << output;
   }
 }
 
 TEST_F(CLITest, StartInstruments) {
-  run_iss("start " + data_dir + "/mock_instrument1.yaml --plugin " + mock_plugin);
+  run_iss("start " + data_dir + "/mock_instrument1.yaml --plugin " +
+          mock_plugin);
   std::this_thread::sleep_for(100ms);
   {
     auto [exit_code, output] = run_iss("status MockInstrument1");
     EXPECT_EQ(exit_code, 0);
     EXPECT_NE(output.find("RUNNING"), std::string::npos)
-        << "MockInstrument1 not running:\n" << output;
+        << "MockInstrument1 not running:\n"
+        << output;
   }
 
-  run_iss("start " + data_dir + "/mock_instrument2.yaml --plugin " + mock_plugin);
+  run_iss("start " + data_dir + "/mock_instrument2.yaml --plugin " +
+          mock_plugin);
   std::this_thread::sleep_for(100ms);
   {
     auto [exit_code, output] = run_iss("status MockInstrument2");
     EXPECT_EQ(exit_code, 0);
     EXPECT_NE(output.find("RUNNING"), std::string::npos)
-        << "MockInstrument2 not running:\n" << output;
+        << "MockInstrument2 not running:\n"
+        << output;
   }
 
   {
     auto [exit_code, output] = run_iss("stop MockInstrument1");
     EXPECT_EQ(exit_code, 0);
-    EXPECT_NE(output.find("Stopped instrument"), std::string::npos)
-        << output;
+    EXPECT_NE(output.find("Stopped instrument"), std::string::npos) << output;
   }
   {
     auto [exit_code, output] = run_iss("stop MockInstrument2");
     EXPECT_EQ(exit_code, 0);
-    EXPECT_NE(output.find("Stopped instrument"), std::string::npos)
-        << output;
+    EXPECT_NE(output.find("Stopped instrument"), std::string::npos) << output;
   }
 }
 
@@ -417,7 +424,8 @@ TEST_F(CLITest, SimpleMeasure) {
       run_iss("measure " + data_dir + "/test_scripts/simple_call.lua");
   EXPECT_EQ(rc, 0) << "measure returned non-zero:\n" << out;
   EXPECT_NE(out.find("Measurement complete"), std::string::npos)
-      << "Expected 'Measurement complete':\n" << out;
+      << "Expected 'Measurement complete':\n"
+      << out;
 
   stop_mock1();
 }
@@ -426,22 +434,23 @@ TEST_F(CLITest, MeasureJsonOutputHasResultFields) {
   start_mock1();
 
   auto [rc, out] = run_iss("measure " + data_dir +
-                            "/test_scripts/multiple_returns.lua --json");
+                           "/test_scripts/multiple_returns.lua --json");
   ASSERT_EQ(rc, 0) << "measure --json failed:\n" << out;
 
   nlohmann::json j;
   ASSERT_NO_THROW(j = nlohmann::json::parse(out))
-      << "Output is not valid JSON:\n" << out;
+      << "Output is not valid JSON:\n"
+      << out;
 
   EXPECT_TRUE(j.value("ok", false)) << j.dump(2);
   ASSERT_TRUE(j.contains("results") && j["results"].is_array())
-      << "JSON missing 'results' array:\n" << j.dump(2);
+      << "JSON missing 'results' array:\n"
+      << j.dump(2);
 
   for (const auto &r : j["results"]) {
     EXPECT_TRUE(r.contains("instrument"))
         << "Result entry missing 'instrument': " << r;
-    EXPECT_TRUE(r.contains("verb"))
-        << "Result entry missing 'verb': " << r;
+    EXPECT_TRUE(r.contains("verb")) << "Result entry missing 'verb': " << r;
   }
 
   stop_mock1();
@@ -454,7 +463,8 @@ TEST_F(CLITest, LoopMeasurementCompletes) {
       run_iss("measure " + data_dir + "/test_scripts/loop_measurement.lua");
   EXPECT_EQ(rc, 0) << "Loop measurement failed:\n" << out;
   EXPECT_NE(out.find("Measurement complete"), std::string::npos)
-      << "Expected 'Measurement complete':\n" << out;
+      << "Expected 'Measurement complete':\n"
+      << out;
 
   stop_mock1();
 }
@@ -474,7 +484,8 @@ TEST_F(CLITest, TwoInstrumentMeasureCompletes) {
       run_iss("measure " + data_dir + "/test_scripts/two_instruments.lua");
   EXPECT_EQ(rc, 0) << "Two-instrument measurement failed:\n" << out;
   EXPECT_NE(out.find("Measurement complete"), std::string::npos)
-      << "Expected 'Measurement complete':\n" << out;
+      << "Expected 'Measurement complete':\n"
+      << out;
 
   stop_mock1();
   stop_mock2();
@@ -485,12 +496,11 @@ TEST_F(CLITest, TwoInstrumentJsonContainsBothInstruments) {
   start_mock2();
 
   auto [rc, out] = run_iss("measure " + data_dir +
-                            "/test_scripts/two_instruments.lua --json");
+                           "/test_scripts/two_instruments.lua --json");
   ASSERT_EQ(rc, 0) << out;
 
   nlohmann::json j;
-  ASSERT_NO_THROW(j = nlohmann::json::parse(out))
-      << "Not valid JSON:\n" << out;
+  ASSERT_NO_THROW(j = nlohmann::json::parse(out)) << "Not valid JSON:\n" << out;
 
   // The job must report overall success.
   EXPECT_TRUE(j.value("ok", false)) << j.dump(2);
@@ -498,7 +508,8 @@ TEST_F(CLITest, TwoInstrumentJsonContainsBothInstruments) {
   // The results array may be empty if the script does not explicitly return
   // MeasurementResponse objects, but its presence is still required.
   EXPECT_TRUE(j.contains("results") && j["results"].is_array())
-      << "JSON missing 'results' array:\n" << j.dump(2);
+      << "JSON missing 'results' array:\n"
+      << j.dump(2);
 
   stop_mock1();
   stop_mock2();
@@ -511,7 +522,8 @@ TEST_F(CLITest, ListBuffersWhenEmpty) {
   auto [rc, out] = run_iss("list-buffers");
   EXPECT_EQ(rc, 0) << "list-buffers failed:\n" << out;
   EXPECT_NE(out.find("No active shared memory buffers"), std::string::npos)
-      << "Expected 'No active shared memory buffers':\n" << out;
+      << "Expected 'No active shared memory buffers':\n"
+      << out;
 }
 
 // read-buffer with a non-existent ID should fail cleanly.
@@ -530,7 +542,8 @@ TEST_F(CLITest, MetadataForNonExistentBufferFails) {
 // returns ok:true as a no-op rather than treating an unknown ID as an error.
 TEST_F(CLITest, ReleaseNonExistentBufferIsIdempotent) {
   auto [rc, out] = run_iss("release-buffer this_id_does_not_exist_xyz");
-  EXPECT_EQ(rc, 0) << "Expected idempotent (exit 0) for unknown buffer ID:\n" << out;
+  EXPECT_EQ(rc, 0) << "Expected idempotent (exit 0) for unknown buffer ID:\n"
+                   << out;
 }
 
 // read-buffer requires an argument.
