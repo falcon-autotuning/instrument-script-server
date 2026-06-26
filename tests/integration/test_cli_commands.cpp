@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <atomic>
 #include <csignal>
 #include <cstdlib>
@@ -537,54 +538,61 @@ TEST_F(CLITest, MeasureNonExistentScriptFails) {
   EXPECT_NE(exit_code, 0) << "Expected failure for missing script:\n" << out;
 }
 
-// --- measure – two instruments ---
-
 TEST_F(CLITest, TwoInstrumentMeasureCompletes) {
   start_mock1();
   start_mock2();
 
-  auto [exit_code, out] =
-      run_iss("measure " +
-              (std::filesystem::path(data_dir) / "tmp" / "two_instruments.lua")
-                  .string() +
-              " --json");
+  auto [exit_code, out] = run_iss(
+      "measure " +
+      (std::filesystem::path(data_dir) / "test_scripts" / "two_instruments.lua")
+          .string() +
+      " --json");
   EXPECT_EQ(exit_code, 0) << "Two-instrument measurement failed:\n" << out;
   EXPECT_NE(out.find("Measurement complete"), std::string::npos)
       << "Expected 'Measurement complete':\n"
       << out;
 
-  stop_mock1();
-  stop_mock2();
-}
-
-TEST_F(CLITest, TwoInstrumentJsonContainsBothInstruments) {
-  start_mock1();
-  start_mock2();
-
-  auto [exit_code, out] =
-      run_iss("measure " +
-              (std::filesystem::path(data_dir) / "tmp" / "two_instruments.lua")
-                  .string() +
-              " --json");
-  ASSERT_EQ(exit_code, 0) << out;
-
   nlohmann::json j;
-  ASSERT_NO_THROW(j = nlohmann::json::parse(out)) << "Not valid JSON:\n" << out;
+  ASSERT_NO_THROW(j = nlohmann::json::parse(out))
+      << "Output is not valid JSON:\n"
+      << out;
 
-  // The job must report overall success.
-  EXPECT_TRUE(j.value("ok", false)) << j.dump(2);
+  ASSERT_TRUE(j.contains("output")) << "JSON missing output:\n" << j.dump(2);
+  ASSERT_TRUE(j["output"].is_array()) << "JSON output is not array:\n"
+                                      << j.dump(2);
+  ASSERT_FALSE(j["output"].empty()) << "JSON output is empty:\n" << j.dump(2);
 
-  // The results array may be empty if the script does not explicitly return
-  // MeasurementResponse objects, but its presence is still required.
-  EXPECT_TRUE(j.contains("results") && j["results"].is_array())
-      << "JSON missing 'results' array:\n"
-      << j.dump(2);
+  const auto &last = j["output"].back();
+
+  ASSERT_TRUE(last.contains("results")) << "JSON missing results:\n"
+                                        << j.dump(2);
+
+  ASSERT_TRUE(last["results"].is_array()) << "results is not array:\n"
+                                          << j.dump(2);
+
+  const auto &results = last["results"];
+
+  ASSERT_GE(results.size(), 2) << "Expected at least 2 results:\n" << j.dump(2);
+
+  std::vector<std::string> names;
+  for (const auto &r : results) {
+    ASSERT_TRUE(r.contains("instrumentName"))
+        << "Missing instrumentName field:\n"
+        << r.dump(2);
+
+    names.push_back(r["instrumentName"].get<std::string>());
+  }
+
+  auto has_name = [&](const std::string &name) {
+    return std::ranges::find(names, name) != names.end();
+  };
+
+  EXPECT_TRUE(has_name("MockInstrument1")) << "Missing MockInstrument1";
+  EXPECT_TRUE(has_name("MockInstrument2")) << "Missing MockInstrument2";
 
   stop_mock1();
   stop_mock2();
 }
-
-// --- buffer commands ---
 
 // list-buffers with no buffers should succeed and say so.
 TEST_F(CLITest, ListBuffersWhenEmpty) {
@@ -622,3 +630,4 @@ TEST_F(CLITest, ReadBufferMissingArgFails) {
 }
 
 // TODO: Need test checking cancelling a job
+// TODO: Need test making a buffer and reading it and emptying it

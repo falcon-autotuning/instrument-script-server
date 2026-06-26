@@ -671,6 +671,7 @@ int handle_measure(const MeasureJobRequest &req,
     resp->set_status(v1::JOB_STATUS_COMPLETED);
     return 0;
   } catch (const std::exception &e) {
+    LOG_ERROR("SERVER", "MEASURE", "Encountered error: %s", e.what());
     stdrp->set_ok(false);
     err->set_message(std::string("exception: ") + e.what());
     err->set_code(ERROR_CODE_RUNTIME);
