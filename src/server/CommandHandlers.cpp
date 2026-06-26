@@ -614,7 +614,7 @@ int handle_measure(const MeasureJobRequest &req,
       ts->set_nanos(nanos.count());
 
       // Return value
-      auto *returns = out_chunk->mutable_return_();
+      auto *returns = out_chunk->mutable_param();
       returns->Reserve((int)r.returns.size());
       for (const auto &v : r.returns) {
         auto *tparam = returns->Add();

@@ -15,7 +15,6 @@
     "boost-interprocess",
     "boost-date-time",
     "cxxopts",
-    "protobuf-c",
     {
       "name": "instrument-data",
       "version>=": "1.1.8"

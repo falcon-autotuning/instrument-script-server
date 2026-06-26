@@ -1,12 +1,16 @@
-#include "instrument-script-server/instrument-script-server-client.h"
+#include "instrument-script-server/client/instrument-server-client.hpp"
+
 #include "instserver/server/v1/daemon_messages.grpc.pb.h"
+#include "instserver/server/v1/daemon_messages.pb.h"
 
 #include <grpcpp/grpcpp.h>
 #include <gtest/gtest.h>
 #include <thread>
 
 using namespace instserver::server;
+namespace v1 = instserver::server::v1;
 
+using namespace instserver::server;
 class TestService final : public v1::DaemonService::Service {
 public:
   bool fail_next = false;
@@ -14,7 +18,7 @@ public:
   grpc::Status maybe_fail() {
     if (fail_next) {
       fail_next = false;
-      return grpc::Status(grpc::StatusCode::INTERNAL, "forced failure");
+      return {grpc::StatusCode::INTERNAL, "forced failure"};
     }
     return grpc::Status::OK;
   }
@@ -78,7 +82,7 @@ protected:
   std::thread server_thread;
   int port = 0;
 
-  instrument_server_client_t *client = nullptr;
+  std::unique_ptr<instserver::client::InstrumentServerClient> client;
 
   void SetUp() override {
     service = std::make_unique<TestService>();
@@ -96,15 +100,12 @@ protected:
 
     server_thread = std::thread([this]() { server->Wait(); });
 
-    client = instrument_server_client_create((uint16_t)port);
-    ASSERT_NE(client, nullptr);
+    client = std::make_unique<instserver::client::InstrumentServerClient>(
+        static_cast<uint16_t>(port));
   }
 
   void TearDown() override {
-    if (client != nullptr) {
-      instrument_server_client_destroy(client);
-      client = nullptr;
-    }
+    client.reset();
 
     if (server) {
       server->Shutdown();
@@ -121,110 +122,54 @@ protected:
 /* ========================= */
 
 TEST_F(ClientTest, DaemonStatus) {
-  Instserver__Server__V1__DaemonStatusRequest req =
-      INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+  v1::DaemonStatusRequest req;
 
-  Instserver__Server__V1__DaemonStatusResponse *resp = nullptr;
+  auto resp = client->daemon_status(req);
 
-  int rc = instrument_server_client_daemon_status(client, &req, &resp);
-
-  ASSERT_EQ(rc, 0);
-  ASSERT_NE(resp, nullptr);
-
-  ASSERT_TRUE(resp->standard_response->ok);
-  ASSERT_TRUE(resp->running);
-  ASSERT_EQ(resp->pid, 777);
-
-  instrument_server_client_free_response(resp);
+  ASSERT_TRUE(resp.standard_response().ok());
+  ASSERT_TRUE(resp.running());
+  ASSERT_EQ(resp.pid(), 777);
 }
 
 TEST_F(ClientTest, JobList) {
-  Instserver__Server__V1__JobListRequest req =
-      INSTSERVER__SERVER__V1__JOB_LIST_REQUEST__INIT;
+  v1::JobListRequest req;
 
-  Instserver__Server__V1__JobListResponse *resp = nullptr;
+  auto resp = client->job_list(req);
 
-  int rc = instrument_server_client_job_list(client, &req, &resp);
+  ASSERT_TRUE(resp.standard_response().ok());
 
-  ASSERT_EQ(rc, 0);
-  ASSERT_NE(resp, nullptr);
+  ASSERT_EQ(resp.jobs().size(), 1U);
 
-  ASSERT_TRUE(resp->standard_response->ok);
-  ASSERT_EQ(resp->n_jobs, 1u);
-  ASSERT_EQ(resp->jobs[0]->key, 42u);
-
-  instrument_server_client_free_response(resp);
+  const auto &[key, job] = *resp.jobs().begin();
+  ASSERT_EQ(key, 42U);
+  ASSERT_EQ(job.status(), v1::JOB_STATUS_COMPLETED);
 }
 
 TEST_F(ClientTest, StopDaemon) {
-  Instserver__Server__V1__DaemonStop req =
-      INSTSERVER__SERVER__V1__DAEMON_STOP__INIT;
+  v1::DaemonStop req;
 
-  Instserver__Server__V1__StandardResponse *resp = nullptr;
+  auto resp = client->stop_daemon(req);
 
-  int rc = instrument_server_client_stop_daemon(client, &req, &resp);
-
-  ASSERT_EQ(rc, 0);
-  ASSERT_NE(resp, nullptr);
-
-  ASSERT_TRUE(resp->ok);
-
-  instrument_server_client_free_response(resp);
+  ASSERT_TRUE(resp.ok());
 }
 
 /* ========================= */
 /* Error / Edge Cases */
 /* ========================= */
 
-TEST(ClientEdgeCases, NullInputs) {
-  Instserver__Server__V1__DaemonStatusRequest req =
-      INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
-
-  EXPECT_NE(instrument_server_client_daemon_status(NULL, &req, NULL), 0);
-}
-
-TEST(ClientEdgeCases, NullMatrix) {
-  Instserver__Server__V1__DaemonStatusRequest req =
-      INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
-
-  Instserver__Server__V1__DaemonStatusResponse *resp = nullptr;
-
-  EXPECT_NE(instrument_server_client_daemon_status(NULL, &req, &resp), 0);
-  EXPECT_NE(instrument_server_client_daemon_status(
-                (instrument_server_client_t *)1, NULL, &resp),
-            0);
-  EXPECT_NE(instrument_server_client_daemon_status(
-                (instrument_server_client_t *)1, &req, NULL),
-            0);
-}
-
 TEST_F(ClientTest, GrpcFailure) {
   service->fail_next = true;
 
-  Instserver__Server__V1__JobListRequest req =
-      INSTSERVER__SERVER__V1__JOB_LIST_REQUEST__INIT;
+  v1::JobListRequest req;
 
-  Instserver__Server__V1__JobListResponse *resp = nullptr;
-
-  int rc = instrument_server_client_job_list(client, &req, &resp);
-
-  EXPECT_NE(rc, 0);
-  EXPECT_EQ(resp, nullptr);
-}
-
-TEST_F(ClientTest, FreeNullIsSafe) {
-  instrument_server_client_free_response(nullptr);
+  EXPECT_THROW({ auto resp = client->job_list(req); }, std::runtime_error);
 }
 
 TEST_F(ClientTest, MultipleCalls) {
   for (int i = 0; i < 10; i++) {
-    Instserver__Server__V1__DaemonStatusRequest req =
-        INSTSERVER__SERVER__V1__DAEMON_STATUS_REQUEST__INIT;
+    v1::DaemonStatusRequest req;
+    auto resp = client->daemon_status(req);
 
-    Instserver__Server__V1__DaemonStatusResponse *resp = nullptr;
-
-    ASSERT_EQ(instrument_server_client_daemon_status(client, &req, &resp), 0);
-
-    instrument_server_client_free_response(resp);
+    ASSERT_TRUE(resp.standard_response().ok());
   }
 }

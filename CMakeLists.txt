@@ -245,29 +245,30 @@ target_link_libraries(instrument-worker
     instrument-plugin-api::instrument-plugin-api-host
 )
 if(BUILD_C_CLIENT)
-  find_package(protobuf-c CONFIG REQUIRED)
   add_library(instrument-script-server-client STATIC
     src/client/instrument-server-client.cpp
   )
 
   target_link_libraries(instrument-script-server-client
     PUBLIC
-      protobuf-c::protobuf-c
-      instserver-proto-c
       instserver-proto
       gRPC::grpc++
   )
   target_include_directories(instrument-script-server-client
+    BEFORE PRIVATE
+      ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include
     PUBLIC
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
       $<INSTALL_INTERFACE:include>
+    PRIVATE
+      ${CMAKE_BINARY_DIR}/proto
   )
 endif()
 if(BUILD_CLI)
   target_link_libraries(instrument-script-server
     PRIVATE
       instrument-script-server-client
-      instrument-script-server-core
+      instrument-data::instrument-data
   )
   target_include_directories(instrument-script-server
     PRIVATE

@@ -620,7 +620,7 @@ commands:
       EXPECT_EQ(result.instrument_name(), "TestScope");
       EXPECT_EQ(result.verb(), "GET_LARGE_DATA");
 
-      const auto &ret = result.return_(0);
+      const auto &ret = result.param(0);
 
       EXPECT_EQ(ret.type(), server::v1::LUA_TYPES_DATA_BUFFER);
       EXPECT_FALSE(ret.value().s().empty());
@@ -643,7 +643,7 @@ commands:
     const auto &r2 = results[2];
     EXPECT_EQ(r2.instrument_name(), "TestScope");
     EXPECT_EQ(r2.verb(), "GET_SMALL_DATA");
-    EXPECT_EQ(r2.return_(0).type(), server::v1::LUA_TYPES_DOUBLE);
+    EXPECT_EQ(r2.param(0).type(), server::v1::LUA_TYPES_DOUBLE);
   }
   // Helper lambda for clean, reusable buffer checking with detailed error
   // logging
@@ -682,9 +682,9 @@ commands:
 
   // Recover data and verify contents from the outermost context
   if (!buf1_id.empty() && !buf2_id.empty()) {
-    verify_buffer(buf1_id, results[0].return_(0).dbmeta().element_count(),
+    verify_buffer(buf1_id, results[0].param(0).dbmeta().element_count(),
                   "First Buffer Verification");
-    verify_buffer(buf2_id, results[1].return_(0).dbmeta().element_count(),
+    verify_buffer(buf2_id, results[1].param(0).dbmeta().element_count(),
                   "Second Buffer Verification");
 
     // 3. Ownership & Handoff validation:

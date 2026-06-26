@@ -83,8 +83,6 @@ if(BUILD_C_CLIENT)
   )
   target_link_libraries(test_client_c_api
   PRIVATE
-    instserver-proto-c
-    $<LINK_LIBRARY:WHOLE_ARCHIVE,protobuf-c::protobuf-c>
     instrument-script-server-client
     instserver-proto
     GTest::gtest

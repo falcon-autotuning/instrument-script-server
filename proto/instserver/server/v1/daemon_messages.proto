@@ -2,6 +2,7 @@ syntax = "proto3";
 package instserver.server.v1;
 
 import "google/protobuf/timestamp.proto";
+
 // Unified error handling
 enum ErrorCode {
   ERROR_CODE_UNSPECIFIED = 0;
@@ -202,7 +203,7 @@ message CommandResult {
   string instrument_name = 1;
   string verb = 2;
   google.protobuf.Timestamp executed_at = 3;
-  repeated TypedParameter return = 4;
+  repeated TypedParameter param = 4;
 }
 message MeasureJobResultResponse {
   StandardResponse standard_response = 1;
