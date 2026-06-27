@@ -192,33 +192,41 @@ std::string readable_datatype(uint8_t type) {
 void print_usage() {
   std::cout << "Usage: instrument-script-server <command> [options]\n\n";
   std::cout << "Daemon Management:\n";
-  std::cout << "  daemon start                       Start server daemon\n";
-  std::cout << "  daemon stop                        Stop server daemon\n";
-  std::cout << "  daemon status                      Check daemon status\n";
+  std::cout << "  daemon start [--log-level <level> (default 'info')]\n";
+  std::cout << "                                    Start server daemon\n";
+  std::cout << "  daemon stop                       Stop server daemon\n";
+  std::cout << "  daemon status                     Check daemon status\n";
   std::cout << "\nInstrument Commands:\n";
-  std::cout << "  start <config> [--plugin <path>]   Start instrument\n";
-  std::cout << "  stop <name>                        Stop instrument\n";
-  std::cout << "  status <name>                      Query instrument status\n";
-  std::cout
-      << "  list                               List running instruments\n";
+  std::cout << "  start <config> [--plugin <path>] [--log-level <level>]\n";
+  std::cout << "                                    Start instrument\n";
+  std::cout << "  stop <name>                       Stop instrument\n";
+  std::cout << "  status <name>                     Query instrument status\n";
+  std::cout << "  list                              List running instruments\n";
+  std::cout << "  discover [paths...]               Discover instrument"
+               "plugins\n";
   std::cout << "\nMeasurement:\n";
-  std::cout << "  measure <script>  [--globals <string>]"
-               "[--json]\n";
-  std::cout << "                               Run Lua measurement script\n";
+  std::cout << "  measure <script>  [--globals <string>]\n";
+  std::cout << "                                    Run measurement script\n";
+  std::cout << "\nJobs:\n";
+  std::cout << "  job list                          List active queued jobs\n";
+  std::cout << "  job cancel <job-id>               Cancel an active job\n";
+  std::cout << "  job status <job-id>               Check active job status\n";
+  std::cout << "  job measure <script>  [--globals <string>]\n";
+  std::cout << "                                    Enqueue measurement job\n";
+  std::cout << "  job result <job-id>               Query job result\n";
   std::cout << "\nUtilities:\n";
-  std::cout << "  discover [paths...]                Discover plugins\n";
   std::cout << "\nBuffer Management:\n";
-  std::cout << "  list-buffers                       List all active shared "
+  std::cout << "  list-buffers                      List all active shared "
                "memory buffers\n";
-  std::cout << "  buffer-metadata <id>               Show metadata for a "
+  std::cout << "  buffer-metadata <id>              Show metadata for a "
                "shared memory buffer\n";
-  std::cout << "  read-buffer <id> [--json]          Read data contents of a "
+  std::cout << "  read-buffer <id>                  Read data contents of a "
                "shared memory buffer\n";
-  std::cout << "  release-buffer <id>                Deallocate/free a shared "
+  std::cout << "  release-buffer <id>               Deallocate a shared "
                "memory buffer\n";
   std::cout << "\nOptions:\n";
-  std::cout << "  --log-level <level>  Log level (default: info)\n";
   std::cout << "  --version, -v        Show version information\n";
+  std::cout << "  --json               Get output in json format\n";
   std::cout << "  --help, -h           Show this help message\n";
   std::cout << "\nWorkflow:\n";
   std::cout << "  1. Start daemon:\n";
