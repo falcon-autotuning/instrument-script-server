@@ -240,7 +240,7 @@ message ListDataBuffersResponse {
 }
 
 message ReleaseBufferRequest {
-  string buffer_id = 1;
+  string buffer_id = 1
 }
 message ReleaseBufferResponse {
   StandardResponse standard_response = 1;
