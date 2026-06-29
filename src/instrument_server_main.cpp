@@ -640,33 +640,37 @@ int main(int argc, char **argv) {
           // OK if it throws → means not running
         }
 #ifdef _WIN32
-        std::string cmd = "instrument-script-server-daemon.exe";
+        std::string exe = get_daemon_path(argv[0]);
+
+        std::string cmdline = "\"" + exe + "\"";
 
         if (!log_level.empty()) {
-          cmd += " --log-level " + log_level;
+          cmdline += " --log-level " + log_level;
         }
 
         STARTUPINFOA si{};
         PROCESS_INFORMATION pi{};
         si.cb = sizeof(si);
 
-        std::string exe = get_daemon_path(argv[0]);
-
-        std::vector<char> cmd_buf(exe.begin(), exe.end());
+        // CreateProcess requires a mutable buffer
+        std::vector<char> cmd_buf(cmdline.begin(), cmdline.end());
         cmd_buf.push_back('\0');
 
-        BOOL ok = CreateProcessA(exe.c_str(), cmd_buf.data(), NULL, NULL, FALSE,
-                                 DETACHED_PROCESS | CREATE_NO_WINDOW, NULL,
-                                 NULL, &si, &pi);
+        BOOL ok = CreateProcessA(
+            nullptr,        // let Windows parse executable from cmdline
+            cmd_buf.data(), // full command line
+            NULL, NULL, FALSE, DETACHED_PROCESS | CREATE_NO_WINDOW, NULL, NULL,
+            &si, &pi);
 
         if (!ok) {
-          out.error("Child daemon launch failed");
+          DWORD err = GetLastError();
+          out.error("Child daemon launch failed (error=" + std::to_string(err) +
+                    ")");
           return out.emit();
         }
 
         CloseHandle(pi.hThread);
         CloseHandle(pi.hProcess);
-
 #else
         pid_t child_pid = fork();
 
