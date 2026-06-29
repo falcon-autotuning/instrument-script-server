@@ -14,19 +14,24 @@ set(PROTO_FILES
 add_library(instserver-proto SHARED)
 
 protobuf_generate(
-  TARGET instserver-proto
   LANGUAGE cpp
   IMPORT_DIRS ${PROTO_ROOT}
   PROTOS ${PROTO_FILES}
+  OUT_VAR PROTO_SRCS
 )
 
 protobuf_generate(
-  TARGET instserver-proto
   LANGUAGE grpc
   GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
   PLUGIN "protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
   IMPORT_DIRS ${PROTO_ROOT}
   PROTOS ${PROTO_FILES}
+  OUT_VAR GRPC_SRCS
+)
+
+target_sources(instserver-proto PRIVATE
+  ${PROTO_SRCS}
+  ${GRPC_SRCS}
 )
 
 target_include_directories(instserver-proto
