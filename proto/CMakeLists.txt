@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 include(GNUInstallDirs)
 
@@ -11,7 +12,7 @@ set(PROTO_FILES
   ${PROTO_ROOT}/instserver/server/v1/daemon_messages.proto
 )
 
-add_library(instserver-proto SHARED)
+add_library(instserver-proto STATIC)
 
 protobuf_generate(
   LANGUAGE cpp
@@ -43,22 +44,26 @@ target_include_directories(instserver-proto
 
 target_link_libraries(instserver-proto
   PUBLIC
-    protobuf::libprotobuf
     gRPC::grpc++
+  PRIVATE
+    protobuf::libprotobuf
 )
 
-set_target_properties(instserver-proto PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-)
-
-if(WIN32)
-  target_compile_definitions(instserver-proto
-    PUBLIC PROTOBUF_USE_DLLS
-  )
-  set_target_properties(instserver-proto PROPERTIES
-    WINDOWS_EXPORT_ALL_SYMBOLS ON
-  )
-endif()
+# set_target_properties(instserver-proto PROPERTIES
+#   POSITION_INDEPENDENT_CODE ON
+# )
+#
+# if(WIN32)
+#   target_compile_definitions(instserver-proto PUBLIC PROTOBUF_USE_DLLS)
+#
+#   set_target_properties(instserver-proto PROPERTIES
+#     WINDOWS_EXPORT_ALL_SYMBOLS ON
+#   )
+#
+#   target_link_options(instserver-proto PRIVATE
+#     "/OPT:NOREF"
+#   )
+# endif()
 
 # ============================================================
 # INSTALL

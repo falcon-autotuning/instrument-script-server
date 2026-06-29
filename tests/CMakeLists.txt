@@ -129,6 +129,7 @@ foreach(tgt ${ALL_TEST_TARGETS})
   set_tests_properties(${tgt} PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
   )
+  # target_link_options(${tgt} PRIVATE -static)
 
   if(WIN32)
     set_tests_properties(${tgt} PROPERTIES
@@ -154,7 +155,8 @@ foreach(plugin_target
   target_compile_definitions(${plugin_target} PRIVATE INSTRUMENT_PLUGIN_BUILD)
   target_link_libraries(${plugin_target}
     PRIVATE
-      instrument-script-server-core
+      instrument-data::instrument-data
+      instrument-log::instrument-log
       instrument-plugin-api::instrument-plugin-api-plugin
   )
 endforeach()

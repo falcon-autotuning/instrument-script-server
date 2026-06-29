@@ -203,7 +203,6 @@ target_link_libraries(
     instrument-call-stack::instrument-call-stack
     instrument-call-stack::instrument-call-stack-lua
     instserver-proto
-    gRPC::grpc++
 )
 
 # Per-target include directories (avoid global include_directories)
@@ -252,7 +251,6 @@ if(BUILD_C_CLIENT)
   target_link_libraries(instrument-script-server-client
     PUBLIC
       instserver-proto
-      gRPC::grpc++
   )
   target_include_directories(instrument-script-server-client
     BEFORE PRIVATE
