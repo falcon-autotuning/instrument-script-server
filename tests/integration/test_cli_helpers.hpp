@@ -4,6 +4,7 @@
 #include <atomic>
 #include <csignal>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <mutex>
@@ -12,7 +13,6 @@
 #include <sstream>
 #include <string>
 #include <thread>
-#include <filesystem>
 
 #ifndef ISS_BIN_PATH
 #define ISS_BIN_PATH "instrument-script-server"
@@ -32,9 +32,9 @@
 #define popen _popen
 #define pclose _pclose
 #else
-#include <unistd.h>
-#include <sys/types.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <unistd.h>
 #endif
 
 #ifdef _WIN32
@@ -50,7 +50,8 @@ inline const std::string mock_plugin =
     (std::filesystem::path(TEST_PLUGIN_DIR) / ("libmock_visa_plugin" + ext))
         .string();
 inline const std::string mock_large_plugin =
-    (std::filesystem::path(TEST_PLUGIN_DIR) / ("libmock_visa_large_data_plugin" + ext))
+    (std::filesystem::path(TEST_PLUGIN_DIR) /
+     ("libmock_visa_large_data_plugin" + ext))
         .string();
 inline std::mutex g_pid_mutex;
 inline std::set<int> g_daemon_pids;
@@ -179,22 +180,31 @@ inline int get_pid_from_file(const std::string &path) {
 }
 
 inline std::pair<int, std::string> run_command(const std::string &args) {
+#ifdef _WIN32
+  std::string cmd = "cmd.exe /c \"" + args + " 2>&1\"";
+#else
   std::string cmd = args + " 2>&1";
+#endif
+
   FILE *pipe = popen(cmd.c_str(), "r");
   if (pipe == nullptr) {
     return {-1, ""};
   }
+
   std::ostringstream output;
   char buffer[256];
-  while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+  while (fgets(buffer, sizeof(buffer), pipe)) {
     output << buffer;
   }
+
   int exit_code = pclose(pipe);
+
 #ifndef _WIN32
   if (WIFEXITED(exit_code)) {
     exit_code = WEXITSTATUS(exit_code);
   }
 #endif
+
   return {exit_code, output.str()};
 }
 
@@ -287,13 +297,16 @@ inline std::string extract_first_buffer_id(const std::string &output) {
     if (first_non_space == std::string::npos)
       continue;
     std::string trimmed = line.substr(first_non_space);
-    if (trimmed.starts_with("Active buffers:") || trimmed.starts_with("No active"))
+    if (trimmed.starts_with("Active buffers:") ||
+        trimmed.starts_with("No active"))
       continue;
     if (trimmed.starts_with("- ")) {
       trimmed = trimmed.substr(2);
     }
     auto first_space = trimmed.find(' ');
-    std::string id = (first_space != std::string::npos) ? trimmed.substr(0, first_space) : trimmed;
+    std::string id = (first_space != std::string::npos)
+                         ? trimmed.substr(0, first_space)
+                         : trimmed;
     if (!id.empty()) {
       return id;
     }
