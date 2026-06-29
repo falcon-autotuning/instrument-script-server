@@ -289,12 +289,12 @@ std::string extract_first_buffer_id(const std::string &output) {
 }
 void start_instrument(const std::filesystem::path &config) {
   auto [exit_code, output] =
-      run_iss("start " + config.string() + " --plugin " + mock_plugin);
+      run_iss("inst start " + config.string() + " --plugin " + mock_plugin);
   EXPECT_EQ(exit_code, 0) << "Instrument start failed, output:\n" << output;
   std::this_thread::sleep_for(200ms);
 }
 void stop_instrument(const std::string &instrument_name) {
-  auto [exit_code, output] = run_iss("stop " + instrument_name);
+  auto [exit_code, output] = run_iss("inst stop " + instrument_name);
   EXPECT_EQ(exit_code, 0) << "Instrument stop failed, output:\n" << output;
   std::this_thread::sleep_for(200ms);
 }
@@ -427,7 +427,7 @@ TEST_F(CLITest, ListPlugins) {
 // --- Instrument lifecycle ---
 
 TEST_F(CLITest, ListInstrumentsWhenNoneRunning) {
-  auto [exit_code, output] = run_iss("list");
+  auto [exit_code, output] = run_iss("inst list");
   EXPECT_EQ(exit_code, 1) << "list should return 1 when no instruments: "
                           << exit_code;
   EXPECT_NE(output, "") << "There was no output";
@@ -436,7 +436,7 @@ TEST_F(CLITest, ListInstrumentsWhenNoneRunning) {
 TEST_F(CLITest, StartInstrument) {
   start_mock1();
   {
-    auto [exit_code, output] = run_iss("status MockInstrument1");
+    auto [exit_code, output] = run_iss("inst status MockInstrument1");
     EXPECT_EQ(exit_code, 0) << "instrument status failed";
   }
   std::this_thread::sleep_for(200ms);
@@ -446,14 +446,14 @@ TEST_F(CLITest, StartInstrument) {
 TEST_F(CLITest, StartInstruments) {
   start_mock1();
   {
-    auto [exit_code, output] = run_iss("status MockInstrument1");
+    auto [exit_code, output] = run_iss("inst status MockInstrument1");
     EXPECT_EQ(exit_code, 0);
   }
 
   start_mock2();
   std::this_thread::sleep_for(100ms);
   {
-    auto [exit_code, output] = run_iss("status MockInstrument2");
+    auto [exit_code, output] = run_iss("inst status MockInstrument2");
     EXPECT_EQ(exit_code, 0);
   }
   stop_mock1();
