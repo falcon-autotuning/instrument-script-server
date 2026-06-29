@@ -84,7 +84,6 @@ if(BUILD_C_CLIENT)
   target_link_libraries(test_client_c_api
   PRIVATE
     instrument-script-server-client
-    instserver-proto
     GTest::gtest
     GTest::gtest_main
   )

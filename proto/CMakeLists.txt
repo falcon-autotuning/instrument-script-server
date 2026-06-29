@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 
-option(NANOPB_VERBOSE "Enable verbose nanopb debug output" OFF)
 include(GNUInstallDirs)
 
 find_package(Protobuf REQUIRED)
