@@ -17,6 +17,15 @@ set_target_properties(instserver-proto PROPERTIES
   POSITION_INDEPENDENT_CODE ON
 )
 
+if(WIN32)
+  target_compile_definitions(instserver-proto
+    PUBLIC PROTOBUF_USE_DLLS
+  )
+  set_target_properties(instserver-proto PROPERTIES
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+  )
+endif()
+
 target_sources(instserver-proto PRIVATE ${PROTO_FILES})
 
 target_include_directories(instserver-proto
