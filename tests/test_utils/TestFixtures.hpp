@@ -1,6 +1,6 @@
 #pragma once
-#include "instrument-script-server/server/InstrumentRegistry.hpp"
-#include "instrument-script-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/daemon/InstrumentRegistry.hpp"
+#include "instrument-script-server/daemon/SyncCoordinator.hpp"
 
 #include <gtest/gtest.h>
 
@@ -11,7 +11,7 @@ protected:
   void SetUp() override;
   void TearDown() override;
 
-  InstrumentRegistry *registry_;
+  daemon::InstrumentRegistry *registry_;
   SyncCoordinator *sync_coordinator_;
 };
 

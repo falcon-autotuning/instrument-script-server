@@ -1,7 +1,7 @@
 #include "PlatformPaths.hpp"
-#include "instrument-script-server/ErrorCodes.hpp"
-#include "instrument-script-server/ipc/DataBufferManager.hpp"
-#include "instrument-script-server/plugin/PluginLoader.hpp"
+#include "instrument-script-server/core/ErrorCodes.hpp"
+#include "instrument-script-server/core/PluginLoader.hpp"
+#include "instrument-script-server/daemon/DataBufferManager.hpp"
 #include <algorithm>
 #include <fmt/format.h>
 #include <inst_logging.h>
@@ -35,14 +35,14 @@ inline void safe_c_str_copy(T &dest, std::string_view src) {
               std::next(raw_dest, static_cast<std::ptrdiff_t>(bytes_to_copy)));
 }
 } // namespace
-using namespace instserver;
+using namespace instserver::daemon;
 using namespace instserver::test;
 
 class VISALargeDataTest : public ::testing::Test {
 protected:
   void SetUp() override {
     // Clear any existing buffers
-    auto &manager = ipc::DataBufferManager::instance();
+    auto &manager = DataBufferManager::instance();
     manager.clear_all();
 
     plugin_path_ = get_test_plugin_path("mock_visa_large_data_plugin");
@@ -60,7 +60,7 @@ protected:
   }
 
   void TearDown() override {
-    auto &manager = ipc::DataBufferManager::instance();
+    auto &manager = DataBufferManager::instance();
     manager.clear_all();
     inst_log_flush();
     inst_log_shutdown();
@@ -70,7 +70,7 @@ protected:
 };
 
 TEST_F(VISALargeDataTest, SmallDataInResponse) {
-  plugin::PluginLoader loader(plugin_path_.string());
+  instserver::plugin::PluginLoader loader(plugin_path_.string());
   ASSERT_TRUE(loader.is_loaded());
 
   // Use a more complete configuration
@@ -101,7 +101,7 @@ TEST_F(VISALargeDataTest, SmallDataInResponse) {
 }
 
 TEST_F(VISALargeDataTest, LargeDataInBuffer) {
-  plugin::PluginLoader loader(plugin_path_.string());
+  instserver::plugin::PluginLoader loader(plugin_path_.string());
   ASSERT_TRUE(loader.is_loaded());
 
   PluginConfig config{};

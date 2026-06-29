@@ -1,7 +1,7 @@
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
-#include "instrument-script-server/server/InstrumentRegistry.hpp"
-#include "instrument-script-server/server/RuntimeContext.hpp"
-#include "instrument-script-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/daemon/InstrumentRegistry.hpp"
+#include "instrument-script-server/daemon/PluginRegistry.hpp"
+#include "instrument-script-server/daemon/RuntimeContext.hpp"
+#include "instrument-script-server/daemon/SyncCoordinator.hpp"
 #include <instrument-log/inst_logging.h>
 
 #include <fstream>
@@ -11,6 +11,7 @@
 #include <thread>
 
 using namespace instserver;
+using namespace instserver::daemon;
 
 class MainFunctionTest : public ::testing::Test {
 protected:

@@ -1,10 +1,10 @@
-#include "instrument-script-server/ipc/DataBufferManager.hpp"
+#include "instrument-script-server/daemon/DataBufferManager.hpp"
 #include <algorithm>
+#include <google/protobuf/util/time_util.h>
 #include <gtest/gtest.h>
 #include <instrument-data.h>
-#include <google/protobuf/util/time_util.h>
 
-using namespace instserver::ipc;
+using namespace instserver::daemon;
 
 class DataBufferManagerTest : public ::testing::Test {
 protected:
@@ -31,7 +31,9 @@ TEST_F(DataBufferManagerTest, GetMetadata) {
   EXPECT_EQ(metadata->data_type(), INST_DATA_INT32);
   EXPECT_EQ(metadata->element_count(), test_data.size());
   EXPECT_EQ(metadata->byte_size(), test_data.size() * sizeof(int32_t));
-  EXPECT_GT(google::protobuf::util::TimeUtil::TimestampToMilliseconds(metadata->captured_at()), 0);
+  EXPECT_GT(google::protobuf::util::TimeUtil::TimestampToMilliseconds(
+                metadata->captured_at()),
+            0);
   manager_->release_buffer(buffer_id);
 }
 

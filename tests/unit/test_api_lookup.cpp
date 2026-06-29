@@ -1,5 +1,5 @@
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/server/InstrumentRegistry.hpp"
+#include "instrument-script-server/daemon/InstrumentRegistry.hpp"
 #include <instrument-log/inst_logging.h>
 
 #include <filesystem>
@@ -7,9 +7,9 @@
 #include <instrument-plugin.h>
 #include <spdlog/common.h>
 
-using namespace instserver;
+using namespace instserver::daemon;
 
-class APILookupTest : public test::PluginTestFixture {
+class APILookupTest : public instserver::test::PluginTestFixture {
 protected:
   void SetUp() override {
     // Ensure clean state between tests

@@ -1,5 +1,5 @@
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
-#include "instrument-script-server/server/ServerDaemon.hpp"
+#include "instrument-script-server/daemon/PluginRegistry.hpp"
+#include "instrument-script-server/daemon/ServerDaemon.hpp"
 #include <chrono>
 #include <filesystem>
 #include <fstream>

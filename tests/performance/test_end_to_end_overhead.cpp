@@ -1,8 +1,8 @@
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/server/InstrumentRegistry.hpp"
-#include "instrument-script-server/server/RuntimeContext.hpp"
-#include "instrument-script-server/server/ServerDaemon.hpp"
-#include "instrument-script-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/daemon/InstrumentRegistry.hpp"
+#include "instrument-script-server/daemon/RuntimeContext.hpp"
+#include "instrument-script-server/daemon/ServerDaemon.hpp"
+#include "instrument-script-server/daemon/SyncCoordinator.hpp"
 
 #include <chrono>
 #include <filesystem>
@@ -11,6 +11,7 @@
 #include <sol/sol.hpp>
 
 using namespace instserver;
+using namespace instserver::daemon;
 using namespace std::chrono;
 
 #ifndef TEST_DATA_DIR

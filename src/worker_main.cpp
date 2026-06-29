@@ -1,10 +1,9 @@
-#include "instrument-script-server/ErrorCodes.hpp"
-#include "instrument-script-server/ipc/DataBufferManager.hpp"
+#include "instrument-script-server/core/ErrorCodes.hpp"
+#include "instrument-script-server/core/InstrumentCommand.hpp"
+#include "instrument-script-server/core/ParsingTools.hpp"
+#include "instrument-script-server/core/PluginLoader.hpp"
 #include "instrument-script-server/ipc/IPCMessage.hpp"
 #include "instrument-script-server/ipc/SharedQueue.hpp"
-#include "instrument-script-server/plugin/PluginLoader.hpp"
-#include "instrument-script-server/server/InstrumentCommand.hpp"
-#include "instrument-script-server/server/ParsingTools.hpp"
 #include <algorithm>
 #include <csignal>
 #include <cxxopts.hpp>
@@ -13,6 +12,7 @@
 #include <instrument-log/inst_logging.h>
 #include <instrument-plugin.h>
 #include <iostream>
+#include <mutex>
 #include <plugin-host.h>
 #include <queue>
 #include <thread>
@@ -527,8 +527,8 @@ private:
 
       log_info("Executing __RELEASE_BUFFER__ for buffer: %s",
                buffer_id.c_str());
-
-      ipc::DataBufferManager::instance().release_buffer(buffer_id);
+      // This is releasing the plugin buffer for the user automatically
+      data_manager_release_buffer(buffer_id.c_str());
       return;
     }
     log_debug("Before command search");

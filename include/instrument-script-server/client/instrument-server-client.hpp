@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "instserver/server/v1/daemon_messages.grpc.pb.h"
+#include "instserver/daemon/v1/daemon_messages.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
 
 namespace instserver::client {
@@ -34,7 +34,7 @@ namespace instserver::client {
  * @endcode
  */
 
-namespace v1 = instserver::server::v1;
+namespace v1 = instserver::daemon::v1;
 
 class InstrumentServerClient {
 public:

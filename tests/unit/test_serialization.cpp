@@ -1,5 +1,5 @@
+#include "instrument-script-server/core/InstrumentCommand.hpp"
 #include "instrument-script-server/ipc/IPCMessage.hpp"
-#include "instrument-script-server/server/InstrumentCommand.hpp"
 
 #include <gtest/gtest.h>
 #include <instrument-plugin.h>

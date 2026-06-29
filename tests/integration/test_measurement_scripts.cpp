@@ -1,12 +1,12 @@
 #include "PlatformPaths.hpp"
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/ipc/DataBufferManager.hpp"
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
-#include "instrument-script-server/server/CommandHandlers.hpp"
-#include "instrument-script-server/server/InstrumentRegistry.hpp"
-#include "instrument-script-server/server/RuntimeContext.hpp"
-#include "instrument-script-server/server/ServerDaemon.hpp"
-#include "instrument-script-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/daemon/CommandHandlers.hpp"
+#include "instrument-script-server/daemon/DataBufferManager.hpp"
+#include "instrument-script-server/daemon/InstrumentRegistry.hpp"
+#include "instrument-script-server/daemon/PluginRegistry.hpp"
+#include "instrument-script-server/daemon/RuntimeContext.hpp"
+#include "instrument-script-server/daemon/ServerDaemon.hpp"
+#include "instrument-script-server/daemon/SyncCoordinator.hpp"
 #include <filesystem>
 #include <fstream>
 #include <google/protobuf/util/json_util.h>
@@ -20,8 +20,9 @@
 #include <numbers>
 #include <sol/sol.hpp>
 constexpr double PI = std::numbers::pi;
-namespace v1 = instserver::server::v1;
+namespace v1 = instserver::daemon::v1;
 using namespace instserver;
+using namespace instserver::daemon;
 using namespace instserver::test;
 #ifndef TEST_DATA_DIR
 #define TEST_DATA_DIR "."
@@ -29,7 +30,7 @@ using namespace instserver::test;
 
 bool local_read_buffer(const std::string &id, std::vector<double> &out_data,
                        uint64_t &out_count, uint32_t &out_type) {
-  auto &mgr = ipc::DataBufferManager::instance();
+  auto &mgr = instserver::daemon::DataBufferManager::instance();
   auto meta_opt = mgr.get_metadata(id);
   if (!meta_opt.has_value()) {
     return false;
@@ -474,7 +475,7 @@ commands:
       v1::ReleaseBufferRequest release_req;
       release_req.set_buffer_id(results[0].returns[0].value.str_val);
       v1::ReleaseBufferResponse release_resp;
-      int rc = server::handle_release_buffer(release_req, &release_resp);
+      int rc = handle_release_buffer(release_req, &release_resp);
       EXPECT_EQ(rc, 0);
       EXPECT_TRUE(release_resp.standard_response().ok());
     }
@@ -483,7 +484,7 @@ commands:
       v1::ReleaseBufferRequest release_req;
       release_req.set_buffer_id(results[1].returns[0].value.str_val);
       v1::ReleaseBufferResponse release_resp;
-      int rc = server::handle_release_buffer(release_req, &release_resp);
+      int rc = handle_release_buffer(release_req, &release_resp);
       EXPECT_EQ(rc, 0);
       EXPECT_TRUE(release_resp.standard_response().ok());
     }
@@ -510,7 +511,7 @@ TEST_F(MeasurementScriptTest, OuterMeasurePipelineWithMultipleBuffers) {
 
   // Clean up any existing state
   registry.remove_instrument("TestScope");
-  auto &manager = ipc::DataBufferManager::instance();
+  auto &manager = DataBufferManager::instance();
   manager.clear_all();
 
   // Path to mock plugin
@@ -600,7 +601,7 @@ commands:
   measure_req.set_script_path(script_path.string());
   v1::MeasureJobResultResponse measure_resp;
 
-  int rc = server::handle_measure(measure_req, &measure_resp);
+  int rc = handle_measure(measure_req, &measure_resp);
   ASSERT_EQ(rc, 0);
 
   const auto &results = measure_resp.results();
@@ -613,7 +614,7 @@ commands:
   if (results.size() >= 2) {
     // Helper lambda to validate outer buffer structure and extract its ID
     auto validate_outer_buffer =
-        [](const server::v1::CommandResult &result,
+        [](const v1::CommandResult &result,
            const std::string &step_name) -> std::string {
       SCOPED_TRACE("Failure during payload validation: " + step_name);
 
@@ -622,7 +623,7 @@ commands:
 
       const auto &ret = result.param(0);
 
-      EXPECT_EQ(ret.type(), server::v1::LUA_TYPES_DATA_BUFFER);
+      EXPECT_EQ(ret.type(), v1::LUA_TYPES_DATA_BUFFER);
       EXPECT_FALSE(ret.value().s().empty());
       EXPECT_GT(ret.dbmeta().element_count(), 0ULL);
       EXPECT_EQ(ret.dbmeta().data_type(), INST_DATA_FLOAT32);
@@ -643,7 +644,7 @@ commands:
     const auto &r2 = results[2];
     EXPECT_EQ(r2.instrument_name(), "TestScope");
     EXPECT_EQ(r2.verb(), "GET_SMALL_DATA");
-    EXPECT_EQ(r2.param(0).type(), server::v1::LUA_TYPES_DOUBLE);
+    EXPECT_EQ(r2.param(0).type(), v1::LUA_TYPES_DOUBLE);
   }
   // Helper lambda for clean, reusable buffer checking with detailed error
   // logging
@@ -674,7 +675,7 @@ commands:
     v1::ReleaseBufferRequest release_req;
     release_req.set_buffer_id(buffer_id);
     v1::ReleaseBufferResponse release_resp;
-    int release_rc = server::handle_release_buffer(release_req, &release_resp);
+    int release_rc = handle_release_buffer(release_req, &release_resp);
 
     ASSERT_EQ(release_rc, 0) << "handle_release_buffer failed!";
     EXPECT_TRUE(release_resp.standard_response().ok());

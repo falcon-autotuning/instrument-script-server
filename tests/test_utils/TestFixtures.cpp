@@ -10,7 +10,7 @@ void InstrumentServerTest::SetUp() {
   inst_log_init("test.log", INST_LOG_DEBUG, "instrument",
                 1024 * 1024, // 1 MB
                 3);          // rotation count
-  registry_ = &InstrumentRegistry::instance();
+  registry_ = &daemon::InstrumentRegistry::instance();
   sync_coordinator_ = new SyncCoordinator();
 }
 
@@ -42,7 +42,7 @@ void IntegrationTest::SetUp() {
 }
 
 void IntegrationTest::TearDown() {
-  auto &registry = InstrumentRegistry::instance();
+  auto &registry = daemon::InstrumentRegistry::instance();
   registry.stop_all();
   inst_log_flush();
   inst_log_shutdown();

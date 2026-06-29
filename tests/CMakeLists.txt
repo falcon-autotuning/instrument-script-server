@@ -6,6 +6,7 @@ add_library(test-utils STATIC
 
 target_link_libraries(test-utils PUBLIC
   instrument-script-server-core
+  internal-daemon
   GTest::gtest
 )
 
@@ -36,7 +37,6 @@ add_executable(
 
 target_link_libraries(unit_tests
   PRIVATE
-    instrument-script-server-core
     test-utils
     GTest::gtest
     GTest::gtest_main
@@ -58,7 +58,6 @@ add_executable(
 
 target_link_libraries(integration_tests
   PRIVATE
-    instrument-script-server-core
     test-utils
     GTest::gtest
     GTest::gtest_main
@@ -72,7 +71,6 @@ add_executable(
   performance/test_end_to_end_overhead.cpp)
 
 target_link_libraries(perf_tests PRIVATE
-  instrument-script-server-core
   test-utils
   GTest::gtest
   GTest::gtest_main

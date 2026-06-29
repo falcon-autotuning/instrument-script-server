@@ -3,7 +3,7 @@
 
 namespace instserver::client {
 
-namespace v1 = instserver::server::v1;
+namespace v1 = instserver::daemon::v1;
 
 /* ============================================================
  * Constructor

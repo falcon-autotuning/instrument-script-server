@@ -9,7 +9,7 @@ find_package(gRPC CONFIG REQUIRED)
 set(PROTO_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(PROTO_FILES
-  ${PROTO_ROOT}/instserver/server/v1/daemon_messages.proto
+  ${PROTO_ROOT}/instserver/daemon/v1/daemon_messages.proto
 )
 
 add_library(instserver-proto STATIC)
