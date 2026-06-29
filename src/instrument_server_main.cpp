@@ -354,14 +354,20 @@ auto call_rpc(CLIOutput &out, Fn &&fn) -> std::optional<decltype(fn())> {
 // Returns the path to instrument-script-server-daemon, preferring co-location
 // with this binary (argv[0]), then falling back to the bare name (PATH lookup).
 std::string get_daemon_path(const char *argv0) {
+  std::string exe_name = "instrument-script-server-daemon";
+
+#ifdef _WIN32
+  exe_name += ".exe";
+#endif
+
   if (argv0 != nullptr) {
     std::filesystem::path self(argv0);
-    auto sibling = self.parent_path() / "instrument-script-server-daemon";
+    auto sibling = self.parent_path() / exe_name;
     if (std::filesystem::exists(sibling)) {
       return sibling.string();
     }
   }
-  return "instrument-script-server-daemon";
+  return exe_name;
 }
 
 std::string readable_datatype(uint8_t type) {
