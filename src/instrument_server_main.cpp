@@ -396,14 +396,13 @@ DAEMON
   daemon status                        Show daemon status
 
 INSTRUMENT
-  start <config>                       Start instrument
+  inst start <config>                       Start instrument
          [--plugin <path>]
          [--log-level <level>]
 
-  stop <name>                          Stop instrument
-  status <name>                        Query instrument
-  list                                 List running instruments
-  discover [paths...]                  Discover plugins
+  inst stop <name>                          Stop instrument
+  inst status <name>                        Query instrument
+  inst list                                 List running instruments
 
 MEASUREMENT
   measure <script>                     Run measurement
@@ -424,6 +423,9 @@ BUFFERS
   buffer metadata <id>                 Buffer metadata
   buffer read <id>                     Read buffer contents
   buffer release <id>                  Release buffer
+
+UTILITIES
+  discover [paths...]                  Discover plugins
 
 OPTIONS
   -h, --help       Show help
@@ -451,9 +453,7 @@ EXAMPLE WORKFLOW
 enum class ISS_CLI_Command : std::uint8_t {
   DAEMON,
   JOB,
-  START,
-  STOP,
-  LIST,
+  INST,
   BUFFER,
   MEASURE,
   DISCOVER,
@@ -470,11 +470,9 @@ struct CommandEntry {
   std::string_view name;
 };
 
-constexpr std::array<CommandEntry, 13> command_table{
+constexpr std::array<CommandEntry, 11> command_table{
     {{.cmd = ISS_CLI_Command::DAEMON, .name = "daemon"},
-     {.cmd = ISS_CLI_Command::START, .name = "start"},
-     {.cmd = ISS_CLI_Command::STOP, .name = "stop"},
-     {.cmd = ISS_CLI_Command::LIST, .name = "list"},
+     {.cmd = ISS_CLI_Command::INST, .name = "inst"},
      {.cmd = ISS_CLI_Command::BUFFER, .name = "buffer"},
      {.cmd = ISS_CLI_Command::MEASURE, .name = "measure"},
      {.cmd = ISS_CLI_Command::STATUS, .name = "status"},
@@ -535,6 +533,22 @@ constexpr SUB_BUFFER parse_sub_buffer(std::string_view s) {
   }
 
   return SUB_BUFFER::UNKNOWN;
+}
+enum class SUB_INST : std::uint8_t { START, STOP, STATUS, LIST, UNKNOWN };
+constexpr SUB_INST parser_sub_inst(std::string_view s) {
+  if (s == "start") {
+    return SUB_INST::START;
+  }
+  if (s == "stop") {
+    return SUB_INST::STOP;
+  }
+  if (s == "status") {
+    return SUB_INST::STATUS;
+  }
+  if (s == "list") {
+    return SUB_INST::LIST;
+  }
+  return SUB_INST::UNKNOWN;
 }
 
 enum class SUB_JOB : std::uint8_t {
@@ -747,76 +761,105 @@ int main(int argc, char **argv) {
       }
       } // end case ISS_CLI_Command::DAEMON
     }
+    case ISS_CLI_Command::INST: {
+      auto action = args.at(2);
+      if (argc < 3) {
+        out.error("Error: unknown inst command: " + std::string(action) +
+                  "\n\n"
+                  "Valid commands:\n"
+                  "  start <script>\n"
+                  "  stop <name>\n"
+                  "  status <name>\n"
+                  "  list");
+        return out.emit();
+      }
+      switch (parser_sub_inst(action)) {
 
-    case ISS_CLI_Command::START: {
-      if (argc < 3) {
-        out.error("Usage: start <config> [--json]");
-        return out.emit();
-      }
-      return with_client(out, [&](auto &client) {
-        instserver::client::v1::StartInstrumentRequest req;
-        req.set_config_path(std::string(args.at(2)));
-        req.set_plugin_path(args.get_option("plugin"));
-        req.set_log_level(args.get_option("log-level", true, "info"));
-        auto resp = call_rpc(out, [&] { return client.start_instrument(req); });
-        if (!resp.has_value()) {
-          return;
+      case SUB_INST::START: {
+        if (argc < 3) {
+          out.error("Usage: start <config> [--json]");
+          return out.emit();
         }
-        out.message("Instrument started successfully");
-      });
-    }
-    case ISS_CLI_Command::STOP: {
-      if (argc < 3) {
-        out.error("Error: stop requires instrument name\n"
-                  "Usage: instrument-script-server stop <name> [--json]");
-        return out.emit();
-      }
-      return with_client(out, [&](auto &client) {
-        instserver::client::v1::StopInstrumentRequest req;
-        req.set_instrument_name(std::string(args.at(2)));
-        auto resp = call_rpc(out, [&] { return client.stop_instrument(req); });
-        if (!resp.has_value()) {
-          return;
-        }
-        out.message("Stopped instrument: " + std::string(args.at(2)));
-      });
-    }
-    case ISS_CLI_Command::STATUS: {
-      if (argc < 3) {
-        out.error("Usage: status <name> [--json]");
-        return out.emit();
-      }
-      return with_client(out, [&](auto &client) {
-        instserver::client::v1::InstrumentStatusRequest req;
-        req.set_instrument_name(args.at(2));
-        auto resp =
-            call_rpc(out, [&] { return client.instrument_status(req); });
-        if (!resp.has_value()) {
-          return;
-        }
-        out.message("Instrument: " + std::string(args.at(2)));
-        if (resp.value().has_stats()) {
-          out.message("Commands sent: " +
-                      std::to_string(resp.value().stats().commands_sent()));
-        }
-      });
-    }
-    case ISS_CLI_Command::LIST: {
-      return with_client(out, [&](auto &client) {
-        instserver::client::v1::ListInstrumentsRequest req;
-        auto resp = call_rpc(out, [&] { return client.list_instruments(req); });
-        if (!resp.has_value()) {
-          return;
-        }
-        if (resp.value().instrument_name().empty()) {
-          out.error("No instruments running");
-        } else {
-          out.message("Running instruments:");
-          for (const auto &name : resp.value().instrument_name()) {
-            out.message("  " + name);
+        return with_client(out, [&](auto &client) {
+          instserver::client::v1::StartInstrumentRequest req;
+          req.set_config_path(std::string(args.at(2)));
+          req.set_plugin_path(args.get_option("plugin"));
+          req.set_log_level(args.get_option("log-level", true, "info"));
+          auto resp =
+              call_rpc(out, [&] { return client.start_instrument(req); });
+          if (!resp.has_value()) {
+            return;
           }
+          out.message("Instrument started successfully");
+        });
+      }
+      case SUB_INST::STOP: {
+        if (argc < 3) {
+          out.error("Error: stop requires instrument name\n"
+                    "Usage: instrument-script-server stop <name> [--json]");
+          return out.emit();
         }
-      });
+        return with_client(out, [&](auto &client) {
+          instserver::client::v1::StopInstrumentRequest req;
+          req.set_instrument_name(std::string(args.at(2)));
+          auto resp =
+              call_rpc(out, [&] { return client.stop_instrument(req); });
+          if (!resp.has_value()) {
+            return;
+          }
+          out.message("Stopped instrument: " + std::string(args.at(2)));
+        });
+      }
+      case SUB_INST::STATUS: {
+        if (argc < 3) {
+          out.error("Usage: status <name> [--json]");
+          return out.emit();
+        }
+        return with_client(out, [&](auto &client) {
+          instserver::client::v1::InstrumentStatusRequest req;
+          req.set_instrument_name(args.at(2));
+          auto resp =
+              call_rpc(out, [&] { return client.instrument_status(req); });
+          if (!resp.has_value()) {
+            return;
+          }
+          out.message("Instrument: " + std::string(args.at(2)));
+          if (resp.value().has_stats()) {
+            out.message("Commands sent: " +
+                        std::to_string(resp.value().stats().commands_sent()));
+          }
+        });
+      }
+      case SUB_INST::LIST: {
+        return with_client(out, [&](auto &client) {
+          instserver::client::v1::ListInstrumentsRequest req;
+          auto resp =
+              call_rpc(out, [&] { return client.list_instruments(req); });
+          if (!resp.has_value()) {
+            return;
+          }
+          if (resp.value().instrument_name().empty()) {
+            out.error("No instruments running");
+          } else {
+            out.message("Running instruments:");
+            for (const auto &name : resp.value().instrument_name()) {
+              out.message("  " + name);
+            }
+          }
+        });
+      }
+      case SUB_INST::UNKNOWN:
+      default: {
+        out.error("Error: unknown inst command: " + std::string(action) +
+                  "\n\n"
+                  "Valid commands:\n"
+                  "  start <script>\n"
+                  "  stop <name>\n"
+                  "  status <name>\n"
+                  "  list");
+        return out.emit();
+      }
+      }
     }
     case ISS_CLI_Command::MEASURE: {
       if (argc < 3) {
