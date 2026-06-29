@@ -11,7 +11,7 @@ set(PROTO_FILES
   ${PROTO_ROOT}/instserver/server/v1/daemon_messages.proto
 )
 
-add_library(instserver-proto STATIC)
+add_library(instserver-proto SHARED)
 
 set_target_properties(instserver-proto PROPERTIES
   POSITION_INDEPENDENT_CODE ON
