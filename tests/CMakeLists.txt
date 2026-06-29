@@ -172,6 +172,7 @@ endif()
 
 
 set(TEST_RUNTIME_TOOLS
+  instrument-script-server-daemon
   instrument-worker
   validate-instrument-api
   validate-instrument-config
