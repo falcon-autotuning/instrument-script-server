@@ -49,10 +49,10 @@ target_link_libraries(instserver-proto
     protobuf::libprotobuf
 )
 
-# set_target_properties(instserver-proto PROPERTIES
-#   POSITION_INDEPENDENT_CODE ON
-# )
-#
+set_target_properties(instserver-proto PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+)
+
 # if(WIN32)
 #   target_compile_definitions(instserver-proto PUBLIC PROTOBUF_USE_DLLS)
 #
