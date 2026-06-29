@@ -13,34 +13,6 @@ set(PROTO_FILES
 
 add_library(instserver-proto SHARED)
 
-set_target_properties(instserver-proto PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
-)
-
-if(WIN32)
-  target_compile_definitions(instserver-proto
-    PUBLIC PROTOBUF_USE_DLLS
-  )
-  set_target_properties(instserver-proto PROPERTIES
-    WINDOWS_EXPORT_ALL_SYMBOLS ON
-  )
-endif()
-
-target_sources(instserver-proto PRIVATE ${PROTO_FILES})
-
-target_include_directories(instserver-proto
-  PUBLIC
-    $<BUILD_INTERFACE:${PROTO_ROOT}>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-    $<INSTALL_INTERFACE:include>
-)
-
-target_link_libraries(instserver-proto
-  PUBLIC
-    protobuf::libprotobuf
-    gRPC::grpc++
-)
-
 protobuf_generate(
   TARGET instserver-proto
   LANGUAGE cpp
@@ -56,6 +28,32 @@ protobuf_generate(
   IMPORT_DIRS ${PROTO_ROOT}
   PROTOS ${PROTO_FILES}
 )
+
+target_include_directories(instserver-proto
+  PUBLIC
+    $<BUILD_INTERFACE:${PROTO_ROOT}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+    $<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(instserver-proto
+  PUBLIC
+    protobuf::libprotobuf
+    gRPC::grpc++
+)
+
+set_target_properties(instserver-proto PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+)
+
+if(WIN32)
+  target_compile_definitions(instserver-proto
+    PUBLIC PROTOBUF_USE_DLLS
+  )
+  set_target_properties(instserver-proto PROPERTIES
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+  )
+endif()
 
 # ============================================================
 # INSTALL
