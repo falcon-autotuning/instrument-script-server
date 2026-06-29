@@ -1,6 +1,5 @@
 // ServerDaemon.hpp
 #pragma once
-#include "instrument-script-server/export.h"
 
 #include "instrument-script-server/daemon/SyncCoordinator.hpp"
 
@@ -17,16 +16,16 @@ namespace daemon {
 class GrpcServer;
 }
 // Gets the shutdown pipe for the server daemon process
-std::string INSTRUMENT_SERVER_API get_shutdown_pipe_path();
-bool INSTRUMENT_SERVER_API create_shutdown_pipe();
-void INSTRUMENT_SERVER_API close_shutdown_pipe();
-void INSTRUMENT_SERVER_API remove_pid_file();
-std::string INSTRUMENT_SERVER_API get_pid_file_path();
-bool INSTRUMENT_SERVER_API create_pid_file();
-void INSTRUMENT_SERVER_API signal_shutdown_pipe();
+std::string get_shutdown_pipe_path();
+bool create_shutdown_pipe();
+void close_shutdown_pipe();
+void remove_pid_file();
+std::string get_pid_file_path();
+bool create_pid_file();
+void signal_shutdown_pipe();
 
 /// Server daemon that manages instrument registry and accepts commands
-class INSTRUMENT_SERVER_API ServerDaemon {
+class ServerDaemon {
 public:
   static ServerDaemon &instance();
 

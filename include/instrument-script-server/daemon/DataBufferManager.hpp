@@ -1,6 +1,5 @@
 #pragma once
 
-#include "instrument-script-server/export.h"
 #include "instserver/daemon/v1/daemon_messages.pb.h"
 #include <cstddef>
 #include <instrument-data.h>
@@ -14,7 +13,7 @@
 namespace instserver::daemon {
 
 /// Manages shared memory buffers for large data transfers
-class INSTRUMENT_SERVER_API DataBufferManager {
+class DataBufferManager {
 public:
   static DataBufferManager &instance();
 

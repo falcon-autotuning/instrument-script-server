@@ -1,6 +1,5 @@
 #pragma once
 
-#include "instrument-script-server/export.h"
 #include <atomic>
 #include <cstdint>
 #include <memory>
@@ -12,7 +11,7 @@ class Server;
 
 namespace instserver::daemon {
 
-class INSTRUMENT_SERVER_API GrpcServer {
+class GrpcServer {
 public:
   GrpcServer();
   ~GrpcServer();

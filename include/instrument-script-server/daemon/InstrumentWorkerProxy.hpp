@@ -1,6 +1,5 @@
 #pragma once
 #include "instrument-script-server/core/ParsingTools.hpp"
-#include "instrument-script-server/export.h"
 
 #include "instrument-script-server/core/InstrumentCommand.hpp"
 #include "instrument-script-server/ipc/PlatformTypes.hpp"
@@ -20,7 +19,7 @@ using APICommands = std::unordered_map<std::string, Command>;
 
 /// Proxy for communicating with a worker process via IPC
 /// This runs in the main server process
-class INSTRUMENT_SERVER_API InstrumentWorkerProxy {
+class InstrumentWorkerProxy {
 public:
   InstrumentWorkerProxy(std::string instrument_name,
                         std::filesystem::path plugin,

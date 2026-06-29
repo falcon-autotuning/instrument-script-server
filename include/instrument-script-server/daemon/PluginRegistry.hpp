@@ -1,5 +1,4 @@
 #pragma once
-#include "instrument-script-server/export.h"
 
 #include "instrument-script-server/core/PluginLoader.hpp"
 
@@ -12,7 +11,7 @@
 namespace instserver::plugin {
 
 /// Registry for managing loaded plugins
-class INSTRUMENT_SERVER_API PluginRegistry {
+class PluginRegistry {
 public:
   static PluginRegistry &instance() {
     static PluginRegistry registry;

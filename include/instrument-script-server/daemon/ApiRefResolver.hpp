@@ -1,6 +1,5 @@
 #pragma once
 
-#include "instrument-script-server/export.h"
 #include <string>
 
 namespace instserver::daemon {
@@ -16,7 +15,7 @@ namespace instserver::daemon {
 ///
 /// The function is exported from the instrument-script-server-core library so
 /// tests and other executables can link against it on Windows.
-INSTRUMENT_SERVER_API std::string
-resolve_api_ref(const std::string &api_ref, const std::string &config_path);
+std::string resolve_api_ref(const std::string &api_ref,
+                            const std::string &config_path);
 
 } // namespace instserver::daemon

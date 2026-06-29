@@ -1,5 +1,4 @@
 #pragma once
-#include "instrument-script-server/export.h"
 
 #include "instrument-script-server/daemon/InstrumentWorkerProxy.hpp"
 
@@ -11,7 +10,7 @@
 
 namespace instserver::daemon {
 
-class INSTRUMENT_SERVER_API InstrumentRegistry {
+class InstrumentRegistry {
 public:
   static InstrumentRegistry &instance() {
     static InstrumentRegistry registry;

@@ -1,5 +1,4 @@
 #pragma once
-#include "instrument-script-server/export.h"
 
 #include "instrument-script-server/core/InstrumentCommand.hpp"
 #include "instrument-script-server/daemon/InstrumentRegistry.hpp"
@@ -19,7 +18,7 @@ using CallStackPtr =
 
 /// Lua-accessible handle for array data buffers
 /// Provides methods for array math operations
-class INSTRUMENT_SERVER_API BufferHandle {
+class BufferHandle {
 public:
   explicit BufferHandle(const std::string &buffer_id, uint64_t element_count,
                         const std::string &data_type);
@@ -48,7 +47,7 @@ private:
 
 /// Lua-accessible measurement response object
 /// Wraps scalar values with metadata and provides math operations
-class INSTRUMENT_SERVER_API MeasurementResponse {
+class MeasurementResponse {
 public:
   MeasurementResponse(CallStackPtr, double value_double);
   MeasurementResponse(CallStackPtr, int64_t value_int);
@@ -96,7 +95,7 @@ private:
 };
 
 /// Result of a single context:call() operation
-struct INSTRUMENT_SERVER_API CallResult {
+struct CallResult {
   std::string command_id;
   CallStackPtr target{nullptr, instrument_call_stack_free};
   std::vector<Variable> params;
@@ -115,7 +114,7 @@ struct INSTRUMENT_SERVER_API CallResult {
 /// - parallel(): Synchronized parallel execution (dispatch-only; parsing blocks
 /// only until dispatch)
 /// - log(): Logging from scripts
-class INSTRUMENT_SERVER_API RuntimeContext {
+class RuntimeContext {
 public:
   explicit RuntimeContext(InstrumentRegistry &, SyncCoordinator &);
   virtual ~RuntimeContext() = default;
@@ -216,7 +215,7 @@ protected:
 /// If enqueue_mode is true, the context will enqueue commands (non-blocking)
 /// and allow callers to release tokens & wait on them later via
 /// process_tokens_and_wait().
-INSTRUMENT_SERVER_API std::shared_ptr<RuntimeContext>
+std::shared_ptr<RuntimeContext>
 bind_runtime_context(sol::state &lua, InstrumentRegistry &registry,
                      SyncCoordinator &sync_coordinator);
 
