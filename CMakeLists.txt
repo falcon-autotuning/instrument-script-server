@@ -154,21 +154,10 @@ add_library(
       src/version.cpp
       src/ipc/SharedQueue.cpp
       src/ipc/ProcessManager.cpp
-      src/ipc/DataBufferManager.cpp
-      src/plugin/PluginLoader.cpp
-      src/plugin/PluginRegistry.cpp
-      src/server/InstrumentRegistry.cpp
-      src/server/InstrumentWorkerProxy.cpp
-      src/server/RuntimeContext.cpp
-      src/server/SyncCoordinator.cpp
-      src/server/ApiRefResolver.cpp
-      src/server/ServerDaemon.cpp
-      src/server/GrpcServer.cpp
-      src/server/CommandHandlers.cpp
-      src/server/JobManager.cpp
-      src/server/InstrumentCommand.cpp
-      src/server/ParsingTools.cpp
-      src/GlobalConfig.cpp
+      src/core/PluginLoader.cpp
+      src/core/InstrumentCommand.cpp
+      src/core/ParsingTools.cpp
+      src/core/GlobalConfig.cpp
       ${CMAKE_BINARY_DIR}/embedded_schemas.cpp
 )
 
@@ -194,21 +183,49 @@ target_compile_definitions(
 target_link_libraries(
   instrument-script-server-core
   PUBLIC
-    nlohmann_json::nlohmann_json
     yaml-cpp::yaml-cpp
+    instrument-log::instrument-log
+)
+
+target_include_directories(
+  instrument-script-server-core
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+#Daemon library
+add_library(
+  internal-daemon
+    STATIC
+      src/daemon/DataBufferManager.cpp
+      src/daemon/PluginRegistry.cpp
+      src/daemon/InstrumentRegistry.cpp
+      src/daemon/InstrumentWorkerProxy.cpp
+      src/daemon/RuntimeContext.cpp
+      src/daemon/SyncCoordinator.cpp
+      src/daemon/ApiRefResolver.cpp
+      src/daemon/ServerDaemon.cpp
+      src/daemon/GrpcServer.cpp
+      src/daemon/CommandHandlers.cpp
+      src/daemon/JobManager.cpp
+)
+
+target_link_libraries(internal-daemon
+  PRIVATE
+    instrument-script-server-core
+  PUBLIC
+    nlohmann_json::nlohmann_json
     ${PLATFORM_LIBS}
     ${LUA_LIBRARIES}
-    instrument-log::instrument-log
     instrument-data::instrument-data
     instrument-call-stack::instrument-call-stack
     instrument-call-stack::instrument-call-stack-lua
     instserver-proto
-    gRPC::grpc++
 )
 
-# Per-target include directories (avoid global include_directories)
 target_include_directories(
-  instrument-script-server-core
+  internal-daemon
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
@@ -216,7 +233,7 @@ target_include_directories(
     $<$<BOOL:${SOL2_INCLUDE_DIR}>:$<BUILD_INTERFACE:${SOL2_INCLUDE_DIR}>>
 )
 
-add_executable(instrument-script-server-daemon src/server/daemon_main.cpp)
+add_executable(instrument-script-server-daemon src/daemon/daemon_main.cpp)
 add_executable(instrument-worker src/worker_main.cpp)
 add_executable(validate-instrument-api src/instrument_api_validator_main.cpp)
 add_executable(validate-instrument-config
@@ -229,6 +246,15 @@ add_executable(generate-instrument-config
 if(BUILD_CLI)
   add_executable(instrument-script-server src/instrument_server_main.cpp)
 endif()
+target_link_libraries(instrument-script-server-daemon
+  PRIVATE
+    internal-daemon
+)
+target_link_libraries(instrument-worker
+  PRIVATE
+    instrument-plugin-api::instrument-plugin-api-host
+    instrument-data::instrument-data
+)
 foreach(target
         instrument-script-server-daemon
         validate-instrument-api
@@ -236,14 +262,10 @@ foreach(target
         validate-quantum-dot-config
         template-expander
         generate-instrument-config
+        instrument-worker
 )
   target_link_libraries(${target} PRIVATE instrument-script-server-core)
 endforeach()
-target_link_libraries(instrument-worker
-  PRIVATE
-    instrument-script-server-core
-    instrument-plugin-api::instrument-plugin-api-host
-)
 if(BUILD_C_CLIENT)
   add_library(instrument-script-server-client STATIC
     src/client/instrument-server-client.cpp
@@ -252,7 +274,6 @@ if(BUILD_C_CLIENT)
   target_link_libraries(instrument-script-server-client
     PUBLIC
       instserver-proto
-      gRPC::grpc++
   )
   target_include_directories(instrument-script-server-client
     BEFORE PRIVATE

@@ -1,11 +1,12 @@
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
-#include "instrument-script-server/server/InstrumentRegistry.hpp"
-#include "instrument-script-server/server/ServerDaemon.hpp"
+#include "instrument-script-server/daemon/InstrumentRegistry.hpp"
+#include "instrument-script-server/daemon/PluginRegistry.hpp"
+#include "instrument-script-server/daemon/ServerDaemon.hpp"
 #include <gtest/gtest.h>
 #include <instrument-log/inst_logging.h>
 
 using namespace instserver;
+using namespace instserver::daemon;
 
 namespace {
 void copy_string(char *dst, size_t dst_size, const std::string &src) {

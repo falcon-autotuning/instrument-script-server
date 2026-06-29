@@ -1,16 +1,12 @@
 #include "instrument-script-server/client/instrument-server-client.hpp"
 
-#include "instserver/server/v1/daemon_messages.grpc.pb.h"
-#include "instserver/server/v1/daemon_messages.pb.h"
-
 #include <grpcpp/grpcpp.h>
 #include <gtest/gtest.h>
 #include <thread>
 
-using namespace instserver::server;
-namespace v1 = instserver::server::v1;
+using namespace instserver::daemon;
+namespace v1 = instserver::daemon::v1;
 
-using namespace instserver::server;
 class TestService final : public v1::DaemonService::Service {
 public:
   bool fail_next = false;

@@ -1,7 +1,7 @@
 #include "PlatformPaths.hpp"
-#include "instrument-script-server/ErrorCodes.hpp"
-#include "instrument-script-server/plugin/PluginLoader.hpp"
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
+#include "instrument-script-server/core/ErrorCodes.hpp"
+#include "instrument-script-server/core/PluginLoader.hpp"
+#include "instrument-script-server/daemon/PluginRegistry.hpp"
 #include <gtest/gtest.h>
 #include <instrument-plugin.h>
 #include <plugin-host.h>

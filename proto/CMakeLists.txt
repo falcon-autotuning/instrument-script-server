@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
-option(NANOPB_VERBOSE "Enable verbose nanopb debug output" OFF)
 include(GNUInstallDirs)
 
 find_package(Protobuf REQUIRED)
@@ -9,16 +9,31 @@ find_package(gRPC CONFIG REQUIRED)
 set(PROTO_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(PROTO_FILES
-  ${PROTO_ROOT}/instserver/server/v1/daemon_messages.proto
+  ${PROTO_ROOT}/instserver/daemon/v1/daemon_messages.proto
 )
 
 add_library(instserver-proto STATIC)
 
-set_target_properties(instserver-proto PROPERTIES
-  POSITION_INDEPENDENT_CODE ON
+protobuf_generate(
+  LANGUAGE cpp
+  IMPORT_DIRS ${PROTO_ROOT}
+  PROTOS ${PROTO_FILES}
+  OUT_VAR PROTO_SRCS
 )
 
-target_sources(instserver-proto PRIVATE ${PROTO_FILES})
+protobuf_generate(
+  LANGUAGE grpc
+  GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
+  PLUGIN "protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
+  IMPORT_DIRS ${PROTO_ROOT}
+  PROTOS ${PROTO_FILES}
+  OUT_VAR GRPC_SRCS
+)
+
+target_sources(instserver-proto PRIVATE
+  ${PROTO_SRCS}
+  ${GRPC_SRCS}
+)
 
 target_include_directories(instserver-proto
   PUBLIC
@@ -29,25 +44,26 @@ target_include_directories(instserver-proto
 
 target_link_libraries(instserver-proto
   PUBLIC
-    protobuf::libprotobuf
     gRPC::grpc++
+  PRIVATE
+    protobuf::libprotobuf
 )
 
-protobuf_generate(
-  TARGET instserver-proto
-  LANGUAGE cpp
-  IMPORT_DIRS ${PROTO_ROOT}
-  PROTOS ${PROTO_FILES}
+set_target_properties(instserver-proto PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
 )
 
-protobuf_generate(
-  TARGET instserver-proto
-  LANGUAGE grpc
-  GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
-  PLUGIN "protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>"
-  IMPORT_DIRS ${PROTO_ROOT}
-  PROTOS ${PROTO_FILES}
-)
+# if(WIN32)
+#   target_compile_definitions(instserver-proto PUBLIC PROTOBUF_USE_DLLS)
+#
+#   set_target_properties(instserver-proto PROPERTIES
+#     WINDOWS_EXPORT_ALL_SYMBOLS ON
+#   )
+#
+#   target_link_options(instserver-proto PRIVATE
+#     "/OPT:NOREF"
+#   )
+# endif()
 
 # ============================================================
 # INSTALL

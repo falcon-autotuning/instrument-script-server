@@ -1,17 +1,15 @@
-#include <cstdlib>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
-#include <string>
-#include <thread>
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#define popen _popen
+#define pclose _pclose
 #else
 #include <unistd.h>
 #endif
-
-using std::system;
 
 using namespace std::chrono_literals;
 #ifndef ISS_DAEMON_PATH

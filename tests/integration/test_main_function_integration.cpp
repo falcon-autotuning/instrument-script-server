@@ -1,8 +1,8 @@
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
-#include "instrument-script-server/server/CommandHandlers.hpp"
-#include "instrument-script-server/server/InstrumentRegistry.hpp"
-#include "instrument-script-server/server/ServerDaemon.hpp"
+#include "instrument-script-server/daemon/CommandHandlers.hpp"
+#include "instrument-script-server/daemon/InstrumentRegistry.hpp"
+#include "instrument-script-server/daemon/PluginRegistry.hpp"
+#include "instrument-script-server/daemon/ServerDaemon.hpp"
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
@@ -18,7 +18,7 @@
 
 using namespace instserver;
 using namespace instserver::test;
-using namespace instserver::server;
+using namespace instserver::daemon;
 using json = nlohmann::json;
 
 class MainFunctionIntegrationTest : public test::PluginTestFixture {

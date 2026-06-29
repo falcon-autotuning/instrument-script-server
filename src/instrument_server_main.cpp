@@ -1,5 +1,4 @@
 #include "instrument-script-server/client/instrument-server-client.hpp"
-#include "instserver/server/v1/daemon_messages.pb.h"
 #include <algorithm>
 #include <charconv>
 #include <cstdint>
@@ -144,7 +143,7 @@ std::optional<uint32_t> to_int(std::string_view sv) {
   }
   return value;
 }
-using instserver::server::v1::VariableValue;
+using instserver::daemon::v1::VariableValue;
 
 // ---- string_view -> int64 ----
 std::optional<int64_t> to_int64(std::string_view sv) {
@@ -699,7 +698,7 @@ int main(int argc, char **argv) {
         for (int i = 0; i < 20; ++i) {
           try {
             instserver::client::InstrumentServerClient client(get_port());
-            instserver::server::v1::DaemonStatusRequest req;
+            instserver::daemon::v1::DaemonStatusRequest req;
             auto resp = client.daemon_status(req);
             if (resp.running()) {
               running = true;
@@ -1215,7 +1214,7 @@ int main(int argc, char **argv) {
 
       case SUB_BUFFER::LIST: {
         return with_client(out, [&](auto &client) {
-          instserver::server::v1::ListDataBuffersRequest req;
+          instserver::daemon::v1::ListDataBuffersRequest req;
           auto resp =
               call_rpc(out, [&] { return client.list_data_buffers(req); });
 
@@ -1248,7 +1247,7 @@ int main(int argc, char **argv) {
         return with_client(out, [&](auto &client) {
           std::string buffer_id = std::string(args.at(3));
 
-          instserver::server::v1::GetBufferMetadataRequest req;
+          instserver::daemon::v1::GetBufferMetadataRequest req;
           req.set_buffer_id(buffer_id);
 
           auto resp =

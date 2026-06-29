@@ -6,6 +6,7 @@ add_library(test-utils STATIC
 
 target_link_libraries(test-utils PUBLIC
   instrument-script-server-core
+  internal-daemon
   GTest::gtest
 )
 
@@ -36,7 +37,6 @@ add_executable(
 
 target_link_libraries(unit_tests
   PRIVATE
-    instrument-script-server-core
     test-utils
     GTest::gtest
     GTest::gtest_main
@@ -58,7 +58,6 @@ add_executable(
 
 target_link_libraries(integration_tests
   PRIVATE
-    instrument-script-server-core
     test-utils
     GTest::gtest
     GTest::gtest_main
@@ -72,7 +71,6 @@ add_executable(
   performance/test_end_to_end_overhead.cpp)
 
 target_link_libraries(perf_tests PRIVATE
-  instrument-script-server-core
   test-utils
   GTest::gtest
   GTest::gtest_main
@@ -84,7 +82,6 @@ if(BUILD_C_CLIENT)
   target_link_libraries(test_client_c_api
   PRIVATE
     instrument-script-server-client
-    instserver-proto
     GTest::gtest
     GTest::gtest_main
   )
@@ -135,6 +132,7 @@ foreach(tgt ${ALL_TEST_TARGETS})
   set_tests_properties(${tgt} PROPERTIES
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
   )
+  # target_link_options(${tgt} PRIVATE -static)
 
   if(WIN32)
     set_tests_properties(${tgt} PROPERTIES
@@ -160,7 +158,8 @@ foreach(plugin_target
   target_compile_definitions(${plugin_target} PRIVATE INSTRUMENT_PLUGIN_BUILD)
   target_link_libraries(${plugin_target}
     PRIVATE
-      instrument-script-server-core
+      instrument-data::instrument-data
+      instrument-log::instrument-log
       instrument-plugin-api::instrument-plugin-api-plugin
   )
 endforeach()

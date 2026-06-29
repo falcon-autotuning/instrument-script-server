@@ -1,8 +1,8 @@
 #pragma once
 
 #include "PlatformPaths.hpp"
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
-#include "instrument-script-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/daemon/PluginRegistry.hpp"
+#include "instrument-script-server/daemon/SyncCoordinator.hpp"
 #include <filesystem>
 #include <gtest/gtest.h>
 

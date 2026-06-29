@@ -1,6 +1,6 @@
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
-#include "instrument-script-server/server/ServerDaemon.hpp"
-#include "instserver/server/v1/daemon_messages.grpc.pb.h"
+#include "instrument-script-server/daemon/PluginRegistry.hpp"
+#include "instrument-script-server/daemon/ServerDaemon.hpp"
+#include "instserver/daemon/v1/daemon_messages.grpc.pb.h"
 #include <chrono>
 #include <grpcpp/grpcpp.h>
 #include <gtest/gtest.h>
@@ -11,7 +11,7 @@
 #define TESTTEST_PLUGIN_DIR "."
 #endif
 
-using namespace instserver::server;
+using namespace instserver::daemon;
 
 class RpcServerTest : public ::testing::Test {
 protected:

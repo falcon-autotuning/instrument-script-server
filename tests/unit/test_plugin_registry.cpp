@@ -1,5 +1,5 @@
 #include "PlatformPaths.hpp"
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
+#include "instrument-script-server/daemon/PluginRegistry.hpp"
 #include <algorithm>
 #include <gtest/gtest.h>
 #include <instrument-log/inst_logging.h>

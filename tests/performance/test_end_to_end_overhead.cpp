@@ -1,8 +1,8 @@
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/server/InstrumentRegistry.hpp"
-#include "instrument-script-server/server/RuntimeContext.hpp"
-#include "instrument-script-server/server/ServerDaemon.hpp"
-#include "instrument-script-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/daemon/InstrumentRegistry.hpp"
+#include "instrument-script-server/daemon/RuntimeContext.hpp"
+#include "instrument-script-server/daemon/ServerDaemon.hpp"
+#include "instrument-script-server/daemon/SyncCoordinator.hpp"
 
 #include <chrono>
 #include <filesystem>
@@ -11,6 +11,7 @@
 #include <sol/sol.hpp>
 
 using namespace instserver;
+using namespace instserver::daemon;
 using namespace std::chrono;
 
 #ifndef TEST_DATA_DIR
@@ -117,7 +118,7 @@ TEST_F(EndToEndPerformanceTest, CommandWithParametersOverhead) {
   std::cout << "\n=== Command with Parameters Overhead ===\n";
   std::cout << "Average latency per command: " << avg_latency << " µs\n";
   std::cout << "Throughput: "
-            << (num_calls * (long)1000000.0) / (long)duration.count()
+            << ((long)num_calls * (long)1000000.0) / (long)duration.count()
             << " commands/sec\n";
 }
 

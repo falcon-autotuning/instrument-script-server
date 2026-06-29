@@ -3,9 +3,9 @@
 #include <gtest/gtest.h>
 #include <string>
 
-#include "instrument-script-server/server/ApiRefResolver.hpp"
+#include "instrument-script-server/daemon/ApiRefResolver.hpp"
 
-using namespace instserver::server;
+using namespace instserver::daemon;
 
 static std::filesystem::path write_temp_file(const std::filesystem::path &p,
                                              const std::string &contents) {

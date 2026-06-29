@@ -1,11 +1,10 @@
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
-#include "instrument-script-server/server/CommandHandlers.hpp"
-#include "instrument-script-server/server/InstrumentRegistry.hpp"
-#include "instrument-script-server/server/RuntimeContext.hpp"
-#include "instrument-script-server/server/ServerDaemon.hpp"
-#include "instrument-script-server/server/SyncCoordinator.hpp"
-#include "instserver/server/v1/daemon_messages.pb.h"
+#include "instrument-script-server/daemon/CommandHandlers.hpp"
+#include "instrument-script-server/daemon/InstrumentRegistry.hpp"
+#include "instrument-script-server/daemon/PluginRegistry.hpp"
+#include "instrument-script-server/daemon/RuntimeContext.hpp"
+#include "instrument-script-server/daemon/ServerDaemon.hpp"
+#include "instrument-script-server/daemon/SyncCoordinator.hpp"
 #include <instrument-log/inst_logging.h>
 
 #include <chrono>
@@ -19,7 +18,7 @@
 
 #include <google/protobuf/util/json_util.h>
 using namespace instserver;
-using namespace instserver::server;
+using namespace instserver::daemon;
 #ifndef TEST_DATA_DIR
 #define TEST_DATA_DIR "."
 #endif
@@ -329,7 +328,7 @@ TEST_F(TypeManifestTest, CallStackDeserializationSuccess) {
   {
     auto *p = parameters->Add();
     p->set_name("stack");
-    p->set_type(instserver::server::v1::LUA_TYPES_CALL_STACK);
+    p->set_type(instserver::daemon::v1::LUA_TYPES_CALL_STACK);
   }
 
   MeasureJobResultResponse resp{};
@@ -370,7 +369,7 @@ TEST_F(TypeManifestTest, CallStackDeserializationFailure) {
   {
     auto *p = parameters->Add();
     p->set_name("stack");
-    p->set_type(instserver::server::v1::LUA_TYPES_CALL_STACK);
+    p->set_type(instserver::daemon::v1::LUA_TYPES_CALL_STACK);
   }
 
   MeasureJobResultResponse resp{};
@@ -406,7 +405,7 @@ TEST_F(TypeManifestTest, CallStackWrongJsonType) {
   {
     auto *p = parameters->Add();
     p->set_name("stack");
-    p->set_type(instserver::server::v1::LUA_TYPES_CALL_STACK);
+    p->set_type(instserver::daemon::v1::LUA_TYPES_CALL_STACK);
   }
 
   MeasureJobResultResponse resp{};

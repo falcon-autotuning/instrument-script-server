@@ -1,5 +1,5 @@
-#include "instrument-script-server/plugin/PluginRegistry.hpp"
-#include "instrument-script-server/server/SyncCoordinator.hpp"
+#include "instrument-script-server/daemon/PluginRegistry.hpp"
+#include "instrument-script-server/daemon/SyncCoordinator.hpp"
 #include <algorithm>
 #include <gtest/gtest.h>
 #include <instrument-log/inst_logging.h>
