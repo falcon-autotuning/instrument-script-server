@@ -91,7 +91,12 @@ if(BUILD_C_CLIENT)
 endif()
 if(BUILD_CLI)
   add_executable(test_cli
-    integration/test_cli_commands.cpp
+    integration/test_cli_daemon.cpp
+    integration/test_cli_discover.cpp
+    integration/test_cli_instruments.cpp
+    integration/test_cli_measure.cpp
+    integration/test_cli_jobs.cpp
+    integration/test_cli_buffers.cpp
   )
   target_link_libraries(test_cli
     PRIVATE
