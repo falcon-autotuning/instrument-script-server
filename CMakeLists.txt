@@ -211,10 +211,10 @@ add_library(
       src/daemon/JobManager.cpp
 )
 
-target_link_libraries(
-  internal-daemon
-  PUBLIC
+target_link_libraries(internal-daemon
+  PRIVATE
     instrument-script-server-core
+  PUBLIC
     nlohmann_json::nlohmann_json
     ${PLATFORM_LIBS}
     ${LUA_LIBRARIES}
@@ -246,6 +246,15 @@ add_executable(generate-instrument-config
 if(BUILD_CLI)
   add_executable(instrument-script-server src/instrument_server_main.cpp)
 endif()
+target_link_libraries(instrument-script-server-daemon
+  PRIVATE
+    internal-daemon
+)
+target_link_libraries(instrument-worker
+  PRIVATE
+    instrument-plugin-api::instrument-plugin-api-host
+    instrument-data::instrument-data
+)
 foreach(target
         instrument-script-server-daemon
         validate-instrument-api
@@ -257,15 +266,6 @@ foreach(target
 )
   target_link_libraries(${target} PRIVATE instrument-script-server-core)
 endforeach()
-target_link_libraries(instrument-script-server-daemon
-  PRIVATE
-    internal-daemon
-)
-target_link_libraries(instrument-worker
-  PRIVATE
-    instrument-plugin-api::instrument-plugin-api-host
-    instrument-data::instrument-data
-)
 if(BUILD_C_CLIENT)
   add_library(instrument-script-server-client STATIC
     src/client/instrument-server-client.cpp
