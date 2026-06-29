@@ -665,8 +665,7 @@ int main(int argc, char **argv) {
         BOOL ok = CreateProcessA(
             nullptr,        // let Windows parse executable from cmdline
             cmd_buf.data(), // full command line
-            NULL, NULL, FALSE, DETACHED_PROCESS | CREATE_NO_WINDOW, NULL, NULL,
-            &si, &pi);
+            NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
 
         if (!ok) {
           DWORD err = GetLastError();
