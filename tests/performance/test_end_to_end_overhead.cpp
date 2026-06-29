@@ -117,7 +117,7 @@ TEST_F(EndToEndPerformanceTest, CommandWithParametersOverhead) {
   std::cout << "\n=== Command with Parameters Overhead ===\n";
   std::cout << "Average latency per command: " << avg_latency << " µs\n";
   std::cout << "Throughput: "
-            << (num_calls * (long)1000000.0) / (long)duration.count()
+            << ((long)num_calls * (long)1000000.0) / (long)duration.count()
             << " commands/sec\n";
 }
 
