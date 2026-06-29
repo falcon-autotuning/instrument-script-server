@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <atomic>
 #include <csignal>
 #include <cstdlib>
@@ -32,7 +31,6 @@
 #define popen _popen
 #define pclose _pclose
 #else
-#include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>
 #endif

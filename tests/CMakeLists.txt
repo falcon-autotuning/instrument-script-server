@@ -124,8 +124,9 @@ endif()
 foreach(tgt ${ALL_TEST_TARGETS})
   target_compile_definitions(${tgt} PRIVATE
     TEST_DATA_DIR="$<JOIN:$<TARGET_FILE_DIR:${tgt}>/data,>"
-    ISS_DAEMON_PATH="$<TARGET_FILE:instrument-script-server-daemon>"
+    ISS_DAEMON_PATH="$<TARGET_FILE_DIR:${tgt}>/instrument-script-server-daemon${CMAKE_EXECUTABLE_SUFFIX}"
     TEST_PLUGIN_DIR="$<TARGET_FILE_DIR:mock_visa_plugin>"
+    ISS_BIN_PATH="$<TARGET_FILE_DIR:${tgt}>/instrument-script-server${CMAKE_EXECUTABLE_SUFFIX}"
   )
   add_test(NAME ${tgt} COMMAND ${tgt})
 
@@ -140,11 +141,6 @@ foreach(tgt ${ALL_TEST_TARGETS})
     )
   endif()
 endforeach()
-if(BUILD_CLI)
-  target_compile_definitions(test_cli PRIVATE
-    ISS_BIN_PATH="$<TARGET_FILE:instrument-script-server>"
-  )
-endif()
 
 add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
 add_library(mock_visa_plugin SHARED mocks/mock_visa_plugin.c)
@@ -182,6 +178,7 @@ set(TEST_RUNTIME_TOOLS
   validate-quantum-dot-config
   template-expander
   generate-instrument-config
+  instrument-script-server
 )
 
 set(TEST_PLUGINS
@@ -194,9 +191,11 @@ if(WIN32)
   foreach(tgt unit_tests integration_tests perf_tests)
     add_dependencies(${tgt} ${TEST_RUNTIME_TOOLS})
     add_custom_command(TARGET ${tgt} POST_BUILD
-
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_RUNTIME_DLLS:${tgt}>
+        $<TARGET_FILE_DIR:${tgt}>
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_RUNTIME_DLLS:instrument-script-server>
         $<TARGET_FILE_DIR:${tgt}>
       COMMAND_EXPAND_LISTS
     )
