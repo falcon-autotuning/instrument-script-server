@@ -31,17 +31,17 @@
 #endif
 
 #ifdef _WIN32
-constexpr std::string ext = ".dll";
+constexpr std::string_view ext = ".dll";
 #else
-constexpr std::string ext = ".so";
+constexpr std::string_view ext = ".so";
 #endif
 
 std::atomic<bool> g_interrupted{false};
 const std::string bin_path = ISS_BIN_PATH;
 const std::string data_dir = TEST_DATA_DIR;
-const std::string mock_plugin =
-    (std::filesystem::path(TEST_PLUGIN_DIR) / ("libmock_visa_plugin" + ext))
-        .string();
+const std::string mock_plugin = (std::filesystem::path(TEST_PLUGIN_DIR) /
+                                 ("libmock_visa_plugin" + std::string(ext)))
+                                    .string();
 std::mutex g_pid_mutex;
 std::set<int> g_daemon_pids;
 
