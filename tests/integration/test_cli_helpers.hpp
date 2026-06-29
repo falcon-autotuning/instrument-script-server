@@ -181,10 +181,89 @@ inline int get_pid_from_file(const std::string &path) {
 
 inline std::pair<int, std::string> run_command(const std::string &args) {
 #ifdef _WIN32
-  std::string cmd = "cmd.exe /c \"" + args + " 2>&1\"";
+  // --- Parse command line into exe + args ---
+  std::string cmd = args;
+
+  // Extract executable (first token, possibly quoted)
+  std::string exe;
+  std::string rest;
+
+  if (!cmd.empty() && cmd[0] == '"') {
+    size_t end = cmd.find('"', 1);
+    if (end != std::string::npos) {
+      exe = cmd.substr(1, end - 1);
+      rest = cmd.substr(end + 1);
+    }
+  } else {
+    size_t space = cmd.find(' ');
+    if (space != std::string::npos) {
+      exe = cmd.substr(0, space);
+      rest = cmd.substr(space + 1);
+    } else {
+      exe = cmd;
+    }
+  }
+
+  // Build full command line (CreateProcess requirement)
+  std::string full_cmd = "\"" + exe + "\" " + rest;
+
+  SECURITY_ATTRIBUTES sa{};
+  sa.nLength = sizeof(sa);
+  sa.bInheritHandle = TRUE;
+
+  HANDLE readPipe = NULL;
+  HANDLE writePipe = NULL;
+
+  if (!CreatePipe(&readPipe, &writePipe, &sa, 0)) {
+    return {-1, ""};
+  }
+
+  SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
+
+  STARTUPINFOA si{};
+  PROCESS_INFORMATION pi{};
+  si.cb = sizeof(si);
+  si.dwFlags = STARTF_USESTDHANDLES;
+  si.hStdOutput = writePipe;
+  si.hStdError = writePipe;
+
+  std::vector<char> cmd_buf(full_cmd.begin(), full_cmd.end());
+  cmd_buf.push_back('\0');
+
+  BOOL ok = CreateProcessA(NULL, cmd_buf.data(), NULL, NULL, TRUE,
+                           CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+
+  CloseHandle(writePipe);
+
+  if (!ok) {
+    CloseHandle(readPipe);
+    DWORD err = GetLastError();
+    return {-1, "CreateProcess failed: " + std::to_string(err)};
+  }
+
+  std::string output;
+  char buffer[256];
+  DWORD read;
+
+  while (ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL) && read > 0) {
+    output.append(buffer, read);
+  }
+
+  CloseHandle(readPipe);
+
+  WaitForSingleObject(pi.hProcess, INFINITE);
+
+  DWORD exit_code = 0;
+  GetExitCodeProcess(pi.hProcess, &exit_code);
+
+  CloseHandle(pi.hProcess);
+  CloseHandle(pi.hThread);
+
+  return {static_cast<int>(exit_code), output};
+
 #else
+  // --- POSIX path unchanged ---
   std::string cmd = args + " 2>&1";
-#endif
 
   FILE *pipe = popen(cmd.c_str(), "r");
   if (pipe == nullptr) {
@@ -199,13 +278,12 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
 
   int exit_code = pclose(pipe);
 
-#ifndef _WIN32
   if (WIFEXITED(exit_code)) {
     exit_code = WEXITSTATUS(exit_code);
   }
-#endif
 
   return {exit_code, output.str()};
+#endif
 }
 
 inline int extract_pid(const std::string &input) {
