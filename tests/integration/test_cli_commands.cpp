@@ -596,8 +596,8 @@ TEST_F(CLITest, TwoInstrumentMeasureCompletes) {
 
 // list-buffers with no buffers should succeed and say so.
 TEST_F(CLITest, ListBuffersWhenEmpty) {
-  auto [rc, out] = run_iss("list-buffers");
-  EXPECT_EQ(rc, 0) << "list-buffers failed:\n" << out;
+  auto [rc, out] = run_iss("buffer list");
+  EXPECT_EQ(rc, 0) << "buffer list failed:\n" << out;
   EXPECT_NE(out.find("No active shared memory buffers"), std::string::npos)
       << "Expected 'No active shared memory buffers':\n"
       << out;
@@ -605,27 +605,27 @@ TEST_F(CLITest, ListBuffersWhenEmpty) {
 
 // read-buffer with a non-existent ID should fail cleanly.
 TEST_F(CLITest, ReadNonExistentBufferFails) {
-  auto [rc, out] = run_iss("read-buffer this_id_does_not_exist_xyz");
+  auto [rc, out] = run_iss("buffer read this_id_does_not_exist_xyz");
   EXPECT_NE(rc, 0) << "Expected non-zero exit for bad buffer ID:\n" << out;
 }
 
 // buffer-metadata with a non-existent ID should fail cleanly.
 TEST_F(CLITest, MetadataForNonExistentBufferFails) {
-  auto [rc, out] = run_iss("buffer-metadata this_id_does_not_exist_xyz");
+  auto [rc, out] = run_iss("buffer metadata this_id_does_not_exist_xyz");
   EXPECT_NE(rc, 0) << "Expected non-zero exit for bad buffer ID:\n" << out;
 }
 
 // release-buffer with a non-existent ID is idempotent: the server
 // returns ok:true as a no-op rather than treating an unknown ID as an error.
 TEST_F(CLITest, ReleaseNonExistentBufferIsIdempotent) {
-  auto [rc, out] = run_iss("release-buffer this_id_does_not_exist_xyz");
+  auto [rc, out] = run_iss("buffer release this_id_does_not_exist_xyz");
   EXPECT_EQ(rc, 0) << "Expected idempotent (exit 0) for unknown buffer ID:\n"
                    << out;
 }
 
 // read-buffer requires an argument.
 TEST_F(CLITest, ReadBufferMissingArgFails) {
-  auto [rc, out] = run_iss("read-buffer");
+  auto [rc, out] = run_iss("buffer read");
   EXPECT_NE(rc, 0) << "Expected non-zero when buffer ID omitted:\n" << out;
 }
 
