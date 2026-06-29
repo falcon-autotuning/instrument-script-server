@@ -1,14 +1,12 @@
 #include "instrument-script-server/daemon/RuntimeContext.hpp"
 #include "instrument-script-server/core/InstrumentCommand.hpp"
 #include "instrument-script-server/daemon/DataBufferManager.hpp"
-#include "instrument-script-server/daemon/ServerDaemon.hpp"
 #include "instrument-script-server/daemon/SyncCoordinator.hpp"
 #include <fmt/format.h>
 #include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
 #include <instrument-plugin.h>
-#include <unistd.h>
 using namespace instserver::daemon;
 
 // Helper to map stored ParamValue to the external return_type string tests

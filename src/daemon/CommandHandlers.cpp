@@ -13,7 +13,6 @@
 #include <instrument-plugin.h>
 #include <sol/sol.hpp>
 #include <string>
-#include <unistd.h>
 #include <vector>
 
 using json = nlohmann::json;
