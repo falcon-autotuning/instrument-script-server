@@ -776,13 +776,13 @@ int main(int argc, char **argv) {
       switch (parser_sub_inst(action)) {
 
       case SUB_INST::START: {
-        if (argc < 3) {
+        if (argc < 4) {
           out.error("Usage: start <config> [--json]");
           return out.emit();
         }
         return with_client(out, [&](auto &client) {
           instserver::client::v1::StartInstrumentRequest req;
-          req.set_config_path(std::string(args.at(2)));
+          req.set_config_path(std::string(args.at(3)));
           req.set_plugin_path(args.get_option("plugin"));
           req.set_log_level(args.get_option("log-level", true, "info"));
           auto resp =
@@ -794,36 +794,36 @@ int main(int argc, char **argv) {
         });
       }
       case SUB_INST::STOP: {
-        if (argc < 3) {
+        if (argc < 4) {
           out.error("Error: stop requires instrument name\n"
                     "Usage: instrument-script-server stop <name> [--json]");
           return out.emit();
         }
         return with_client(out, [&](auto &client) {
           instserver::client::v1::StopInstrumentRequest req;
-          req.set_instrument_name(std::string(args.at(2)));
+          req.set_instrument_name(std::string(args.at(3)));
           auto resp =
               call_rpc(out, [&] { return client.stop_instrument(req); });
           if (!resp.has_value()) {
             return;
           }
-          out.message("Stopped instrument: " + std::string(args.at(2)));
+          out.message("Stopped instrument: " + std::string(args.at(3)));
         });
       }
       case SUB_INST::STATUS: {
-        if (argc < 3) {
+        if (argc < 4) {
           out.error("Usage: status <name> [--json]");
           return out.emit();
         }
         return with_client(out, [&](auto &client) {
           instserver::client::v1::InstrumentStatusRequest req;
-          req.set_instrument_name(args.at(2));
+          req.set_instrument_name(args.at(3));
           auto resp =
               call_rpc(out, [&] { return client.instrument_status(req); });
           if (!resp.has_value()) {
             return;
           }
-          out.message("Instrument: " + std::string(args.at(2)));
+          out.message("Instrument: " + std::string(args.at(3)));
           if (resp.value().has_stats()) {
             out.message("Commands sent: " +
                         std::to_string(resp.value().stats().commands_sent()));
