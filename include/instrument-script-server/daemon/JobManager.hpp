@@ -72,6 +72,7 @@ private:
   // Active measure jobs (ids). Non-measure jobs wait until this set is empty.
   std::set<JobID> active_measure_jobs_;
   std::condition_variable measure_cv_;
+  std::deque<JobID> finished_jobs_; // Tracks finished job IDs in completion order
 };
 
 } // namespace instserver::daemon

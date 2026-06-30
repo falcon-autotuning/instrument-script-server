@@ -301,6 +301,18 @@ inline std::string extract_first_buffer_id(const std::string &output) {
   return "";
 }
 
+inline uint32_t extract_job_id(const std::string &out) {
+  auto pos = out.find("job_id=");
+  if (pos == std::string::npos) return 0;
+  auto end = out.find(")", pos);
+  if (end == std::string::npos) return 0;
+  try {
+    return std::stoul(out.substr(pos + 7, end - (pos + 7)));
+  } catch (...) {
+    return 0;
+  }
+}
+
 inline void start_instrument(const std::filesystem::path &config) {
   auto [exit_code, output] =
       run_iss("inst start " + config.string() + " --plugin " + mock_plugin);
