@@ -181,6 +181,10 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
 #ifdef _WIN32
   std::string full_cmd = "cmd.exe /C " + args;
 
+  // Create mutable buffer (REQUIRED)
+  std::vector<char> cmd_buf(full_cmd.begin(), full_cmd.end());
+  cmd_buf.push_back('\0');
+
   SECURITY_ATTRIBUTES sa{};
   sa.nLength = sizeof(sa);
   sa.bInheritHandle = TRUE;
@@ -191,11 +195,11 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
   CreatePipe(&readPipe, &writePipe, &sa, 0);
   SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
 
+  // Valid stdin (IMPORTANT)
   HANDLE hNull =
       CreateFileA("NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa,
                   OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-  // --- startup info ---
   STARTUPINFOA si{};
   PROCESS_INFORMATION pi{};
   si.cb = sizeof(si);
@@ -205,9 +209,9 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
   si.hStdError = writePipe;
   si.hStdInput = hNull;
 
-  // --- launch ---
+  // Launch process
   BOOL ok = CreateProcessA(NULL, cmd_buf.data(), NULL, NULL, TRUE,
-                           0, // ❗ try removing CREATE_NO_WINDOW
+                           0, // try without CREATE_NO_WINDOW
                            NULL, NULL, &si, &pi);
 
   CloseHandle(writePipe);
@@ -219,18 +223,19 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
     return {-1, "CreateProcess failed: " + std::to_string(err)};
   }
 
+  // Wait for process to finish
   WaitForSingleObject(pi.hProcess, INFINITE);
 
+  // Read all output after process exits
   std::string output;
   char buffer[256];
   DWORD read;
+
   while (ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL) && read > 0) {
     output.append(buffer, read);
   }
 
   CloseHandle(readPipe);
-
-  WaitForSingleObject(pi.hProcess, INFINITE);
 
   DWORD exit_code = 0;
   GetExitCodeProcess(pi.hProcess, &exit_code);
