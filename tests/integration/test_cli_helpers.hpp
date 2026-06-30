@@ -1,6 +1,5 @@
 #pragma once
 
-#include <atomic>
 #include <csignal>
 #include <cstdlib>
 #include <filesystem>
@@ -12,6 +11,7 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <vector>
 
 #ifndef ISS_BIN_PATH
 #define ISS_BIN_PATH "instrument-script-server"
@@ -41,7 +41,6 @@ inline const std::string ext = ".dll";
 inline const std::string ext = ".so";
 #endif
 
-inline std::atomic<bool> g_interrupted{false};
 inline const std::string bin_path = ISS_BIN_PATH;
 inline const std::string data_dir = TEST_DATA_DIR;
 inline const std::string mock_plugin =
@@ -112,23 +111,6 @@ inline void cleanup_all_daemons() {
   g_daemon_pids.clear();
 }
 
-inline void handle_sigint(int /*unused*/) {
-  g_interrupted = true;
-  cleanup_all_daemons();
-  std::exit(130);
-}
-
-struct SignalSetup {
-  SignalSetup() {
-    std::signal(SIGINT, handle_sigint);
-#ifdef SIGTERM
-    std::signal(SIGTERM, handle_sigint);
-#endif
-  }
-};
-
-inline SignalSetup g_signal_setup;
-
 struct GlobalCleanup {
   ~GlobalCleanup() { cleanup_all_daemons(); }
 };
@@ -177,12 +159,44 @@ inline int get_pid_from_file(const std::string &path) {
   return pid;
 }
 
-inline std::pair<int, std::string> run_command(const std::string &args) {
+std::pair<int, std::string> run_command(const std::string &args) {
 #ifdef _WIN32
-  std::string full_cmd = "cmd.exe /C " + args;
+  // --- split executable from args ---
+  std::string exe;
+  std::string cmdline;
 
-  // Create mutable buffer (REQUIRED)
-  std::vector<char> cmd_buf(full_cmd.begin(), full_cmd.end());
+  std::string s = args;
+
+  if (!s.empty() && s[0] == '"') {
+    size_t end = s.find('"', 1);
+    if (end != std::string::npos) {
+      exe = s.substr(1, end - 1);
+      if (end + 1 < s.size()) {
+        cmdline = s.substr(end + 1);
+      }
+    }
+  } else {
+    size_t space = s.find(' ');
+    if (space != std::string::npos) {
+      exe = s.substr(0, space);
+      cmdline = s.substr(space + 1);
+    } else {
+      exe = s;
+    }
+  }
+
+  // trim leading spaces from cmdline
+  while (!cmdline.empty() && cmdline[0] == ' ') {
+    cmdline.erase(0, 1);
+  }
+
+  // Create mutable command line buffer (args only)
+  std::string full_cmdline = "\"" + exe + "\"";
+  if (!cmdline.empty()) {
+    full_cmdline += " " + cmdline;
+  }
+
+  std::vector<char> cmd_buf(full_cmdline.begin(), full_cmdline.end());
   cmd_buf.push_back('\0');
 
   SECURITY_ATTRIBUTES sa{};
@@ -195,7 +209,6 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
   CreatePipe(&readPipe, &writePipe, &sa, 0);
   SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
 
-  // Valid stdin (IMPORTANT)
   HANDLE hNull =
       CreateFileA("NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa,
                   OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -209,10 +222,9 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
   si.hStdError = writePipe;
   si.hStdInput = hNull;
 
-  // Launch process
-  BOOL ok = CreateProcessA(NULL, cmd_buf.data(), NULL, NULL, TRUE,
-                           0, // try without CREATE_NO_WINDOW
-                           NULL, NULL, &si, &pi);
+  BOOL ok = CreateProcessA(exe.c_str(),    // ✅ executable ONLY
+                           cmd_buf.data(), // ✅ args ONLY
+                           NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
 
   CloseHandle(writePipe);
   CloseHandle(hNull);
@@ -223,24 +235,21 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
     return {-1, "CreateProcess failed: " + std::to_string(err)};
   }
 
-  // Wait for process to finish
   std::string output;
   char buffer[256];
   DWORD read;
 
+  // --- non-blocking pipe drain ---
   while (true) {
-    // Try to read available data
     while (PeekNamedPipe(readPipe, NULL, 0, NULL, &read, NULL) && read > 0) {
       if (ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL) && read > 0) {
         output.append(buffer, read);
       }
     }
 
-    // Check if process finished
     DWORD result = WaitForSingleObject(pi.hProcess, 50);
 
     if (result == WAIT_OBJECT_0) {
-      // Process finished → drain remaining data
       while (ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL) &&
              read > 0) {
         output.append(buffer, read);
@@ -260,7 +269,6 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
   return {static_cast<int>(exit_code), output};
 
 #else
-  // --- POSIX path unchanged ---
   std::string cmd = args + " 2>&1";
 
   FILE *pipe = popen(cmd.c_str(), "r");
