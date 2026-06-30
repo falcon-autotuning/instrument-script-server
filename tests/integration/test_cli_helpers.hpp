@@ -249,14 +249,6 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
     }
   }
 
-  // Read all output after process exits
-  char buffer[256];
-  DWORD read;
-
-  while (ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL) && read > 0) {
-    output.append(buffer, read);
-  }
-
   CloseHandle(readPipe);
 
   DWORD exit_code = 0;
