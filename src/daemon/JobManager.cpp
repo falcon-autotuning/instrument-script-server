@@ -13,6 +13,20 @@ using json = nlohmann::json;
 
 namespace instserver::daemon {
 
+namespace {
+size_t get_max_job_history_env() {
+  const char *env = getenv("INSTRUMENT_SERVER_MAX_JOB_HISTORY");
+  if (env != nullptr) {
+    try {
+      return std::stoul(env);
+    } catch (...) {}
+  }
+  return 10000;
+}
+}
+
+size_t g_max_job_history = get_max_job_history_env();
+
 JobManager &JobManager::instance() {
   static JobManager mgr;
   return mgr;
@@ -20,7 +34,7 @@ JobManager &JobManager::instance() {
 
 JobManager::JobManager()
     : running_(true), worker_thread_(&JobManager::worker_loop, this) {
-  LOG_INFO("JOB", "MGR", "JobManager started");
+  LOG_INFO("JOB", "MGR", "JobManager started (max history: %zu)", g_max_job_history);
 }
 
 JobManager::~JobManager() { stop(); }
@@ -53,13 +67,18 @@ JobID JobManager::submit_job(v1::JobType job_type, const JobParams &params) {
 
   {
     std::lock_guard<std::mutex> lk(mutex_);
+    while (jobs_.size() >= g_max_job_history && !finished_jobs_.empty()) {
+      JobID to_evict = finished_jobs_.front();
+      finished_jobs_.pop_front();
+      jobs_.erase(to_evict);
+    }
     jobs_.emplace(jid, info);
     queue_.push_back(jid);
   }
   cv_.notify_one();
 
-  LOG_INFO("JOB", "SUBMIT", "Submitted job %d type=%s", jid,
-           JobType_Name(job_type).c_str());
+  LOG_INFO("JOB", "SUBMIT", "Submitted job %d type=%s. History limit: %zu, current jobs: %zu, finished jobs size: %zu", jid,
+           JobType_Name(job_type).c_str(), g_max_job_history, jobs_.size(), finished_jobs_.size());
   return jid;
 }
 
@@ -111,6 +130,7 @@ bool JobManager::cancel_job(JobID job_id) {
     it->second.job.set_status(v1::JOB_STATUS_CANCELLED);
     *it->second.job.mutable_finished_at() =
         google::protobuf::util::TimeUtil::GetCurrentTime();
+    finished_jobs_.push_back(job_id);
     return true;
   }
   // If running, set status to canceled - cooperation required
@@ -237,6 +257,7 @@ void JobManager::worker_loop() {
         }
         *it->second.job.mutable_finished_at() =
             google::protobuf::util::TimeUtil::GetCurrentTime();
+        finished_jobs_.push_back(jid);
       }
     }
 

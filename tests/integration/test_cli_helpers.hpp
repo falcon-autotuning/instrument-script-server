@@ -1,6 +1,5 @@
 #pragma once
 
-#include <atomic>
 #include <csignal>
 #include <cstdlib>
 #include <filesystem>
@@ -42,7 +41,6 @@ inline const std::string ext = ".dll";
 inline const std::string ext = ".so";
 #endif
 
-inline std::atomic<bool> g_interrupted{false};
 inline const std::string bin_path = ISS_BIN_PATH;
 inline const std::string data_dir = TEST_DATA_DIR;
 inline const std::string mock_plugin =
@@ -112,23 +110,6 @@ inline void cleanup_all_daemons() {
 
   g_daemon_pids.clear();
 }
-
-inline void handle_sigint(int /*unused*/) {
-  g_interrupted = true;
-  cleanup_all_daemons();
-  std::exit(130);
-}
-
-struct SignalSetup {
-  SignalSetup() {
-    std::signal(SIGINT, handle_sigint);
-#ifdef SIGTERM
-    std::signal(SIGTERM, handle_sigint);
-#endif
-  }
-};
-
-inline SignalSetup g_signal_setup;
 
 struct GlobalCleanup {
   ~GlobalCleanup() { cleanup_all_daemons(); }
@@ -417,6 +398,18 @@ inline std::string extract_first_buffer_id(const std::string &output) {
     }
   }
   return "";
+}
+
+inline uint32_t extract_job_id(const std::string &out) {
+  auto pos = out.find("job_id=");
+  if (pos == std::string::npos) return 0;
+  auto end = out.find(")", pos);
+  if (end == std::string::npos) return 0;
+  try {
+    return std::stoul(out.substr(pos + 7, end - (pos + 7)));
+  } catch (...) {
+    return 0;
+  }
 }
 
 inline void start_instrument(const std::filesystem::path &config) {
