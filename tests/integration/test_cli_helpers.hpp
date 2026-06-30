@@ -113,11 +113,7 @@ inline void cleanup_all_daemons() {
   g_daemon_pids.clear();
 }
 
-inline void handle_sigint(int /*unused*/) {
-  g_interrupted = true;
-  cleanup_all_daemons();
-  std::exit(130);
-}
+inline void handle_sigint(int /*unused*/) { g_interrupted = true; }
 
 struct SignalSetup {
   SignalSetup() {
@@ -180,42 +176,9 @@ inline int get_pid_from_file(const std::string &path) {
 
 std::pair<int, std::string> run_command(const std::string &args) {
 #ifdef _WIN32
-  // --- split executable from args ---
-  std::string exe;
-  std::string cmdline;
+  std::string full_cmd = args;
 
-  std::string s = args;
-
-  if (!s.empty() && s[0] == '"') {
-    size_t end = s.find('"', 1);
-    if (end != std::string::npos) {
-      exe = s.substr(1, end - 1);
-      if (end + 1 < s.size()) {
-        cmdline = s.substr(end + 1);
-      }
-    }
-  } else {
-    size_t space = s.find(' ');
-    if (space != std::string::npos) {
-      exe = s.substr(0, space);
-      cmdline = s.substr(space + 1);
-    } else {
-      exe = s;
-    }
-  }
-
-  // trim leading spaces from cmdline
-  while (!cmdline.empty() && cmdline[0] == ' ') {
-    cmdline.erase(0, 1);
-  }
-
-  // Create mutable command line buffer (args only)
-  std::string full_cmdline = "\"" + exe + "\"";
-  if (!cmdline.empty()) {
-    full_cmdline += " " + cmdline;
-  }
-
-  std::vector<char> cmd_buf(full_cmdline.begin(), full_cmdline.end());
+  std::vector<char> cmd_buf(full_cmd.begin(), full_cmd.end());
   cmd_buf.push_back('\0');
 
   SECURITY_ATTRIBUTES sa{};
@@ -240,10 +203,8 @@ std::pair<int, std::string> run_command(const std::string &args) {
   si.hStdOutput = writePipe;
   si.hStdError = writePipe;
   si.hStdInput = hNull;
-
-  BOOL ok = CreateProcessA(exe.c_str(),    // ✅ executable ONLY
-                           cmd_buf.data(), // ✅ args ONLY
-                           NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi);
+  BOOL ok = CreateProcessA(NULL, cmd_buf.data(), NULL, NULL, TRUE, 0, NULL,
+                           NULL, &si, &pi);
 
   CloseHandle(writePipe);
   CloseHandle(hNull);
@@ -340,7 +301,8 @@ inline int extract_pid(const std::string &input) {
 }
 
 inline std::pair<int, std::string> run_iss(const std::string &args) {
-  auto result = run_command("\"" + bin_path + "\" " + args);
+  std::string exe = std::filesystem::absolute(bin_path).string();
+  auto result = run_command("\"" + exe + "\" " + args);
 
   if (args.starts_with("daemon start --json")) {
     int pid = extract_pid(result.second);
