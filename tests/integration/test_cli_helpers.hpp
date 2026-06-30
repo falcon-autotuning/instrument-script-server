@@ -179,31 +179,7 @@ inline int get_pid_from_file(const std::string &path) {
 
 inline std::pair<int, std::string> run_command(const std::string &args) {
 #ifdef _WIN32
-  // --- Parse command line into exe + args ---
-  std::string cmd = args;
-
-  // Extract executable (first token, possibly quoted)
-  std::string exe;
-  std::string rest;
-
-  if (!cmd.empty() && cmd[0] == '"') {
-    size_t end = cmd.find('"', 1);
-    if (end != std::string::npos) {
-      exe = cmd.substr(1, end - 1);
-      rest = cmd.substr(end + 1);
-    }
-  } else {
-    size_t space = cmd.find(' ');
-    if (space != std::string::npos) {
-      exe = cmd.substr(0, space);
-      rest = cmd.substr(space + 1);
-    } else {
-      exe = cmd;
-    }
-  }
-
-  // Build full command line (CreateProcess requirement)
-  std::string full_cmd = "\"" + exe + "\" " + rest;
+  std::string full_cmd = "cmd.exe /C " + args;
 
   SECURITY_ATTRIBUTES sa{};
   sa.nLength = sizeof(sa);
@@ -212,10 +188,7 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
   HANDLE readPipe = NULL;
   HANDLE writePipe = NULL;
 
-  if (!CreatePipe(&readPipe, &writePipe, &sa, 0)) {
-    return {-1, ""};
-  }
-
+  CreatePipe(&readPipe, &writePipe, &sa, 0);
   SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
 
   STARTUPINFOA si{};
