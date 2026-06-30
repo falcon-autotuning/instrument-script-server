@@ -191,20 +191,27 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
   CreatePipe(&readPipe, &writePipe, &sa, 0);
   SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
 
+  HANDLE hNull =
+      CreateFileA("NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa,
+                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+  // --- startup info ---
   STARTUPINFOA si{};
   PROCESS_INFORMATION pi{};
   si.cb = sizeof(si);
   si.dwFlags = STARTF_USESTDHANDLES;
+
   si.hStdOutput = writePipe;
   si.hStdError = writePipe;
+  si.hStdInput = hNull;
 
-  std::vector<char> cmd_buf(full_cmd.begin(), full_cmd.end());
-  cmd_buf.push_back('\0');
-
+  // --- launch ---
   BOOL ok = CreateProcessA(NULL, cmd_buf.data(), NULL, NULL, TRUE,
-                           CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+                           0, // ❗ try removing CREATE_NO_WINDOW
+                           NULL, NULL, &si, &pi);
 
   CloseHandle(writePipe);
+  CloseHandle(hNull);
 
   if (!ok) {
     CloseHandle(readPipe);
@@ -212,10 +219,11 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
     return {-1, "CreateProcess failed: " + std::to_string(err)};
   }
 
+  WaitForSingleObject(pi.hProcess, INFINITE);
+
   std::string output;
   char buffer[256];
   DWORD read;
-
   while (ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL) && read > 0) {
     output.append(buffer, read);
   }
