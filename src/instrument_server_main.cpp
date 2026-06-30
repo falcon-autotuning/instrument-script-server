@@ -642,8 +642,10 @@ int main(int argc, char **argv) {
                       std::to_string(get_port()));
             return out.emit();
           }
-        } catch (...) {
-          // OK if it throws → means not running
+        } catch (const std::exception &e) {
+          out.error(
+              std::string("Checking for already running daemon failed: ") +
+              e.what());
         }
 #ifdef _WIN32
         std::string exe = get_daemon_path(argv[0]);
@@ -714,8 +716,8 @@ int main(int argc, char **argv) {
               out.output_proto_message(resp);
               break;
             }
-          } catch (...) {
-            // still starting → ignore
+          } catch (const std::exception &e) {
+            out.message(std::string("Waiting for daemon: ") + e.what());
           }
           std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
