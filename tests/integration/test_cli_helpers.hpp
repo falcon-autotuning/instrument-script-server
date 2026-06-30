@@ -203,6 +203,7 @@ std::pair<int, std::string> run_command(const std::string &args) {
   si.hStdOutput = writePipe;
   si.hStdError = writePipe;
   si.hStdInput = hNull;
+  std::cout << "CMD: " << full_cmd << std::endl;
   BOOL ok = CreateProcessA(NULL, cmd_buf.data(), NULL, NULL, TRUE, 0, NULL,
                            NULL, &si, &pi);
 
@@ -216,33 +217,37 @@ std::pair<int, std::string> run_command(const std::string &args) {
   }
 
   std::string output;
-  char buffer[256];
-  DWORD read;
 
-  // --- non-blocking pipe drain ---
-  while (true) {
-    while (PeekNamedPipe(readPipe, NULL, 0, NULL, &read, NULL) && read > 0) {
-      if (ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL) && read > 0) {
-        output.append(buffer, read);
+  // --- reader thread ---
+  std::thread reader([&]() {
+    char buffer[256];
+    DWORD read = 0;
+
+    while (true) {
+      BOOL success = ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL);
+
+      if (!success || read == 0) {
+        break; // pipe closed or no more data
       }
+
+      output.append(buffer, read);
     }
+  });
 
-    DWORD result = WaitForSingleObject(pi.hProcess, 50);
+  // Wait for process to finish
+  WaitForSingleObject(pi.hProcess, INFINITE);
 
-    if (result == WAIT_OBJECT_0) {
-      while (ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL) &&
-             read > 0) {
-        output.append(buffer, read);
-      }
-      break;
-    }
-  }
-
+  // Close our copy of the write pipe handle so reader exits
   CloseHandle(readPipe);
 
+  // Wait for reader thread to finish draining
+  reader.join();
+
+  // Get exit code
   DWORD exit_code = 0;
   GetExitCodeProcess(pi.hProcess, &exit_code);
 
+  // Cleanup
   CloseHandle(pi.hProcess);
   CloseHandle(pi.hThread);
 
