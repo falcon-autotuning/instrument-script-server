@@ -309,7 +309,7 @@ inline int extract_pid(const std::string &input) {
   }
   std::cout << "The JSON that should have contained 'pid' looks like:\n"
             << input << "\n";
-  return -1;
+  return 0;
 }
 
 inline std::pair<int, std::string> run_iss(const std::string &args) {
@@ -319,6 +319,8 @@ inline std::pair<int, std::string> run_iss(const std::string &args) {
     int pid = extract_pid(result.second);
     if (pid > 0) {
       register_daemon_pid(pid);
+    } else {
+      std::cerr << "Invalid PID from daemon start: " << pid << "\n";
     }
   }
 
