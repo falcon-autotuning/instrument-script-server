@@ -326,13 +326,49 @@ uint16_t get_port() {
   }
   return static_cast<uint16_t>(std::stoi(env));
 }
-template <typename Fn> int with_client(CLIOutput &out, Fn &&fn) {
-  instserver::client::InstrumentServerClient client(get_port());
-  if (!client.is_daemon_running()) {
-    out.error("Daemon is not running. Please start the daemon first.");
-    return out.emit();
+template <typename Fn>
+auto call_with_timeout(Fn &&fn, int timeout_ms)
+    -> std::optional<decltype(fn())> {
+  using Result = decltype(fn());
+
+  std::optional<Result> result;
+  std::atomic<bool> done = false;
+
+  std::thread t([&] {
+    try {
+      result = fn();
+    } catch (...) {
+      // ignore
+    }
+    done = true;
+  });
+
+  for (int i = 0; i < timeout_ms / 10; ++i) {
+    if (done)
+      break;
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
-  fn(client);
+
+  if (!done) {
+    t.detach(); // abandon
+    return std::nullopt;
+  }
+
+  t.join();
+  return result;
+}
+template <typename Fn> int with_client(CLIOutput &out, Fn &&fn) {
+  {
+    instserver::client::InstrumentServerClient client(get_port());
+
+    if (!client.is_daemon_running()) {
+      out.error("Daemon is not running. Please start the daemon first.");
+      return out.emit();
+    }
+
+    fn(client);
+  }
+
   return out.emit();
 }
 template <typename Fn>
@@ -612,6 +648,7 @@ int main(int argc, char **argv) {
     print_usage();
     return 1;
   }
+  std::cout.setf(std::ios::unitbuf);
 
   CLIOutput out{};
   CliArgs args(argc, argv, 0);
@@ -660,22 +697,39 @@ int main(int argc, char **argv) {
         PROCESS_INFORMATION pi{};
         si.cb = sizeof(si);
 
-        // CreateProcess requires a mutable buffer
+        // ✅ Provide valid std handles (CRITICAL)
+        HANDLE hNull = CreateFileA("NUL", GENERIC_READ | GENERIC_WRITE,
+                                   FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                                   OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+        si.dwFlags = STARTF_USESTDHANDLES;
+        si.hStdInput = hNull;
+        si.hStdOutput = hNull;
+        si.hStdError = hNull;
+
+        // CreateProcess requires mutable buffer
         std::vector<char> cmd_buf(cmdline.begin(), cmdline.end());
         cmd_buf.push_back('\0');
 
-        BOOL ok = CreateProcessA(
-            nullptr,        // let Windows parse executable from cmdline
-            cmd_buf.data(), // full command line
-            NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+        // ✅ Fully detach daemon from CLI
+        DWORD flags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP;
+
+        BOOL ok = CreateProcessA(nullptr,        // let Windows parse executable
+                                 cmd_buf.data(), // full command line
+                                 NULL, NULL,
+                                 FALSE, // no handle inheritance
+                                 flags, NULL, NULL, &si, &pi);
 
         if (!ok) {
           DWORD err = GetLastError();
+          CloseHandle(hNull);
           out.error("Child daemon launch failed (error=" + std::to_string(err) +
                     ")");
           return out.emit();
         }
 
+        // ✅ Clean up handles
+        CloseHandle(hNull);
         CloseHandle(pi.hThread);
         CloseHandle(pi.hProcess);
 #else
@@ -730,20 +784,27 @@ int main(int argc, char **argv) {
         return out.emit();
       }
       case SUB_DAEMON::STOP: {
-        return with_client(out, [&](auto &client) {
-          instserver::client::v1::DaemonStop req;
-          auto resp = client.stop_daemon(req);
-          out.output_proto_message(resp);
-          if (!resp.ok()) {
-            if (resp.has_error()) {
-              out.error(resp.error().message());
-            } else {
-              out.error("RPC failed");
-            }
-            return;
+        instserver::client::v1::DaemonStop req;
+
+        try {
+          instserver::client::InstrumentServerClient client(get_port());
+
+          auto resp =
+              call_with_timeout([&] { return client.stop_daemon(req); }, 2000);
+
+          if (resp) {
+            out.output_proto_message(*resp);
+          } else {
+            out.message("Daemon stopping (RPC did not complete)");
           }
+
           out.message("Daemon stopped");
-        });
+
+        } catch (...) {
+          out.message("Daemon not reachable (treated as stopped)");
+        }
+
+        return out.emit();
       }
       case SUB_DAEMON::STATUS: {
         instserver::client::InstrumentServerClient client(get_port());

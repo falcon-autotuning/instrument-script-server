@@ -268,15 +268,15 @@ bool create_shutdown_pipe() {
 #ifdef _WIN32
   // Create named pipe on Windows
   std::string pipe_name = get_shutdown_pipe_path();
-  shutdown_pipe_ = CreateNamedPipeA(
-      pipe_name.c_str(),
-      PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED, // Inbound, non-blocking
-      PIPE_TYPE_BYTE | PIPE_WAIT,
-      1, // Max instances
-      0, // Output buffer size
-      0, // Input buffer size
-      0, // Default timeout
-      NULL);
+  shutdown_pipe_ =
+      CreateNamedPipeA(pipe_name.c_str(),
+                       PIPE_ACCESS_INBOUND, // Inbound, non-blocking
+                       PIPE_TYPE_BYTE | PIPE_WAIT,
+                       1, // Max instances
+                       0, // Output buffer size
+                       0, // Input buffer size
+                       0, // Default timeout
+                       NULL);
 
   if (shutdown_pipe_ == INVALID_HANDLE_VALUE) {
     LOG_ERROR("DAEMON", "PIPE", "Failed to create shutdown pipe");
@@ -346,46 +346,57 @@ void ServerDaemon::shutdown_listener_loop() {
   LOG_INFO("DAEMON", "SHUTDOWN_LISTENER", "Shutdown listener started");
 
 #ifdef _WIN32
-  // Windows: wait for pipe connection
   while (running_.load()) {
-    DWORD bytes_read;
-    char buffer[1];
+    LOG_INFO("DAEMON", "SHUTDOWN_LISTENER",
+             "Waiting for client to connect to shutdown pipe...");
 
-    OVERLAPPED overlapped = {};
-    overlapped.hEvent = CreateEventA(NULL, TRUE, FALSE, NULL);
+    BOOL connected = ConnectNamedPipe(shutdown_pipe_, NULL)
+                         ? TRUE
+                         : (GetLastError() == ERROR_PIPE_CONNECTED);
 
-    if (!overlapped.hEvent) {
+    if (!connected) {
+      DWORD err = GetLastError();
+      LOG_WARN("DAEMON", "SHUTDOWN_LISTENER",
+               "ConnectNamedPipe failed (err=%lu), retrying...", err);
+
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       continue;
     }
 
+    LOG_INFO("DAEMON", "SHUTDOWN_LISTENER",
+             "Client connected to shutdown pipe");
+
+    char buffer[1];
+    DWORD bytes_read = 0;
+
     BOOL success =
-        ReadFile(shutdown_pipe_, buffer, 1, &bytes_read, &overlapped);
+        ReadFile(shutdown_pipe_, buffer, sizeof(buffer), &bytes_read, NULL);
 
     if (!success) {
-      DWORD error = GetLastError();
-      if (error == ERROR_IO_PENDING) {
-        // Wait up to 100ms for data or handle exit
-        DWORD wait_result = WaitForSingleObject(overlapped.hEvent, 100);
-        if (wait_result == WAIT_OBJECT_0) {
-          // Received shutdown signal
-          LOG_INFO("DAEMON", "SHUTDOWN_LISTENER",
-                   "Received shutdown signal via pipe");
-          running_.store(false);
-          break;
-        }
-        // Timeout, continue loop
-      }
-    } else {
-      // Successfully read
+      DWORD err = GetLastError();
+
+      LOG_WARN("DAEMON", "SHUTDOWN_LISTENER",
+               "ReadFile failed (err=%lu), disconnecting client", err);
+
+      DisconnectNamedPipe(shutdown_pipe_);
+      continue;
+    }
+
+    if (bytes_read > 0) {
       LOG_INFO("DAEMON", "SHUTDOWN_LISTENER",
                "Received shutdown signal via pipe");
+
       running_.store(false);
+
+      // Important: disconnect after handling
+      DisconnectNamedPipe(shutdown_pipe_);
       break;
     }
 
-    CloseHandle(overlapped.hEvent);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    LOG_WARN("DAEMON", "SHUTDOWN_LISTENER",
+             "ReadFile returned 0 bytes, disconnecting");
+
+    DisconnectNamedPipe(shutdown_pipe_);
   }
 #else
   // Unix: poll the FIFO

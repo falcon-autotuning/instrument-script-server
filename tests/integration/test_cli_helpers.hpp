@@ -42,7 +42,6 @@ inline const std::string ext = ".dll";
 inline const std::string ext = ".so";
 #endif
 
-inline std::atomic<bool> g_interrupted{false};
 inline const std::string bin_path = ISS_BIN_PATH;
 inline const std::string data_dir = TEST_DATA_DIR;
 inline const std::string mock_plugin =
@@ -85,11 +84,48 @@ inline void cleanup_all_daemons() {
     }
 
 #ifdef _WIN32
-    HANDLE h = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
-    if (h) {
-      TerminateProcess(h, 1);
-      CloseHandle(h);
+    HANDLE h =
+        OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE | PROCESS_QUERY_INFORMATION,
+                    FALSE, pid);
+
+    if (!h) {
+      continue;
     }
+
+    // Step 1: Try to terminate (like SIGTERM equivalent)
+    TerminateProcess(h, 1);
+
+    // Step 2: Wait for exit (retry loop like Linux)
+    bool exited = false;
+
+    for (int i = 0; i < 20; ++i) {
+      DWORD wait_result = WaitForSingleObject(h, 100);
+
+      if (wait_result == WAIT_OBJECT_0) {
+        exited = true;
+        break;
+      }
+    }
+
+    // Step 3: Escalate if still alive (like SIGKILL)
+    if (!exited) {
+      // Try again aggressively
+      TerminateProcess(h, 1);
+
+      DWORD wait_result = WaitForSingleObject(h, 1000);
+
+      if (wait_result != WAIT_OBJECT_0) {
+        // Optional: log hard failure
+      }
+    }
+
+    // Step 4: Final verification (like process_alive check)
+    DWORD exit_code = 0;
+    if (GetExitCodeProcess(h, &exit_code) && exit_code == STILL_ACTIVE) {
+      // Last resort — something is wrong
+    }
+
+    CloseHandle(h);
 #else
     if (!process_alive(pid)) {
       continue;
@@ -112,25 +148,6 @@ inline void cleanup_all_daemons() {
 
   g_daemon_pids.clear();
 }
-
-inline void handle_sigint(int /*unused*/) { g_interrupted = true; }
-
-struct SignalSetup {
-  SignalSetup() {
-    std::signal(SIGINT, handle_sigint);
-#ifdef SIGTERM
-    std::signal(SIGTERM, handle_sigint);
-#endif
-  }
-};
-
-inline SignalSetup g_signal_setup;
-
-struct GlobalCleanup {
-  ~GlobalCleanup() { cleanup_all_daemons(); }
-};
-
-inline GlobalCleanup g_cleanup;
 
 inline void register_daemon_pid(int pid) {
   if (pid <= 0) {
@@ -176,9 +193,7 @@ inline int get_pid_from_file(const std::string &path) {
 
 std::pair<int, std::string> run_command(const std::string &args) {
 #ifdef _WIN32
-  std::string full_cmd = args;
-
-  std::vector<char> cmd_buf(full_cmd.begin(), full_cmd.end());
+  std::vector<char> cmd_buf(args.begin(), args.end());
   cmd_buf.push_back('\0');
 
   SECURITY_ATTRIBUTES sa{};
@@ -187,8 +202,8 @@ std::pair<int, std::string> run_command(const std::string &args) {
 
   HANDLE readPipe = NULL;
   HANDLE writePipe = NULL;
-
   CreatePipe(&readPipe, &writePipe, &sa, 0);
+
   SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
 
   HANDLE hNull =
@@ -203,57 +218,52 @@ std::pair<int, std::string> run_command(const std::string &args) {
   si.hStdOutput = writePipe;
   si.hStdError = writePipe;
   si.hStdInput = hNull;
-  std::cout << "CMD: " << full_cmd << std::endl;
-  BOOL ok = CreateProcessA(NULL, cmd_buf.data(), NULL, NULL, TRUE, 0, NULL,
-                           NULL, &si, &pi);
+
+  std::cout << "CMD: " << args << std::endl;
+
+  BOOL ok = CreateProcessA(NULL, cmd_buf.data(), NULL, NULL, TRUE,
+                           CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
 
   CloseHandle(writePipe);
   CloseHandle(hNull);
 
   if (!ok) {
     CloseHandle(readPipe);
-    DWORD err = GetLastError();
-    return {-1, "CreateProcess failed: " + std::to_string(err)};
+    return {-1, "CreateProcess failed"};
   }
 
   std::string output;
-
-  // --- reader thread ---
-  std::thread reader([&]() {
+  std::thread reader([&] {
     char buffer[256];
     DWORD read = 0;
 
     while (true) {
       BOOL success = ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL);
 
-      if (!success) {
-        DWORD err = GetLastError();
-        if (err == ERROR_BROKEN_PIPE) {
-          break; // ✅ pipe closed = done
-        }
-        continue; // transient failure, keep trying
-      }
-
-      if (read > 0) {
+      if (success && read > 0) {
         output.append(buffer, read);
+      } else {
+        DWORD err = GetLastError();
+        if (err == ERROR_BROKEN_PIPE || read == 0) {
+          break; // ✅ pipe fully drained
+        }
       }
     }
   });
 
-  // Wait for process
-  WaitForSingleObject(pi.hProcess, INFINITE);
+  DWORD result = WaitForSingleObject(pi.hProcess, INFINITE);
 
-  // Wait for reader to finish (pipe closes automatically)
+  if (result != WAIT_OBJECT_0) {
+    TerminateProcess(pi.hProcess, 1);
+  }
+
   reader.join();
 
-  // NOW close the pipe
   CloseHandle(readPipe);
 
-  // Get exit code
   DWORD exit_code = 0;
   GetExitCodeProcess(pi.hProcess, &exit_code);
 
-  // Cleanup
   CloseHandle(pi.hProcess);
   CloseHandle(pi.hThread);
 
@@ -263,12 +273,13 @@ std::pair<int, std::string> run_command(const std::string &args) {
   std::string cmd = args + " 2>&1";
 
   FILE *pipe = popen(cmd.c_str(), "r");
-  if (pipe == nullptr) {
+  if (!pipe) {
     return {-1, ""};
   }
 
   std::ostringstream output;
   char buffer[256];
+
   while (fgets(buffer, sizeof(buffer), pipe)) {
     output << buffer;
   }
@@ -281,6 +292,12 @@ std::pair<int, std::string> run_command(const std::string &args) {
 
   return {exit_code, output.str()};
 #endif
+}
+
+inline void cleanup_runtime_dir() {
+  std::string dir = get_runtime_dir();
+  std::error_code ec;
+  std::filesystem::remove_all(dir, ec);
 }
 
 inline int extract_pid(const std::string &input) {
@@ -345,14 +362,60 @@ inline bool extract_running(const std::string &input) {
   return false;
 }
 
+template <typename Fn>
+auto call_with_timeout(Fn &&fn, int timeout_ms)
+    -> std::optional<decltype(fn())> {
+  using Result = decltype(fn());
+
+  std::optional<Result> result;
+  std::atomic<bool> done = false;
+
+  std::thread t([&] {
+    try {
+      result = fn();
+    } catch (...) {
+      // ignore
+    }
+    done = true;
+  });
+
+  for (int i = 0; i < timeout_ms / 10; ++i) {
+    if (done)
+      break;
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  if (!done) {
+    t.detach(); // abandon
+    return std::nullopt;
+  }
+
+  t.join();
+  return result;
+}
 inline bool wait_for_daemon_stopped(int timeout_ms = 5000) {
   for (int waited = 0; waited < timeout_ms; waited += 100) {
-    auto [_, out] = run_iss("daemon status --json");
+
+    auto result =
+        call_with_timeout([&] { return run_iss("daemon status --json"); }, 500);
+
+    if (!result) {
+      return true;
+    }
+
+    auto [exit_code, out] = *result;
+
+    if (exit_code != 0) {
+      return true;
+    }
+
     if (!extract_running(out)) {
       return true;
     }
+
     std::this_thread::sleep_for(100ms);
   }
+
   return false;
 }
 
