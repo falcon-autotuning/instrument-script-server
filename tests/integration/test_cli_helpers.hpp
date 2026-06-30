@@ -224,7 +224,30 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
   }
 
   // Wait for process to finish
-  WaitForSingleObject(pi.hProcess, INFINITE);
+  std::string output;
+  char buffer[256];
+  DWORD read;
+
+  while (true) {
+    // Try to read available data
+    while (PeekNamedPipe(readPipe, NULL, 0, NULL, &read, NULL) && read > 0) {
+      if (ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL) && read > 0) {
+        output.append(buffer, read);
+      }
+    }
+
+    // Check if process finished
+    DWORD result = WaitForSingleObject(pi.hProcess, 50);
+
+    if (result == WAIT_OBJECT_0) {
+      // Process finished → drain remaining data
+      while (ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL) &&
+             read > 0) {
+        output.append(buffer, read);
+      }
+      break;
+    }
+  }
 
   // Read all output after process exits
   std::string output;
