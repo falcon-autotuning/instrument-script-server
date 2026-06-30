@@ -72,6 +72,7 @@ add_executable(
 
 target_link_libraries(perf_tests PRIVATE
   test-utils
+  instrument-script-server-client
   GTest::gtest
   GTest::gtest_main
 )

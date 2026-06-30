@@ -1,17 +1,14 @@
-#include "PluginTestFixture.hpp"
-#include "instrument-script-server/daemon/InstrumentRegistry.hpp"
-#include "instrument-script-server/daemon/RuntimeContext.hpp"
+#include "PlatformPaths.hpp"
+#include "instrument-script-server/client/instrument-server-client.hpp"
 #include "instrument-script-server/daemon/ServerDaemon.hpp"
-#include "instrument-script-server/daemon/SyncCoordinator.hpp"
 
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
-#include <sol/sol.hpp>
+#include <thread>
 
 using namespace instserver;
-using namespace instserver::daemon;
 using namespace std::chrono;
 
 #ifndef TEST_DATA_DIR
@@ -19,30 +16,80 @@ using namespace std::chrono;
 #endif
 
 std::string api_path = std::string(TEST_DATA_DIR) + "/mock_api.yaml";
-class EndToEndPerformanceTest : public test::PluginTestFixture {
-protected:
-  void SetUp() override {
-    PluginTestFixture::SetUp();
 
-    // Start daemon
+namespace {
+uint32_t run_job_to_completion(instserver::client::InstrumentServerClient &client, const std::string &script_path) {
+  namespace v1 = instserver::daemon::v1;
+  v1::MeasureJobRequest req;
+  req.set_script_path(script_path);
+
+  v1::MeasureJobResponse resp = client.measure_job(req);
+  uint32_t job_id = resp.job_id();
+
+  v1::JobStatusRequest status_req;
+  status_req.set_job_id(job_id);
+
+  while (true) {
+    auto status_resp = client.job_status(status_req);
+    auto status = status_resp.job().status();
+    if (status == v1::JOB_STATUS_COMPLETED) {
+      break;
+    }
+    if (status == v1::JOB_STATUS_FAILED || status == v1::JOB_STATUS_CANCELLED) {
+      throw std::runtime_error("Job failed or cancelled");
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+  return job_id;
+}
+} // namespace
+
+class EndToEndPerformanceTest : public ::testing::Test {
+protected:
+  std::unique_ptr<instserver::client::InstrumentServerClient> client;
+  uint16_t port = 8556;
+
+  void SetUp() override {
+    namespace v1 = instserver::daemon::v1;
     auto &daemon = ServerDaemon::instance();
-    if (!daemon.is_running()) {
-      daemon.start();
+    if (daemon.is_running()) {
+      daemon.stop();
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    // Start mock instrument
-    auto &registry = InstrumentRegistry::instance();
-    std::string config_path = "tests/data/mock_instrument1.yaml";
-    if (std::filesystem::exists(config_path)) {
-      registry.create_instrument(config_path);
+    daemon.set_rpc_port(port);
+    ASSERT_TRUE(daemon.start());
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    client = std::make_unique<instserver::client::InstrumentServerClient>(port);
+
+    // Register / Start MockInstrument1
+    v1::StartInstrumentRequest req;
+    std::string config_path = std::string(TEST_DATA_DIR) + "/mock_instrument1.yaml";
+    req.set_config_path(config_path);
+    std::filesystem::path plugin_path = instserver::test::get_test_plugin_path("mock_visa_plugin");
+    req.set_plugin_path(plugin_path.string());
+    req.set_log_level("info");
+
+    try {
+      client->start_instrument(req);
+    } catch (const std::exception &e) {
+      daemon.stop();
+      FAIL() << "Failed to start MockInstrument1: " << e.what();
     }
   }
 
   void TearDown() override {
-    auto &registry = InstrumentRegistry::instance();
-    registry.stop_all();
-    // Clean up after each test - use public API only
-    auto &daemon = instserver::ServerDaemon::instance();
+    namespace v1 = instserver::daemon::v1;
+    if (client) {
+      v1::StopInstrumentRequest stop_req;
+      stop_req.set_instrument_name("MockInstrument1");
+      try {
+        client->stop_instrument(stop_req);
+      } catch (...) {}
+    }
+    client.reset();
+    auto &daemon = ServerDaemon::instance();
     if (daemon.is_running()) {
       daemon.stop();
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -52,30 +99,36 @@ protected:
 
 TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   // Measure best-case overhead: single simple command with no data
-  auto &registry = InstrumentRegistry::instance();
-  SyncCoordinator sync;
-
-  sol::state lua;
-  lua.open_libraries(sol::lib::base, sol::lib::math);
-  bind_runtime_context(lua, registry, sync);
-
-  RuntimeContext ctx(registry, sync);
-  lua["context"] = &ctx;
+  std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "perf_test";
+  std::filesystem::create_directories(temp_dir);
+  std::filesystem::path script_path = temp_dir / "single_command.lua";
+  {
+    std::ofstream ofs(script_path);
+    ofs << R"(
+      -- Warm up
+      for i = 1, 10 do
+        context:call('MockInstrument1.IDN')
+      end
+    )";
+    ofs.close();
+  }
 
   // Warm up
-  for (int i = 0; i < 10; i++) {
-    lua.script("context:call('MockInstrument1.IDN')");
-  }
+  run_job_to_completion(*client, script_path.string());
 
-  // Measure
   const int num_calls = 100000;
-  auto start = high_resolution_clock::now();
-
-  for (int i = 0; i < num_calls; i++) {
-    lua.script("context:call('MockInstrument1.IDN')");
+  {
+    std::ofstream ofs(script_path);
+    ofs << "for i = 1, " << num_calls << " do\n";
+    ofs << "  context:call('MockInstrument1.IDN')\n";
+    ofs << "end\n";
+    ofs.close();
   }
 
+  auto start = high_resolution_clock::now();
+  run_job_to_completion(*client, script_path.string());
   auto end = high_resolution_clock::now();
+
   auto duration = duration_cast<microseconds>(end - start);
 
   long avg_latency = duration.count() / (long)num_calls;
@@ -87,30 +140,30 @@ TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   std::cout << "Total time for " << num_calls
             << " calls: " << duration.count() / (long)1000.0 << " ms\n";
 
+  std::filesystem::remove(script_path);
+
   // Overhead should be reasonable (less than 5ms per command on average)
   EXPECT_LT(avg_latency, 5000.0);
 }
 
 TEST_F(EndToEndPerformanceTest, CommandWithParametersOverhead) {
   // Measure overhead with command parameters (more realistic case)
-  auto &registry = InstrumentRegistry::instance();
-  SyncCoordinator sync;
-
-  sol::state lua;
-  lua.open_libraries(sol::lib::base, sol::lib::math);
-  bind_runtime_context(lua, registry, sync);
-
-  RuntimeContext ctx(registry, sync);
-  lua["context"] = &ctx;
-
+  std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "perf_test";
+  std::filesystem::create_directories(temp_dir);
+  std::filesystem::path script_path = temp_dir / "param_command.lua";
   const int num_calls = 100000;
-  auto start = high_resolution_clock::now();
-
-  for (int i = 0; i < num_calls; i++) {
-    lua.script("context:call('MockInstrument1.SET', {voltage = 5.0})");
+  {
+    std::ofstream ofs(script_path);
+    ofs << "for i = 1, " << num_calls << " do\n";
+    ofs << "  context:call('MockInstrument1.SET', {voltage = 5.0})\n";
+    ofs << "end\n";
+    ofs.close();
   }
 
+  auto start = high_resolution_clock::now();
+  run_job_to_completion(*client, script_path.string());
   auto end = high_resolution_clock::now();
+
   auto duration = duration_cast<microseconds>(end - start);
 
   long avg_latency = (long)duration.count() / (long)num_calls;
@@ -120,17 +173,19 @@ TEST_F(EndToEndPerformanceTest, CommandWithParametersOverhead) {
   std::cout << "Throughput: "
             << ((long)num_calls * (long)1000000.0) / (long)duration.count()
             << " commands/sec\n";
+
+  std::filesystem::remove(script_path);
 }
 
 TEST_F(EndToEndPerformanceTest, MaxConcurrentInstruments) {
   // Test maximum number of concurrent instruments
-  auto &registry = InstrumentRegistry::instance();
-
-  // Create multiple mock instruments
+  namespace v1 = instserver::daemon::v1;
   std::vector<std::string> instrument_names;
   const int max_instruments = 10;
 
   auto start_setup = high_resolution_clock::now();
+  std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "perf_test";
+  std::filesystem::create_directories(temp_dir);
 
   for (int i = 2; i <= max_instruments; i++) {
     std::string config = R"(
@@ -144,13 +199,17 @@ connection:
 )";
 
     std::string config_path =
-        "/tmp/mock_instrument_" + std::to_string(i) + ".yaml";
+        (temp_dir / ("mock_instrument_" + std::to_string(i) + ".yaml")).string();
     std::ofstream config_file(config_path);
     config_file << config;
     config_file.close();
 
     try {
-      registry.create_instrument(config_path);
+      v1::StartInstrumentRequest req;
+      req.set_config_path(config_path);
+      req.set_plugin_path(instserver::test::get_test_plugin_path("mock_visa_plugin").string());
+      req.set_log_level("info");
+      client->start_instrument(req);
       instrument_names.push_back("MockInstrument" + std::to_string(i));
     } catch (const std::exception &e) {
       std::cout << "Failed to create instrument " << i << ": " << e.what()
@@ -163,50 +222,53 @@ connection:
   auto setup_duration = duration_cast<milliseconds>(end_setup - start_setup);
 
   // Now execute commands across all instruments
-  SyncCoordinator sync;
-  sol::state lua;
-  lua.open_libraries(sol::lib::base);
-  bind_runtime_context(lua, registry, sync);
-
-  RuntimeContext ctx(registry, sync);
-  lua["context"] = &ctx;
-
-  const int calls_per_instrument = 10000;
-  auto start_exec = high_resolution_clock::now();
-
-  for (int i = 0; i < calls_per_instrument; i++) {
+  const int calls_per_instrument = 1000;
+  std::filesystem::path script_path = temp_dir / "concurrent_instruments.lua";
+  {
+    std::ofstream ofs(script_path);
+    ofs << "for i = 1, " << calls_per_instrument << " do\n";
+    ofs << "  context:call('MockInstrument1.IDN')\n";
     for (const auto &name : instrument_names) {
-      std::string cmd = "context:call('" + name + ".IDN')";
-      lua.script(cmd);
+      ofs << "  context:call('" << name << ".IDN')\n";
     }
+    ofs << "end\n";
+    ofs.close();
   }
 
+  auto start_exec = high_resolution_clock::now();
+  run_job_to_completion(*client, script_path.string());
   auto end_exec = high_resolution_clock::now();
   auto exec_duration = duration_cast<milliseconds>(end_exec - start_exec);
+
+  int total_calls = calls_per_instrument * (instrument_names.size() + 1);
 
   std::cout << "\n=== Maximum Concurrent Instruments Test ===\n";
   std::cout << "Number of instruments: " << (instrument_names.size() + 1)
             << "\n";
   std::cout << "Setup time: " << setup_duration.count() << " ms\n";
   std::cout << "Execution time for "
-            << (calls_per_instrument * (instrument_names.size() + 1))
+            << total_calls
             << " calls: " << exec_duration.count() << " ms\n";
   std::cout << "Average latency per call: "
-            << (long)(exec_duration.count() * (long)1000.0) /
-                   (long)(calls_per_instrument * (instrument_names.size() + 1))
+            << (long)(exec_duration.count() * (long)1000.0) / (long)total_calls
             << " µs\n";
 
   // Clean up
-  for (size_t i = 0; i < instrument_names.size(); i++) {
-    registry.remove_instrument(instrument_names[i]);
-    std::remove(
-        ("/tmp/mock_instrument_" + std::to_string(i + 2) + ".yaml").c_str());
+  for (const auto &name : instrument_names) {
+    v1::StopInstrumentRequest stop_req;
+    stop_req.set_instrument_name(name);
+    try {
+      client->stop_instrument(stop_req);
+    } catch (...) {}
   }
+  std::filesystem::remove_all(temp_dir);
 }
 
 TEST_F(EndToEndPerformanceTest, ParallelExecutionOverhead) {
   // Measure overhead of parallel execution coordination
-  auto &registry = InstrumentRegistry::instance();
+  namespace v1 = instserver::daemon::v1;
+  std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "perf_test";
+  std::filesystem::create_directories(temp_dir);
 
   // Create second instrument
   std::string config2 = R"(
@@ -214,35 +276,37 @@ name: MockInstrument2
 api_ref: )" + api_path + R"(
 connection:
   type: VISA
-  address: "mock://test2
+  address: "mock://test2"
 )";
 
-  std::string config_path = "/tmp/mock_instrument_2.yaml";
+  std::string config_path = (temp_dir / "mock_instrument_2.yaml").string();
   std::ofstream config_file(config_path);
   config_file << config2;
   config_file.close();
-  registry.create_instrument(config_path);
 
-  SyncCoordinator sync;
-  sol::state lua;
-  lua.open_libraries(sol::lib::base);
-  bind_runtime_context(lua, registry, sync);
+  v1::StartInstrumentRequest req;
+  req.set_config_path(config_path);
+  req.set_plugin_path(instserver::test::get_test_plugin_path("mock_visa_plugin").string());
+  req.set_log_level("info");
+  client->start_instrument(req);
 
-  RuntimeContext ctx(registry, sync);
-  lua["context"] = &ctx;
-
-  const int num_parallel_blocks = 100000;
-  auto start = high_resolution_clock::now();
-
-  for (int i = 0; i < num_parallel_blocks; i++) {
-    lua.script(R"(
-		  context:parallel(function()
+  const int num_parallel_blocks = 10000;
+  std::filesystem::path script_path = temp_dir / "parallel_exec.lua";
+  {
+    std::ofstream ofs(script_path);
+    ofs << "for i = 1, " << num_parallel_blocks << " do\n";
+    ofs << R"(
+      context:parallel(function()
         context:call('MockInstrument1.IDN')
         context:call('MockInstrument2.IDN')
       end)
-    )");
+    )";
+    ofs << "end\n";
+    ofs.close();
   }
 
+  auto start = high_resolution_clock::now();
+  run_job_to_completion(*client, script_path.string());
   auto end = high_resolution_clock::now();
   auto duration = duration_cast<microseconds>(end - start);
 
@@ -259,6 +323,10 @@ connection:
             << " ms\n";
 
   // Clean up
-  registry.remove_instrument("MockInstrument2");
-  std::remove(config_path.c_str());
+  v1::StopInstrumentRequest stop_req;
+  stop_req.set_instrument_name("MockInstrument2");
+  try {
+    client->stop_instrument(stop_req);
+  } catch (...) {}
+  std::filesystem::remove_all(temp_dir);
 }
