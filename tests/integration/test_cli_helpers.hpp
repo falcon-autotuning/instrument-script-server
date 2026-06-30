@@ -226,22 +226,28 @@ std::pair<int, std::string> run_command(const std::string &args) {
     while (true) {
       BOOL success = ReadFile(readPipe, buffer, sizeof(buffer), &read, NULL);
 
-      if (!success || read == 0) {
-        break; // pipe closed or no more data
+      if (!success) {
+        DWORD err = GetLastError();
+        if (err == ERROR_BROKEN_PIPE) {
+          break; // ✅ pipe closed = done
+        }
+        continue; // transient failure, keep trying
       }
 
-      output.append(buffer, read);
+      if (read > 0) {
+        output.append(buffer, read);
+      }
     }
   });
 
-  // Wait for process to finish
+  // Wait for process
   WaitForSingleObject(pi.hProcess, INFINITE);
 
-  // Close our copy of the write pipe handle so reader exits
-  CloseHandle(readPipe);
-
-  // Wait for reader thread to finish draining
+  // Wait for reader to finish (pipe closes automatically)
   reader.join();
+
+  // NOW close the pipe
+  CloseHandle(readPipe);
 
   // Get exit code
   DWORD exit_code = 0;
