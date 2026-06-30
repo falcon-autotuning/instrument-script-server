@@ -250,7 +250,6 @@ inline std::pair<int, std::string> run_command(const std::string &args) {
   }
 
   // Read all output after process exits
-  std::string output;
   char buffer[256];
   DWORD read;
 
