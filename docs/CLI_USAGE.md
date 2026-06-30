@@ -26,22 +26,15 @@ Complete guide to using the `instrument-script-server` command-line interface.
     - [Example Scripts](#example-scripts)
     - [Building Measurement Libraries](#building-measurement-libraries)
     - [Integration with Higher-Level Software](#integration-with-higher-level-software)
-  - [Testing](#testing)
-    - [Test Command](#test-command)
   - [Plugin Management](#plugin-management)
-    - [List Available Plugins](#list-available-plugins)
     - [Discover Plugins](#discover-plugins)
-  - [Configuration Validation](#configuration-validation)
-    - [Validate Command](#validate-command)
   - [Logging](#logging)
     - [Log Levels](#log-levels)
     - [Log Files](#log-files)
     - [Viewing Logs](#viewing-logs)
   - [Complete Workflow Examples](#complete-workflow-examples)
     - [Example 1: Basic Measurement](#example-1-basic-measurement)
-    - [Example 2: Development Workflow](#example-2-development-workflow)
     - [Example 3: Multi-Instrument Setup](#example-3-multi-instrument-setup)
-    - [Example 4: Troubleshooting](#example-4-troubleshooting)
   - [Exit Codes](#exit-codes)
   - [Environment Variables](#environment-variables)
   - [See Also](#see-also)
@@ -61,12 +54,11 @@ instrument-script-server <command> [subcommand] [options]
 | Category | Commands | Description |
 |----------|----------|-------------|
 | **Daemon** | `daemon start/stop/status` | Manage server daemon |
-| **Instruments** | `start`, `stop`, `status`, `list` | Manage instruments |
+| **Instruments** | `inst start/stop/status/list` | Manage instruments |
 | **Measurements** | `measure <script>` | Run measurement scripts |
-| **Buffer Management** | `list-buffers`, `buffer-metadata`, `read-buffer`, `release-buffer` | Manage shared-memory buffers |
-| **Testing** | `test <config> <verb>` | Test instrument commands |
-| **Plugins** | `discover` | Manage plugins |
-| **Validation** | `validate config/api <file>` | Validate configuration files |
+| **Jobs** | `job list/cancel/status/measure/result` | Queue background measurement jobs |
+| **Buffer Management** | `buffer list/metadata/read/release` | Manage shared-memory buffers |
+| **Utilities** | `discover [paths...]` | Discover plugins |
 
 ### Global Options
 
@@ -170,37 +162,37 @@ Server daemon is not running
 ### Start Instrument
 
 ```bash
-instrument-script-server start <config> [--plugin <path>] [--log-level <level>]
+instrument-script-server inst start <config> [--plugin <path>] [--log-level <level>]
 ```
 
 **Arguments:**
 
 - `<config>`: Path to instrument configuration YAML file
-- `--plugin <path>`: Optional custom plugin (. so on Linux, .dll on Windows)
+- `--plugin <path>`: Optional custom plugin (.so on Linux, .dll on Windows)
 - `--log-level <level>`: Logging level (default: info)
 
 **Examples:**
 
 ```bash
 # Start instrument with discovered plugin
-instrument-script-server start configs/dmm1.yaml
+instrument-script-server inst start configs/dmm1.yaml
 
 # Start with custom plugin
-instrument-script-server start configs/custom_instrument.yaml --plugin ./my_plugin.so
+instrument-script-server inst start configs/custom_instrument.yaml --plugin ./my_plugin.so
 
 # Start with debug logging
-instrument-script-server start configs/dac1.yaml --log-level debug
+instrument-script-server inst start configs/dac1.yaml --log-level debug
 
 # Start multiple instruments
-instrument-script-server start configs/dac1.yaml
-instrument-script-server start configs/dac2.yaml
-instrument-script-server start configs/dmm1.yaml
+instrument-script-server inst start configs/dac1.yaml
+instrument-script-server inst start configs/dac2.yaml
+instrument-script-server inst start configs/dmm1.yaml
 ```
 
 **Output:**
 
 ```
-Started instrument:  DMM1
+Started instrument: DMM1
 ```
 
 **Requirements:**
@@ -212,7 +204,7 @@ Started instrument:  DMM1
 ### Stop Instrument
 
 ```bash
-instrument-script-server stop <name>
+instrument-script-server inst stop <name>
 ```
 
 **Arguments:**
@@ -222,7 +214,7 @@ instrument-script-server stop <name>
 **Example:**
 
 ```bash
-instrument-script-server stop DMM1
+instrument-script-server inst stop DMM1
 ```
 
 **Output:**
@@ -234,7 +226,7 @@ Stopped instrument: DMM1
 ### Check Instrument Status
 
 ```bash
-instrument-script-server status <name>
+instrument-script-server inst status <name>
 ```
 
 **Arguments:**
@@ -244,14 +236,14 @@ instrument-script-server status <name>
 **Example:**
 
 ```bash
-instrument-script-server status DMM1
+instrument-script-server inst status DMM1
 ```
 
 **Output:**
 
 ```
-Instrument:  DMM1
-  Status:  RUNNING
+Instrument: DMM1
+  Status: RUNNING
   Commands sent: 150
   Commands completed: 148
   Commands failed: 0
@@ -260,8 +252,8 @@ Instrument:  DMM1
 
 **Status Fields:**
 
-- **Status**:  RUNNING or STOPPED
-- **Commands sent**:  Total commands dispatched
+- **Status**: RUNNING or STOPPED
+- **Commands sent**: Total commands dispatched
 - **Commands completed**: Successfully executed commands
 - **Commands failed**: Commands that returned errors
 - **Commands timeout**: Commands that exceeded timeout
@@ -269,13 +261,13 @@ Instrument:  DMM1
 ### List All Instruments
 
 ```bash
-instrument-script-server list
+instrument-script-server inst list
 ```
 
 **Example:**
 
 ```bash
-instrument-script-server list
+instrument-script-server inst list
 ```
 
 **Output:**
@@ -657,34 +649,34 @@ This architecture keeps the instrument server simple and generic, while allowing
 
 Large measurement arrays (e.g., waveforms, multi-channel datasets) are stored in shared memory to achieve high throughput and zero copies. You can manage these buffers directly from the CLI.
 
-### 1. `list-buffers`
+### 1. `buffer list`
 
 Lists all active shared memory buffer IDs currently allocated, along with their metadata.
 
 ```bash
-instrument-script-server list-buffers
+instrument-script-server buffer list
 ```
 
 **Example Output:**
 
 ```
-Active Shared Memory Buffers:
-  - buffer_1779829276760326 (10000 elements, float32)
-  - buffer_1779829276760734 (10000 elements, float32)
+Active buffers:
+  buffer_1779829276760326 (10000 elements, type=float32)
+  buffer_1779829276760734 (10000 elements, type=float32)
 ```
 
-### 2. `buffer-metadata`
+### 2. `buffer metadata`
 
 Displays complete structural metadata for a specific buffer ID.
 
 ```bash
-instrument-script-server buffer-metadata <buffer_id>
+instrument-script-server buffer metadata <buffer_id>
 ```
 
 **Example:**
 
 ```bash
-instrument-script-server buffer-metadata buffer_1779829276760326
+instrument-script-server buffer metadata buffer_1779829276760326
 ```
 
 **Output:**
@@ -697,12 +689,12 @@ Buffer Metadata:
   Size: 40000 bytes
 ```
 
-### 3. `read-buffer`
+### 3. `buffer read`
 
 Reads and displays the data contents of a shared memory buffer.
 
 ```bash
-instrument-script-server read-buffer <buffer_id> [--json]
+instrument-script-server buffer read <buffer_id> [--json]
 ```
 
 **Arguments:**
@@ -713,7 +705,7 @@ instrument-script-server read-buffer <buffer_id> [--json]
 **Example (Text format):**
 
 ```bash
-instrument-script-server read-buffer buffer_1779829276760326
+instrument-script-server buffer read buffer_1779829276760326
 ```
 
 **Output:**
@@ -728,7 +720,7 @@ instrument-script-server read-buffer buffer_1779829276760326
 **Example (JSON format):**
 
 ```bash
-instrument-script-server read-buffer buffer_1779829276760326 --json
+instrument-script-server buffer read buffer_1779829276760326 --json
 ```
 
 **Output:**
@@ -743,18 +735,18 @@ instrument-script-server read-buffer buffer_1779829276760326 --json
 }
 ```
 
-### 4. `release-buffer`
+### 4. `buffer release`
 
 Decrements the server-side reference count and deallocates the shared-memory buffer if the reference count drops to 0.
 
 ```bash
-instrument-script-server release-buffer <buffer_id>
+instrument-script-server buffer release <buffer_id>
 ```
 
 **Example:**
 
 ```bash
-instrument-script-server release-buffer buffer_1779829276760326
+instrument-script-server buffer release buffer_1779829276760326
 ```
 
 **Output:**
@@ -764,95 +756,11 @@ Released buffer: buffer_1779829276760326
 ```
 
 > [!WARNING]
-> Shared memory buffers persist in system memory until explicitly released. If you consume buffers in high-frequency automation loops, always call `release-buffer` to prevent memory fragmentation and exhaustion.
-
-## Testing
-
-Test individual instrument commands without writing full scripts.
-
-### Test Command
-
-```bash
-instrument-script-server test <config> <verb> [param=value ... ] [--plugin <path>] [--log-level <level>]
-```
-
-**Arguments:**
-
-- `<config>`: Path to instrument configuration file
-- `<verb>`: Command verb from API definition
-- `param=value`: Command parameters (key=value pairs)
-- `--plugin <path>`: Optional custom plugin
-- `--log-level <level>`: Logging level
-
-**Examples:**
-
-```bash
-# Test identity query
-instrument-script-server test configs/dmm1.yaml IDN
-
-# Test with parameters
-instrument-script-server test configs/dac1.yaml SET_VOLTAGE channel=1 voltage=5.0
-
-# Test with custom plugin
-instrument-script-server test configs/custom. yaml MEASURE --plugin ./my_plugin.so
-
-# Test with debug logging
-instrument-script-server test configs/scope1.yaml TRIGGER --log-level debug
-```
-
-**Output:**
-
-```
-Testing instrument: DMM1
-Executing command: IDN
-
-Result: 
-  Success: YES
-  Response:  Keithley Instruments Inc., Model 2400, 1234567, v1.0
-```
-
-**Notes:**
-
-- Creates temporary instrument instance for testing
-- Instrument is automatically stopped after test
-- Useful for verifying plugin functionality
-- Does not require daemon (starts temporary instance)
+> Shared memory buffers persist in system memory until explicitly released. If you consume buffers in high-frequency automation loops, always call `buffer release` to prevent memory fragmentation and exhaustion.
 
 ## Plugin Management
 
 Discover and manage instrument driver plugins.
-
-### List Available Plugins
-
-```bash
-instrument-script-server plugins
-```
-
-**Example:**
-
-```bash
-instrument-script-server plugins
-```
-
-**Output:**
-
-```
-Available plugins:
-
-  VISA -> /usr/local/lib/instrument-plugins/visa_builtin.so
-  SimpleSerial -> /usr/local/lib/instrument-plugins/simple_serial_plugin.so
-  MockTest -> ./mock_plugin.so
-
-Total:  3 plugin(s)
-```
-
-**Notes:**
-
-- Searches standard directories:
-  - `/usr/local/lib/instrument-plugins/`
-  - `/usr/lib/instrument-plugins/`
-  - `./plugins/`
-  - `.` (current directory)
 
 ### Discover Plugins
 
@@ -896,49 +804,6 @@ Protocol: MySerial
   Description: Custom serial protocol implementation
 ```
 
-## Configuration Validation
-
-Validate configuration files against JSON schemas before using them.
-
-### Validate Command
-
-```bash
-# Validate instrument configuration
-instrument-script-server validate config <file>
-
-# Validate API definition
-instrument-script-server validate api <file>
-```
-
-**Examples:**
-
-```bash
-# Validate instrument configuration
-instrument-script-server validate config examples/instrument-configurations/agi_34401_config.yaml
-
-# Validate API definition
-instrument-script-server validate api examples/instrument-apis/agi_34401a.yaml
-```
-
-**Output (success):**
-
-```
-✓ Configuration is valid
-```
-
-**Output (error):**
-
-```
-✗ Validation failed:
-  - Field 'name' must match pattern ^[A-Z][A-Z0-9_]*$
-  - Missing required field 'io_config'
-```
-
-**Notes:**
-
-- Validates against JSON schemas in `schemas/` directory
-- Checks required fields, data types, and constraints
-- Use before starting instruments to catch configuration errors early
 
 ## Logging
 
@@ -1001,134 +866,63 @@ grep "DMM1" instrument_server.log
 instrument-script-server daemon start
 
 # 2. Start instruments
-instrument-script-server start configs/dac1.yaml
-instrument-script-server start configs/dmm1.yaml
+instrument-script-server inst start configs/dac1.yaml
+instrument-script-server inst start configs/dmm1.yaml
 
-# 3.  Verify instruments are running
-instrument-script-server list
+# 3. Verify instruments are running
+instrument-script-server inst list
 
 # 4. Run measurement
 instrument-script-server measure scripts/iv_curve.lua
 
 # 5. Check instrument status
-instrument-script-server status DMM1
+instrument-script-server inst status DMM1
 
 # 6. Stop instruments
-instrument-script-server stop DAC1
-instrument-script-server stop DMM1
+instrument-script-server inst stop DAC1
+instrument-script-server inst stop DMM1
 
 # 7. Stop daemon
 instrument-script-server daemon stop
 ```
 
-### Example 2: Development Workflow
-
-```bash
-# 1. Start daemon with debug logging
-instrument-script-server daemon start --log-level debug
-
-# 2. Validate configuration before using
-instrument-script-server validate config configs/test_instrument.yaml
-instrument-script-server validate api apis/test_api.yaml
-
-# 3. Test instrument with custom plugin
-instrument-script-server test configs/test_instrument.yaml IDN --plugin ./my_plugin. so
-
-# If test succeeds, start instrument
-instrument-script-server start configs/test_instrument.yaml --plugin ./my_plugin.so
-
-# 4. Run test measurement with debug logging
-instrument-script-server measure scripts/test_measurement.lua --log-level debug
-
-# 5. Check logs for issues
-tail -f instrument_server.log
-tail -f worker_TestInstrument.log
-
-# 6. Stop and restart instrument if needed
-instrument-script-server stop TestInstrument
-instrument-script-server start configs/test_instrument.yaml --plugin ./my_plugin.so
-
-# 7. Cleanup
-instrument-script-server daemon stop
-```
-
-### Example 3: Multi-Instrument Setup
+### Example 2: Multi-Instrument Setup
 
 ```bash
 # 1. Start daemon
 instrument-script-server daemon start
 
 # 2. Discover available plugins
-instrument-script-server plugins
+instrument-script-server discover
 
 # 3. Start multiple instruments
-instrument-script-server start configs/dac1.yaml
-instrument-script-server start configs/dac2.yaml
-instrument-script-server start configs/dac3.yaml
-instrument-script-server start configs/dmm1.yaml
-instrument-script-server start configs/dmm2.yaml
-instrument-script-server start configs/scope1.yaml
+instrument-script-server inst start configs/dac1.yaml
+instrument-script-server inst start configs/dac2.yaml
+instrument-script-server inst start configs/dac3.yaml
+instrument-script-server inst start configs/dmm1.yaml
+instrument-script-server inst start configs/dmm2.yaml
+instrument-script-server inst start configs/scope1.yaml
 
 # 4. Verify all running
-instrument-script-server list
+instrument-script-server inst list
 
 # 5. Check individual status
 for inst in DAC1 DAC2 DAC3 DMM1 DMM2 Scope1; do
     echo "=== $inst ==="
-    instrument-script-server status $inst
+    instrument-script-server inst status $inst
 done
 
 # 6. Run complex measurement with parallel execution
 instrument-script-server measure scripts/stability_diagram.lua
 
 # 7. Selective shutdown
-instrument-script-server stop Scope1
+instrument-script-server inst stop Scope1
 
 # 8. Continue with remaining instruments
 instrument-script-server measure scripts/final_measurement.lua
 
 # 9. Complete shutdown
 instrument-script-server daemon stop
-```
-
-### Example 4: Troubleshooting
-
-```bash
-# 1. Check daemon status
-instrument-script-server daemon status
-
-# If not running, start it
-if [ $? -ne 0 ]; then
-    instrument-script-server daemon start
-fi
-
-# 2. Validate configuration files
-instrument-script-server validate config configs/problematic_instrument.yaml
-instrument-script-server validate api apis/problematic_api.yaml
-
-# 3. Try starting instrument with debug logging
-instrument-script-server start configs/problematic_instrument.yaml --log-level debug
-
-# 4. Check logs immediately
-tail -20 instrument_server.log
-
-# 5. Test specific command
-instrument-script-server test configs/problematic_instrument.yaml IDN
-
-# 6. If plugin issue, try with explicit plugin path
-instrument-script-server start configs/problematic_instrument.yaml \
-    --plugin /usr/local/lib/instrument-plugins/visa_builtin.so \
-    --log-level debug
-
-# 7. Monitor worker log
-tail -f worker_ProblematicInstrument.log
-
-# 8. Check IPC issues (Linux)
-ls -la /tmp/instrument-script-server-$USER/
-
-# 9. Clean up if needed
-instrument-script-server daemon stop
-rm -rf /tmp/instrument-script-server-$USER/
 ```
 
 ## Exit Codes
@@ -1151,7 +945,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-instrument-script-server start configs/dmm1.yaml
+instrument-script-server inst start configs/dmm1.yaml
 if [ $? -ne 0 ]; then
     echo "Failed to start DMM1"
     instrument-script-server daemon stop
@@ -1182,6 +976,12 @@ The RPC server provides programmatic API access for embedding and automation.
 **Description**: Sets the path for an optional lua library to load for interpreting measurement scripts
 
 This supports either the directory of a larger package or just a file with registering modules.
+
+### `INSTRUMENT_SERVER_MAX_JOB_HISTORY`
+
+**Type**: Integer  
+**Default**: `10000`  
+**Description**: Sets the maximum number of finished job records kept in memory before the oldest finished jobs are evicted.
 
 ## See Also
 
