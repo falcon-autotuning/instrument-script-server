@@ -419,8 +419,9 @@ inline std::string extract_first_buffer_id(const std::string &output) {
 inline void start_instrument(const std::filesystem::path &config) {
   std::string config_str = config.generic_string();
 
-  auto [exit_code, output] = run_iss("inst start \"" + config_str +
-                                     "\" --plugin \"" + mock_plugin + "\"");
+  auto [exit_code, output] =
+      run_iss("inst start \"" + config_str + "\" --plugin \"" + mock_plugin +
+              "\" --json");
 
   EXPECT_EQ(exit_code, 0) << "Instrument start failed, output:\n" << output;
 
@@ -428,7 +429,8 @@ inline void start_instrument(const std::filesystem::path &config) {
 }
 
 inline void stop_instrument(const std::string &instrument_name) {
-  auto [exit_code, output] = run_iss("inst stop " + instrument_name);
+  auto [exit_code, output] =
+      run_iss("inst stop " + instrument_name + " --json");
   EXPECT_EQ(exit_code, 0) << "Instrument stop failed, output:\n" << output;
   std::this_thread::sleep_for(200ms);
 }

@@ -89,7 +89,10 @@ ServerDaemon::~ServerDaemon() {
   // unique_ptr destructor will delete the thread objects after detach
 }
 
-std::string get_pid_file_path() { return get_runtime_dir() + "/server.pid"; }
+std::string get_pid_file_path() {
+  return (std::filesystem::path(get_runtime_dir()) / "server.pid")
+      .generic_string();
+}
 
 bool ServerDaemon::is_already_running() {
   std::string pid_file = get_pid_file_path();
