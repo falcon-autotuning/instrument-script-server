@@ -3,8 +3,20 @@
 // ---------------------------------------------------------------------------
 // CLITestNoAutostart – daemon must NOT be running when these start
 // ---------------------------------------------------------------------------
+class CLITestNoAutostartFixture : public ::testing::Test {
+protected:
+  void SetUp() override {
+    cleanup_all_daemons();
+    cleanup_runtime_dir();
+  }
 
-TEST(CLITestNoAutostart, HelpCommand) {
+  void TearDown() override {
+    cleanup_all_daemons();
+    cleanup_runtime_dir();
+  }
+};
+
+TEST(CLITestNoAutostartFixture, HelpCommand) {
   auto [exit_code, output] = run_iss("--help");
   EXPECT_EQ(exit_code, 0) << "Help command failed: " << exit_code;
   EXPECT_FALSE(output.empty()) << "Help command produced no output";
@@ -16,14 +28,14 @@ TEST(CLITestNoAutostart, HelpCommand) {
       << "Help output doesn't contain expected content";
 }
 
-TEST(CLITestNoAutostart, DaemonStatusWhenNotRunning) {
+TEST(CLITestNoAutostartFixture, DaemonStatusWhenNotRunning) {
   auto [exit_code, output] = run_iss("daemon status");
   EXPECT_NE(exit_code, 0) << "Expected non-zero when daemon not running";
   EXPECT_NE(exit_code, -1) << "Command failed to execute";
   EXPECT_FALSE(output.empty()) << "Status command produced no output";
 }
 
-TEST(CLITestNoAutostart, StartCreatesProcessAndPidFile) {
+TEST(CLITestNoAutostartFixture, StartCreatesProcessAndPidFile) {
   auto [start_exit, start_out] = run_iss("daemon start --json");
   ASSERT_EQ(start_exit, 0) << "daemon start failed:\n" << start_out;
   EXPECT_FALSE(start_out.empty()) << "Start command produced no output";
@@ -42,15 +54,10 @@ TEST(CLITestNoAutostart, StartCreatesProcessAndPidFile) {
   EXPECT_TRUE(process_alive(pid));
   {
     auto [exit_code, output] = run_iss("daemon stop --json");
-    EXPECT_EQ(exit_code, 0) << "daemon stop failed:\n" << output;
-    for (int i = 0; i < 30; ++i) {
-      if (!process_alive(pid)) {
-        break;
-      }
-      std::this_thread::sleep_for(100ms);
-    }
+    ASSERT_EQ(exit_code, 0) << "daemon stop failed:\n" << output;
+
+    ASSERT_TRUE(wait_for_daemon_stopped()) << "Daemon did not stop";
   }
-  EXPECT_FALSE(process_alive(pid));
 }
 
 // ---------------------------------------------------------------------------

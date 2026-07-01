@@ -397,10 +397,19 @@ ProcessManager::spawn_process_impl(const std::vector<std::string> &args) {
 
   STARTUPINFOA si{};
   si.cb = sizeof(si);
+  // ✅ Provide valid std handles (CRITICAL)
+  HANDLE hNull = CreateFileA("NUL", GENERIC_READ | GENERIC_WRITE,
+                             FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                             OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  si.dwFlags = STARTF_USESTDHANDLES;
+  si.hStdInput = hNull;
+  si.hStdOutput = hNull;
+  si.hStdError = hNull;
   PROCESS_INFORMATION pi{};
+  DWORD flags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP;
 
-  if (!CreateProcessA(nullptr, cmd.data(), nullptr, nullptr, FALSE, 0, nullptr,
-                      nullptr, &si, &pi)) {
+  if (!CreateProcessA(nullptr, cmd.data(), NULL, NULL, FALSE, flags, NULL, NULL,
+                      &si, &pi)) {
     LOG_ERROR("PROCESS", "SPAWN", "CreateProcess failed: {}", GetLastError());
     return 0;
   }

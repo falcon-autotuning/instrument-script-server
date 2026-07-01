@@ -123,11 +123,19 @@ if(BUILD_CLI)
   list(APPEND ALL_TEST_TARGETS test_cli)
 endif()
 foreach(tgt ${ALL_TEST_TARGETS})
+  if(WIN32)
+    set(DAEMON_PATH_GENEX "$<TARGET_FILE_DIR:${tgt}>/instrument-script-server-daemon${CMAKE_EXECUTABLE_SUFFIX}")
+    set(BIN_PATH_GENEX "$<TARGET_FILE_DIR:${tgt}>/instrument-script-server${CMAKE_EXECUTABLE_SUFFIX}")
+  else()
+    set(DAEMON_PATH_GENEX "$<TARGET_FILE:instrument-script-server-daemon>")
+    set(BIN_PATH_GENEX "$<TARGET_FILE:instrument-script-server>")
+  endif()
+
   target_compile_definitions(${tgt} PRIVATE
     TEST_DATA_DIR="$<JOIN:$<TARGET_FILE_DIR:${tgt}>/data,>"
-    ISS_DAEMON_PATH="$<TARGET_FILE_DIR:${tgt}>/instrument-script-server-daemon${CMAKE_EXECUTABLE_SUFFIX}"
+    ISS_DAEMON_PATH="${DAEMON_PATH_GENEX}"
     TEST_PLUGIN_DIR="$<TARGET_FILE_DIR:mock_visa_plugin>"
-    ISS_BIN_PATH="$<TARGET_FILE_DIR:${tgt}>/instrument-script-server${CMAKE_EXECUTABLE_SUFFIX}"
+    ISS_BIN_PATH="${BIN_PATH_GENEX}"
   )
   add_test(NAME ${tgt} COMMAND ${tgt})
 
