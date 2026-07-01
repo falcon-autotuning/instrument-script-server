@@ -43,7 +43,7 @@ public:
    */
   explicit InstrumentServerClient(uint16_t port);
 
-  ~InstrumentServerClient() = default;
+  ~InstrumentServerClient();
 
   InstrumentServerClient(const InstrumentServerClient &) = delete;
   InstrumentServerClient &operator=(const InstrumentServerClient &) = delete;

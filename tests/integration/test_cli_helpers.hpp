@@ -331,7 +331,6 @@ inline int extract_pid(const std::string &input) {
 inline std::pair<int, std::string> run_iss(const std::string &args) {
   std::string exe = std::filesystem::absolute(bin_path).string();
   auto result = run_command("\"" + exe + "\" " + args);
-
   if (args.starts_with("daemon start --json")) {
     int pid = extract_pid(result.second);
     if (pid > 0) {

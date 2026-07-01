@@ -16,6 +16,11 @@ InstrumentServerClient::InstrumentServerClient(uint16_t port) {
   stub_ = v1::DaemonService::NewStub(channel_);
 }
 
+InstrumentServerClient::~InstrumentServerClient() {
+  stub_.reset();
+  channel_.reset();
+}
+
 /* ============================================================
  * Health
  * ============================================================ */

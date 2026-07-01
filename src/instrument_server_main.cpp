@@ -642,8 +642,7 @@ constexpr uint8_t parse_log_level(const std::string &s) {
 }
 constexpr int MIN_MEASURE_DELAY_MS = 10;
 } // namespace
-
-int main(int argc, char **argv) {
+int run_cli(int argc, char **argv) {
   if (argc < 2) {
     print_usage();
     return 1;
@@ -1437,4 +1436,19 @@ int main(int argc, char **argv) {
   }
 
   return out.emit();
+}
+int main(int argc, char **argv) {
+  if (argc < 2) {
+    print_usage();
+    return 1;
+  }
+
+  std::cout.setf(std::ios::unitbuf);
+
+  int rc = run_cli(argc, argv);
+
+  // ✅ CRITICAL: allow gRPC threads to exit cleanly
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+  return rc;
 }
