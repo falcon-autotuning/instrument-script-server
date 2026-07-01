@@ -128,7 +128,11 @@ foreach(tgt ${ALL_TEST_TARGETS})
     set(BIN_PATH_GENEX "$<TARGET_FILE_DIR:${tgt}>/instrument-script-server${CMAKE_EXECUTABLE_SUFFIX}")
   else()
     set(DAEMON_PATH_GENEX "$<TARGET_FILE:instrument-script-server-daemon>")
-    set(BIN_PATH_GENEX "$<TARGET_FILE:instrument-script-server>")
+    if(TARGET instrument-script-server)
+      set(BIN_PATH_GENEX "$<TARGET_FILE:instrument-script-server>")
+    else()
+      set(BIN_PATH_GENEX "")
+    endif()
   endif()
 
   target_compile_definitions(${tgt} PRIVATE
@@ -137,6 +141,7 @@ foreach(tgt ${ALL_TEST_TARGETS})
     TEST_PLUGIN_DIR="$<TARGET_FILE_DIR:mock_visa_plugin>"
     ISS_BIN_PATH="${BIN_PATH_GENEX}"
   )
+  add_dependencies(${tgt} instrument-script-server-daemon)
   add_test(NAME ${tgt} COMMAND ${tgt})
 
   set_tests_properties(${tgt} PROPERTIES

@@ -8,6 +8,15 @@
 #include <gtest/gtest.h>
 #include <thread>
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#endif
+
 using namespace instserver;
 using namespace instserver::client;
 using namespace instserver::daemon;
@@ -67,31 +76,26 @@ protected:
 
   void SetUp() override {
     namespace v1 = instserver::daemon::v1;
-    std::string log_level;
     try {
-      instserver::client::InstrumentServerClient client(get_port());
-      if (client.is_daemon_running()) {
-        std::cerr << "Daemon is already running on port " +
-                         std::to_string(get_port())
-                  << "\n";
-        throw;
+      instserver::client::InstrumentServerClient check_client(get_port());
+      if (check_client.is_daemon_running()) {
+        std::cerr << "Daemon is already running on port " << get_port() << ". Stopping it...\n";
+        instserver::client::v1::DaemonStop stop_req;
+        check_client.stop_daemon(stop_req);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
       }
-    } catch (const std::exception &e) {
-      std::cerr << std::string("Checking for already running daemon failed: ") +
-                       e.what()
-                << "\n";
-      throw;
+    } catch (...) {
+      // Ignore if no daemon running
     }
-#ifdef _WIN32
-    std::string exe = get_daemon_path(argv[0]);
 
-    std::string cmdline = "\"" + exe + "\"";
+#ifdef _WIN32
+    std::string exe = ISS_DAEMON_PATH;
+    std::string cmdline = "\"" + exe + "\" --log-level warn";
 
     STARTUPINFOA si{};
     PROCESS_INFORMATION pi{};
     si.cb = sizeof(si);
 
-    // ✅ Provide valid std handles (CRITICAL)
     HANDLE hNull = CreateFileA("NUL", GENERIC_READ | GENERIC_WRITE,
                                FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
                                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -101,28 +105,23 @@ protected:
     si.hStdOutput = hNull;
     si.hStdError = hNull;
 
-    // CreateProcess requires mutable buffer
     std::vector<char> cmd_buf(cmdline.begin(), cmdline.end());
     cmd_buf.push_back('\0');
 
-    // ✅ Fully detach daemon from CLI
     DWORD flags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP;
 
-    BOOL ok = CreateProcessA(nullptr,        // let Windows parse executable
-                             cmd_buf.data(), // full command line
+    BOOL ok = CreateProcessA(nullptr,
+                             cmd_buf.data(),
                              NULL, NULL,
-                             FALSE, // no handle inheritance
+                             FALSE,
                              flags, NULL, NULL, &si, &pi);
 
     if (!ok) {
       DWORD err = GetLastError();
       CloseHandle(hNull);
-      out.error("Child daemon launch failed (error=" + std::to_string(err) +
-                ")");
-      return out.emit();
+      FAIL() << "Child daemon launch failed (error=" << err << ")";
     }
 
-    // ✅ Clean up handles
     CloseHandle(hNull);
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
@@ -130,15 +129,13 @@ protected:
     pid_t child_pid = fork();
 
     if (child_pid < 0) {
-      out.error("Child daemon fork failed");
-      return out.emit();
+      FAIL() << "Child daemon fork failed";
     }
 
     if (child_pid == 0) {
-      // Child process
       setsid();
 
-      int devnull = open("/dev/null", O_RDWR);
+      int devnull = open("daemon.log", O_RDWR | O_CREAT | O_TRUNC, 0644);
       if (devnull >= 0) {
         dup2(devnull, STDIN_FILENO);
         dup2(devnull, STDOUT_FILENO);
@@ -146,93 +143,74 @@ protected:
         close(devnull);
       }
 
-      std::string daemon_path = get_daemon_path(argv[0]);
-      execl(daemon_path.c_str(), daemon_path.c_str(), "--log-level",
-            log_level.empty() ? "info" : log_level.c_str(), nullptr);
+      std::string daemon_path = ISS_DAEMON_PATH;
+      execl(daemon_path.c_str(), daemon_path.c_str(), "--log-level", "warn", nullptr);
 
-      _exit(1); // exec failed
+      _exit(1);
     }
 #endif
+
     bool running = false;
     for (int i = 0; i < 20; ++i) {
       try {
-        instserver::client::InstrumentServerClient client(get_port());
+        instserver::client::InstrumentServerClient test_client(get_port());
         instserver::daemon::v1::DaemonStatusRequest req;
-        auto resp = client.daemon_status(req);
+        auto resp = test_client.daemon_status(req);
         if (resp.running()) {
           running = true;
-          out.output_proto_message(resp);
           break;
         }
-      } catch (const std::exception &e) {
-        out.message(std::string("Waiting for daemon: ") + e.what());
+      } catch (...) {
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     if (!running) {
-      out.error("Daemon failed to start");
-      return out.emit();
+      FAIL() << "Daemon failed to start";
     }
-    out.message("Daemon started");
-    return out.emit();
-  }
-  // Register / Start MockInstrument1
-  v1::StartInstrumentRequest req;
-  std::string config_path =
-      (std::filesystem::path(TEST_DATA_DIR) / "mock_instrument1.yaml")
-          .generic_string();
-  req.set_config_path(config_path);
-  std::filesystem::path plugin_path =
-      instserver::test::get_test_plugin_path("mock_visa_plugin");
-  req.set_plugin_path(plugin_path.generic_string());
-  req.set_log_level("info");
 
-  try {
-    client->start_instrument(req);
-  } catch (const std::exception &e) {
-    instserver::client::v1::DaemonStop req;
-    auto resp = client.stop_daemon(req);
-    if (!resp.ok()) {
-      if (resp.has_error()) {
-        std::cerr << resp.error().message() << "\n";
+    client = std::make_unique<instserver::client::InstrumentServerClient>(get_port());
 
-      } else {
-        std::cerr << "RPC failed" << "\n";
-      }
-      return;
+    // Register / Start MockInstrument1
+    v1::StartInstrumentRequest req;
+    std::string config_path =
+        (std::filesystem::path(TEST_DATA_DIR) / "mock_instrument1.yaml")
+            .generic_string();
+    req.set_config_path(config_path);
+    std::filesystem::path plugin_path =
+        instserver::test::get_test_plugin_path("mock_visa_plugin");
+    req.set_plugin_path(plugin_path.generic_string());
+    req.set_log_level("warn");
+
+    try {
+      client->start_instrument(req);
+    } catch (const std::exception &e) {
+      instserver::client::v1::DaemonStop daemon_stop_req;
+      try {
+        client->stop_daemon(daemon_stop_req);
+      } catch (...) {}
+      FAIL() << "Failed to start MockInstrument1: " << e.what();
     }
-    std::cout << "Daemon stopped" << "\n";
-    FAIL() << "Failed to start MockInstrument1: " << e.what();
   }
-}
 
   void TearDown() override {
-  namespace v1 = instserver::daemon::v1;
-  if (client) {
-    v1::StopInstrumentRequest stop_req;
-    stop_req.set_instrument_name("MockInstrument1");
-    try {
-      client->stop_instrument(stop_req);
-    } catch (...) {
-    }
-  }
-  client.reset();
-  instserver::client::v1::DaemonStop req;
-  auto resp = client.stop_daemon(req);
-  if (!resp.ok()) {
-    if (resp.has_error()) {
-      std::cerr << resp.error().message() << "\n";
+    namespace v1 = instserver::daemon::v1;
+    if (client) {
+      v1::StopInstrumentRequest stop_req;
+      stop_req.set_instrument_name("MockInstrument1");
+      try {
+        client->stop_instrument(stop_req);
+      } catch (...) {}
 
-    } else {
-      std::cerr << "RPC failed" << "\n";
+      instserver::client::v1::DaemonStop daemon_stop_req;
+      try {
+        client->stop_daemon(daemon_stop_req);
+      } catch (...) {}
+      client.reset();
     }
-    return;
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
   }
-  std::cout << "Daemon stopped" << "\n";
-}
-}
-;
+};
 
 TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   // Measure best-case overhead: single simple command with no data
@@ -243,9 +221,10 @@ TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   {
     std::ofstream ofs(script_path);
     ofs << R"(
-      -- Warm up
-      for i = 1, 10 do
-        context:call('MockInstrument1.IDN')
+      function main(context)
+        for i = 1, 10 do
+          context:call('MockInstrument1.IDN')
+        end
       end
     )";
     ofs.close();
@@ -257,8 +236,10 @@ TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   const int num_calls = 100000;
   {
     std::ofstream ofs(script_path);
-    ofs << "for i = 1, " << num_calls << " do\n";
-    ofs << "  context:call('MockInstrument1.IDN')\n";
+    ofs << "function main(context)\n";
+    ofs << "  for i = 1, " << num_calls << " do\n";
+    ofs << "    context:call('MockInstrument1.IDN')\n";
+    ofs << "  end\n";
     ofs << "end\n";
     ofs.close();
   }
@@ -293,8 +274,10 @@ TEST_F(EndToEndPerformanceTest, CommandWithParametersOverhead) {
   const int num_calls = 100000;
   {
     std::ofstream ofs(script_path);
-    ofs << "for i = 1, " << num_calls << " do\n";
-    ofs << "  context:call('MockInstrument1.SET', {voltage = 5.0})\n";
+    ofs << "function main(context)\n";
+    ofs << "  for i = 1, " << num_calls << " do\n";
+    ofs << "    context:call('MockInstrument1.SET', {voltage = 5.0})\n";
+    ofs << "  end\n";
     ofs << "end\n";
     ofs.close();
   }
@@ -351,7 +334,7 @@ connection:
       req.set_plugin_path(
           instserver::test::get_test_plugin_path("mock_visa_plugin")
               .generic_string());
-      req.set_log_level("info");
+      req.set_log_level("warn");
       client->start_instrument(req);
       instrument_names.push_back("MockInstrument" + std::to_string(i));
     } catch (const std::exception &e) {
@@ -369,11 +352,13 @@ connection:
   std::filesystem::path script_path = temp_dir / "concurrent_instruments.lua";
   {
     std::ofstream ofs(script_path);
-    ofs << "for i = 1, " << calls_per_instrument << " do\n";
-    ofs << "  context:call('MockInstrument1.IDN')\n";
+    ofs << "function main(context)\n";
+    ofs << "  for i = 1, " << calls_per_instrument << " do\n";
+    ofs << "    context:call('MockInstrument1.IDN')\n";
     for (const auto &name : instrument_names) {
-      ofs << "  context:call('" << name << ".IDN')\n";
+      ofs << "    context:call('" << name << ".IDN')\n";
     }
+    ofs << "  end\n";
     ofs << "end\n";
     ofs.close();
   }
@@ -433,20 +418,22 @@ connection:
   req.set_config_path(config_path);
   req.set_plugin_path(instserver::test::get_test_plugin_path("mock_visa_plugin")
                           .generic_string());
-  req.set_log_level("info");
+  req.set_log_level("warn");
   client->start_instrument(req);
 
   const int num_parallel_blocks = 10000;
   std::filesystem::path script_path = temp_dir / "parallel_exec.lua";
   {
     std::ofstream ofs(script_path);
-    ofs << "for i = 1, " << num_parallel_blocks << " do\n";
+    ofs << "function main(context)\n";
+    ofs << "  for i = 1, " << num_parallel_blocks << " do\n";
     ofs << R"(
       context:parallel(function()
         context:call('MockInstrument1.IDN')
         context:call('MockInstrument2.IDN')
       end)
     )";
+    ofs << "  end\n";
     ofs << "end\n";
     ofs.close();
   }
