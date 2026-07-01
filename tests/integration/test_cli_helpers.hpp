@@ -46,11 +46,11 @@ inline const std::string bin_path = ISS_BIN_PATH;
 inline const std::string data_dir = TEST_DATA_DIR;
 inline const std::string mock_plugin =
     (std::filesystem::path(TEST_PLUGIN_DIR) / ("libmock_visa_plugin" + ext))
-        .string();
+        .generic_string();
 inline const std::string mock_large_plugin =
     (std::filesystem::path(TEST_PLUGIN_DIR) /
      ("libmock_visa_large_data_plugin" + ext))
-        .string();
+        .generic_string();
 inline std::mutex g_pid_mutex;
 inline std::set<int> g_daemon_pids;
 
@@ -329,7 +329,7 @@ inline int extract_pid(const std::string &input) {
 }
 
 inline std::pair<int, std::string> run_iss(const std::string &args) {
-  std::string exe = std::filesystem::absolute(bin_path).string();
+  std::string exe = std::filesystem::absolute(bin_path).generic_string();
   auto result = run_command("\"" + exe + "\" " + args);
   if (args.starts_with("daemon start --json")) {
     int pid = extract_pid(result.second);
@@ -417,9 +417,13 @@ inline std::string extract_first_buffer_id(const std::string &output) {
 }
 
 inline void start_instrument(const std::filesystem::path &config) {
-  auto [exit_code, output] =
-      run_iss("inst start " + config.string() + " --plugin " + mock_plugin);
+  std::string config_str = config.generic_string();
+
+  auto [exit_code, output] = run_iss("inst start \"" + config_str +
+                                     "\" --plugin \"" + mock_plugin + "\"");
+
   EXPECT_EQ(exit_code, 0) << "Instrument start failed, output:\n" << output;
+
   std::this_thread::sleep_for(200ms);
 }
 
