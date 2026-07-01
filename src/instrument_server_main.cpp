@@ -326,37 +326,37 @@ uint16_t get_port() {
   }
   return static_cast<uint16_t>(std::stoi(env));
 }
-template <typename Fn>
-auto call_with_timeout(Fn &&fn, int timeout_ms)
-    -> std::optional<decltype(fn())> {
-  using Result = decltype(fn());
-
-  std::optional<Result> result;
-  std::atomic<bool> done = false;
-
-  std::thread t([&] {
-    try {
-      result = fn();
-    } catch (...) {
-      // ignore
-    }
-    done = true;
-  });
-
-  for (int i = 0; i < timeout_ms / 10; ++i) {
-    if (done)
-      break;
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
-
-  if (!done) {
-    t.detach(); // abandon
-    return std::nullopt;
-  }
-
-  t.join();
-  return result;
-}
+// template <typename Fn>
+// auto call_with_timeout(Fn &&fn, int timeout_ms)
+//     -> std::optional<decltype(fn())> {
+//   using Result = decltype(fn());
+//
+//   std::optional<Result> result;
+//   std::atomic<bool> done = false;
+//
+//   std::thread t([&] {
+//     try {
+//       result = fn();
+//     } catch (...) {
+//       // ignore
+//     }
+//     done = true;
+//   });
+//
+//   for (int i = 0; i < timeout_ms / 10; ++i) {
+//     if (done)
+//       break;
+//     std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//   }
+//
+//   if (!done) {
+//     t.detach(); // abandon
+//     return std::nullopt;
+//   }
+//
+//   t.join();
+//   return result;
+// }
 template <typename Fn> int with_client(CLIOutput &out, Fn &&fn) {
   {
     instserver::client::InstrumentServerClient client(get_port());
@@ -783,27 +783,21 @@ int run_cli(int argc, char **argv) {
         return out.emit();
       }
       case SUB_DAEMON::STOP: {
-        instserver::client::v1::DaemonStop req;
+        return with_client(out, [&](auto &client) {
+          instserver::client::v1::DaemonStop req;
+          auto resp = client.stop_daemon(req);
+          out.output_proto_message(resp);
+          if (!resp.ok()) {
+            if (resp.has_error()) {
+              out.error(resp.error().message());
 
-        try {
-          instserver::client::InstrumentServerClient client(get_port());
-
-          auto resp =
-              call_with_timeout([&] { return client.stop_daemon(req); }, 2000);
-
-          if (resp) {
-            out.output_proto_message(*resp);
-          } else {
-            out.message("Daemon stopping (RPC did not complete)");
+            } else {
+              out.error("RPC failed");
+            }
+            return;
           }
-
           out.message("Daemon stopped");
-
-        } catch (...) {
-          out.message("Daemon not reachable (treated as stopped)");
-        }
-
-        return out.emit();
+        });
       }
       case SUB_DAEMON::STATUS: {
         instserver::client::InstrumentServerClient client(get_port());
@@ -1447,8 +1441,11 @@ int main(int argc, char **argv) {
 
   int rc = run_cli(argc, argv);
 
+#ifdef _WIN32
   // ✅ CRITICAL: allow gRPC threads to exit cleanly
   std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
+  std::_Exit(rc);
+#else
   return rc;
+#endif
 }
