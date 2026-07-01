@@ -15,7 +15,8 @@ using namespace std::chrono;
 #define TEST_DATA_DIR "."
 #endif
 
-std::string api_path = std::string(TEST_DATA_DIR) + "/mock_api.yaml";
+std::string api_path =
+    (std::filesystem::path(TEST_DATA_DIR) / "mock_api.yaml").generic_string();
 
 namespace {
 uint32_t
@@ -38,7 +39,12 @@ run_job_to_completion(instserver::client::InstrumentServerClient &client,
       break;
     }
     if (status == v1::JOB_STATUS_FAILED || status == v1::JOB_STATUS_CANCELLED) {
-      throw std::runtime_error("Job failed or cancelled");
+      auto err = resp.mutable_standard_response()->mutable_error();
+      std::string message;
+      if (err->code() > 0) {
+        message = err->message();
+      }
+      throw std::runtime_error("Job failed or cancelled: " + message);
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
