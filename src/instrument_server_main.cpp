@@ -1328,7 +1328,64 @@ int run_cli(int argc, char **argv) {
             return;
           }
 
-          // (rest unchanged)
+          uint32_t element_count = meta.element_count();
+          uint32_t data_type = meta.data_type();
+          void *data = data_buffer_data(buf);
+
+          nlohmann::json data_arr = nlohmann::json::array();
+
+          if (data_type == INST_DATA_FLOAT64) {
+            auto *ptr = static_cast<double *>(data);
+            for (uint32_t k = 0; k < element_count; ++k) {
+              if (out.json_mode) data_arr.push_back(ptr[k]);
+              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+            }
+          } else if (data_type == INST_DATA_FLOAT32) {
+            auto *ptr = static_cast<float *>(data);
+            for (uint32_t k = 0; k < element_count; ++k) {
+              if (out.json_mode) data_arr.push_back(ptr[k]);
+              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+            }
+          } else if (data_type == INST_DATA_INT32) {
+            auto *ptr = static_cast<int32_t *>(data);
+            for (uint32_t k = 0; k < element_count; ++k) {
+              if (out.json_mode) data_arr.push_back(ptr[k]);
+              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+            }
+          } else if (data_type == INST_DATA_INT64) {
+            auto *ptr = static_cast<int64_t *>(data);
+            for (uint32_t k = 0; k < element_count; ++k) {
+              if (out.json_mode) data_arr.push_back(ptr[k]);
+              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+            }
+          } else if (data_type == INST_DATA_UINT8) {
+            auto *ptr = static_cast<uint8_t *>(data);
+            for (uint32_t k = 0; k < element_count; ++k) {
+              if (out.json_mode) data_arr.push_back(ptr[k]);
+              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+            }
+          } else if (data_type == INST_DATA_UINT32) {
+            auto *ptr = static_cast<uint32_t *>(data);
+            for (uint32_t k = 0; k < element_count; ++k) {
+              if (out.json_mode) data_arr.push_back(ptr[k]);
+              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+            }
+          } else if (data_type == INST_DATA_UINT64) {
+            auto *ptr = static_cast<uint64_t *>(data);
+            for (uint32_t k = 0; k < element_count; ++k) {
+              if (out.json_mode) data_arr.push_back(ptr[k]);
+              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+            }
+          }
+
+          if (out.json_mode) {
+            nlohmann::json j_buf;
+            j_buf["buffer_id"] = buffer_id;
+            j_buf["element_count"] = element_count;
+            j_buf["data_type"] = readable_datatype((uint8_t)data_type);
+            j_buf["data"] = data_arr;
+            out.outputs.push_back(j_buf);
+          }
         });
       }
 
