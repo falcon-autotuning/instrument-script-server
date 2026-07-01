@@ -302,6 +302,18 @@ inline void cleanup_runtime_dir() {
   std::filesystem::remove_all(dir, ec);
 }
 
+inline uint32_t extract_job_id(const std::string &out) {
+  auto pos = out.find("job_id=");
+  if (pos == std::string::npos) return 0;
+  auto end = out.find(")", pos);
+  if (end == std::string::npos) return 0;
+  try {
+    return std::stoul(out.substr(pos + 7, end - (pos + 7)));
+  } catch (...) {
+    return 0;
+  }
+}
+
 inline int extract_pid(const std::string &input) {
   try {
     nlohmann::json json = nlohmann::json::parse(input);
