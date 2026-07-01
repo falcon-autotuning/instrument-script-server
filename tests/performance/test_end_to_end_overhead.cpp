@@ -9,6 +9,8 @@
 #include <thread>
 
 using namespace instserver;
+using namespace instserver::client;
+using namespace instserver::daemon;
 using namespace std::chrono;
 
 #ifndef TEST_DATA_DIR
@@ -50,64 +52,187 @@ run_job_to_completion(instserver::client::InstrumentServerClient &client,
   }
   return job_id;
 }
+uint16_t get_port() {
+  const char *env = std::getenv("INSTRUMENT_SCRIPT_SERVER_RPC_PORT");
+  if (env == nullptr) {
+    return 8555;
+  }
+  return static_cast<uint16_t>(std::stoi(env));
+}
 } // namespace
 
 class EndToEndPerformanceTest : public ::testing::Test {
 protected:
   std::unique_ptr<instserver::client::InstrumentServerClient> client;
-  uint16_t port = 8556;
 
   void SetUp() override {
     namespace v1 = instserver::daemon::v1;
-    auto &daemon = ServerDaemon::instance();
-    if (daemon.is_running()) {
-      daemon.stop();
+    std::string log_level;
+    try {
+      instserver::client::InstrumentServerClient client(get_port());
+      if (client.is_daemon_running()) {
+        std::cerr << "Daemon is already running on port " +
+                         std::to_string(get_port())
+                  << "\n";
+        throw;
+      }
+    } catch (const std::exception &e) {
+      std::cerr << std::string("Checking for already running daemon failed: ") +
+                       e.what()
+                << "\n";
+      throw;
+    }
+#ifdef _WIN32
+    std::string exe = get_daemon_path(argv[0]);
+
+    std::string cmdline = "\"" + exe + "\"";
+
+    STARTUPINFOA si{};
+    PROCESS_INFORMATION pi{};
+    si.cb = sizeof(si);
+
+    // ✅ Provide valid std handles (CRITICAL)
+    HANDLE hNull = CreateFileA("NUL", GENERIC_READ | GENERIC_WRITE,
+                               FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                               OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput = hNull;
+    si.hStdOutput = hNull;
+    si.hStdError = hNull;
+
+    // CreateProcess requires mutable buffer
+    std::vector<char> cmd_buf(cmdline.begin(), cmdline.end());
+    cmd_buf.push_back('\0');
+
+    // ✅ Fully detach daemon from CLI
+    DWORD flags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP;
+
+    BOOL ok = CreateProcessA(nullptr,        // let Windows parse executable
+                             cmd_buf.data(), // full command line
+                             NULL, NULL,
+                             FALSE, // no handle inheritance
+                             flags, NULL, NULL, &si, &pi);
+
+    if (!ok) {
+      DWORD err = GetLastError();
+      CloseHandle(hNull);
+      out.error("Child daemon launch failed (error=" + std::to_string(err) +
+                ")");
+      return out.emit();
+    }
+
+    // ✅ Clean up handles
+    CloseHandle(hNull);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+#else
+    pid_t child_pid = fork();
+
+    if (child_pid < 0) {
+      out.error("Child daemon fork failed");
+      return out.emit();
+    }
+
+    if (child_pid == 0) {
+      // Child process
+      setsid();
+
+      int devnull = open("/dev/null", O_RDWR);
+      if (devnull >= 0) {
+        dup2(devnull, STDIN_FILENO);
+        dup2(devnull, STDOUT_FILENO);
+        dup2(devnull, STDERR_FILENO);
+        close(devnull);
+      }
+
+      std::string daemon_path = get_daemon_path(argv[0]);
+      execl(daemon_path.c_str(), daemon_path.c_str(), "--log-level",
+            log_level.empty() ? "info" : log_level.c_str(), nullptr);
+
+      _exit(1); // exec failed
+    }
+#endif
+    bool running = false;
+    for (int i = 0; i < 20; ++i) {
+      try {
+        instserver::client::InstrumentServerClient client(get_port());
+        instserver::daemon::v1::DaemonStatusRequest req;
+        auto resp = client.daemon_status(req);
+        if (resp.running()) {
+          running = true;
+          out.output_proto_message(resp);
+          break;
+        }
+      } catch (const std::exception &e) {
+        out.message(std::string("Waiting for daemon: ") + e.what());
+      }
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    daemon.set_rpc_port(port);
-    ASSERT_TRUE(daemon.start());
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-    client = std::make_unique<instserver::client::InstrumentServerClient>(port);
-
-    // Register / Start MockInstrument1
-    v1::StartInstrumentRequest req;
-    std::string config_path =
-        (std::filesystem::path(TEST_DATA_DIR) / "mock_instrument1.yaml")
-            .generic_string();
-    req.set_config_path(config_path);
-    std::filesystem::path plugin_path =
-        instserver::test::get_test_plugin_path("mock_visa_plugin");
-    req.set_plugin_path(plugin_path.generic_string());
-    req.set_log_level("info");
-
-    try {
-      client->start_instrument(req);
-    } catch (const std::exception &e) {
-      daemon.stop();
-      FAIL() << "Failed to start MockInstrument1: " << e.what();
+    if (!running) {
+      out.error("Daemon failed to start");
+      return out.emit();
     }
+    out.message("Daemon started");
+    return out.emit();
   }
+  // Register / Start MockInstrument1
+  v1::StartInstrumentRequest req;
+  std::string config_path =
+      (std::filesystem::path(TEST_DATA_DIR) / "mock_instrument1.yaml")
+          .generic_string();
+  req.set_config_path(config_path);
+  std::filesystem::path plugin_path =
+      instserver::test::get_test_plugin_path("mock_visa_plugin");
+  req.set_plugin_path(plugin_path.generic_string());
+  req.set_log_level("info");
+
+  try {
+    client->start_instrument(req);
+  } catch (const std::exception &e) {
+    instserver::client::v1::DaemonStop req;
+    auto resp = client.stop_daemon(req);
+    if (!resp.ok()) {
+      if (resp.has_error()) {
+        std::cerr << resp.error().message() << "\n";
+
+      } else {
+        std::cerr << "RPC failed" << "\n";
+      }
+      return;
+    }
+    std::cout << "Daemon stopped" << "\n";
+    FAIL() << "Failed to start MockInstrument1: " << e.what();
+  }
+}
 
   void TearDown() override {
-    namespace v1 = instserver::daemon::v1;
-    if (client) {
-      v1::StopInstrumentRequest stop_req;
-      stop_req.set_instrument_name("MockInstrument1");
-      try {
-        client->stop_instrument(stop_req);
-      } catch (...) {
-      }
-    }
-    client.reset();
-    auto &daemon = ServerDaemon::instance();
-    if (daemon.is_running()) {
-      daemon.stop();
-      std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  namespace v1 = instserver::daemon::v1;
+  if (client) {
+    v1::StopInstrumentRequest stop_req;
+    stop_req.set_instrument_name("MockInstrument1");
+    try {
+      client->stop_instrument(stop_req);
+    } catch (...) {
     }
   }
-};
+  client.reset();
+  instserver::client::v1::DaemonStop req;
+  auto resp = client.stop_daemon(req);
+  if (!resp.ok()) {
+    if (resp.has_error()) {
+      std::cerr << resp.error().message() << "\n";
+
+    } else {
+      std::cerr << "RPC failed" << "\n";
+    }
+    return;
+  }
+  std::cout << "Daemon stopped" << "\n";
+}
+}
+;
 
 TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   // Measure best-case overhead: single simple command with no data
