@@ -18,7 +18,9 @@ using namespace std::chrono;
 std::string api_path = std::string(TEST_DATA_DIR) + "/mock_api.yaml";
 
 namespace {
-uint32_t run_job_to_completion(instserver::client::InstrumentServerClient &client, const std::string &script_path) {
+uint32_t
+run_job_to_completion(instserver::client::InstrumentServerClient &client,
+                      const std::string &script_path) {
   namespace v1 = instserver::daemon::v1;
   v1::MeasureJobRequest req;
   req.set_script_path(script_path);
@@ -65,10 +67,12 @@ protected:
 
     // Register / Start MockInstrument1
     v1::StartInstrumentRequest req;
-    std::string config_path = std::string(TEST_DATA_DIR) + "/mock_instrument1.yaml";
+    std::string config_path =
+        std::string(TEST_DATA_DIR) + "/mock_instrument1.yaml";
     req.set_config_path(config_path);
-    std::filesystem::path plugin_path = instserver::test::get_test_plugin_path("mock_visa_plugin");
-    req.set_plugin_path(plugin_path.string());
+    std::filesystem::path plugin_path =
+        instserver::test::get_test_plugin_path("mock_visa_plugin");
+    req.set_plugin_path(plugin_path.generic_string());
     req.set_log_level("info");
 
     try {
@@ -86,7 +90,8 @@ protected:
       stop_req.set_instrument_name("MockInstrument1");
       try {
         client->stop_instrument(stop_req);
-      } catch (...) {}
+      } catch (...) {
+      }
     }
     client.reset();
     auto &daemon = ServerDaemon::instance();
@@ -99,7 +104,8 @@ protected:
 
 TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   // Measure best-case overhead: single simple command with no data
-  std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "perf_test";
+  std::filesystem::path temp_dir =
+      std::filesystem::temp_directory_path() / "perf_test";
   std::filesystem::create_directories(temp_dir);
   std::filesystem::path script_path = temp_dir / "single_command.lua";
   {
@@ -114,7 +120,7 @@ TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   }
 
   // Warm up
-  run_job_to_completion(*client, script_path.string());
+  run_job_to_completion(*client, script_path.generic_string());
 
   const int num_calls = 100000;
   {
@@ -126,7 +132,7 @@ TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
   }
 
   auto start = high_resolution_clock::now();
-  run_job_to_completion(*client, script_path.string());
+  run_job_to_completion(*client, script_path.generic_string());
   auto end = high_resolution_clock::now();
 
   auto duration = duration_cast<microseconds>(end - start);
@@ -148,7 +154,8 @@ TEST_F(EndToEndPerformanceTest, SingleCommandOverhead) {
 
 TEST_F(EndToEndPerformanceTest, CommandWithParametersOverhead) {
   // Measure overhead with command parameters (more realistic case)
-  std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "perf_test";
+  std::filesystem::path temp_dir =
+      std::filesystem::temp_directory_path() / "perf_test";
   std::filesystem::create_directories(temp_dir);
   std::filesystem::path script_path = temp_dir / "param_command.lua";
   const int num_calls = 100000;
@@ -161,7 +168,7 @@ TEST_F(EndToEndPerformanceTest, CommandWithParametersOverhead) {
   }
 
   auto start = high_resolution_clock::now();
-  run_job_to_completion(*client, script_path.string());
+  run_job_to_completion(*client, script_path.generic_string());
   auto end = high_resolution_clock::now();
 
   auto duration = duration_cast<microseconds>(end - start);
@@ -184,7 +191,8 @@ TEST_F(EndToEndPerformanceTest, MaxConcurrentInstruments) {
   const int max_instruments = 10;
 
   auto start_setup = high_resolution_clock::now();
-  std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "perf_test";
+  std::filesystem::path temp_dir =
+      std::filesystem::temp_directory_path() / "perf_test";
   std::filesystem::create_directories(temp_dir);
 
   for (int i = 2; i <= max_instruments; i++) {
@@ -199,7 +207,8 @@ connection:
 )";
 
     std::string config_path =
-        (temp_dir / ("mock_instrument_" + std::to_string(i) + ".yaml")).string();
+        (temp_dir / ("mock_instrument_" + std::to_string(i) + ".yaml"))
+            .generic_string();
     std::ofstream config_file(config_path);
     config_file << config;
     config_file.close();
@@ -207,7 +216,9 @@ connection:
     try {
       v1::StartInstrumentRequest req;
       req.set_config_path(config_path);
-      req.set_plugin_path(instserver::test::get_test_plugin_path("mock_visa_plugin").string());
+      req.set_plugin_path(
+          instserver::test::get_test_plugin_path("mock_visa_plugin")
+              .generic_string());
       req.set_log_level("info");
       client->start_instrument(req);
       instrument_names.push_back("MockInstrument" + std::to_string(i));
@@ -236,7 +247,7 @@ connection:
   }
 
   auto start_exec = high_resolution_clock::now();
-  run_job_to_completion(*client, script_path.string());
+  run_job_to_completion(*client, script_path.generic_string());
   auto end_exec = high_resolution_clock::now();
   auto exec_duration = duration_cast<milliseconds>(end_exec - start_exec);
 
@@ -246,8 +257,7 @@ connection:
   std::cout << "Number of instruments: " << (instrument_names.size() + 1)
             << "\n";
   std::cout << "Setup time: " << setup_duration.count() << " ms\n";
-  std::cout << "Execution time for "
-            << total_calls
+  std::cout << "Execution time for " << total_calls
             << " calls: " << exec_duration.count() << " ms\n";
   std::cout << "Average latency per call: "
             << (long)(exec_duration.count() * (long)1000.0) / (long)total_calls
@@ -259,7 +269,8 @@ connection:
     stop_req.set_instrument_name(name);
     try {
       client->stop_instrument(stop_req);
-    } catch (...) {}
+    } catch (...) {
+    }
   }
   std::filesystem::remove_all(temp_dir);
 }
@@ -267,7 +278,8 @@ connection:
 TEST_F(EndToEndPerformanceTest, ParallelExecutionOverhead) {
   // Measure overhead of parallel execution coordination
   namespace v1 = instserver::daemon::v1;
-  std::filesystem::path temp_dir = std::filesystem::temp_directory_path() / "perf_test";
+  std::filesystem::path temp_dir =
+      std::filesystem::temp_directory_path() / "perf_test";
   std::filesystem::create_directories(temp_dir);
 
   // Create second instrument
@@ -279,14 +291,16 @@ connection:
   address: "mock://test2"
 )";
 
-  std::string config_path = (temp_dir / "mock_instrument_2.yaml").string();
+  std::string config_path =
+      (temp_dir / "mock_instrument_2.yaml").generic_string();
   std::ofstream config_file(config_path);
   config_file << config2;
   config_file.close();
 
   v1::StartInstrumentRequest req;
   req.set_config_path(config_path);
-  req.set_plugin_path(instserver::test::get_test_plugin_path("mock_visa_plugin").string());
+  req.set_plugin_path(instserver::test::get_test_plugin_path("mock_visa_plugin")
+                          .generic_string());
   req.set_log_level("info");
   client->start_instrument(req);
 
@@ -306,7 +320,7 @@ connection:
   }
 
   auto start = high_resolution_clock::now();
-  run_job_to_completion(*client, script_path.string());
+  run_job_to_completion(*client, script_path.generic_string());
   auto end = high_resolution_clock::now();
   auto duration = duration_cast<microseconds>(end - start);
 
@@ -327,6 +341,7 @@ connection:
   stop_req.set_instrument_name("MockInstrument2");
   try {
     client->stop_instrument(stop_req);
-  } catch (...) {}
+  } catch (...) {
+  }
   std::filesystem::remove_all(temp_dir);
 }
