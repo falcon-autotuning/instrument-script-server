@@ -80,9 +80,6 @@ ServerDaemon &ServerDaemon::instance() {
 
 ServerDaemon::~ServerDaemon() {
   // unique_ptr will handle cleanup, but ensure threads are detached
-  if (daemon_thread_ && daemon_thread_->joinable()) {
-    daemon_thread_->join();
-  }
   if (shutdown_listener_thread_ && shutdown_listener_thread_->joinable()) {
     shutdown_listener_thread_->join();
   }
@@ -538,16 +535,50 @@ bool ServerDaemon::start() {
 
   // Mark running and start threads
   running_.store(true);
-  daemon_thread_ = std::make_unique<std::thread>([this]() { daemon_loop(); });
+  std::promise<void> ready;
+  auto future = ready.get_future();
+
   shutdown_listener_thread_ =
-      std::make_unique<std::thread>([this]() { shutdown_listener_loop(); });
+      std::make_unique<std::thread>([this, p = std::move(ready)]() mutable {
+        p.set_value();
+
+        shutdown_listener_loop();
+      });
+
+  future.wait();
 
   LOG_INFO("DAEMON", "START", "Server daemon started (PID: %ld)",
            (long)getpid());
 
   return true;
 }
+#ifdef _WIN32
+void wake_shutdown_listener() {
+  LOG_DEBUG("DAEMON", "PIPE", "wake_shutdown_listener enter");
 
+  HANDLE hPipe = CreateFileA(get_shutdown_pipe_path().c_str(), GENERIC_WRITE, 0,
+                             nullptr, OPEN_EXISTING, 0, nullptr);
+
+  if (hPipe == INVALID_HANDLE_VALUE) {
+    LOG_DEBUG("DAEMON", "PIPE", "wake_shutdown_listener failed err=%lu",
+              GetLastError());
+    return;
+  }
+
+  LOG_DEBUG("DAEMON", "PIPE", "wake_shutdown_listener connected");
+
+  DWORD written = 0;
+  char signal = 1;
+
+  WriteFile(hPipe, &signal, 1, &written, nullptr);
+
+  LOG_DEBUG("DAEMON", "PIPE", "wake_shutdown_listener wrote");
+
+  CloseHandle(hPipe);
+
+  LOG_DEBUG("DAEMON", "PIPE", "wake_shutdown_listener exit");
+}
+#endif
 void ServerDaemon::stop() {
   {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -571,16 +602,15 @@ void ServerDaemon::stop() {
       rpc_server_ = nullptr;
     }
   }
+  LOG_DEBUG("DAEMON", "STOP", "RPC server stopped");
 
-  // Join threads so no thread is still touching the pipe fd.
-  if (daemon_thread_ && daemon_thread_->joinable()) {
-    daemon_thread_->join();
-  }
   if (shutdown_listener_thread_ && shutdown_listener_thread_->joinable()) {
+#ifdef _WIN32
+    wake_shutdown_listener();
+#endif
     shutdown_listener_thread_->join();
   }
 
-  // Close and remove the pipe only after threads have fully exited.
   close_shutdown_pipe();
 
   inst_log_shutdown();

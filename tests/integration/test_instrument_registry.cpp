@@ -38,6 +38,7 @@ protected:
     plugin_registry.unload_all();
     if (daemon.is_running()) {
       daemon.stop();
+      std::cout << "Daemon stopped" << "\n";
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
   }
