@@ -62,7 +62,7 @@ TEST_F(InstrumentRegistryTest, CreateInstrumentFromConfig) {
   auto &registry = InstrumentRegistry::instance();
 
   // This may fail if plugin not available - that's okay for unit test
-  bool created = registry.create_instrument(config_path.string());
+  bool created = registry.create_instrument(config_path.generic_string());
 
   if (created) {
     auto instruments = registry.list_instruments();
@@ -102,7 +102,7 @@ TEST_F(InstrumentRegistryTest, RemoveInstrument) {
     GTEST_SKIP() << "Test config not found";
   }
 
-  if (registry.create_instrument(config_path.string())) {
+  if (registry.create_instrument(config_path.generic_string())) {
     auto instruments = registry.list_instruments();
     if (!instruments.empty()) {
       std::string name = instruments[0];
@@ -131,7 +131,7 @@ TEST_F(InstrumentRegistryTest, InvalidMessageTypeDoesNotCrashWorker) {
     GTEST_SKIP() << "Test config not found";
   }
 
-  ASSERT_TRUE(registry.create_instrument(config_path.string()));
+  ASSERT_TRUE(registry.create_instrument(config_path.generic_string()));
   auto proxy = registry.get_instrument("MockInstrument1");
   ASSERT_NE(proxy, nullptr);
   ASSERT_TRUE(proxy->is_alive());
@@ -153,7 +153,7 @@ TEST_F(InstrumentRegistryTest, InvalidParamTypeDoesNotCrashWorker) {
   auto &registry = InstrumentRegistry::instance();
   auto config_path = test_data_dir_ / "mock_instrument1.yaml";
 
-  ASSERT_TRUE(registry.create_instrument(config_path.string()));
+  ASSERT_TRUE(registry.create_instrument(config_path.generic_string()));
   auto proxy = registry.get_instrument("MockInstrument1");
 
   std::unique_ptr<instserver::ipc::SharedQueue> queues =
@@ -183,7 +183,7 @@ TEST_F(InstrumentRegistryTest, WrongUnionAccessDoesNotCrashWorker) {
   auto &registry = InstrumentRegistry::instance();
   auto config_path = test_data_dir_ / "mock_instrument1.yaml";
 
-  ASSERT_TRUE(registry.create_instrument(config_path.string()));
+  ASSERT_TRUE(registry.create_instrument(config_path.generic_string()));
   auto proxy = registry.get_instrument("MockInstrument1");
 
   {
@@ -207,7 +207,7 @@ TEST_F(InstrumentRegistryTest, MissingFieldsDoesNotCrashWorker) {
   auto &registry = InstrumentRegistry::instance();
   auto config_path = test_data_dir_ / "mock_instrument1.yaml";
 
-  ASSERT_TRUE(registry.create_instrument(config_path.string()));
+  ASSERT_TRUE(registry.create_instrument(config_path.generic_string()));
   auto proxy = registry.get_instrument("MockInstrument1");
 
   {
