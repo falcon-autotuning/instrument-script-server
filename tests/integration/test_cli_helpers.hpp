@@ -38,18 +38,20 @@
 
 #ifdef _WIN32
 inline const std::string ext = ".dll";
+inline const std::string pre = "";
 #else
 inline const std::string ext = ".so";
+inline const std::string pre = "lib";
 #endif
 
 inline const std::string bin_path = ISS_BIN_PATH;
 inline const std::string data_dir = TEST_DATA_DIR;
 inline const std::string mock_plugin =
-    (std::filesystem::path(TEST_PLUGIN_DIR) / ("libmock_visa_plugin" + ext))
+    (std::filesystem::path(TEST_PLUGIN_DIR) / (pre + "mock_visa_plugin" + ext))
         .generic_string();
 inline const std::string mock_large_plugin =
     (std::filesystem::path(TEST_PLUGIN_DIR) /
-     ("libmock_visa_large_data_plugin" + ext))
+     (pre + "mock_visa_large_data_plugin" + ext))
         .generic_string();
 inline std::mutex g_pid_mutex;
 inline std::set<int> g_daemon_pids;
