@@ -326,37 +326,6 @@ uint16_t get_port() {
   }
   return static_cast<uint16_t>(std::stoi(env));
 }
-// template <typename Fn>
-// auto call_with_timeout(Fn &&fn, int timeout_ms)
-//     -> std::optional<decltype(fn())> {
-//   using Result = decltype(fn());
-//
-//   std::optional<Result> result;
-//   std::atomic<bool> done = false;
-//
-//   std::thread t([&] {
-//     try {
-//       result = fn();
-//     } catch (...) {
-//       // ignore
-//     }
-//     done = true;
-//   });
-//
-//   for (int i = 0; i < timeout_ms / 10; ++i) {
-//     if (done)
-//       break;
-//     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-//   }
-//
-//   if (!done) {
-//     t.detach(); // abandon
-//     return std::nullopt;
-//   }
-//
-//   t.join();
-//   return result;
-// }
 template <typename Fn> int with_client(CLIOutput &out, Fn &&fn) {
   {
     instserver::client::InstrumentServerClient client(get_port());
