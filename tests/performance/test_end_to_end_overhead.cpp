@@ -68,7 +68,8 @@ protected:
     // Register / Start MockInstrument1
     v1::StartInstrumentRequest req;
     std::string config_path =
-        std::string(TEST_DATA_DIR) + "/mock_instrument1.yaml";
+        (std::filesystem::path(TEST_DATA_DIR) / "mock_instrument1.yaml")
+            .generic_string();
     req.set_config_path(config_path);
     std::filesystem::path plugin_path =
         instserver::test::get_test_plugin_path("mock_visa_plugin");
