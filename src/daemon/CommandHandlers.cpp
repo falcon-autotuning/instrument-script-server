@@ -606,6 +606,15 @@ int handle_measure(const MeasureJobRequest &req,
       out_chunk->set_instrument_name(
           instrument_call_stack_get_instrument_name(r.target.get()));
       out_chunk->set_verb(instrument_call_stack_get_command(r.target.get()));
+      int channel = instrument_call_stack_get_channel(r.target.get());
+      if (channel != -1) {
+        out_chunk->set_channel(channel);
+      }
+      const char *group =
+          instrument_call_stack_get_channel_group(r.target.get());
+      if ((group != nullptr) && group[0] != '\0') {
+        out_chunk->set_group(group);
+      }
 
       auto *ts = out_chunk->mutable_executed_at();
 

@@ -63,8 +63,9 @@ instrument-script-server <command> [subcommand] [options]
 ### Global Options
 
 ```bash
---log-level <level>   Set logging level (debug|info|warn|error)
 --help, -h            Show help message
+--version, -v         Show the version
+--json                Get a programmatic debug output
 ```
 
 ## Daemon Management
@@ -74,7 +75,7 @@ The server daemon is a background process that manages the instrument registry a
 ### Start Daemon
 
 ```bash
-instrument-script-server daemon start [--log-level <level>]
+instrument-script-server daemon start [--log-level <level>  Set logging level (debug|info|warn|error)]
 ```
 
 **Example:**
@@ -90,8 +91,7 @@ instrument-script-server daemon start --log-level debug
 **Output:**
 
 ```
-Server daemon started (PID: 12345)
-Daemon running in background
+Daemon started 
 ```
 
 **Notes:**
@@ -99,8 +99,7 @@ Daemon running in background
 - Must be running before any instrument operations
 - Only one daemon instance can run at a time
 - Daemon persists until explicitly stopped
-- On Linux:  PID file stored in `/tmp/instrument-script-server-$USER/server. pid`
-- On Windows: PID file stored in `%LOCALAPPDATA%\InstrumentServer\server.pid`
+- PID file stored at`INSTRUMENT_SCRIPT_SERVER_RUNTIME_DIR`
 
 ### Stop Daemon
 
@@ -117,8 +116,7 @@ instrument-script-server daemon stop
 **Output:**
 
 ```
-Stopping server daemon (PID: 12345)...
-Server daemon stopped
+Daemon stopped
 ```
 
 **Notes:**
@@ -143,13 +141,12 @@ instrument-script-server daemon status
 
 ```
 Server daemon is running (PID: 12345)
-Runtime directory: /tmp/instrument-script-server-user/server. pid
 ```
 
 **Output (if not running):**
 
 ```
-Server daemon is not running
+Daemon is not running
 ```
 
 **Exit codes:**
@@ -168,7 +165,7 @@ instrument-script-server inst start <config> [--plugin <path>] [--log-level <lev
 **Arguments:**
 
 - `<config>`: Path to instrument configuration YAML file
-- `--plugin <path>`: Optional custom plugin (.so on Linux, .dll on Windows)
+- `--plugin <path>`: custom plugin (.so on Linux, .dll on Windows)
 - `--log-level <level>`: Logging level (default: info)
 
 **Examples:**
@@ -192,7 +189,7 @@ instrument-script-server inst start configs/dmm1.yaml
 **Output:**
 
 ```
-Started instrument: DMM1
+Instrument started successfully
 ```
 
 **Requirements:**
@@ -293,18 +290,15 @@ Run Lua measurement scripts that control running instruments.
 ### Measure Command
 
 ```bash
-instrument-script-server measure <script> [--globals <string>] [--block_inject_globals] [--context_schema_version <x.y.z>] [--json] [--log-level <level>] 
+instrument-script-server measure <script> [--global key=value] (repeatable) [--globals-json <json>]
 ```
 
 **Arguments:**
 
 - `<script>`: Path to Lua measurement script
-- `--globals <string>`: Optional json containing global variables for the measurement script.
+- `--global key=value`: Optional key value pairs for simple primitives containing global variables for the measurement script.
   Keys are the names in the global namespace, Values are the values.
-- `--block_inject_globals`: Optional block of the globals entering the lua namespace.
-- `--context_schema_version <x.y.z>`: Optional allows validating versions of json globals for compatibility.
-- `--json`: Output results in JSON format (default: text format)
-- `--log-level <level>`: Logging level (default: info)
+- `--globals-json <json>`: Optional JSON file containing global variables for the measurement script. This is useful for passing complex data structures (arrays, objects) to the script.
 
 **Requirements:**
 
@@ -320,12 +314,6 @@ instrument-script-server measure scripts/iv_curve.lua
 
 # Get results in JSON format for programmatic parsing
 instrument-script-server measure scripts/iv_curve.lua --json
-
-# With debug logging
-instrument-script-server measure scripts/test.lua --log-level debug
-
-# Save JSON output to file
-instrument-script-server measure scripts/sweep.lua --json > results.json
 ```
 
 #### Automatic Result Collection
@@ -345,30 +333,39 @@ Results are displayed after script execution in execution order, providing compl
 By default, results are displayed in a human-readable format:
 
 ```
-Running measurement...
 Measurement complete
 
-=== Script Results ===
-[0] MockInstrument1:1.SET(5.0) -> [bool] true
-[1] MockInstrument1:2.SET(3.0) -> [bool] true
-[2] MockInstrument1:1.GET() -> [double] 5.0
-[3] MockInstrument1:2.GET() -> [double] 3.0
-[4] Scope1.CAPTURE() -> [buffer] buf_abc123 (10000 elements, float32)
-======================
+  Status: (0-6) 0=UNSPECIFIED, 1=QUEUED, 2=RUNNING, 3=COMPLETED, 4=FAILED, 5=CANCELLING, 6=CANCELLED
+  Command:
+    Instrument: MockInstrument1
+    Channel: 1
+    Verb: Set
+  Command:  
+    Instrument: MockInstrument1
+    Channel: 2
+    Verb: Set 
+  Command: 
+    Instrument: MockInstrument1 
+    Channel: 1
+    Verb: GET 
+      voltage = 5.0
+  Command: 
+    Instrument: MockInstrument1
+    Channel: 2
+    Verb: GET 
+      voltage = 3.0
+  Command: 
+    Instrument: Scope1 
+    Verb: CAPTURE 
+      buffer = buf_abc123
 ```
 
 Each line shows:
 
-- **Index**: Sequential number of the call
-- **Instrument and Command**: Full command with channel if applicable
-- **Parameters**: Values passed to the command
-- **Return Value**: Type in brackets, followed by the value
+- **Instrument and Command**: Full command with channel and group if applicable
+- **Return Value**: name followed by the value
 
-For large data buffers (waveforms, large arrays), the output shows a reference with:
-
-- **buffer_id**: Unique identifier for accessing the data
-- **element_count**: Number of data points
-- **data_type**: Type of data (float32, float64, int32, etc.)
+Note that for data buffer for large quantities of data, the buffer ID is returned as the value.
 
 #### JSON Output Format
 
@@ -378,52 +375,7 @@ Use `--json` flag to get structured output for automation and data processing:
 instrument-script-server measure script.lua --json
 ```
 
-Output structure:
-
-```json
-{
-  "status": "success",
-  "script": "iv_curve.lua",
-  "results": [
-    {
-      "index": 0,
-      "instrument": "MockInstrument1:1",
-      "verb": "SET",
-      "params": {"value": 5.0},
-      "executed_at_ms": 1704720615123,
-      "return": {
-        "type": "bool",
-        "value": true
-      }
-    },
-    {
-      "index": 4,
-      "instrument": "Scope1",
-      "verb": "CAPTURE",
-      "params": {},
-      "executed_at_ms": 1704720615127,
-      "return": {
-        "type": "buffer",
-        "buffer_id": "buf_abc123",
-        "element_count": 10000,
-        "data_type": "float32"
-      }
-    }
-  ]
-}
-```
-
 **JSON Schema**: The output conforms to the JSON schema at `schemas/measurement_results.schema.json` for validation and automated parsing.
-
-**Return Types**:
-
-- `double`: Floating-point number
-- `int64`: Integer value
-- `string`: Text value
-- `bool`: Boolean (true/false)
-- `array`: Array of numbers
-- `buffer`: Reference to large data buffer
-- `void`: Command with no return value
 
 ### Script Structure
 
@@ -804,11 +756,6 @@ Protocol: MySerial
   Description: Custom serial protocol implementation
 ```
 
-
-## Logging
-
-All commands support logging configuration via `--log-level`.
-
 ### Log Levels
 
 | Level | Description | Use Case |
@@ -839,22 +786,6 @@ All commands support logging configuration via `--log-level`.
 ./worker_DMM1.log
 ./worker_DAC1.log
 ./worker_Scope1.log
-```
-
-### Viewing Logs
-
-```bash
-# View main log
-tail -f instrument_server.log
-
-# View specific worker log
-tail -f worker_DMM1.log
-
-# Search for errors
-grep ERROR *.log
-
-# Search for specific instrument
-grep "DMM1" instrument_server.log
 ```
 
 ## Complete Workflow Examples
@@ -961,27 +892,41 @@ exit $result
 
 ## Environment Variables
 
-### `INSTRUMENT_SCRIPT_SERVER_RPC_PORT`
+The server supports configuration via environment variables:
 
-**Type**: Integer (1-65535)  
-**Default**: `8555`  
-**Description**: Port number for the HTTP RPC server on localhost
+### Measurement Timeout
 
-The RPC server provides programmatic API access for embedding and automation.
+- **Variable**: `MEASUREMENT_TIMEOUT_SEC`
+- **Default**: `5`
+- **Description**: Sets the longest possible safe measurement time. After this maximal time the server will abort the measurement.
 
-### `INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB`
+### RPC Port Configuration
 
-**Type**: Path  
-**Default**: ``  
-**Description**: Sets the path for an optional lua library to load for interpreting measurement scripts
+- **Variable**: `INSTRUMENT_SCRIPT_SERVER_RPC_PORT`
+- **Default**: `8555`
+- **Description**: Sets the HTTP RPC server port on localhost for API access
 
-This supports either the directory of a larger package or just a file with registering modules.
+### Max Job History
 
-### `INSTRUMENT_SERVER_MAX_JOB_HISTORY`
+- **Variable**: `INSTRUMENT_SCRIPT_SERVER_MAX_JOB_HISTORY`
+- **Default**: `10000`
+- **Description**: Sets the maximum number of completed jobs to keep in memory. Older jobs will be discarded.
 
-**Type**: Integer  
-**Default**: `10000`  
-**Description**: Sets the maximum number of finished job records kept in memory before the oldest finished jobs are evicted.
+### External Lua Measurement Library Path
+
+- **Variable**: `INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB`
+- **Default**: ``
+- **Description**: Sets the path(s) for optional Lua libraries to load for interpreting measurement scripts. Supports:
+  - A single directory containing Lua modules
+  - A single Lua bundle file
+  - Multiple paths separated by semicolons (`;`)
+  - Example: `export INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB="/path/to/lib1;/path/to/lib2;/path/to/bundle.lua"`
+
+### Runtime Dir
+
+- **Variable**: `INSTRUMENT_SCRIPT_SERVER_RUNTIME_DIR`
+- **Default**: windows: `LOCALAPPDATA`; linux: `XDG_RUNTIME_DIR`
+- **Description**: Sets the path for runtime pid file for the Server Daemon
 
 ## See Also
 

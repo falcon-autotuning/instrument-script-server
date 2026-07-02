@@ -6,7 +6,7 @@ Our [documentation](https://falcon-autotuning.github.io/instrument-script-server
 ## Features
 
 - **Process Isolation**: Each instrument runs in a separate worker process for fault tolerance
-- **Plugin Architecture**: Instrument drivers as loadable plugins (VISA, serial, custom SDKs)
+- **Plugin Architecture**: Instrument drivers as loadable plugins (VISA, custom, ...)
 - **Lua Scripting**: High-level measurement scripts with runtime contexts
 - **Automatic Result Collection**: All command return values are automatically captured with full traceability
 - **Synchronization**:  Parallel execution with precise timing coordination across instruments
@@ -21,8 +21,8 @@ make build
 instrument-script-server daemon start
 
 # Start instruments (customize configs with your instruments)
-instrument-script-server start configs/instrument1.yaml
-instrument-script-server start configs/instrument2.yaml
+instrument-script-server inst start configs/instrument1.yaml
+instrument-script-server inst start configs/instrument2.yaml
 
 # Run a measurement
 instrument-script-server measure my_measurement.lua
@@ -61,6 +61,12 @@ The server supports configuration via environment variables:
 - **Default**: `8555`
 - **Description**: Sets the HTTP RPC server port on localhost for API access
 
+### Max Job History
+
+- **Variable**: `INSTRUMENT_SCRIPT_SERVER_MAX_JOB_HISTORY`
+- **Default**: `10000`
+- **Description**: Sets the maximum number of completed jobs to keep in memory. Older jobs will be discarded.
+
 ### External Lua Measurement Library Path
 
 - **Variable**: `INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB`
@@ -70,6 +76,12 @@ The server supports configuration via environment variables:
   - A single Lua bundle file
   - Multiple paths separated by semicolons (`;`)
   - Example: `export INSTRUMENT_SCRIPT_SERVER_OPT_LUA_LIB="/path/to/lib1;/path/to/lib2;/path/to/bundle.lua"`
+
+### Runtime Dir
+
+- **Variable**: `INSTRUMENT_SCRIPT_SERVER_RUNTIME_DIR`
+- **Default**: windows: `LOCALAPPDATA`; linux: `XDG_RUNTIME_DIR`
+- **Description**: Sets the path for runtime pid file for the Server Daemon
 
 ## Measurement Script Structure
 

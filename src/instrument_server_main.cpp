@@ -983,6 +983,12 @@ int run_cli(int argc, char **argv) {
           for (const auto &cmd : result_resp->results()) {
             out.message("  Command:");
             out.message("    Instrument: " + cmd.instrument_name());
+            if (cmd.has_channel()) {
+              out.message("    Channel: " + cmd.channel());
+            }
+            if (cmd.has_group()) {
+              out.message("    Group: " + cmd.group());
+            }
             out.message("    Verb: " + cmd.verb());
 
             for (const auto &param : cmd.param()) {
@@ -1337,44 +1343,58 @@ int run_cli(int argc, char **argv) {
           if (data_type == INST_DATA_FLOAT64) {
             auto *ptr = static_cast<double *>(data);
             for (uint32_t k = 0; k < element_count; ++k) {
-              if (out.json_mode) data_arr.push_back(ptr[k]);
-              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+              if (out.json_mode)
+                data_arr.push_back(ptr[k]);
+              else
+                std::cout << "[" << k << "] " << ptr[k] << "\n";
             }
           } else if (data_type == INST_DATA_FLOAT32) {
             auto *ptr = static_cast<float *>(data);
             for (uint32_t k = 0; k < element_count; ++k) {
-              if (out.json_mode) data_arr.push_back(ptr[k]);
-              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+              if (out.json_mode)
+                data_arr.push_back(ptr[k]);
+              else
+                std::cout << "[" << k << "] " << ptr[k] << "\n";
             }
           } else if (data_type == INST_DATA_INT32) {
             auto *ptr = static_cast<int32_t *>(data);
             for (uint32_t k = 0; k < element_count; ++k) {
-              if (out.json_mode) data_arr.push_back(ptr[k]);
-              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+              if (out.json_mode)
+                data_arr.push_back(ptr[k]);
+              else
+                std::cout << "[" << k << "] " << ptr[k] << "\n";
             }
           } else if (data_type == INST_DATA_INT64) {
             auto *ptr = static_cast<int64_t *>(data);
             for (uint32_t k = 0; k < element_count; ++k) {
-              if (out.json_mode) data_arr.push_back(ptr[k]);
-              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+              if (out.json_mode)
+                data_arr.push_back(ptr[k]);
+              else
+                std::cout << "[" << k << "] " << ptr[k] << "\n";
             }
           } else if (data_type == INST_DATA_UINT8) {
             auto *ptr = static_cast<uint8_t *>(data);
             for (uint32_t k = 0; k < element_count; ++k) {
-              if (out.json_mode) data_arr.push_back(ptr[k]);
-              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+              if (out.json_mode)
+                data_arr.push_back(ptr[k]);
+              else
+                std::cout << "[" << k << "] " << ptr[k] << "\n";
             }
           } else if (data_type == INST_DATA_UINT32) {
             auto *ptr = static_cast<uint32_t *>(data);
             for (uint32_t k = 0; k < element_count; ++k) {
-              if (out.json_mode) data_arr.push_back(ptr[k]);
-              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+              if (out.json_mode)
+                data_arr.push_back(ptr[k]);
+              else
+                std::cout << "[" << k << "] " << ptr[k] << "\n";
             }
           } else if (data_type == INST_DATA_UINT64) {
             auto *ptr = static_cast<uint64_t *>(data);
             for (uint32_t k = 0; k < element_count; ++k) {
-              if (out.json_mode) data_arr.push_back(ptr[k]);
-              else std::cout << "[" << k << "] " << ptr[k] << "\n";
+              if (out.json_mode)
+                data_arr.push_back(ptr[k]);
+              else
+                std::cout << "[" << k << "] " << ptr[k] << "\n";
             }
           }
 

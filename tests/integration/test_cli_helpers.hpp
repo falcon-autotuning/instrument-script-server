@@ -161,7 +161,7 @@ inline void register_daemon_pid(int pid) {
 }
 
 inline std::string get_runtime_dir() {
-  const char *forced = getenv("INSTRUMENT_SERVER_RUNTIME_DIR");
+  const char *forced = getenv("INSTRUMENT_SCRIPT_SERVER_RUNTIME_DIR");
 #ifdef _WIN32
   if (forced != nullptr) {
     return forced;

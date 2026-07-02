@@ -1,125 +1,363 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/falcon-autotuning/instrument-script-server/schemas/measurement_results.schema.json",
-  "title": "Measurement Results Schema",
-  "description": "Schema for measurement script results output with --json flag",
+  "$id": "https://github.com/falcon-autotuning/instrument-script-server/schemas/measurement_result.schema.json",
+  "title": "MeasureJobResultResponse",
   "type": "object",
-  "required": ["status", "script", "results"],
+  "required": [
+    "standard_response",
+    "status",
+    "results"
+  ],
   "properties": {
+    "standard_response": {
+      "$ref": "#/$defs/StandardResponse"
+    },
     "status": {
-      "type": "string",
-      "enum": ["success", "error"],
-      "description": "Status of the measurement script execution"
-    },
-    "script": {
-      "type": "string",
-      "description": "Name of the measurement script that was executed"
-    },
-    "error": {
-      "type": "string",
-      "description": "Error message if status is 'error'"
+      "$ref": "#/$defs/JobStatus"
     },
     "results": {
       "type": "array",
-      "description": "Array of results from all context:call() operations in execution order",
       "items": {
-        "$ref": "#/definitions/callResult"
+        "$ref": "#/$defs/CommandResult"
       }
     }
   },
-  "definitions": {
-    "callResult": {
+  "$defs": {
+    "StandardResponse": {
       "type": "object",
-      "required": ["index", "instrument", "verb", "params", "executed_at_ms", "return"],
+      "required": [
+        "ok",
+        "message"
+      ],
       "properties": {
-        "index": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Sequential index of this call in the script execution"
+        "ok": {
+          "type": "boolean"
         },
-        "instrument": {
-          "type": "string",
-          "description": "Instrument name, possibly with channel (e.g., 'MockInstrument1:1')"
+        "message": {
+          "type": "string"
+        },
+        "error": {
+          "$ref": "#/$defs/ErrorDetails"
+        }
+      }
+    },
+    "ErrorDetails": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "ErrorCode": {
+      "type": "string",
+      "enum": [
+        "ERROR_CODE_UNSPECIFIED",
+        "ERROR_CODE_RUNTIME",
+        "ERROR_CODE_INVALID_ARGUMENT",
+        "ERROR_CODE_FILE_DOES_NOT_EXIST",
+        "ERROR_CODE_PLUGIN_CRASH",
+        "ERROR_CODE_INSTRUMENT_CRASH",
+        "ERROR_CODE_BUFFER_NOT_FOUND"
+      ]
+    },
+    "JobStatus": {
+      "type": "string",
+      "enum": [
+        "JOB_STATUS_UNSPECIFIED",
+        "JOB_STATUS_QUEUED",
+        "JOB_STATUS_RUNNING",
+        "JOB_STATUS_COMPLETED",
+        "JOB_STATUS_FAILED",
+        "JOB_STATUS_CANCELING",
+        "JOB_STATUS_CANCELLED"
+      ]
+    },
+    "CommandResult": {
+      "type": "object",
+      "required": [
+        "instrument_name",
+        "verb",
+        "executed_at",
+        "param"
+      ],
+      "properties": {
+        "instrument_name": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "integer"
         },
         "verb": {
-          "type": "string",
-          "description": "Command verb that was executed (e.g., 'GET', 'SET', 'MEASURE')"
+          "type": "string"
         },
-        "params": {
-          "type": "object",
-          "description": "Parameters passed to the command",
-          "additionalProperties": {
-            "oneOf": [
-              {"type": "number"},
-              {"type": "string"},
-              {"type": "boolean"},
-              {
-                "type": "array",
-                "items": {"type": "number"}
-              }
-            ]
+        "executed_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "param": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TypedParameter"
           }
-        },
-        "executed_at_ms": {
-          "type": "integer",
-          "description": "Timestamp in milliseconds since epoch when the command was executed"
-        },
-        "return": {
-          "oneOf": [
-            {"$ref": "#/definitions/directReturn"},
-            {"$ref": "#/definitions/bufferReturn"}
-          ]
         }
       }
     },
-    "directReturn": {
+    "TypedParameter": {
       "type": "object",
-      "required": ["type", "value"],
+      "required": [
+        "name",
+        "type",
+        "value"
+      ],
       "properties": {
+        "name": {
+          "type": "string"
+        },
         "type": {
-          "type": "string",
-          "enum": ["double", "int64", "string", "bool", "array", "void"],
-          "description": "Type of the returned value"
+          "$ref": "#/$defs/LuaTypes"
         },
         "value": {
-          "description": "The actual return value",
-          "oneOf": [
-            {"type": "number"},
-            {"type": "string"},
-            {"type": "boolean"},
-            {
-              "type": "array",
-              "items": {"type": "number"}
-            },
-            {"type": "null"}
-          ]
+          "$ref": "#/$defs/VariableValue"
+        },
+        "dbmeta": {
+          "$ref": "#/$defs/DataBufferMetadata"
         }
       }
     },
-    "bufferReturn": {
+    "LuaTypes": {
+      "type": "string",
+      "enum": [
+        "LUA_TYPES_UNSPECIFIED",
+        "LUA_TYPES_INT64",
+        "LUA_TYPES_DOUBLE",
+        "LUA_TYPES_BOOL",
+        "LUA_TYPES_STRING",
+        "LUA_TYPES_DATA_BUFFER",
+        "LUA_TYPES_CALL_STACK",
+        "LUA_TYPES_INT64_ARRAY",
+        "LUA_TYPES_DOUBLE_ARRAY",
+        "LUA_TYPES_BOOL_ARRAY",
+        "LUA_TYPES_STRING_ARRAY",
+        "LUA_TYPES_DATA_BUFFER_ARRAY",
+        "LUA_TYPES_CALL_STACK_ARRAY",
+        "LUA_TYPES_MIXED_ARRAY"
+      ]
+    },
+    "VariableValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "is_nil"
+          ],
+          "properties": {
+            "is_nil": {
+              "const": true
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "i"
+          ],
+          "properties": {
+            "i": {
+              "type": "integer"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "d"
+          ],
+          "properties": {
+            "d": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "b"
+          ],
+          "properties": {
+            "b": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "s"
+          ],
+          "properties": {
+            "s": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "i_array"
+          ],
+          "properties": {
+            "i_array": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "d_array"
+          ],
+          "properties": {
+            "d_array": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "b_array"
+          ],
+          "properties": {
+            "b_array": {
+              "type": "array",
+              "items": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "s_array"
+          ],
+          "properties": {
+            "s_array": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "db_array"
+          ],
+          "properties": {
+            "db_array": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "cs_array"
+          ],
+          "properties": {
+            "cs_array": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "m_array"
+          ],
+          "properties": {
+            "m_array": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/VariableValue"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "m_map"
+          ],
+          "properties": {
+            "m_map": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/VariableValue"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "DataBufferMetadata": {
       "type": "object",
-      "required": ["type", "buffer_id", "element_count", "data_type"],
+      "required": [
+        "element_count",
+        "data_type",
+        "byte_size",
+        "captured_at",
+        "command_id",
+        "instrument_name"
+      ],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "buffer",
-          "description": "Indicates this is a large data buffer reference"
-        },
-        "buffer_id": {
-          "type": "string",
-          "description": "Unique identifier for the data buffer"
-        },
         "element_count": {
           "type": "integer",
-          "minimum": 0,
-          "description": "Number of elements in the buffer"
+          "minimum": 0
         },
         "data_type": {
-          "type": "string",
-          "enum": ["float32", "float64", "int32", "int64", "uint32", "uint64", "uint8"],
-          "description": "Data type of elements in the buffer"
+          "type": "integer"
+        },
+        "byte_size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "captured_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "command_id": {
+          "type": "string"
+        },
+        "instrument_name": {
+          "type": "string"
         }
       }
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC3339 timestamp"
     }
   }
 }

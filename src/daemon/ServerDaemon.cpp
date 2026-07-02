@@ -32,7 +32,7 @@ int shutdown_pipe_fd_{-1};
 #endif
 // Platform-specific paths
 std::string get_runtime_dir() {
-  const char *forced = getenv("INSTRUMENT_SERVER_RUNTIME_DIR");
+  const char *forced = getenv("INSTRUMENT_SCRIPT_SERVER_RUNTIME_DIR");
 #ifdef _WIN32
   if (forced != nullptr) {
     return forced;
@@ -70,9 +70,9 @@ ServerDaemon &ServerDaemon::instance() {
   std::string runtime_dir = get_runtime_dir();
 
 #ifdef _WIN32
-  SetEnvironmentVariableA("INSTRUMENT_SERVER_RUNTIME_DIR", runtime_dir.c_str());
+  SetEnvironmentVariableA("INSTRUMENT_SCRIPT_SERVER_RUNTIME_DIR", runtime_dir.c_str());
 #else
-  setenv("INSTRUMENT_SERVER_RUNTIME_DIR", runtime_dir.c_str(), 1);
+  setenv("INSTRUMENT_SCRIPT_SERVER_RUNTIME_DIR", runtime_dir.c_str(), 1);
 #endif
 
   return daemon;
