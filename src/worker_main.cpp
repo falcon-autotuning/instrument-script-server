@@ -80,7 +80,7 @@ void copy_string(char *dst, size_t dst_size, const char *src) {
 
 // Handler for fatal signals (SIGSEGV, SIGABRT, SIGFPE). Writes a brief
 // async-signal-safe message to stderr (which the ISS daemon redirects to
-// tests/hub/logiss-daemon.log), flushes the spdlog file sink, then re-raises so
+// tests/hub/logiss-daemon.log), flushes the log file sink, then re-raises so
 // the OS can produce a core dump as normal.
 void crash_signal_handler(int sig) {
   char buf[256];

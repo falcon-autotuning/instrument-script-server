@@ -1,4 +1,5 @@
 find_package(GTest CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 add_library(test-utils STATIC
   test_utils/TestFixtures.cpp

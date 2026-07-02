@@ -7,7 +7,6 @@
     "grpc",
     "lua",
     "nlohmann-json",
-    "spdlog",
     "sol2",
     "gtest",
     "grpc",

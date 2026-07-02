@@ -33,7 +33,6 @@
 // If you don't use all these in every TU, you can remove ones you
 // don't need. These are the usual suspects for your repo.
 #include <nlohmann/json.hpp>
-#include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
 // sol2 is header-only and can be expensive; include if used widely.
