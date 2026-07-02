@@ -48,15 +48,7 @@ nav:
   - Configurations:
       - Setting up Instruments: CONFIGURATION.md
       - Non-VISA plugins: PLUGIN_DEVELOPMENT.md
-  - Architecture:
-      - Overview: ARCHITECTURE.md
-      - Server Communications: IPC_PROTOCOL.md
-      - Synchronizing Instruments: SYNCHRONIZATION.md
-      - HTTP RPC Interface: RPC.md
-      - Embedding API: EMBEDDING_API.md
-      - Job Scheduling & Staging: JOB_SCHEDULING.md
-  - Teal/TypeScript Support:
-      - Migration Guide: TEAL_MIGRATION.md
+  - Teal Support:
       - Type Manifest: TEAL_TYPE_MANIFEST.md
 markdown_extensions:
   - tables
