@@ -677,7 +677,7 @@ private:
     ipc_queue_.reset();
   }
 };
-constexpr uint8_t parse_log_level(const std::string &s) {
+uint8_t parse_log_level(const std::string &s) {
   if (s == "trace") {
     return INST_LOG_TRACE;
   }

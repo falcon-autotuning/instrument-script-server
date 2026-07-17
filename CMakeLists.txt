@@ -126,7 +126,7 @@ find_package(Lua           REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(yaml-cpp      CONFIG REQUIRED)
 find_package(sol2          CONFIG REQUIRED)
-find_package(grpc          CONFIG REQUIRED)
+find_package(gRPC          CONFIG REQUIRED)
 find_package(cxxopts       CONFIG REQUIRED)
 find_package(instrument-data CONFIG REQUIRED)
 find_package(instrument-log CONFIG REQUIRED)
@@ -336,7 +336,6 @@ install(TARGETS
 )
 if(BUILD_CLI)
   install(TARGETS instrument-script-server
-    EXPORT instrument-script-server-targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
 endif()

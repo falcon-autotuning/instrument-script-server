@@ -26,6 +26,8 @@ add_executable(
   unit/test_serialization.cpp
   unit/test_sync_coordinator.cpp
   unit/test_runtime_context_generic.cpp
+  unit/test_parsing_tools.cpp
+  unit/test_command_handlers.cpp
   unit/test_ipc_queue.cpp
   unit/test_schema_validator.cpp
   unit/test_plugin_loader.cpp

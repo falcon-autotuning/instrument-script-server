@@ -1,6 +1,24 @@
 #include "instrument-script-server/core/ParsingTools.hpp"
 #include <yaml-cpp/yaml.h>
 namespace instserver {
+namespace {
+IO makeChannelGroupIO(const YAML::Node &node) {
+  if (!node["type"]) {
+    throw std::runtime_error("Channel group IO must have 'type'");
+  }
+  if (!node["name"] && !node["suffix"]) {
+    throw std::runtime_error("Channel group IO must have 'name' or 'suffix'");
+  }
+
+  IO io;
+  io.name = node["name"] ? node["name"].as<std::string>()
+                         : node["suffix"].as<std::string>();
+  io.type = mapType(node["type"].as<std::string>());
+
+  return io;
+}
+} // namespace
+
 IO makeIO(const YAML::Node &node) {
   if (!node["name"] || !node["type"]) {
     throw std::runtime_error("IO must have 'name' and 'type'");
@@ -53,9 +71,12 @@ load_api(const std::filesystem::path &api_path) {
 
   // ---------------- CHANNEL GROUPS ----------------
   std::unordered_map<std::string, std::vector<IO>> channel_groups;
+  std::unordered_map<std::string, std::unordered_map<std::string, IO>>
+      channel_group_io_lookup;
   if (doc["channel_groups"]) {
     YAML::Node groups = doc["channel_groups"];
     channel_groups.reserve(groups.size());
+    channel_group_io_lookup.reserve(groups.size());
     for (const auto &group : groups) {
       auto groupName = group["name"].as<std::string>();
       std::vector<IO> params;
@@ -69,7 +90,17 @@ load_api(const std::filesystem::path &api_path) {
         // single param
         params.push_back(makeIO(chParamNode));
       }
+
+      std::unordered_map<std::string, IO> group_io_lookup;
+      if (group["io_types"]) {
+        group_io_lookup.reserve(group["io_types"].size());
+        for (const auto &ioTypeNode : group["io_types"]) {
+          IO io = makeChannelGroupIO(ioTypeNode);
+          group_io_lookup[io.name] = io;
+        }
+      }
       channel_groups.emplace(groupName, std::move(params));
+      channel_group_io_lookup.emplace(groupName, std::move(group_io_lookup));
     }
   }
   // ---------------- COMMANDS ----------------
@@ -83,11 +114,28 @@ load_api(const std::filesystem::path &api_path) {
     YAML::Node cmdNode = it->second;
     Command cmd;
     cmd.name = cmdName;
+    std::optional<std::string> groupName;
+    if (cmdNode["channel_group"]) {
+      groupName = cmdNode["channel_group"].as<std::string>();
+      if (channel_groups.count(*groupName) == 0U) {
+        throw std::runtime_error("Unknown channel_group: " + *groupName);
+      }
+    }
+
+    std::unordered_map<std::string, IO> scoped_io_lookup = io_lookup;
+    if (groupName) {
+      const auto group_io_it = channel_group_io_lookup.find(*groupName);
+      if (group_io_it != channel_group_io_lookup.end()) {
+        for (const auto &[name, io] : group_io_it->second) {
+          scoped_io_lookup[name] = io;
+        }
+      }
+    }
+
     // ---- reserve parameters ----
     size_t param_count = 0;
-    if (cmdNode["channel_group"]) {
-      auto groupName = cmdNode["channel_group"].as<std::string>();
-      param_count += channel_groups[groupName].size();
+    if (groupName) {
+      param_count += channel_groups.at(*groupName).size();
     }
     if (cmdNode["parameters"]) {
       param_count += cmdNode["parameters"].size();
@@ -98,29 +146,25 @@ load_api(const std::filesystem::path &api_path) {
       cmd.returns.reserve(cmdNode["outputs"].size());
     }
     // ---- channel group injection FIRST ----
-    if (cmdNode["channel_group"]) {
-      auto groupName = cmdNode["channel_group"].as<std::string>();
-      if (channel_groups.count(groupName) == 0U) {
-        throw std::runtime_error("Unknown channel_group: " + groupName);
-      }
-      for (const auto &chParam : channel_groups[groupName]) {
+    if (groupName) {
+      for (const auto &chParam : channel_groups.at(*groupName)) {
         cmd.parameters.push_back(chParam);
       }
     }
     // ---- normal parameters ----
     if (cmdNode["parameters"]) {
       for (const auto &param : cmdNode["parameters"]) {
-        cmd.parameters.push_back(parseParam(param, io_lookup));
+        cmd.parameters.push_back(parseParam(param, scoped_io_lookup));
       }
     }
     // ---- outputs ----
     if (cmdNode["outputs"]) {
       for (const auto &out : cmdNode["outputs"]) {
         auto ioName = out.as<std::string>();
-        if (io_lookup.count(ioName) == 0U) {
+        if (scoped_io_lookup.count(ioName) == 0U) {
           throw std::runtime_error("Unknown IO in outputs: " + ioName);
         }
-        cmd.returns.push_back(io_lookup.at(ioName));
+        cmd.returns.push_back(scoped_io_lookup.at(ioName));
       }
     }
 

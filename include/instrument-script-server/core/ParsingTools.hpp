@@ -4,7 +4,9 @@
 #include <filesystem>
 #include <instrument-plugin.h>
 #include <optional>
+#include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 #include <yaml-cpp/node/node.h>
@@ -45,16 +47,16 @@ constexpr uint8_t mapType(std::string_view type) {
   if (type == "float") {
     return PARAM_TYPE_DOUBLE;
   }
-  if (type == "integer") {
+  if (type == "integer" || type == "int") {
     return PARAM_TYPE_INT64;
   }
   if (type == "string") {
     return PARAM_TYPE_STRING;
   }
-  if (type == "boolean") {
+  if (type == "boolean" || type == "bool") {
     return PARAM_TYPE_BOOL;
   }
-  if (type == "array") {
+  if (type == "array" || type == "buffer") {
     return PARAM_TYPE_BUFFER;
   }
 

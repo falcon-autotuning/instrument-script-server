@@ -116,6 +116,28 @@ TEST_F(MainFunctionIntegrationTest, MainFunction) {
   EXPECT_NE(log.find("New format script"), std::string::npos);
 }
 
+TEST_F(MainFunctionIntegrationTest, ReturnedModuleMainFunction) {
+  create_test_script("returned_module.lua", R"lua(
+    local function ModuleMain(ctx)
+      ctx:log("Returned module script")
+      return nil
+    end
+
+    return { main = ModuleMain }
+  )lua");
+
+  MeasureJobRequest req{};
+  req.set_script_path((test_scripts_dir_ / "returned_module.lua").string());
+  MeasureJobResultResponse resp{};
+  int result = handle_measure(req, &resp);
+
+  EXPECT_EQ(result, 0);
+  EXPECT_TRUE(resp.standard_response().ok());
+
+  auto log = read_log();
+  EXPECT_NE(log.find("Returned module script"), std::string::npos);
+}
+
 // Test global variable injection with warnings
 TEST_F(MainFunctionIntegrationTest, GlobalVariableInjectionWithWarnings) {
   create_test_script("with_globals.lua", R"lua(

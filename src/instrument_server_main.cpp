@@ -13,6 +13,7 @@
 #include <string>
 #include <string_view>
 #include <thread>
+#include <vector>
 #ifndef _WIN32
 #include <fcntl.h>
 #include <unistd.h>
@@ -97,10 +98,15 @@ struct CliArgs {
 
   [[nodiscard]] std::span<char *> args() const { return argv.subspan(start); }
 
-  [[nodiscard]] auto args_sv() const {
-    return argv.subspan(start) | std::views::transform([](const char *arg) {
-             return std::string_view(arg);
-           });
+  [[nodiscard]] std::vector<std::string_view> args_sv() const {
+    std::vector<std::string_view> result;
+    result.reserve(argv.size() - static_cast<size_t>(start));
+
+    for (const char *arg : argv.subspan(start)) {
+      result.emplace_back(arg);
+    }
+
+    return result;
   }
   [[nodiscard]] std::string_view at(size_t i) const {
     if (i >= argv.size()) {
@@ -591,7 +597,7 @@ constexpr SUB_JOB parse_sub_job(std::string_view s) {
   }
   return SUB_JOB::UNKNOWN;
 }
-constexpr uint8_t parse_log_level(const std::string &s) {
+uint8_t parse_log_level(const std::string &s) {
   if (s == "trace") {
     return INST_LOG_TRACE;
   }
@@ -984,7 +990,7 @@ int run_cli(int argc, char **argv) {
             out.message("  Command:");
             out.message("    Instrument: " + cmd.instrument_name());
             if (cmd.has_channel()) {
-              out.message("    Channel: " + cmd.channel());
+              out.message("    Channel: " + std::to_string(cmd.channel()));
             }
             if (cmd.has_group()) {
               out.message("    Group: " + cmd.group());

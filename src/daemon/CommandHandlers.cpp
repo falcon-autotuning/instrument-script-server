@@ -187,8 +187,14 @@ sol::object variable_to_lua(sol::state_view lua, const v1::VariableValue *var) {
   case v1::VariableValue::kCsArray:
     return array_to_lua(lua, var->cs_array().values());
 
-  case v1::VariableValue::kMArray:
-    return array_to_lua(lua, var->m_array().values());
+  case v1::VariableValue::kMArray: {
+    sol::table t = lua.create_table();
+    int idx = 1;
+    for (const auto &val : var->m_array().values()) {
+      t[idx++] = variable_to_lua(lua, &val);
+    }
+    return sol::make_object(lua, t);
+  }
 
   case v1::VariableValue::kMMap: {
     sol::table t = lua.create_table();
@@ -479,8 +485,21 @@ int handle_measure(const MeasureJobRequest &req,
       return 1;
     }
 
-    // Check if the script defined a main function (new format)
+    // Prefer the new global main(ctx, ...) format, but keep accepting the
+    // old Teal module shape: return { main = Some_Function }.
     sol::optional<sol::protected_function> main_func = lua["main"];
+    if (!main_func.has_value() && load_result.return_count() > 0) {
+      sol::object ret = load_result[0];
+      if (ret.get_type() == sol::type::table) {
+        sol::table module = ret.as<sol::table>();
+        main_func = module["main"];
+        if (main_func.has_value()) {
+          lua["main"] = *main_func;
+          LOG_INFO("SERVER", "MEASURE",
+                   "Using main function returned from script module");
+        }
+      }
+    }
     if (!main_func.has_value()) {
       std::string error = "Missing main(ctx, ...) function.";
       LOG_ERROR("SERVER", "MEASURE", error.c_str());
@@ -553,7 +572,7 @@ int handle_measure(const MeasureJobRequest &req,
       std::string global_name = it.first;
       bool found = false;
 
-      for (int i = 1; i < param_defs.size(); ++i) {
+      for (int i = 0; i < param_defs.size(); ++i) {
         if (param_defs[i].name() == global_name) {
           found = true;
           break;
