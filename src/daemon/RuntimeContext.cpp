@@ -7,6 +7,7 @@
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
 #include <instrument-plugin.h>
+#include <string_view>
 using namespace instserver::daemon;
 
 // Helper to map stored ParamValue to the external return_type string tests
@@ -293,7 +294,25 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
       unordered_params.emplace(key, p);
     }
     for (const auto &[k, v] : lookup_param_types) {
-      params.push_back(unordered_params.find(k)->second);
+      auto found = unordered_params.find(k);
+      if (found != unordered_params.end()) {
+        params.push_back(found->second);
+        continue;
+      }
+
+      if (channel && k == "channel") {
+        Variable p{};
+        copy_string(p.name, sizeof(p.name), "channel");
+        p.type = PARAM_TYPE_INT64;
+        p.value.i64_val = static_cast<int64_t>(*channel);
+        params.push_back(p);
+        continue;
+      }
+
+      LOG_ERROR("LUA_CONTEXT", "CALL",
+                "Missing required parameter '%s' for command %s.%s", k.c_str(),
+                instrument_id.c_str(), verb.c_str());
+      return sol::nil;
     }
 
   } else {
@@ -360,7 +379,14 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
   }
 
   // Channel injection
-  if (channel) {
+  bool has_channel_param = false;
+  for (const auto &param : params) {
+    if (std::string_view(param.name) == "channel") {
+      has_channel_param = true;
+      break;
+    }
+  }
+  if (channel && !has_channel_param) {
     Variable p{};
     copy_string(p.name, sizeof(p.name), "channel");
     p.type = PARAM_TYPE_INT64;
