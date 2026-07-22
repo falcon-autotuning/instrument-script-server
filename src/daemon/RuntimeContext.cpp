@@ -239,7 +239,7 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
   // Table-style parameters
   if (args.size() == 1 && args[0].get_type() == sol::type::table) {
     // first allocate the types
-    std::map<std::string, uint8_t> lookup_param_types;
+    std::unordered_map<std::string, uint8_t> lookup_param_types;
 
     for (const IO &io : parameters) {
       lookup_param_types.emplace(io.name, io.type);
@@ -293,14 +293,14 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
 
       unordered_params.emplace(key, p);
     }
-    for (const auto &[k, v] : lookup_param_types) {
-      auto found = unordered_params.find(k);
+    for (const auto &io : parameters) {
+      auto found = unordered_params.find(io.name);
       if (found != unordered_params.end()) {
         params.push_back(found->second);
         continue;
       }
 
-      if (channel && k == "channel") {
+      if (channel && io.name == "channel") {
         Variable p{};
         copy_string(p.name, sizeof(p.name), "channel");
         p.type = PARAM_TYPE_INT64;
@@ -310,8 +310,8 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
       }
 
       LOG_ERROR("LUA_CONTEXT", "CALL",
-                "Missing required parameter '%s' for command %s.%s", k.c_str(),
-                instrument_id.c_str(), verb.c_str());
+                "Missing required parameter '%s' for command %s.%s",
+                io.name.c_str(), instrument_id.c_str(), verb.c_str());
       return sol::nil;
     }
 
