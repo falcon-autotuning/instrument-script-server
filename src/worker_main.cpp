@@ -783,7 +783,7 @@ int main(int argc, char **argv) {
       instrument_commands = load_api(api_path);
     } catch (const std::exception &e) {
       LOG_ERROR(config.name.c_str(), "WORKER_MAIN", "Invalid api '%s': %s\n",
-                api_path.c_str(), e.what());
+                api_path.string().c_str(), e.what());
       return 1;
     }
 

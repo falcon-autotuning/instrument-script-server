@@ -43,11 +43,11 @@ std::unordered_map<std::string, Command>
 InstrumentConfig INSTRUMENT_SERVER_API
 load_config(const std::filesystem::path &config_path);
 
-constexpr uint8_t mapType(std::string_view type) {
-  if (type == "float") {
+inline uint8_t mapType(std::string_view type) {
+  if (type == "float" || type == "double") {
     return PARAM_TYPE_DOUBLE;
   }
-  if (type == "integer" || type == "int") {
+  if (type == "integer" || type == "int" || type == "int64" || type == "int32") {
     return PARAM_TYPE_INT64;
   }
   if (type == "string") {
@@ -56,10 +56,10 @@ constexpr uint8_t mapType(std::string_view type) {
   if (type == "boolean" || type == "bool") {
     return PARAM_TYPE_BOOL;
   }
-  if (type == "array" || type == "buffer") {
+  if (type == "array" || type == "buffer" || type == "bytes") {
     return PARAM_TYPE_BUFFER;
   }
 
-  throw std::runtime_error("Unknown type");
+  throw std::runtime_error("Unknown type '" + std::string(type) + "'");
 }
 } // namespace instserver

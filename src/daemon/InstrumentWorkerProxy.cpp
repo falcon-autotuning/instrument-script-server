@@ -81,7 +81,7 @@ bool InstrumentWorkerProxy::start() {
     commands_ = load_api(api_path);
   } catch (const std::exception &e) {
     LOG_ERROR(instrument_name_.c_str(), "PROXY", "Invalid api '%s': %s\n",
-              api_path.c_str(), e.what());
+              api_path.string().c_str(), e.what());
     return false;
   }
 
