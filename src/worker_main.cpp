@@ -544,25 +544,7 @@ private:
               cmd.verb.c_str());
     // Check command parameters, ignoring implicitly injected "channel" if not
     // expected by the API
-    size_t actual_size = 0;
-    size_t channel_param_index = -1;
-    for (size_t i = 0; i < cmd.params.size(); ++i) {
-      if (std::string_view(cmd.params[i].name) == "channel") {
-        // Only count it if the API actually expects a parameter named "channel"
-        bool expected_in_api = false;
-        for (const auto &p : command.parameters) {
-          if (p.name == "channel") {
-            expected_in_api = true;
-            break;
-          }
-        }
-        if (!expected_in_api) {
-          channel_param_index = i;
-          continue;
-        }
-      }
-      actual_size++;
-    }
+    size_t actual_size = cmd.params.size();
 
     auto expected_size = command.parameters.size();
     if (actual_size != expected_size) {
@@ -576,9 +558,6 @@ private:
               actual_size);
     size_t api_idx = 0;
     for (size_t i = 0; i < cmd.params.size(); i++) {
-      if (i == channel_param_index) {
-        continue;
-      }
       const auto &expected_name = command.parameters[api_idx].name;
       const auto &actual_name = cmd.params[i].name;
       if (std::string_view(actual_name) != expected_name) {

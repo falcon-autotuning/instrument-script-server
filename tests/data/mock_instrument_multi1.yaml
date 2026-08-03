@@ -1,0 +1,5 @@
+name: MockInstrumentMulti1
+api_ref: ./mock_api_multi.yaml
+connection:
+  type: VISA
+  address: "mock://test_multi1"

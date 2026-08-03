@@ -53,6 +53,7 @@ add_executable(
   integration/test_parallel_execution.cpp
   integration/test_instrument_registry.cpp
   integration/test_measurement_scripts.cpp
+  integration/test_multi_channel.cpp
   integration/test_visa_large_data.cpp
   integration/test_rpc_server.cpp
   integration/test_measure_command.cpp

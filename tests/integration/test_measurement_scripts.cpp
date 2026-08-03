@@ -252,9 +252,6 @@ TEST_F(MeasurementScriptTest, ErrorHandling) {
   EXPECT_TRUE(run_script("error_handling.lua"));
 }
 
-TEST_F(MeasurementScriptTest, ChannelAddressing) {
-  EXPECT_TRUE(run_script("channel_addressing.lua"));
-}
 
 TEST_F(MeasurementScriptTest, ReturnTypes) {
   EXPECT_TRUE(run_script("return_types.lua"));
@@ -273,58 +270,7 @@ TEST_F(MeasurementScriptTest, ScriptWithOutput) {
   EXPECT_FALSE(results.empty()) << "Script should produce measurement results";
 }
 
-TEST_F(MeasurementScriptTest, MultipleReturns) {
-  auto *ctx = run_script_with_context("multiple_returns.lua");
-  ASSERT_NE(ctx, nullptr);
 
-  const auto &results = ctx->get_results();
-
-  // Should have collected multiple results (8 calls in the script)
-  EXPECT_GT(results.size(), 0);
-  EXPECT_EQ(results.size(),
-            8); // 4 GET calls + 2 SET calls + 2 GET calls with channels
-
-  // Verify all results have basic metadata
-  for (const auto &result : results) {
-    EXPECT_NE(instrument_call_stack_get_instrument_name(result.target.get()),
-              nullptr);
-    EXPECT_NE(instrument_call_stack_get_command(result.target.get()), nullptr);
-    EXPECT_FALSE(result.returns.empty());
-  }
-
-  // Verify we captured returns in order - first should be GET_DOUBLE
-  EXPECT_STREQ(instrument_call_stack_get_command(results[0].target.get()),
-               "GET_DOUBLE");
-  EXPECT_EQ(results[3].returns[0].type, PARAM_TYPE_BUFFER);
-  const auto &id = results[3].returns[0].value.str_val;
-  data_manager_release_buffer(id);
-}
-
-TEST_F(MeasurementScriptTest, ChannelAddressingWithReturns) {
-  auto *ctx = run_script_with_context("channel_addressing.lua");
-  ASSERT_NE(ctx, nullptr);
-
-  const auto &results = ctx->get_results();
-
-  // Should have 4 results: 2 SETs and 2 GETs
-  EXPECT_EQ(results.size(), 4);
-
-  // Verify channel addressing in instrument names
-  bool has_channel1 = false;
-  bool has_channel2 = false;
-
-  for (const auto &result : results) {
-    if (instrument_call_stack_get_channel(result.target.get()) == 1) {
-      has_channel1 = true;
-    }
-    if (instrument_call_stack_get_channel(result.target.get()) == 2) {
-      has_channel2 = true;
-    }
-  }
-
-  EXPECT_TRUE(has_channel1);
-  EXPECT_TRUE(has_channel2);
-}
 
 TEST_F(MeasurementScriptTest, LargeBufferReturns) {
   // FIXED: Use cross-platform plugin path
