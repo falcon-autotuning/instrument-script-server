@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 #include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-log/inst_logging.h>
+#include <numbers>
 #include <thread>
 constexpr double PI = std::numbers::pi;
 namespace v1 = instserver::daemon::v1;
@@ -242,7 +243,7 @@ protected:
 
 TEST_F(MeasurementScriptTest, SimpleCall) {
   EXPECT_TRUE(run_script("simple_call.lua"));
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
@@ -255,7 +256,7 @@ TEST_F(MeasurementScriptTest, SimpleCall) {
 
 TEST_F(MeasurementScriptTest, ParallelExecution) {
   EXPECT_TRUE(run_script("parallel_test.lua"));
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
@@ -268,7 +269,7 @@ TEST_F(MeasurementScriptTest, ParallelExecution) {
 
 TEST_F(MeasurementScriptTest, LoopMeasurement) {
   EXPECT_TRUE(run_script("loop_measurement.lua"));
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
@@ -281,7 +282,7 @@ TEST_F(MeasurementScriptTest, LoopMeasurement) {
 
 TEST_F(MeasurementScriptTest, NestedParallel) {
   EXPECT_TRUE(run_script("nested_parallel.lua"));
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
@@ -296,7 +297,7 @@ TEST_F(MeasurementScriptTest, ErrorHandling) {
   // This script intentionally calls non-existent instrument
   // Should complete without crashing
   EXPECT_TRUE(run_script("error_handling.lua"));
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.contains_error();
   main_log.contains(
@@ -311,7 +312,7 @@ TEST_F(MeasurementScriptTest, ErrorHandling) {
 
 TEST_F(MeasurementScriptTest, ReturnTypes) {
   EXPECT_TRUE(run_script("return_types.lua"));
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
@@ -324,7 +325,7 @@ TEST_F(MeasurementScriptTest, ReturnTypes) {
 
 TEST_F(MeasurementScriptTest, TableParameters) {
   EXPECT_TRUE(run_script("table_params.lua"));
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
@@ -342,7 +343,7 @@ TEST_F(MeasurementScriptTest, ScriptWithOutput) {
   const auto &results = ctx->get_results();
   // Verify results were produced (script has measurements)
   EXPECT_FALSE(results.empty()) << "Script should produce measurement results";
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
@@ -526,7 +527,7 @@ commands:
       EXPECT_FALSE(read_ok);
     }
   }
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
