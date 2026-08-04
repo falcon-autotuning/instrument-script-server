@@ -4,9 +4,11 @@
 #include "instrument-script-server/daemon/DataBufferManager.hpp"
 #include "instrument-script-server/daemon/RuntimeContext.hpp"
 #include "instrument-script-server/daemon/ServerDaemon.hpp"
+#include <chrono>
 #include <gtest/gtest.h>
 #include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-log/inst_logging.h>
+#include <thread>
 constexpr double PI = std::numbers::pi;
 namespace v1 = instserver::daemon::v1;
 using namespace instserver;
@@ -739,7 +741,8 @@ commands:
       EXPECT_FALSE(read_ok);
     }
   }
-  sleep(5); // Allow logs to flush
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();

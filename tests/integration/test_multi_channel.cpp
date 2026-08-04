@@ -1,24 +1,16 @@
-#include "PlatformPaths.hpp"
 #include "PluginTestFixture.hpp"
-#include "instrument-script-server/daemon/CommandHandlers.hpp"
-#include "instrument-script-server/daemon/DataBufferManager.hpp"
 #include "instrument-script-server/daemon/InstrumentRegistry.hpp"
 #include "instrument-script-server/daemon/PluginRegistry.hpp"
 #include "instrument-script-server/daemon/RuntimeContext.hpp"
 #include "instrument-script-server/daemon/ServerDaemon.hpp"
 #include "instrument-script-server/daemon/SyncCoordinator.hpp"
-#include <filesystem>
-#include <fstream>
 #include <gtest/gtest.h>
 #include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-call-stack/instrument-call-stack.h>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
 #include <instrument-plugin.h>
-#include <nlohmann/json.hpp>
-#include <sol/sol.hpp>
 
-namespace v1 = instserver::daemon::v1;
 using namespace instserver;
 using namespace instserver::daemon;
 using namespace instserver::test;
@@ -215,7 +207,7 @@ protected:
 
 TEST_F(MultiChannelScriptTest, ChannelAddressing) {
   EXPECT_TRUE(run_script("channel_addressing_multi.lua"));
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
@@ -250,7 +242,7 @@ TEST_F(MultiChannelScriptTest, ChannelAddressingWithReturns) {
 
   EXPECT_TRUE(has_channel1);
   EXPECT_TRUE(has_channel2);
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
@@ -289,7 +281,7 @@ TEST_F(MultiChannelScriptTest, MultipleReturns) {
   EXPECT_EQ(results[3].returns[0].type, PARAM_TYPE_BUFFER);
   const auto &id = results[3].returns[0].value.str_val;
   data_manager_release_buffer(id);
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
@@ -303,7 +295,7 @@ TEST_F(MultiChannelScriptTest, MultipleReturns) {
 TEST_F(MultiChannelScriptTest, ChannelAddressingWithErrors) {
   auto *ctx = run_script_with_context("channel_addressing_multi_bad.lua");
   ASSERT_NE(ctx, nullptr);
-  sleep(5); // Allow logs to flush
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.contains_error();
   main_log.contains("[LUA_CONTEXT] [CALL] Specified group_name=channel but no "
