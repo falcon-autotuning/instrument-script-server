@@ -12,7 +12,7 @@ using namespace instserver::test;
 class PluginLoaderTest : public ::testing::Test {
 protected:
   void SetUp() override {
-    plugin_path_ = get_test_plugin_path("mock_plugin");
+    plugin_path_ = get_test_plugin_path("mock_visa_plugin");
 
     if (!std::filesystem::exists(plugin_path_)) {
       skip_tests_ = true;

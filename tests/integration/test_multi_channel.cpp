@@ -26,13 +26,32 @@ using namespace instserver::test;
 #ifndef TEST_DATA_DIR
 #define TEST_DATA_DIR "."
 #endif
+namespace {
+constexpr std::array<std::string_view, 3> kWorkerLogs{
+    "worker_MockInstrumentMulti1.log",
+    "worker_MockInstrumentMulti2.log",
+    "worker_MockInstrumentMulti3.log",
+};
+const std::array<std::filesystem::path, 4> kLogFiles{
+    "script_test.log",
+    kWorkerLogs[0],
+    kWorkerLogs[1],
+    kWorkerLogs[2],
+};
+
+LogContents read_inst1_log() { return read_log(kWorkerLogs[0]); }
+LogContents read_inst2_log() { return read_log(kWorkerLogs[1]); }
+LogContents read_inst3_log() { return read_log(kWorkerLogs[2]); }
+} // namespace
 
 class MultiChannelScriptTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
     PluginTestFixture::SetUp();
     inst_log_shutdown();
-    inst_log_init("multi_channel_script_test.log", INST_LOG_DEBUG, "instrument",
+    log_path_ = kLogFiles[0];
+    clear_test_logs(kLogFiles);
+    inst_log_init(log_path_.string().c_str(), INST_LOG_DEBUG, "instrument",
                   1024 * 1024, // 1 MB
                   3);          // rotation count
 
@@ -83,6 +102,7 @@ protected:
     inst_log_shutdown();
   }
 
+  LogContents read_main_log() { return read_log(log_path_); }
   bool run_script(const std::string &script_name) {
     auto script_path = test_scripts_dir_ / script_name;
 
@@ -190,10 +210,20 @@ protected:
   std::filesystem::path test_configs_dir_;
   SyncCoordinator sync_coordinator_;
   std::unique_ptr<RuntimeContext> test_context_;
+  std::filesystem::path log_path_;
 };
 
 TEST_F(MultiChannelScriptTest, ChannelAddressing) {
   EXPECT_TRUE(run_script("channel_addressing_multi.lua"));
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 }
 
 TEST_F(MultiChannelScriptTest, ChannelAddressingWithReturns) {
@@ -220,6 +250,15 @@ TEST_F(MultiChannelScriptTest, ChannelAddressingWithReturns) {
 
   EXPECT_TRUE(has_channel1);
   EXPECT_TRUE(has_channel2);
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 }
 
 TEST_F(MultiChannelScriptTest, MultipleReturns) {
@@ -250,5 +289,32 @@ TEST_F(MultiChannelScriptTest, MultipleReturns) {
   EXPECT_EQ(results[3].returns[0].type, PARAM_TYPE_BUFFER);
   const auto &id = results[3].returns[0].value.str_val;
   data_manager_release_buffer(id);
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 }
 
+TEST_F(MultiChannelScriptTest, ChannelAddressingWithErrors) {
+  auto *ctx = run_script_with_context("channel_addressing_multi_bad.lua");
+  ASSERT_NE(ctx, nullptr);
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.contains_error();
+  main_log.contains("[LUA_CONTEXT] [CALL] Specified group_name=channel but no "
+                    "channel supplied at runtime");
+  auto worker1_log = read_inst1_log();
+  worker1_log.contains_error();
+  worker1_log.contains(
+      "[MockInstrumentMulti1] [WORKER_MAIN] Config command SET parameter "
+      "mismatch: expected size='2', got='1'");
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
+}

@@ -1,20 +1,6 @@
 find_package(GTest CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
-add_library(test-utils STATIC
-  test_utils/TestFixtures.cpp
-)
-
-target_link_libraries(test-utils PUBLIC
-  instrument-script-server-core
-  internal-daemon
-  GTest::gtest
-)
-
-target_include_directories(test-utils PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/test_utils
-)
-
 add_custom_target(copy_test_data ALL
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_CURRENT_SOURCE_DIR}/data
@@ -40,7 +26,8 @@ add_executable(
 
 target_link_libraries(unit_tests
   PRIVATE
-    test-utils
+    instrument-script-server-core
+    internal-daemon
     GTest::gtest
     GTest::gtest_main
     instrument-plugin-api::instrument-plugin-api-host
@@ -62,7 +49,8 @@ add_executable(
 
 target_link_libraries(integration_tests
   PRIVATE
-    test-utils
+    instrument-script-server-core
+    internal-daemon
     GTest::gtest
     GTest::gtest_main
     instrument-plugin-api::instrument-plugin-api-host
@@ -75,8 +63,8 @@ add_executable(
   performance/test_end_to_end_overhead.cpp)
 
 target_link_libraries(perf_tests PRIVATE
-  test-utils
   instrument-script-server-client
+  internal-daemon
   GTest::gtest
   GTest::gtest_main
 )

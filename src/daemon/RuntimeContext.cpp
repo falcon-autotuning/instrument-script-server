@@ -7,7 +7,6 @@
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
 #include <instrument-plugin.h>
-#include <string_view>
 using namespace instserver::daemon;
 
 // Helper to map stored ParamValue to the external return_type string tests
@@ -217,7 +216,7 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
 
   std::string instrument_id = instrument_call_stack_get_instrument_name(cs);
   std::string verb = instrument_call_stack_get_command(cs);
-  LOG_INFO("LUA_CONTEXT", "CALL", "Calling instrument: %s and command: %s\n",
+  LOG_INFO("LUA_CONTEXT", "CALL", "Calling instrument: %s and command: %s",
            instrument_id.c_str(), verb.c_str());
 
   int raw_channel = instrument_call_stack_get_channel(cs);
@@ -328,13 +327,13 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
     }
     for (size_t i = 0; i < arg_count; ++i) {
       Variable p;
-      copy_string(p.name, sizeof(p.name), expected_names[i+arg_offset]);
+      copy_string(p.name, sizeof(p.name), expected_names[i + arg_offset]);
 
       auto arg = args[i];
 
       // safe lookup: index-based
       uint8_t expected_type =
-          (i < expected_types.size()) ? expected_types[i+arg_offset] : 0;
+          (i < expected_types.size()) ? expected_types[i + arg_offset] : 0;
 
       switch (arg.get_type()) {
 
@@ -374,18 +373,19 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
     }
   }
 
-
   if (channel && group_name.has_value()) {
     Variable p{};
     copy_string(p.name, sizeof(p.name), group_name.value().c_str());
     p.type = PARAM_TYPE_INT64;
     p.value.i64_val = static_cast<int64_t>(*channel);
-    params.insert(params.begin(),p);
-  }
-  else if (channel && !group_name.has_value()) {
-    LOG_WARN("LUA_CONTEXT", "CALL", "Got channel %d at runtime but no group_name specified.", channel);
+    params.insert(params.begin(), p);
+  } else if (channel && !group_name.has_value()) {
+    LOG_WARN("LUA_CONTEXT", "CALL",
+             "Got channel %d at runtime but no group_name specified.", channel);
   } else if (!channel && group_name.has_value()) {
-    LOG_ERROR("LUA_CONTEXT", "CALL", "Specified group_name=%s but no channel supplied at runtime", group_name.value().c_str());
+    LOG_ERROR("LUA_CONTEXT", "CALL",
+              "Specified group_name=%s but no channel supplied at runtime",
+              group_name.value().c_str());
   }
 
   bool expects_response = worker->command_expects_response(verb);
@@ -672,7 +672,8 @@ InstrumentCommandResponse RuntimeContext::send_command(
            instrument_id.c_str(), verb.c_str(),
            expects_response ? "true" : "false");
 
-  // Synchronous ctx:call(...) expects a response acknowledgement even for commands with no output values
+  // Synchronous ctx:call(...) expects a response acknowledgement even for
+  // commands with no output values
   cmd.expects_response = true;
 
   auto resp = worker->execute_sync(

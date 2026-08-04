@@ -2,23 +2,11 @@
 #include "PluginTestFixture.hpp"
 #include "instrument-script-server/daemon/CommandHandlers.hpp"
 #include "instrument-script-server/daemon/DataBufferManager.hpp"
-#include "instrument-script-server/daemon/InstrumentRegistry.hpp"
-#include "instrument-script-server/daemon/PluginRegistry.hpp"
 #include "instrument-script-server/daemon/RuntimeContext.hpp"
 #include "instrument-script-server/daemon/ServerDaemon.hpp"
-#include "instrument-script-server/daemon/SyncCoordinator.hpp"
-#include <filesystem>
-#include <fstream>
-#include <google/protobuf/util/json_util.h>
 #include <gtest/gtest.h>
 #include <instrument-call-stack/instrument-call-stack-lua.h>
-#include <instrument-call-stack/instrument-call-stack.h>
-#include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
-#include <instrument-plugin.h>
-#include <nlohmann/json.hpp>
-#include <numbers>
-#include <sol/sol.hpp>
 constexpr double PI = std::numbers::pi;
 namespace v1 = instserver::daemon::v1;
 using namespace instserver;
@@ -27,6 +15,22 @@ using namespace instserver::test;
 #ifndef TEST_DATA_DIR
 #define TEST_DATA_DIR "."
 #endif
+namespace {
+constexpr std::array<std::string_view, 3> kWorkerLogs{
+    "worker_MockInstrument1.log",
+    "worker_MockInstrument2.log",
+    "worker_MockInstrument3.log",
+};
+const std::array<std::filesystem::path, 4> kLogFiles{
+    "script_test.log",
+    kWorkerLogs[0],
+    kWorkerLogs[1],
+    kWorkerLogs[2],
+};
+
+LogContents read_inst1_log() { return read_log(kWorkerLogs[0]); }
+LogContents read_inst2_log() { return read_log(kWorkerLogs[1]); }
+LogContents read_inst3_log() { return read_log(kWorkerLogs[2]); }
 
 bool local_read_buffer(const std::string &id, std::vector<double> &out_data,
                        uint64_t &out_count, uint32_t &out_type) {
@@ -60,16 +64,18 @@ bool local_read_buffer(const std::string &id, std::vector<double> &out_data,
   data_manager_release_buffer(id.c_str());
   return true;
 }
+} // namespace
 
 class MeasurementScriptTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
     PluginTestFixture::SetUp();
     inst_log_shutdown();
-    inst_log_init("script_test.log", INST_LOG_DEBUG, "instrument",
+    log_path_ = kLogFiles[0];
+    clear_test_logs(kLogFiles);
+    inst_log_init(log_path_.string().c_str(), INST_LOG_DEBUG, "instrument",
                   1024 * 1024, // 1 MB
                   3);          // rotation count
-
     test_scripts_dir_ = std::filesystem::path(TEST_DATA_DIR) / "test_scripts";
     test_configs_dir_ = std::filesystem::path(TEST_DATA_DIR);
 
@@ -117,6 +123,7 @@ protected:
     inst_log_flush();
     inst_log_shutdown();
   }
+  LogContents read_main_log() { return read_log(log_path_); }
 
   bool run_script(const std::string &script_name) {
     auto script_path = test_scripts_dir_ / script_name;
@@ -228,37 +235,102 @@ protected:
   std::filesystem::path test_configs_dir_;
   SyncCoordinator sync_coordinator_;
   std::unique_ptr<RuntimeContext> test_context_;
+  std::filesystem::path log_path_;
 };
 
 TEST_F(MeasurementScriptTest, SimpleCall) {
   EXPECT_TRUE(run_script("simple_call.lua"));
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 }
 
 TEST_F(MeasurementScriptTest, ParallelExecution) {
   EXPECT_TRUE(run_script("parallel_test.lua"));
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 }
 
 TEST_F(MeasurementScriptTest, LoopMeasurement) {
   EXPECT_TRUE(run_script("loop_measurement.lua"));
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 }
 
 TEST_F(MeasurementScriptTest, NestedParallel) {
   EXPECT_TRUE(run_script("nested_parallel.lua"));
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 }
 
 TEST_F(MeasurementScriptTest, ErrorHandling) {
   // This script intentionally calls non-existent instrument
   // Should complete without crashing
   EXPECT_TRUE(run_script("error_handling.lua"));
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.contains_error();
+  main_log.contains(
+      "[LUA_CONTEXT] [CALL] Instrument not found: NonExistentInstrument");
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 }
-
 
 TEST_F(MeasurementScriptTest, ReturnTypes) {
   EXPECT_TRUE(run_script("return_types.lua"));
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 }
 
 TEST_F(MeasurementScriptTest, TableParameters) {
   EXPECT_TRUE(run_script("table_params.lua"));
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 }
 
 TEST_F(MeasurementScriptTest, ScriptWithOutput) {
@@ -268,9 +340,16 @@ TEST_F(MeasurementScriptTest, ScriptWithOutput) {
   const auto &results = ctx->get_results();
   // Verify results were produced (script has measurements)
   EXPECT_FALSE(results.empty()) << "Script should produce measurement results";
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 }
-
-
 
 TEST_F(MeasurementScriptTest, LargeBufferReturns) {
   // FIXED: Use cross-platform plugin path
@@ -445,6 +524,15 @@ commands:
       EXPECT_FALSE(read_ok);
     }
   }
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 
   // Clean up
   registry.remove_instrument("TestScope");
@@ -651,6 +739,15 @@ commands:
       EXPECT_FALSE(read_ok);
     }
   }
+  sleep(5); // Allow logs to flush
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
 
   // Clean up
   registry.remove_instrument("TestScope");
