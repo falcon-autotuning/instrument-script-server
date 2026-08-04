@@ -12,6 +12,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <optional>
 #include <unordered_map>
 
 namespace instserver::daemon {
@@ -65,10 +66,12 @@ public:
 
   /// Checks if a command expects a response
   bool command_expects_response(const std::string &verb) const;
-  /// Gets responses metedata for a command
+  /// Gets responses metadata for a command
   std::vector<IO> get_responses(const std::string &verb) const;
-  /// Gets parameters metedata for a command
+  /// Gets parameters metadata for a command
   std::vector<IO> get_parameters(const std::string &verb) const;
+  /// Gets group_name metadata for a command (typically for channel groups)
+  std::optional<std::string> get_group_name(const std::string &verb) const;
 
 private:
   std::string instrument_name_;

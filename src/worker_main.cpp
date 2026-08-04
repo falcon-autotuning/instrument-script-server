@@ -542,11 +542,11 @@ private:
     const auto &command = it->second;
     log_debug("Checking that command %s matches what is defined in the config",
               cmd.verb.c_str());
-    // Check command parameters, ignoring implicitly injected "channel" if not
-    // expected by the API
+
     size_t actual_size = cmd.params.size();
 
     auto expected_size = command.parameters.size();
+
     if (actual_size != expected_size) {
       log_error("Config command %s parameter mismatch: "
                 "expected size='%d', got='%d'",
@@ -556,25 +556,29 @@ private:
     log_debug("The size of the command matches the one in the config with %d "
               "entries",
               actual_size);
-    size_t api_idx = 0;
+
+
     for (size_t i = 0; i < cmd.params.size(); i++) {
-      const auto &expected_name = command.parameters[api_idx].name;
-      const auto &actual_name = cmd.params[i].name;
+
+      auto expected_name = command.parameters[i].name;
+      auto actual_name = cmd.params[i].name;
+
       if (std::string_view(actual_name) != expected_name) {
-        log_error("Config command %s parameter mismatch at index %d: "
+        log_error("Config command %s parameter name mismatch at index %d: "
                   "expected='%s', got='%s'",
                   cmd.verb.c_str(), i, expected_name.c_str(), actual_name);
         return;
       }
-      auto expected_type = command.parameters[api_idx].type;
+
+      auto expected_type = command.parameters[i].type;
       auto actual_type = cmd.params[i].type;
+
       if (actual_type != expected_type) {
-        log_error("Config command %s parameter mismatch at index %d: "
+        log_error("Config command %s parameter type mismatch at index %d: "
                   "expected='%d', got='%d'",
                   cmd.verb.c_str(), i, expected_type, actual_type);
         return;
       }
-      api_idx++;
     }
     log_debug("All of the parameters types and names match the API");
     auto expected_returns_size = command.returns.size();

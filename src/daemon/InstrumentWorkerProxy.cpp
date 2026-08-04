@@ -176,6 +176,17 @@ InstrumentWorkerProxy::get_parameters(const std::string &verb) const {
   return cmd->parameters;
 }
 
+std::optional<std::string>
+InstrumentWorkerProxy::get_group_name(const std::string &verb) const {
+
+  const Command *cmd = find_command(verb);
+  if (cmd == nullptr) {
+    return {};
+  }
+
+  return cmd->group_name;
+}
+
 void InstrumentWorkerProxy::send_shutdown_message() {
   if (ipc_queue_ && ipc_queue_->is_valid()) {
     ipc::IPCMessage shutdown_msg;

@@ -13,13 +13,14 @@
 namespace instserver {
 // For unpacking the instrument-api
 struct INSTRUMENT_SERVER_API IO {
-  uint8_t type{0}; // PARAM_TYPE_<xxx>
+  uint8_t type{0}; // PARAM_TYPE_<xxx> (as defined by instrument-plugin)
   std::string name;
 };
 struct INSTRUMENT_SERVER_API Command {
   std::string name;
   std::vector<IO> parameters;
   std::vector<IO> returns;
+  std::optional<std::string> group_name;
 };
 
 struct INSTRUMENT_SERVER_API InstrumentConfig {

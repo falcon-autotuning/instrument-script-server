@@ -122,6 +122,55 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
     return 0;
   }
 
+  // ---- SET_DOUBLE ----
+  if (strcmp(cmd->command, "SET") == 0) {
+    uint8_t param_count = param_storage_count(cmd->params);
+
+    for (size_t i = 0; i < param_count; i++) {
+      const Variable *var = param_storage_get(cmd->params, i);
+      VariableType type = var->type;
+      char buf[256];
+      snprintf(buf, sizeof(buf), "Value name is %s", var->name);
+      VISA_LOG_INFO(buf);
+      if (type == PARAM_TYPE_DOUBLE) {
+        double value = var->value.d_val;
+        VISA_LOG_INFO("Value of type double set to: %f",value);
+      } else if (type == PARAM_TYPE_INT64) {
+        int64_t value = var->value.i64_val;
+
+        VISA_LOG_INFO("Value of type int64 set to: %d",value);
+      }
+    }
+    return 0;
+  }
+
+  // if (verb == "SET") {
+  //   double value = 0.0;
+  //   for (uint32_t i = 0; i < param_storage_count(command->params); i++) {
+  //     const Variable *param = param_storage_get(command->params, i);
+  //     if (strcmp(param->name, "arg0") == 0) {
+  //       if (param->type == PARAM_TYPE_DOUBLE) {
+  //         value = param->value.d_val;
+  //         VISA_LOG_INFO("Value of type double set to: %f\n",value);
+  //         break;
+  //       }
+  //       if (param->type == PARAM_TYPE_INT64) {
+  //         value = param->value.i64_val;
+  //         VISA_LOG_INFO("Value of type int set to: %d\n",value);
+  //         break;
+  //       }
+  //     }
+  //   }
+  //
+  //   if (channel > 0) {
+  //     g_channel_values[instrument_name][channel] = value;
+  //     VISA_LOG_INFO("Channel: %d\n", channel);
+  //   }
+  //   VISA_LOG_INFO("OK\n");
+  //   return 0;
+  // }
+
+
   // ---- GET_DOUBLE ----
   if (strcmp(cmd->command, "GET_DOUBLE") == 0) {
     Variable var = {0};

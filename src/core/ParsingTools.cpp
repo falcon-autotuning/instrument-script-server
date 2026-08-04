@@ -1,5 +1,6 @@
 #include "instrument-script-server/core/ParsingTools.hpp"
 #include <yaml-cpp/yaml.h>
+#include <iostream>
 namespace instserver {
 namespace {
 IO makeChannelGroupIO(const YAML::Node &node) {
@@ -120,6 +121,7 @@ load_api(const std::filesystem::path &api_path) {
       if (channel_groups.count(*groupName) == 0U) {
         throw std::runtime_error("Unknown channel_group: " + *groupName);
       }
+      cmd.group_name = groupName;
     }
 
     std::unordered_map<std::string, IO> scoped_io_lookup = io_lookup;
@@ -151,12 +153,22 @@ load_api(const std::filesystem::path &api_path) {
         cmd.parameters.push_back(chParam);
       }
     }
+
+
+
     // ---- normal parameters ----
     if (cmdNode["parameters"]) {
       for (const auto &param : cmdNode["parameters"]) {
         cmd.parameters.push_back(parseParam(param, scoped_io_lookup));
       }
     }
+    // TODO REMOVE THIS
+    // std::cout << "The verb is " << cmd.name;
+    //
+    // std::cout << "Command parameters count is: " << param_count;
+    //
+    // std::cout << "Command parameters size is: " << cmd.parameters.size();
+
     // ---- outputs ----
     if (cmdNode["outputs"]) {
       for (const auto &out : cmdNode["outputs"]) {

@@ -22,7 +22,7 @@ struct Command {
   std::string name;
   std::string template_str;
   std::optional<std::string> description;
-  std::vector<Parameter> parameters;
+  std::vector<Parameter> parameters; // parameters excluding full call stack args (e.g. channel)
   std::string returns; // "void", "int", "float", "array<float>", etc.
   bool query;
 };

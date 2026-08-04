@@ -235,6 +235,7 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
     return sol::nil;
   }
   std::vector<IO> parameters = worker->get_parameters(verb);
+  std::optional<std::string> group_name = worker->get_group_name(verb);
 
   // Table-style parameters
   if (args.size() == 1 && args[0].get_type() == sol::type::table) {
@@ -300,15 +301,6 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
         continue;
       }
 
-      if (channel && io.name == "channel") {
-        Variable p{};
-        copy_string(p.name, sizeof(p.name), "channel");
-        p.type = PARAM_TYPE_INT64;
-        p.value.i64_val = static_cast<int64_t>(*channel);
-        params.push_back(p);
-        continue;
-      }
-
       LOG_ERROR("LUA_CONTEXT", "CALL",
                 "Missing required parameter '%s' for command %s.%s",
                 io.name.c_str(), instrument_id.c_str(), verb.c_str());
@@ -329,16 +321,20 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
 
     // Positional arguments
     size_t arg_count = args.size();
+    size_t arg_offset = 0;
 
+    if (channel && group_name.has_value()) {
+      arg_offset = 1;
+    }
     for (size_t i = 0; i < arg_count; ++i) {
       Variable p;
-      copy_string(p.name, sizeof(p.name), expected_names[i]);
+      copy_string(p.name, sizeof(p.name), expected_names[i+arg_offset]);
 
       auto arg = args[i];
 
       // safe lookup: index-based
       uint8_t expected_type =
-          (i < expected_types.size()) ? expected_types[i] : 0;
+          (i < expected_types.size()) ? expected_types[i+arg_offset] : 0;
 
       switch (arg.get_type()) {
 
@@ -378,20 +374,18 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
     }
   }
 
-  // Channel injection
-  bool has_channel_param = false;
-  for (const auto &param : params) {
-    if (std::string_view(param.name) == "channel") {
-      has_channel_param = true;
-      break;
-    }
-  }
-  if (channel && !has_channel_param) {
+
+  if (channel && group_name.has_value()) {
     Variable p{};
-    copy_string(p.name, sizeof(p.name), "channel");
+    copy_string(p.name, sizeof(p.name), group_name.value().c_str());
     p.type = PARAM_TYPE_INT64;
     p.value.i64_val = static_cast<int64_t>(*channel);
-    params.push_back(p);
+    params.insert(params.begin(),p);
+  }
+  else if (channel && !group_name.has_value()) {
+    LOG_WARN("LUA_CONTEXT", "CALL", "Got channel %d at runtime but no group_name specified.", channel);
+  } else if (!channel && group_name.has_value()) {
+    LOG_ERROR("LUA_CONTEXT", "CALL", "Specified group_name=%s but no channel supplied at runtime", group_name.value().c_str());
   }
 
   bool expects_response = worker->command_expects_response(verb);
