@@ -678,6 +678,9 @@ InstrumentCommandResponse RuntimeContext::send_command(
            instrument_id.c_str(), verb.c_str(),
            expects_response ? "true" : "false");
 
+  // Synchronous ctx:call(...) expects a response acknowledgement even for commands with no output values
+  cmd.expects_response = true;
+
   auto resp = worker->execute_sync(
       std::move(cmd),
       std::chrono::milliseconds(g_measurement_timeout_sec * 1000));

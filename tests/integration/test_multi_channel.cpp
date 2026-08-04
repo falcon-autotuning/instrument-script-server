@@ -237,8 +237,11 @@ TEST_F(MultiChannelScriptTest, MultipleReturns) {
   for (const auto &result : results) {
     EXPECT_NE(instrument_call_stack_get_instrument_name(result.target.get()),
               nullptr);
-    EXPECT_NE(instrument_call_stack_get_command(result.target.get()), nullptr);
-    EXPECT_FALSE(result.returns.empty());
+    const char *cmd = instrument_call_stack_get_command(result.target.get());
+    EXPECT_NE(cmd, nullptr);
+    if (cmd && std::string_view(cmd) != "SET") {
+      EXPECT_FALSE(result.returns.empty());
+    }
   }
 
   // Verify we captured returns in order - first should be GET_DOUBLE
