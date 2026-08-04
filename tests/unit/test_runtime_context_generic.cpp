@@ -80,8 +80,9 @@ protected:
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
     std::ifstream ifs(log_path_, std::ios::in | std::ios::binary);
-    if (!ifs)
+    if (!ifs) {
       return "";
+    }
     std::string contents((std::istreambuf_iterator<char>(ifs)),
                          (std::istreambuf_iterator<char>()));
     return contents;
@@ -90,8 +91,9 @@ protected:
   // Helper to assert the log contains a substring (with optional wait for async
   // flush)
   void expect_log_contains(const std::string &substr, int wait_ms = 5) {
-    if (wait_ms > 0)
+    if (wait_ms > 0) {
       std::this_thread::sleep_for(std::chrono::milliseconds(wait_ms));
+    }
     auto contents = read_log();
     EXPECT_NE(contents.find(substr), std::string::npos)
         << "Log did not contain: " << substr << "\nFull log:\n"
