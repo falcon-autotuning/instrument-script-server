@@ -148,12 +148,10 @@ foreach(tgt ${ALL_TEST_TARGETS})
   endif()
 endforeach()
 
-# add_library(mock_plugin SHARED mocks/mock_plugin.cpp)
 add_library(mock_visa_plugin SHARED mocks/mock_visa_plugin.c)
 add_library(mock_visa_large_data_plugin SHARED
   mocks/mock_visa_large_data_plugin.c)
 foreach(plugin_target
-    # mock_plugin
     mock_visa_plugin
     mock_visa_large_data_plugin
 )
@@ -167,7 +165,6 @@ foreach(plugin_target
 endforeach()
 if(ENABLE_ASAN)
   foreach(plugin_target
-      # mock_plugin
       mock_visa_plugin
       mock_visa_large_data_plugin
   )
@@ -189,7 +186,6 @@ set(TEST_RUNTIME_TOOLS
 )
 
 set(TEST_PLUGINS
-  mock_plugin
   mock_visa_plugin
   mock_visa_large_data_plugin
 )
