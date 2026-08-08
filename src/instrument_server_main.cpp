@@ -726,9 +726,9 @@ int run_cli(int argc, char **argv) {
             close(devnull);
           }
 
-          std::string daemon_path = get_daemon_path(argv[0]);
-          execl(daemon_path.c_str(), daemon_path.c_str(), "--log-level",
-                log_level.empty() ? "info" : log_level.c_str(), nullptr);
+          execlp("instrument-script-server-daemon",
+                 "instrument-script-server-daemon", "--log-level",
+                 log_level.empty() ? "info" : log_level.c_str(), nullptr);
 
           _exit(1); // exec failed
         }

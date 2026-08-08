@@ -140,6 +140,10 @@ foreach(tgt ${ALL_TEST_TARGETS})
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
   )
   # target_link_options(${tgt} PRIVATE -static)
+  set_tests_properties(${tgt} PROPERTIES
+    ENVIRONMENT
+      "PATH=$<TARGET_FILE_DIR:instrument-script-server-daemon>:$ENV{PATH}"
+  )
 
   if(WIN32)
     set_tests_properties(${tgt} PROPERTIES
