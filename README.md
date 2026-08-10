@@ -10,7 +10,6 @@ Our [documentation](https://falcon-autotuning.github.io/instrument-script-server
 - **Lua Scripting**: High-level measurement scripts with runtime contexts
 - **Automatic Result Collection**: All command return values are automatically captured with full traceability
 - **Synchronization**:  Parallel execution with precise timing coordination across instruments
-- **Cross-Platform**: Works on Linux and Windows
 
 ## Quick Start
 
