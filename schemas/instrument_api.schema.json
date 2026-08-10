@@ -134,10 +134,6 @@
             "type": "object",
             "description": "**Channel Parameter** (Required)\n\nDefinition of the channel parameter for commands operating on this group. This parameter is used to select a specific channel in commands.",
             "properties": {
-              "name": {
-                "type": "string",
-                "description": "**Name** (Required)\n\nParameter name (e.g., 'channel')."
-              },
               "type": {
                 "type": "string",
                 "enum": [

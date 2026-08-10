@@ -557,11 +557,10 @@ private:
               "entries",
               actual_size);
 
-
     for (size_t i = 0; i < cmd.params.size(); i++) {
 
       auto expected_name = command.parameters[i].name;
-      auto actual_name = cmd.params[i].name;
+      const auto *actual_name = cmd.params[i].name;
 
       if (std::string_view(actual_name) != expected_name) {
         log_error("Config command %s parameter name mismatch at index %d: "

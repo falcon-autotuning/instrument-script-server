@@ -37,7 +37,6 @@ protocol:
 channel_groups:
   - name: analog
     channel_parameter:
-      name: channel
       type: int
     io_types:
       - name: sample_rate
@@ -67,7 +66,7 @@ commands:
   const auto set_it = commands.find("SET_SAMPLE_RATE");
   ASSERT_NE(set_it, commands.end());
   ASSERT_EQ(set_it->second.parameters.size(), 2U);
-  EXPECT_EQ(set_it->second.parameters[0].name, "channel");
+  EXPECT_EQ(set_it->second.parameters[0].name, "analog");
   EXPECT_EQ(set_it->second.parameters[0].type, PARAM_TYPE_INT64);
   EXPECT_EQ(set_it->second.parameters[1].name, "sample_rate");
   EXPECT_EQ(set_it->second.parameters[1].type, PARAM_TYPE_INT64);

@@ -1,6 +1,6 @@
 #include "instrument-script-server/core/ParsingTools.hpp"
-#include <yaml-cpp/yaml.h>
 #include <iostream>
+#include <yaml-cpp/yaml.h>
 namespace instserver {
 namespace {
 IO makeChannelGroupIO(const YAML::Node &node) {
@@ -29,6 +29,15 @@ IO makeIO(const YAML::Node &node) {
   io.name = node["name"].as<std::string>();
   io.type = mapType(node["type"].as<std::string>());
 
+  return io;
+}
+IO makeNamelessIO(const YAML::Node &node) {
+  if (!node["type"]) {
+    throw std::runtime_error("IO must have 'type'");
+  }
+
+  IO io;
+  io.type = mapType(node["type"].as<std::string>());
   return io;
 }
 
@@ -85,11 +94,15 @@ load_api(const std::filesystem::path &api_path) {
       if (chParamNode.IsSequence()) {
         // multiple params
         for (const auto &p : chParamNode) {
-          params.push_back(makeIO(p));
+          IO io = makeNamelessIO(p);
+          io.name = groupName;
+          params.push_back(io);
         }
       } else {
         // single param
-        params.push_back(makeIO(chParamNode));
+        IO io = makeNamelessIO(chParamNode);
+        io.name = groupName;
+        params.push_back(io);
       }
 
       std::unordered_map<std::string, IO> group_io_lookup;
@@ -153,8 +166,6 @@ load_api(const std::filesystem::path &api_path) {
         cmd.parameters.push_back(chParam);
       }
     }
-
-
 
     // ---- normal parameters ----
     if (cmdNode["parameters"]) {
