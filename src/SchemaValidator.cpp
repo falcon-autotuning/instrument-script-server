@@ -117,7 +117,7 @@ SchemaValidator::validate_instrument_api(const std::string &yaml_path) {
             }
           }
           if (group["channel_parameter"]) {
-            for (const auto &req : {"name", "type", "min", "max"}) {
+            for (const auto &req : {"type", "min", "max"}) {
               if (!group["channel_parameter"][req] ||
                   !group["channel_parameter"][req].IsDefined()) {
                 add_error(

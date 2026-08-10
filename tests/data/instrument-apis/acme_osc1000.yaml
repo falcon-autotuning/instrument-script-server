@@ -17,7 +17,6 @@ channel_groups:
     count: 2
     description: Analog input channels
     channel_parameter:
-      name: channel
       type: int
       min: 1
       max: 2
