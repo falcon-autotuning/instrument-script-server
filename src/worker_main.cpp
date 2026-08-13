@@ -590,6 +590,36 @@ private:
     log_info("Command executed: result=%u success=%s",
              static_cast<unsigned>(exec_result), no_error(exec_result).data());
 
+    // ---- response validation ----
+    size_t actual_resp_count = plugin_response_count(plugin_resp);
+    if (actual_resp_count!=expected_returns_size) {
+      log_error("Command %s returns count mismatch: expected '%d', got '%d'", cmd.verb.c_str(), expected_returns_size, actual_resp_count);
+      return;
+    }
+    std::vector<IO> expected_returns = command.returns;
+    std::vector<Variable> actual_returns;
+    for (size_t i = 0; i < actual_resp_count; ++i) {
+      actual_returns.push_back(*plugin_response_get(plugin_resp, i));
+    }
+    int validated_response_count = 0;
+    for (const auto& expected_return : expected_returns) {
+      for (const auto& actual_return : actual_returns) {
+        if (expected_return.name == actual_return.name ) {
+          if (expected_return.type == actual_return.type) {
+            validated_response_count++;
+          }
+          else {
+            log_error("Command %s return type for name %s mismatch: expected '%d', got '%d'", cmd.verb.c_str(),expected_return.name.c_str(), expected_return.type, actual_return.type);
+            return;
+          }
+        }
+      } 
+    }
+    if (validated_response_count!=expected_returns_size) {  
+      log_error("Command %s validated returns count mismatch: expected '%d', got '%d'", cmd.verb.c_str(), expected_returns_size, validated_response_count);
+      return;
+    }
+
     send_command_response(msg, cmd, *plugin_resp, exec_result);
     param_storage_free(pcmd->params);
     plugin_response_free(plugin_resp);
