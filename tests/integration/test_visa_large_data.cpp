@@ -92,7 +92,7 @@ TEST_F(VISALargeDataTest, SmallDataInResponse) {
   PluginResponse *resp = plugin_response_create();
   ASSERT_EQ(loader.execute_command(&cmd, resp), ErrorCode::NONE);
   const Variable *v = plugin_response_get(resp, 0);
-  ASSERT_STREQ(v->name, "data");
+  ASSERT_STREQ(v->name, "current");
   ASSERT_EQ(v->type, PARAM_TYPE_DOUBLE);
   ASSERT_EQ(v->value.d_val, 42.0);
 
@@ -122,7 +122,7 @@ TEST_F(VISALargeDataTest, LargeDataInBuffer) {
   ASSERT_EQ(loader.execute_command(&cmd, resp), ErrorCode::NONE);
 
   const Variable *v = plugin_response_get(resp, 0);
-  ASSERT_STREQ(v->name, "data");
+  ASSERT_STREQ(v->name, "waveform");
   ASSERT_EQ(v->type, PARAM_TYPE_BUFFER);
 
   // Verify buffer exists

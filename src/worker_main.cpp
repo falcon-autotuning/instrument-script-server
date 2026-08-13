@@ -604,7 +604,10 @@ private:
     int validated_response_count = 0;
     for (const auto& expected_return : expected_returns) {
       for (const auto& actual_return : actual_returns) {
+ 
+        log_info("Command %s for expected name %s and actual name %s", cmd.verb.c_str(),expected_return.name.c_str(), actual_return.name);
         if (expected_return.name == actual_return.name ) {
+          log_info("Command %s return type for name %s: got '%d', got '%d'", cmd.verb.c_str(),expected_return.name.c_str(), expected_return.type, actual_return.type);
           if (expected_return.type == actual_return.type) {
             validated_response_count++;
           }

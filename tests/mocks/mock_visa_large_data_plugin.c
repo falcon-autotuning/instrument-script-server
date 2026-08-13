@@ -69,7 +69,7 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
   if (strcmp(cmd->command, "GET_SMALL_DATA") == 0) {
     Variable var = {0};
     var.type = PARAM_TYPE_DOUBLE;
-    strncpy(var.name, "data", PLUGIN_MAX_STRING_LEN - 1);
+    strncpy(var.name, "current", PLUGIN_MAX_STRING_LEN - 1);
     var.value.d_val = 42.0;
     VISA_LOG_INFO("Small data: %f", var.value.d_val);
     plugin_response_push(resp, &var);
@@ -104,7 +104,7 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
     // Set response with buffer info
     Variable var = {0};
     var.type = PARAM_TYPE_BUFFER;
-    strncpy(var.name, "data", PLUGIN_MAX_STRING_LEN - 1);
+    strncpy(var.name, "waveform", PLUGIN_MAX_STRING_LEN - 1);
     int err =
         snprintf(var.value.str_val, PLUGIN_MAX_STRING_LEN, "%s", buffer_id);
     if (err < 0 || err >= PLUGIN_MAX_STRING_LEN) {

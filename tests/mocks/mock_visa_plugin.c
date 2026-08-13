@@ -170,6 +170,15 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
   //   return 0;
   // }
 
+  // ---- GET ----
+  if (strcmp(cmd->command, "GET") == 0) {
+    Variable var = {0};
+    var.type = PARAM_TYPE_DOUBLE;
+    strlcpy(var.name, "voltage", PLUGIN_MAX_STRING_LEN);
+    var.value.d_val = 3.14;
+    plugin_response_push(resp, &var);
+    return 0;
+  }
 
   // ---- GET_DOUBLE ----
   if (strcmp(cmd->command, "GET_DOUBLE") == 0) {
@@ -215,7 +224,51 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
     plugin_response_push(resp, &var);
     return 0;
   }
+  // ---- MEASUERE ----
+  if (strcmp(cmd->command, "MEASURE") == 0) {
+    Variable var = {0};
+    var.type = PARAM_TYPE_DOUBLE;
+    strlcpy(var.name, "current", PLUGIN_MAX_STRING_LEN);
+    var.value.d_val = 0.01;
+    plugin_response_push(resp, &var);
+    return 0;
+  }
 
+  // ---- CONFIGURE ----
+  if (strcmp(cmd->command, "CONFIGURE") == 0) {
+    uint8_t param_count = param_storage_count(cmd->params);
+
+    for (size_t i = 0; i < param_count; i++) {
+      const Variable *var = param_storage_get(cmd->params, i);
+      VariableType type = var->type;
+      char buf[256];
+      snprintf(buf, sizeof(buf), "Value name is %s", var->name);
+      VISA_LOG_INFO(buf);
+      if (type == PARAM_TYPE_DOUBLE) {
+        double value = var->value.d_val;
+        VISA_LOG_INFO("Value of type double set to: %f",value);
+      } else if (type == PARAM_TYPE_INT64) {
+        int64_t value = var->value.i64_val;
+
+        VISA_LOG_INFO("Value of type int64 set to: %d",value);
+      }
+    }
+    return 0;
+  }
+  // ---- GET_LARGE_DATA ----
+  if (strcmp(cmd->command, "GET_LARGE_DATA") == 0) {
+    // depends on your system design:
+    // either PARAM_TYPE_BUFFER or PARAM_TYPE_ARRAY
+    double data[1] = {1.0};
+    const char *id = data_manager_create_buffer(instrument_name, cmd->id,
+                                                INST_DATA_FLOAT64, 1, data);
+    Variable var = {0};
+    var.type = PARAM_TYPE_BUFFER;
+    strlcpy(var.name, "waveform", PLUGIN_MAX_STRING_LEN);
+    strlcpy(var.value.str_val, id, PLUGIN_MAX_STRING_LEN);
+    plugin_response_push(resp, &var);
+    return 0;
+  }
   // Default response
   Variable var = {0};
   var.type = PARAM_TYPE_STRING;
