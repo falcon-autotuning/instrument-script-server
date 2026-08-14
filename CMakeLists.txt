@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(
   instrument-script-server
-  VERSION 2.0.7
+  VERSION 2.0.9
   LANGUAGES C CXX)
 
 # Git version detection
@@ -276,6 +276,7 @@ if(BUILD_C_CLIENT)
     PUBLIC
       instserver-proto
   )
+
   target_include_directories(instrument-script-server-client
     BEFORE PRIVATE
       ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include
@@ -292,6 +293,13 @@ if(BUILD_CLI)
       instrument-script-server-client
       instrument-data::instrument-data
   )
+  target_compile_definitions(
+    instrument-script-server
+    PRIVATE
+      INSTSERVER_VERSION="${INSTSERVER_VERSION}"
+      INSTSERVER_GIT_COMMIT="${INSTSERVER_GIT_COMMIT}"
+      INSTSERVER_GIT_TAG="${INSTSERVER_GIT_TAG}")
+
   target_include_directories(instrument-script-server
     PRIVATE
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
