@@ -111,6 +111,7 @@ to_plugin_command(const InstrumentCommand &cmd) {
     param_storage_push(ps, &param);
   }
   pcmd->params = ps;
+  pcmd->timeout_ms = static_cast<uint32_t>(cmd.timeout.count());
   return pcmd;
 }
 
@@ -592,34 +593,45 @@ private:
 
     // ---- response validation ----
     size_t actual_resp_count = plugin_response_count(plugin_resp);
-    if (actual_resp_count!=expected_returns_size) {
-      log_error("Command %s returns count mismatch: expected '%d', got '%d'", cmd.verb.c_str(), expected_returns_size, actual_resp_count);
+    if (actual_resp_count != expected_returns_size) {
+      log_error("Command %s returns count mismatch: expected '%d', got '%d'",
+                cmd.verb.c_str(), expected_returns_size, actual_resp_count);
       return;
     }
     std::vector<IO> expected_returns = command.returns;
     std::vector<Variable> actual_returns;
+    actual_returns.reserve(actual_resp_count);
     for (size_t i = 0; i < actual_resp_count; ++i) {
       actual_returns.push_back(*plugin_response_get(plugin_resp, i));
     }
     int validated_response_count = 0;
-    for (const auto& expected_return : expected_returns) {
-      for (const auto& actual_return : actual_returns) {
- 
-        log_info("Command %s for expected name %s and actual name %s", cmd.verb.c_str(),expected_return.name.c_str(), actual_return.name);
-        if (expected_return.name == actual_return.name ) {
-          log_info("Command %s return type for name %s: got '%d', got '%d'", cmd.verb.c_str(),expected_return.name.c_str(), expected_return.type, actual_return.type);
+    for (const auto &expected_return : expected_returns) {
+      for (const auto &actual_return : actual_returns) {
+
+        log_info("Command %s for expected name %s and actual name %s",
+                 cmd.verb.c_str(), expected_return.name.c_str(),
+                 actual_return.name);
+        if (expected_return.name == actual_return.name) {
+          log_info("Command %s return type for name %s: got '%d', got '%d'",
+                   cmd.verb.c_str(), expected_return.name.c_str(),
+                   expected_return.type, actual_return.type);
           if (expected_return.type == actual_return.type) {
             validated_response_count++;
-          }
-          else {
-            log_error("Command %s return type for name %s mismatch: expected '%d', got '%d'", cmd.verb.c_str(),expected_return.name.c_str(), expected_return.type, actual_return.type);
+          } else {
+            log_error("Command %s return type for name %s mismatch: expected "
+                      "'%d', got '%d'",
+                      cmd.verb.c_str(), expected_return.name.c_str(),
+                      expected_return.type, actual_return.type);
             return;
           }
         }
-      } 
+      }
     }
-    if (validated_response_count!=expected_returns_size) {  
-      log_error("Command %s validated returns count mismatch: expected '%d', got '%d'", cmd.verb.c_str(), expected_returns_size, validated_response_count);
+    if (validated_response_count != expected_returns_size) {
+      log_error("Command %s validated returns count mismatch: expected '%d', "
+                "got '%d'",
+                cmd.verb.c_str(), expected_returns_size,
+                validated_response_count);
       return;
     }
 
