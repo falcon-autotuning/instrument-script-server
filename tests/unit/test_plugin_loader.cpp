@@ -107,6 +107,7 @@ TEST_F(PluginLoaderTest, ExecuteCommand) {
 
   strncpy(cmd.id, "test_cmd_001", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(cmd.command, "ECHO", PLUGIN_MAX_STRING_LEN - 1);
+  cmd.is_query = true;
   cmd.timeout_ms = 10;
   cmd.params = param_storage_create_with_capacity(0);
 

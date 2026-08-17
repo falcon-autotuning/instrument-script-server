@@ -585,6 +585,10 @@ private:
     PluginResponse *plugin_resp =
         plugin_response_create_with_capacity(expected_returns_size);
     std::unique_ptr<PluginCommand> pcmd = to_plugin_command(cmd);
+    pcmd->is_query = false;
+    if (expected_returns_size > 0) {
+      pcmd->is_query = true;
+    }
 
     // ---- normal execution ----
     ErrorCode exec_result = plugin_.execute_command(pcmd.get(), plugin_resp);
