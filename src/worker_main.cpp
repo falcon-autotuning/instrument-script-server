@@ -613,9 +613,9 @@ private:
     for (size_t i = 0; i < expected_returns.size(); i++) {
       IO expected_return = expected_returns[i];
       Variable actual_return = actual_returns[i];
-      log_info("Command %s return type for name %s: expected '%d', got '%d'",
-               cmd.verb.c_str(), expected_return.name.c_str(),
-               expected_return.type, actual_return.type);
+      log_debug("Command %s return type for name %s: expected '%d', got '%d'",
+                cmd.verb.c_str(), expected_return.name.c_str(),
+                expected_return.type, actual_return.type);
       if (expected_return.type != actual_return.type) {
         log_error("Command %s return type for name %s mismatch: expected "
                   "'%d', got '%d'",
