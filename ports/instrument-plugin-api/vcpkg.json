@@ -1,6 +1,6 @@
 {
   "name": "instrument-plugin-api",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "The API that the instrument-script-server uses to communicate with instruments implemented by users",
   "homepage": "https://github.com/falcon-autotuning/instrument-plugin-api",
   "dependencies": [
