@@ -2,7 +2,7 @@ vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
     REPO falcon-autotuning/instrument-plugin-api
     REF v${VERSION}
-    SHA512 331a3c4fb3ebf0531c38d60a76b31c076c71c7965dc2026a65ba673b6818b0ad3fad4826cf5a082d668f08491c935cd3bb4f0afff9f804d6ead9cb3d56407452
+    SHA512 f72c0b014ecc65ed962883a57bb3c72a5fb2888930940301a7e2455af0ee95c4c6e488e6e74f58568a5d19dc282df3f859595cf0ea9d2e8d3c2992d02a452e2f
 )
 
 if("plugin" IN_LIST FEATURES)

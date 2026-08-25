@@ -1,6 +1,7 @@
 #include "instrument-script-server/core/ParsingTools.hpp"
 
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <instrument-plugin.h>
@@ -78,4 +79,47 @@ commands:
   EXPECT_EQ(get_it->second.returns[0].type, PARAM_TYPE_BUFFER);
 
   std::filesystem::remove(api_path);
+}
+
+TEST(ParsingToolsTest, LoadsConfigWithOptionalParams) {
+  const auto config_path =
+      std::filesystem::temp_directory_path() / "iss_config_test.yaml";
+  const std::string addr = "VISA1::ADDR12";
+  const int32_t baudrate = 9600;
+  const std::string json = "{\"special\":5}";
+  const int32_t delay = 5;
+  const std::string init1 = "RST";
+  const std::string init2 = "CLR";
+  const std::string name = "test_instrument";
+
+  std::string formatted_yaml =
+      std::format(R"yaml(
+name: {}
+api_ref: ./path_to_somewhere
+connection:
+  address: {}
+  baudrate: {}
+  custom: '{}'
+startup:
+  delay_ms: {}
+  init_commands:
+    - {}
+    - {}
+)yaml",
+                  name, addr, baudrate, json, delay, init1, init2);
+  std::cout << "\n--- DEBUG: Generated YAML ---\n"
+            << formatted_yaml << "\n-----------------------------\n";
+  std::ofstream config(config_path);
+  config << formatted_yaml;
+  config.close();
+
+  const auto inst_config = instserver::load_config(config_path);
+  ASSERT_EQ(inst_config.address, addr);
+  ASSERT_EQ(inst_config.baudrate, baudrate);
+  ASSERT_EQ(inst_config.custom, json);
+  ASSERT_EQ(inst_config.startup_delay, delay);
+  ASSERT_EQ(inst_config.name, name);
+  ASSERT_EQ(inst_config.init_commands.value()[0], init1);
+  ASSERT_EQ(inst_config.init_commands.value()[1], init2);
+  std::filesystem::remove(config_path);
 }

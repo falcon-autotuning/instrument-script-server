@@ -90,26 +90,6 @@ protected:
     if (!daemon.is_running()) {
       ASSERT_TRUE(daemon.start());
     }
-
-    // Start mock instruments
-    auto &registry = InstrumentRegistry::instance();
-
-    std::string config1 =
-        (test_configs_dir_ / "mock_instrument1.yaml").string();
-    std::string config2 =
-        (test_configs_dir_ / "mock_instrument2.yaml").string();
-    std::string config3 =
-        (test_configs_dir_ / "mock_instrument3.yaml").string();
-
-    if (std::filesystem::exists(config1)) {
-      registry.create_instrument(config1);
-    }
-    if (std::filesystem::exists(config2)) {
-      registry.create_instrument(config2);
-    }
-    if (std::filesystem::exists(config3)) {
-      registry.create_instrument(config3);
-    }
   }
 
   void TearDown() override {
@@ -241,7 +221,33 @@ protected:
   std::filesystem::path log_path_;
 };
 
-TEST_F(MeasurementScriptTest, SimpleCall) {
+class TripleMeasurementScriptTest : public MeasurementScriptTest {
+protected:
+  void SetUp() override {
+    MeasurementScriptTest::SetUp();
+    // Start mock instruments
+    auto &registry = InstrumentRegistry::instance();
+
+    std::string config1 =
+        (test_configs_dir_ / "mock_instrument1.yaml").string();
+    std::string config2 =
+        (test_configs_dir_ / "mock_instrument2.yaml").string();
+    std::string config3 =
+        (test_configs_dir_ / "mock_instrument3.yaml").string();
+
+    if (std::filesystem::exists(config1)) {
+      registry.create_instrument(config1);
+    }
+    if (std::filesystem::exists(config2)) {
+      registry.create_instrument(config2);
+    }
+    if (std::filesystem::exists(config3)) {
+      registry.create_instrument(config3);
+    }
+  }
+};
+
+TEST_F(TripleMeasurementScriptTest, SimpleCall) {
   EXPECT_TRUE(run_script("simple_call.lua"));
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
@@ -254,7 +260,7 @@ TEST_F(MeasurementScriptTest, SimpleCall) {
   worker3_log.does_not_contain_error();
 }
 
-TEST_F(MeasurementScriptTest, ParallelExecution) {
+TEST_F(TripleMeasurementScriptTest, ParallelExecution) {
   EXPECT_TRUE(run_script("parallel_test.lua"));
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
@@ -267,7 +273,7 @@ TEST_F(MeasurementScriptTest, ParallelExecution) {
   worker3_log.does_not_contain_error();
 }
 
-TEST_F(MeasurementScriptTest, LoopMeasurement) {
+TEST_F(TripleMeasurementScriptTest, LoopMeasurement) {
   EXPECT_TRUE(run_script("loop_measurement.lua"));
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
@@ -280,7 +286,7 @@ TEST_F(MeasurementScriptTest, LoopMeasurement) {
   worker3_log.does_not_contain_error();
 }
 
-TEST_F(MeasurementScriptTest, NestedParallel) {
+TEST_F(TripleMeasurementScriptTest, NestedParallel) {
   EXPECT_TRUE(run_script("nested_parallel.lua"));
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
@@ -293,7 +299,7 @@ TEST_F(MeasurementScriptTest, NestedParallel) {
   worker3_log.does_not_contain_error();
 }
 
-TEST_F(MeasurementScriptTest, ErrorHandling) {
+TEST_F(TripleMeasurementScriptTest, ErrorHandling) {
   // This script intentionally calls non-existent instrument
   // Should complete without crashing
   EXPECT_TRUE(run_script("error_handling.lua"));
@@ -310,7 +316,7 @@ TEST_F(MeasurementScriptTest, ErrorHandling) {
   worker3_log.does_not_contain_error();
 }
 
-TEST_F(MeasurementScriptTest, ReturnTypes) {
+TEST_F(TripleMeasurementScriptTest, ReturnTypes) {
   EXPECT_TRUE(run_script("return_types.lua"));
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
@@ -323,7 +329,7 @@ TEST_F(MeasurementScriptTest, ReturnTypes) {
   worker3_log.does_not_contain_error();
 }
 
-TEST_F(MeasurementScriptTest, TableParameters) {
+TEST_F(TripleMeasurementScriptTest, TableParameters) {
   EXPECT_TRUE(run_script("table_params.lua"));
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
@@ -336,7 +342,7 @@ TEST_F(MeasurementScriptTest, TableParameters) {
   worker3_log.does_not_contain_error();
 }
 
-TEST_F(MeasurementScriptTest, ScriptWithOutput) {
+TEST_F(TripleMeasurementScriptTest, ScriptWithOutput) {
   auto *ctx = run_script_with_context("loop_measurement.lua");
   ASSERT_NE(ctx, nullptr);
 
@@ -354,7 +360,7 @@ TEST_F(MeasurementScriptTest, ScriptWithOutput) {
   worker3_log.does_not_contain_error();
 }
 
-TEST_F(MeasurementScriptTest, LargeBufferReturns) {
+TEST_F(TripleMeasurementScriptTest, LargeBufferReturns) {
   // FIXED: Use cross-platform plugin path
   auto plugin_path = get_test_plugin_path("mock_visa_large_data_plugin");
 
@@ -414,13 +420,14 @@ commands:
   auto &registry = InstrumentRegistry::instance();
 
   // Create a test configuration for TestScope that uses the large data plugin
-  std::string test_scope_config = "name: TestScope\n"
-                                  "api_ref: " +
-                                  api_path.string() +
-                                  "\n"
-                                  "connection:\n"
-                                  "  type: VISA_LARGE\n"
-                                  "  address: \"mock://testscope\"\n";
+  std::string test_scope_config = std::format(R"(
+name: TestScope
+api_ref: {}
+connection:
+  type: VISA_LARGE
+  address: mock://testscope
+)",
+                                              api_path.string());
 
   // Write config to temporary file
   std::filesystem::path config_path = temp_dir / "test_scope_large_data.yaml";
@@ -543,7 +550,7 @@ commands:
   std::filesystem::remove(api_path);
 }
 
-TEST_F(MeasurementScriptTest, OuterMeasurePipelineWithMultipleBuffers) {
+TEST_F(TripleMeasurementScriptTest, OuterMeasurePipelineWithMultipleBuffers) {
   auto &registry = InstrumentRegistry::instance();
 
   // Clean up any existing state
@@ -757,4 +764,103 @@ commands:
   registry.remove_instrument("TestScope");
   std::filesystem::remove(config_path);
   std::filesystem::remove(api_path);
+}
+class ConfigMeasurementScriptTest : public MeasurementScriptTest {
+protected:
+  void SetUp() override { MeasurementScriptTest::SetUp(); }
+};
+
+TEST_F(ConfigMeasurementScriptTest, ConfigInitialization) {
+  auto &registry = InstrumentRegistry::instance();
+  const auto config_path = test_configs_dir_ / "iss_config_test.yaml";
+  const std::string addr = "VISA1::ADDR12";
+  const int32_t baudrate = 12800;
+  const std::string json = "{\"special\":5}";
+  const int32_t delay = 5;
+  const std::string init1 = "RST";
+  const std::string init2 = "CLR";
+  const std::string name = "MockInstrument1";
+
+  std::ofstream config(config_path);
+  config << std::format(R"yaml(
+name: {}
+api_ref: ./mock_api.yaml
+connection:
+  address: {}
+  baudrate: {}
+  custom: '{}'
+startup:
+  delay_ms: {}
+  init_commands:
+    - {}
+    - {}
+)yaml",
+                        name, addr, baudrate, json, delay, init1, init2);
+  config.close();
+
+  try {
+    registry.create_instrument(config_path.string());
+  } catch (const std::exception &e) {
+    GTEST_SKIP() << "Failed to create instrument: " << e.what();
+  }
+  EXPECT_TRUE(run_script("simple_call.lua"));
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  worker1_log.does_not_contain_error();
+  worker1_log.contains(std::format("Initializing for {}", name));
+  worker1_log.contains(std::format("The selected address: {}", addr));
+  worker1_log.contains(std::format("The selected baud_rate: {}", baudrate));
+  worker1_log.contains(std::format("The selected startup delay: {} ms", delay));
+  worker1_log.contains(std::format("The custom string: {}", json));
+  worker1_log.contains(std::format("The 0 command: {}", init1));
+  worker1_log.contains(std::format("The 1 command: {}", init2));
+  for (uint8_t i = 2; i < STARTUP_COMMANDS; i++) {
+    worker1_log.contains(std::format("Empty init commands string at {}", i));
+  }
+  std::filesystem::remove(config_path);
+}
+
+TEST_F(ConfigMeasurementScriptTest, ConfigInitializationDefaults) {
+  auto &registry = InstrumentRegistry::instance();
+  const auto config_path = test_configs_dir_ / "iss_config_default_test.yaml";
+  const std::string addr;
+  const int32_t baudrate = 9600;
+  const std::string json;
+  const int32_t delay = 0;
+  const std::string name = "MockInstrument1";
+
+  std::ofstream config(config_path);
+  config << std::format(R"yaml(
+name: {}
+api_ref: ./mock_api.yaml
+)yaml",
+                        name);
+  config.close();
+
+  try {
+    registry.create_instrument(config_path.string());
+  } catch (const std::exception &e) {
+    GTEST_SKIP() << "Failed to create instrument: " << e.what();
+  }
+  EXPECT_TRUE(run_script("simple_call.lua"));
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  worker1_log.does_not_contain_error();
+  worker1_log.contains(std::format("Initializing for {}", name));
+  worker1_log.contains(std::format("The selected address: {}", addr));
+  worker1_log.contains(std::format("The selected baud_rate: {}", baudrate));
+  worker1_log.contains(std::format("The selected startup delay: {} ms", delay));
+  worker1_log.contains(std::format("The custom string: {}", json));
+  for (uint8_t i = 0; i < STARTUP_COMMANDS; i++) {
+    worker1_log.contains(std::format("Empty init commands string at {}", i));
+  }
+  std::filesystem::remove(config_path);
 }

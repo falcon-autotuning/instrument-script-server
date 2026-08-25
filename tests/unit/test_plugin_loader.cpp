@@ -72,14 +72,38 @@ TEST_F(PluginLoaderTest, Initialize) {
   plugin::PluginLoader loader(plugin_path_.string());
   ASSERT_TRUE(loader.is_loaded());
 
-  PluginConfig config{}; // ✅ stack allocation
+  PluginConfig config{};
+
+  strncpy(config.instrument_name, "TestInstrument", PLUGIN_MAX_STRING_LEN - 1);
+  strncpy(config.address, "mock://test", PLUGIN_MAX_STRING_LEN - 1);
+  strncpy(config.custom, "", PLUGIN_MAX_STRING_LEN - 1);
+
+  ErrorCode result = loader.initialize(&config);
+  EXPECT_EQ(result, ErrorCode::NONE);
+}
+
+TEST_F(PluginLoaderTest, InitializeOptionals) {
+  if (skip_tests_) {
+    GTEST_SKIP() << "Mock plugin not found";
+  }
+
+  plugin::PluginLoader loader(plugin_path_.string());
+  ASSERT_TRUE(loader.is_loaded());
+
+  PluginConfig config{};
 
   strncpy(config.instrument_name, "TestInstrument", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(config.address, "mock://test", PLUGIN_MAX_STRING_LEN - 1);
   config.baud_rate = 0;
   strncpy(config.custom, "", PLUGIN_MAX_STRING_LEN - 1);
+  config.startup_delay = 10;
+  strncpy(config.init_commands[0], "hello", PLUGIN_MAX_STRING_LEN - 1);
+  strncpy(config.init_commands[1], "world", PLUGIN_MAX_STRING_LEN - 1);
+  for (size_t i = 2; i < STARTUP_COMMANDS; i++) {
+    strncpy(config.init_commands[i], "\0", PLUGIN_MAX_STRING_LEN - 1);
+  }
 
-  ErrorCode result = loader.initialize(&config); // ✅ pass pointer
+  ErrorCode result = loader.initialize(&config);
   EXPECT_EQ(result, ErrorCode::NONE);
 }
 
@@ -91,15 +115,14 @@ TEST_F(PluginLoaderTest, ExecuteCommand) {
   plugin::PluginLoader loader(plugin_path_.string());
   ASSERT_TRUE(loader.is_loaded());
 
-  // Initialize plugin first
-  PluginConfig config{}; // ✅ stack allocation
+  PluginConfig config{};
 
   strncpy(config.instrument_name, "TestInstrument", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(config.address, "mock://test", PLUGIN_MAX_STRING_LEN - 1);
   config.baud_rate = 0;
   strncpy(config.custom, "", PLUGIN_MAX_STRING_LEN - 1);
 
-  ErrorCode init_result = loader.initialize(&config); // ✅ pass pointer
+  ErrorCode init_result = loader.initialize(&config);
   ASSERT_EQ(init_result, ErrorCode::NONE) << "Plugin initialization failed";
 
   // Execute a command - use a command the mock plugin actually supports

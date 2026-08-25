@@ -73,6 +73,17 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_initialize(const PluginConfig *config) {
     return 1;
   }
 
+  VISA_LOG_INFO("The selected address: %s", config->address);
+  VISA_LOG_INFO("The selected baud_rate: %d", config->baud_rate);
+  VISA_LOG_INFO("The selected startup delay: %d ms", config->startup_delay);
+  VISA_LOG_INFO("The custom string: %s", config->custom);
+  for (uint8_t i = 0; i < STARTUP_COMMANDS; i++) {
+    VISA_LOG_INFO("The %d command: %s", i, config->init_commands[i]);
+    if (strcmp(config->init_commands[i], "") == 0) {
+      VISA_LOG_INFO("Empty init commands string at %d", i);
+    }
+  }
+
   g_initialized = true;
   return 0;
 }

@@ -2,7 +2,13 @@
 
 namespace instserver {
 
-const char *INSTRUMENT_API_SCHEMA = R"delim(@INSTRUMENT_API_SCHEMA@)delim";
-const char *INSTRUMENT_CONFIGURATION_SCHEMA =
-    R"delim(@INSTRUMENT_CONFIGURATION_SCHEMA@)delim";
+extern const char INSTRUMENT_API_SCHEMA[] =
+    R"schema(@INSTRUMENT_API_SCHEMA@)schema";
+
+extern const char INSTRUMENT_CONFIGURATION_SCHEMA[] =
+    R"schema(@INSTRUMENT_CONFIGURATION_SCHEMA@)schema";
+
+extern const char QUANTUM_DOT_DEVICE_SCHEMA[] =
+    R"schema(@QUANTUM_DOT_DEVICE_SCHEMA@)schema";
+
 } // namespace instserver

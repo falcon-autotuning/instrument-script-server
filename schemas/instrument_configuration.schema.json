@@ -44,9 +44,8 @@
           "description": "**Baudrate** (optional, integer)\n\nSerial baudrate if using serial connection."
         },
         "custom": {
-          "type": "object",
-          "description": "**Custom Connection Info** (optional, object)\n\nAdditional fields for custom connection types.",
-          "additionalProperties": true
+          "type": "string",
+          "description": "**Custom Connection Info** (optional, string)\n\nAdditional field for custom connection types."
         }
       },
       "additionalProperties": false
@@ -60,7 +59,7 @@
           "items": {
             "type": "string"
           },
-          "description": "**Initialization Commands** (optional, array)\n\nCommands to send on startup."
+          "description": "**Initialization Commands** (optional, array)\n\nUp to 10 Commands to send on startup."
         },
         "delay_ms": {
           "type": "integer",

@@ -1,5 +1,4 @@
 #include "instrument-script-server/core/ParsingTools.hpp"
-#include <iostream>
 #include <yaml-cpp/yaml.h>
 namespace instserver {
 namespace {
@@ -131,7 +130,7 @@ load_api(const std::filesystem::path &api_path) {
     std::optional<std::string> groupName;
     if (cmdNode["channel_group"]) {
       groupName = cmdNode["channel_group"].as<std::string>();
-      if (channel_groups.count(*groupName) == 0U) {
+      if (!channel_groups.contains(*groupName)) {
         throw std::runtime_error("Unknown channel_group: " + *groupName);
       }
       cmd.group_name = groupName;
@@ -184,7 +183,7 @@ load_api(const std::filesystem::path &api_path) {
     if (cmdNode["outputs"]) {
       for (const auto &out : cmdNode["outputs"]) {
         auto ioName = out.as<std::string>();
-        if (scoped_io_lookup.count(ioName) == 0U) {
+        if (!scoped_io_lookup.contains(ioName)) {
           throw std::runtime_error("Unknown IO in outputs: " + ioName);
         }
         cmd.returns.push_back(scoped_io_lookup.at(ioName));
@@ -220,10 +219,33 @@ InstrumentConfig load_config(const std::filesystem::path &config_path) {
       cfg.address = conn["address"].as<std::string>();
     }
     if (conn["baudrate"]) {
-      cfg.baudrate = conn["baudrate"].as<int>();
+      cfg.baudrate = conn["baudrate"].as<uint32_t>();
     }
     if (conn["custom"]) {
       cfg.custom = conn["custom"].as<std::string>();
+    }
+  }
+
+  // ---- optional startup block ----
+  if (doc["startup"]) {
+    const YAML::Node &start = doc["startup"];
+
+    if (start["delay_ms"]) {
+      cfg.startup_delay = start["delay_ms"].as<uint32_t>();
+    }
+    if (start["init_commands"]) {
+      const YAML::Node &init = start["init_commands"];
+
+      if (init.IsSequence()) {
+        if (!cfg.init_commands.has_value()) {
+          cfg.init_commands = std::vector<std::string>();
+        }
+        for (const auto &cmd_node : init) {
+          cfg.init_commands->push_back(cmd_node.as<std::string>());
+        }
+      } else {
+        throw std::runtime_error("init_commands must be a YAML sequence/list");
+      }
     }
   }
 

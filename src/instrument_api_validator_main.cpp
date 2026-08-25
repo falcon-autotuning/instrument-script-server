@@ -12,11 +12,10 @@ int main(int argc, char *argv[]) {
   if (result.valid) {
     std::cout << "Validation succeeded.\n";
     return 0;
-  } else {
-    std::cout << "Validation failed:\n";
-    for (const auto &err : result.errors) {
-      std::cout << "  - " << err.path << ": " << err.message << "\n";
-    }
-    return 2;
   }
+  std::cout << "Validation failed:\n";
+  for (const auto &err : result.errors) {
+    std::cout << "  - " << err.path << ": " << err.message << "\n";
+  }
+  return 2;
 }

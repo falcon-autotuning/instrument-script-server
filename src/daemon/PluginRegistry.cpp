@@ -8,7 +8,7 @@ bool PluginRegistry::load_plugin(const std::string &protocol_type,
                                  const std::string &plugin_path) {
   std::lock_guard lock(mutex_);
 
-  if (plugins_.count(protocol_type) != 0U) {
+  if (plugins_.contains(protocol_type)) {
     LOG_WARN("PLUGIN_REGISTRY", "LOAD",
              "Plugin already loaded for protocol: %s", protocol_type.c_str());
     return false;

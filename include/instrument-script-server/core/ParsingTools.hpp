@@ -28,8 +28,10 @@ struct INSTRUMENT_SERVER_API InstrumentConfig {
   std::string api_ref;
 
   std::optional<std::string> address;
-  std::optional<int> baudrate;
+  std::optional<uint32_t> baudrate;
+  std::optional<uint32_t> startup_delay;
   std::optional<std::string> custom;
+  std::optional<std::vector<std::string>> init_commands;
 };
 
 IO INSTRUMENT_SERVER_API makeIO(const YAML::Node &node);
@@ -48,7 +50,8 @@ inline uint8_t mapType(std::string_view type) {
   if (type == "float" || type == "double") {
     return PARAM_TYPE_DOUBLE;
   }
-  if (type == "integer" || type == "int" || type == "int64" || type == "int32") {
+  if (type == "integer" || type == "int" || type == "int64" ||
+      type == "int32") {
     return PARAM_TYPE_INT64;
   }
   if (type == "string") {

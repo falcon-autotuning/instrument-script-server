@@ -30,8 +30,8 @@ target_link_libraries(unit_tests
     internal-daemon
     GTest::gtest
     GTest::gtest_main
-    instrument-plugin-api::instrument-plugin-api-host
-    instrument-plugin-api::instrument-plugin-api-plugin
+    instrument-plugin-api::host
+    instrument-plugin-api::plugin
 )
 
 add_executable(
@@ -53,7 +53,7 @@ target_link_libraries(integration_tests
     internal-daemon
     GTest::gtest
     GTest::gtest_main
-    instrument-plugin-api::instrument-plugin-api-host
+    instrument-plugin-api::host
 )
 
 add_executable(
@@ -164,7 +164,7 @@ foreach(plugin_target
     PRIVATE
       instrument-data::instrument-data
       instrument-log::instrument-log
-      instrument-plugin-api::instrument-plugin-api-plugin
+      instrument-plugin-api::plugin
   )
 endforeach()
 if(ENABLE_ASAN)

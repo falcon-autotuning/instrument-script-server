@@ -1,8 +1,8 @@
 {
   "name": "instrument-script-server",
-  "version-string": "2.0.12",
+  "version-string": "2.0.13",
   "description": "a modular, process-isolated system for controlling scientific instruments for FAlCon use",
-  "builtin-baseline": "e5a1490e1409d175932ef6014519e9ae149ddb7c",
+  "builtin-baseline": "9942fb5f996ea431c5ed8fb8d2a53f31d08df62e",
   "dependencies": [
     "grpc",
     "lua",
@@ -14,13 +14,14 @@
     "boost-interprocess",
     "boost-date-time",
     "cxxopts",
+    "json-schema-validator",
     {
       "name": "instrument-data",
       "version>=": "1.1.8"
     },
     {
       "name": "instrument-plugin-api",
-      "version>=": "2.0.2",
+      "version>=": "2.0.7",
       "features": [
         "host",
         "plugin"

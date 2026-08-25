@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(
   instrument-script-server
-  VERSION 2.0.12
+  VERSION 2.0.13
   LANGUAGES C CXX)
 
 # Git version detection
@@ -124,6 +124,7 @@ endif()
 find_package(Threads       REQUIRED)
 find_package(Lua           REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(nlohmann_json_schema_validator CONFIG REQUIRED)
 find_package(yaml-cpp      CONFIG REQUIRED)
 find_package(sol2          CONFIG REQUIRED)
 find_package(gRPC          CONFIG REQUIRED)
@@ -143,8 +144,101 @@ elseif(WIN32)
   set(PLATFORM_LIBS Ws2_32)
 endif()
 
-configure_file(${CMAKE_SOURCE_DIR}/src/embedded_schemas.cpp.in
-               ${CMAKE_BINARY_DIR}/embedded_schemas.cpp @ONLY)
+# Embedded JSON schemas
+set(INSTRUMENT_API_SCHEMA_FILE
+    "${CMAKE_SOURCE_DIR}/schemas/instrument_api.schema.json")
+
+set(INSTRUMENT_CONFIGURATION_SCHEMA_FILE
+    "${CMAKE_SOURCE_DIR}/schemas/instrument_configuration.schema.json")
+
+set(QUANTUM_DOT_DEVICE_SCHEMA_FILE
+    "${CMAKE_SOURCE_DIR}/schemas/quantum_dot_device.schema.json")
+
+foreach(schema_file
+    INSTRUMENT_API_SCHEMA_FILE
+    INSTRUMENT_CONFIGURATION_SCHEMA_FILE
+    QUANTUM_DOT_DEVICE_SCHEMA_FILE
+)
+  if(NOT EXISTS "${${schema_file}}")
+    message(FATAL_ERROR
+      "Required schema file does not exist: ${${schema_file}}")
+  endif()
+endforeach()
+
+file(READ
+  "${INSTRUMENT_API_SCHEMA_FILE}"
+  INSTRUMENT_API_SCHEMA
+)
+
+file(READ
+  "${INSTRUMENT_CONFIGURATION_SCHEMA_FILE}"
+  INSTRUMENT_CONFIGURATION_SCHEMA
+)
+
+file(READ
+  "${QUANTUM_DOT_DEVICE_SCHEMA_FILE}"
+  QUANTUM_DOT_DEVICE_SCHEMA
+)
+
+function(validate_json_schema schema_name schema_contents)
+  string(
+    JSON schema_type
+    ERROR_VARIABLE json_error
+    TYPE
+    "${schema_contents}"
+  )
+
+  if(json_error)
+    message(FATAL_ERROR
+      "${schema_name} is not valid JSON: ${json_error}")
+  endif()
+
+  if(NOT schema_type STREQUAL "OBJECT")
+    message(FATAL_ERROR
+      "${schema_name} must contain a JSON object, got: ${schema_type}")
+  endif()
+endfunction()
+
+validate_json_schema(
+  "Instrument API schema"
+  "${INSTRUMENT_API_SCHEMA}"
+)
+
+validate_json_schema(
+  "Instrument configuration schema"
+  "${INSTRUMENT_CONFIGURATION_SCHEMA}"
+)
+
+validate_json_schema(
+  "Quantum-dot device schema"
+  "${QUANTUM_DOT_DEVICE_SCHEMA}"
+)
+
+foreach(schema_variable
+    INSTRUMENT_API_SCHEMA
+    INSTRUMENT_CONFIGURATION_SCHEMA
+    QUANTUM_DOT_DEVICE_SCHEMA
+)
+  string(LENGTH "${${schema_variable}}" schema_length)
+
+  message(STATUS
+    "${schema_variable} size: ${schema_length} bytes")
+endforeach()
+
+set_property(
+  DIRECTORY
+  APPEND
+  PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${INSTRUMENT_API_SCHEMA_FILE}"
+    "${INSTRUMENT_CONFIGURATION_SCHEMA_FILE}"
+    "${QUANTUM_DOT_DEVICE_SCHEMA_FILE}"
+)
+
+configure_file(
+  "${CMAKE_SOURCE_DIR}/src/embedded_schemas.cpp.in"
+  "${CMAKE_BINARY_DIR}/embedded_schemas.cpp"
+  @ONLY
+)
 add_subdirectory(proto)
 
 # Core library
@@ -186,6 +280,9 @@ target_link_libraries(
   PUBLIC
     yaml-cpp::yaml-cpp
     instrument-log::instrument-log
+  PRIVATE
+    nlohmann_json::nlohmann_json
+    nlohmann_json_schema_validator::validator
 )
 
 target_include_directories(
@@ -253,7 +350,7 @@ target_link_libraries(instrument-script-server-daemon
 )
 target_link_libraries(instrument-worker
   PRIVATE
-    instrument-plugin-api::instrument-plugin-api-host
+    instrument-plugin-api::host
     instrument-data::instrument-data
 )
 foreach(target

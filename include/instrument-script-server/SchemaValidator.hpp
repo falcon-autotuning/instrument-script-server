@@ -3,6 +3,7 @@
 #include "instrument-script-server/export.h"
 
 #include "types.hpp"
+#include <string>
 
 namespace instserver {
 

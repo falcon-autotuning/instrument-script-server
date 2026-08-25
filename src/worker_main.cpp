@@ -6,6 +6,7 @@
 #include "instrument-script-server/ipc/SharedQueue.hpp"
 #include <algorithm>
 #include <csignal>
+#include <cstddef>
 #include <cxxopts.hpp>
 #include <filesystem>
 #include <instrument-data.h>
@@ -234,14 +235,14 @@ private:
 
   // Both of these are related to incoming messages and organizing
   std::unordered_map<uint64_t, std::queue<ipc::IPCMessage>>
-      incoming_read_messages_{};
+      incoming_read_messages_;
 
   using Incoming = std::variant<ipc::IPCMessage, // SINGLETON
                                 uint64_t         // QUEUE (sync token)
                                 >;
   std::queue<Incoming>
-      queue_of_incoming_messages_{}; // The next index to pop comings after the
-                                     // waiting_sync_token_
+      queue_of_incoming_messages_; // The next index to pop comings after the
+                                   // waiting_sync_token_
 
   // NOLINTBEGIN(hicpp-avoid-c-arrays,
   // cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
@@ -264,8 +265,33 @@ private:
     auto config = std::make_unique<PluginConfig>();
     copy_cstr(config->instrument_name, config_.name);
     copy_cstr(config->address, config_.address.value_or(""));
-    config->baud_rate = config_.baudrate.value_or(0);
+    config->baud_rate = config_.baudrate.value_or(9600);
+    config->startup_delay = config_.startup_delay.value_or(0);
     copy_cstr(config->custom, config_.custom.value_or(""));
+    if (config_.init_commands.has_value()) {
+      if (config_.init_commands.value().size() > STARTUP_COMMANDS) {
+        log_warn("Too many initialization commands sent to the instrument. "
+                 "Expected up to %d commands, but received %d commands. "
+                 "Commands are truncated",
+                 STARTUP_COMMANDS, config_.init_commands.value().size());
+      }
+
+      const size_t loop_count = std::min(config_.init_commands.value().size(),
+                                         static_cast<size_t>(STARTUP_COMMANDS));
+      for (size_t i = 0; i < loop_count; ++i) {
+        auto *base_ptr = (&(config->init_commands));
+        auto &row_ref = (*base_ptr)[i];
+        copy_cstr(row_ref, config_.init_commands.value()[i]);
+      }
+      // Sets the remaining_bytes of the array to '\0' for plugin
+      if (loop_count < STARTUP_COMMANDS) {
+        auto *base_ptr = (&(config->init_commands));
+        auto &unused_row_ref = (*base_ptr)[loop_count];
+        size_t remaining_bytes =
+            (STARTUP_COMMANDS - loop_count) * PLUGIN_MAX_STRING_LEN;
+        std::memset(&unused_row_ref, 0, remaining_bytes);
+      }
+    }
 
     ErrorCode init_result = plugin_.initialize(config.get());
     if (init_result != ErrorCode::NONE) {
@@ -273,8 +299,7 @@ private:
       return false;
     }
 
-    LOG_INFO(config_.name.c_str(), "WORKER_MAIN",
-             "Plugin initialized successfully");
+    log_info("Plugin initialized successfully");
     return true;
   }
 
@@ -301,7 +326,7 @@ private:
       plugin_.shutdown();
       return false;
     }
-    LOG_INFO(config_.name.c_str(), "WORKER_MAIN", "IPC queue connected");
+    log_info("IPC queue connected");
     return true;
   }
   bool receive_queued(ipc::IPCMessage &msg) {
@@ -374,8 +399,7 @@ private:
       ++iteration;
     }
 
-    LOG_INFO(config_.name.c_str(), "WORKER_MAIN",
-             "Shutting down after %llu iters", (unsigned long long)iteration);
+    log_info("Shutting down after %llu iters", (unsigned long long)iteration);
   }
 
   void start_heartbeat_thread() {

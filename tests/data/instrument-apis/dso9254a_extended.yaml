@@ -4,7 +4,6 @@ instrument:
   model: DSO9254A
   identifier: GPI1
   description: High-Performance Oscilloscope
-  firmware_version: 6.30.00
 protocol:
   type: VISA
 channel_groups:

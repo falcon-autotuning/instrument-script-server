@@ -70,7 +70,8 @@ ServerDaemon &ServerDaemon::instance() {
   std::string runtime_dir = get_runtime_dir();
 
 #ifdef _WIN32
-  SetEnvironmentVariableA("INSTRUMENT_SCRIPT_SERVER_RUNTIME_DIR", runtime_dir.c_str());
+  SetEnvironmentVariableA("INSTRUMENT_SCRIPT_SERVER_RUNTIME_DIR",
+                          runtime_dir.c_str());
 #else
   setenv("INSTRUMENT_SCRIPT_SERVER_RUNTIME_DIR", runtime_dir.c_str(), 1);
 #endif
@@ -582,7 +583,7 @@ void wake_shutdown_listener() {
 void ServerDaemon::stop() {
   {
     std::lock_guard<std::mutex> lock(mutex_);
-    LOG_INFO("DAEMON", "STOP", "Stopping server daemon (graceful shutdown)");
+    LOG_INFO("DAEMON", "STOP", "Stopping server daemon");
     // Signal threads to exit first.
     running_.store(false);
 

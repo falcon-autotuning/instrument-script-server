@@ -69,7 +69,7 @@ PluginLoader::PluginLoader(const std::string &plugin_path)
            plugin_path.c_str());
 }
 
-PluginLoader::~PluginLoader() {}
+PluginLoader::~PluginLoader() = default;
 
 PluginLoader::PluginLoader(PluginLoader &&other) noexcept
     : handle_(other.handle_), plugin_path_(std::move(other.plugin_path_)),
