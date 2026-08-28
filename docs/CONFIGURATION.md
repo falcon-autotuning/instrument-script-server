@@ -27,9 +27,6 @@ The configuration is validated against [`schemas/instrument_configuration.schema
 ```yaml
 name:  INSTRUMENT_NAME          # Unique identifier (uppercase with underscores)
 api_ref: path/to/api.yaml     # Path to the API definition file
-connection:                     # Connection details
-  type: VISA                   # Connection type:  VISA or Custom
-  address: "..."              # Connection address
 io_config:                    # Configuration for each IO port
   port_name: 
     type: float
@@ -100,7 +97,6 @@ Examples
 name: DMM1
 api_ref: ../apis/agi_34401a.yaml
 connection:
-  type: VISA
   address: "TCPIP::192.168.0.100::INSTR"
 ```
 
@@ -108,32 +104,19 @@ connection:
 # absolute path
 name: DMM2
 api_ref: /usr/local/share/instrument-apis/keithley_2400.yaml
-connection:
-  type: VISA
 ```
 
 ```yaml
 # file:// URI
 name: DMM3
 api_ref: file:///etc/instrument-apis/dmm.yaml
-connection:
-  type: VISA
 ```
 
-#### `connection` (required)
+#### `connection` (optional)
 
 **Type**: Object
 
 **Description**:  Specifies how to physically connect to the instrument.
-
-##### `connection.type` (required)
-
-**Type**: String (enum: `VISA` | `Custom`)
-
-**Description**: The connection protocol type.
-
-- **`VISA`**: For instruments using VISA protocol (GPIB, USB, LAN, Serial via VISA)
-- **`Custom`**: For custom protocols implemented in plugins
 
 ##### `connection.address` (optional)
 
@@ -268,7 +251,6 @@ Must match the type defined in the API.
 name: DMM1
 api_ref:  examples/instrument-apis/agi_34401a.yaml
 connection:
-  type: VISA
   address: "TCPIP::192.168.0.100::INSTR"
   timeout: 5000
 startup:
@@ -297,7 +279,6 @@ io_config:
 name: SCOPE1
 api_ref: examples/instrument-apis/dso9254a_extended.yaml
 connection:
-  type: VISA
   address: "USB0::0x0957::0x179B::MY12345678::INSTR"
 io_config:
   analog1_waveform:
@@ -328,10 +309,7 @@ io_config:
 name: CUSTOM_DEVICE
 api_ref: apis/custom_serial_device.yaml
 connection:
-  type: Custom
-  custom:
-    device: "/dev/ttyUSB0"
-    baudrate:  115200
+  custom: "device:\"/dev/ttyUSB0\";baudrate:115200"
 io_config:
   setpoint:
     type: float
@@ -368,7 +346,8 @@ instrument:                      # Instrument metadata
   model: "Model Number"
   identifier: "UNIQUE_ID"
 protocol:                       # Protocol type
-  type:  VISA
+  type: Custom
+  name: <UniqueName> 
 io:                             # IO port definitions
   - name: port_name
     type: float
@@ -445,6 +424,12 @@ commands:                      # Command definitions
 
 - **`VISA`**: Standard VISA protocol (plugin automatically uses VISA commands)
 - **`Custom`**: Custom protocol (requires a plugin implementation)
+
+##### `protocol.name` (optional)
+
+**Type**: String
+
+**Description**: Required as the name for the Custom protocol being implemented.
 
 #### `io` (required)
 

@@ -165,18 +165,6 @@ Configuration files are located in the `test/data/` folder:
 
 See the [Configuration Guide](CONFIGURATION.md) for detailed information on the JSON schema.
 
-## Built-in Validation Tools
-
-The server includes built-in configuration validation:
-
-```bash
-# Validate an instrument configuration
-instrument-script-server validate config examples/instrument-configurations/agi_34401_config.yaml
-
-# Validate an API definition
-instrument-script-server validate api examples/instrument-apis/agi_34401a. yaml
-```
-
 ## Contributing
 
 Contributions are welcome! Please see our [contribution guidelines](CONTRIBUTING.md).
