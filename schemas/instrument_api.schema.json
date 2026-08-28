@@ -54,13 +54,31 @@
       "description": "**Protocol Configuration** (Required)\n\nDefines how to communicate with the instrument.",
       "properties": {
         "type": {
-          "type": "string",
           "enum": [
             "VISA",
             "Custom"
           ],
-          "description": "**Protocol Type** (Required)\n\nThe communication protocol used to interface with the instrument. `VISA` is a standard for instrument control, while `Custom` allows for user-defined protocols."
+          "type": "string",
+          "description": "**Protocol Type** (Required)\n\nThe communication protocol used to interface with the instrument. `VISA` is a standard for instrument control, while other strings allow for user-defined protocols."
+        },
+        "name": {
+          "type": "string",
+          "description": "**Protocol NName** (Optional)\n\nRequired for non VISA instrumets to identify them."
         }
+      },
+      "if": {
+        "properties": {
+          "type": {
+            "enum": [
+              "Custom"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "name"
+        ]
       },
       "additionalProperties": false
     },
@@ -181,7 +199,100 @@
           "description": "**Description** (Optional)\n\nHuman-readable description of the parameter."
         },
         "precision": {
-          "description": "**Precision** (Optional)\n\nFloating point precision (for float types), defines precision to what minimum float or number of digits."
+          "type": "object",
+          "description": "Measurement precision and quantization.",
+          "properties": {
+            "resolution": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Smallest meaningful step size. Values should be rounded to this increment."
+            }
+          },
+          "additionalProperties": false
+        },
+        "format": {
+          "type": "object",
+          "description": "How values are encoded in instrument commands.",
+          "properties": {
+            "significant_digits": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "decimal_places": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "notation": {
+              "type": "string",
+              "enum": [
+                "auto",
+                "fixed",
+                "scientific",
+                "engineering"
+              ]
+            },
+            "exponent_character": {
+              "type": "string",
+              "enum": [
+                "E",
+                "e",
+                "D",
+                "d"
+              ]
+            },
+            "high_representation": {
+              "type": "string"
+            },
+            "low_representation": {
+              "type": "string"
+            }
+          },
+          "oneOf": [
+            {
+              "properties": {
+                "notation": {
+                  "const": "fixed"
+                }
+              },
+              "required": [
+                "decimal_places"
+              ],
+              "not": {
+                "required": [
+                  "significant_digits",
+                  "exponent_character"
+                ]
+              }
+            },
+            {
+              "properties": {
+                "notation": {
+                  "enum": [
+                    "auto",
+                    "scientific",
+                    "engineering"
+                  ]
+                }
+              },
+              "required": [
+                "significant_digits"
+              ]
+            },
+            {
+              "required": [
+                "high_representation",
+                "low_representation"
+              ],
+              "not": {
+                "required": [
+                  "exponent_character",
+                  "notation",
+                  "decimal_places",
+                  "significant_digits"
+                ]
+              }
+            }
+          ]
         },
         "min": {
           "description": "**Min** (Optional)\n\nMinimum allowed value for this parameter."
@@ -237,10 +348,32 @@
               "max": {
                 "type": "integer"
               },
-              "precision": {
-                "type": "integer",
-                "minimum": 1
+              "format": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "decimal_places"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "high_representation"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "low_representation"
+                      ]
+                    }
+                  ]
+                }
               }
+            },
+            "not": {
+              "required": [
+                "precision"
+              ]
             }
           }
         },
@@ -260,16 +393,21 @@
               "max": {
                 "type": "number"
               },
-              "precision": {
-                "oneOf": [
-                  {
-                    "type": "number"
-                  },
-                  {
-                    "type": "integer",
-                    "minimum": 1
-                  }
-                ]
+              "format": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "high_representation"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "low_representation"
+                      ]
+                    }
+                  ]
+                }
               }
             }
           }
@@ -279,13 +417,75 @@
             "properties": {
               "type": {
                 "enum": [
-                  "string",
-                  "bool"
+                  "string"
                 ]
               }
             }
           },
           "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "precision"
+                  ]
+                },
+                {
+                  "required": [
+                    "format"
+                  ]
+                },
+                {
+                  "required": [
+                    "min"
+                  ]
+                },
+                {
+                  "required": [
+                    "max"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "bool"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "format": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "notation"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "decimal_places"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "significant_digits"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "exponent_character"
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
             "not": {
               "anyOf": [
                 {

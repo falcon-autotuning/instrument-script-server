@@ -6,7 +6,17 @@ function main(ctx)
 		command = "CONFIGURE",
 	})
 	ctx:call(cs, {
-		config_param1 = 1.5,
+		config_param1 = 1.51,
+		config_param2 = "test",
+		config_param3 = true,
+	})
+	ctx:call(cs, {
+		config_param1 = 23.0,
+		config_param2 = "test",
+		config_param3 = true,
+	})
+	ctx:call(cs, {
+		config_param1 = -23.0,
 		config_param2 = "test",
 		config_param3 = true,
 	})

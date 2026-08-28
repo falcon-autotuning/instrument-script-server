@@ -67,7 +67,18 @@ option(BUILD_C_CLIENT "Build C99 gRPC client wrapper" OFF)
 option(BUILD_CLI "Build ISS CLI" OFF)
 # Performance options
 option(USE_CCACHE "Enable ccache or sccache if available" ON)
+option(ENABLE_COVERAGE "Enable LLVM coverage" OFF)
 
+if(ENABLE_COVERAGE)
+  add_compile_options(
+        -fprofile-instr-generate
+        -fcoverage-mapping
+    )
+
+  add_link_options(
+        -fprofile-instr-generate
+    )
+endif()
 if(BUILD_CLI AND NOT BUILD_C_CLIENT)
   message(STATUS "Enabling BUILD_C_CLIENT because BUILD_CLI is ON")
   set(BUILD_C_CLIENT ON CACHE BOOL "" FORCE)
@@ -253,6 +264,7 @@ add_library(
       src/core/InstrumentCommand.cpp
       src/core/ParsingTools.cpp
       src/core/GlobalConfig.cpp
+      src/core/Formatter.cpp
       ${CMAKE_BINARY_DIR}/embedded_schemas.cpp
 )
 

@@ -92,11 +92,10 @@ PluginMetadata INSTRUMENT_PLUGIN_API plugin_get_metadata(void) {
   PluginMetadata meta = {0};
   meta.api_version = INSTRUMENT_PLUGIN_API_VERSION;
 
-  strlcpy(meta.name, "Mock VISA", PLUGIN_MAX_STRING_LEN);
+  strlcpy(meta.name, "Mock", PLUGIN_MAX_STRING_LEN);
   strlcpy(meta.version, "1.0.0", PLUGIN_MAX_STRING_LEN);
-  strlcpy(meta.protocol_type, "VISA", PLUGIN_MAX_STRING_LEN);
-  strlcpy(meta.description, "Mock VISA plugin for testing",
-          PLUGIN_MAX_STRING_LEN);
+  strlcpy(meta.protocol_type, "Mock", PLUGIN_MAX_STRING_LEN);
+  strlcpy(meta.description, "Mock plugin for testing", PLUGIN_MAX_STRING_LEN);
 
   return meta;
 }
@@ -114,6 +113,7 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
         "The timeout was 0 seconds and is invalid for real instrument");
     return 1;
   }
+  VISA_LOG_INFO("The command selected is '%s'", cmd->command);
   // ---- SET_DOUBLE ----
   if (strcmp(cmd->command, "SET") == 0) {
     uint8_t param_count = param_storage_count(cmd->params);
@@ -137,7 +137,7 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
   }
 
   // ---- CONFIGURE ----
-  if (strcmp(cmd->command, "CONFIGURE") == 0) {
+  if (strncmp(cmd->command, "CONF", 4) == 0) {
     uint8_t param_count = param_storage_count(cmd->params);
 
     for (size_t i = 0; i < param_count; i++) {

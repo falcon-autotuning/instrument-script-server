@@ -361,17 +361,15 @@ TEST_F(TripleMeasurementScriptTest, ScriptWithOutput) {
 }
 
 TEST_F(TripleMeasurementScriptTest, LargeBufferReturns) {
-  // FIXED: Use cross-platform plugin path
-  auto plugin_path = get_test_plugin_path("mock_visa_large_data_plugin");
+  auto plugin_path = get_test_plugin_path("mock_large_data_plugin");
 
   auto &plugin_reg = plugin::PluginRegistry::instance();
   try {
-    plugin_reg.load_plugin("VISA_LARGE", plugin_path.string());
+    plugin_reg.load_plugin("LargeMock", plugin_path.string());
   } catch (const std::exception &e) {
     GTEST_SKIP() << "Large data plugin not available: " << e.what();
   }
 
-  // FIXED: Use cross-platform temp directory
   auto temp_dir = std::filesystem::temp_directory_path();
 
   // Create a modified API file with VISA_LARGE protocol
@@ -384,7 +382,8 @@ instrument:
   description: "Mock instrument for testing"
 
 protocol:
-  type: VISA_LARGE
+  type: Custom 
+  name: LargeMock
 
 io:
   - name: waveform
@@ -424,7 +423,6 @@ commands:
 name: TestScope
 api_ref: {}
 connection:
-  type: VISA_LARGE
   address: mock://testscope
 )",
                                               api_path.string());
@@ -559,7 +557,7 @@ TEST_F(TripleMeasurementScriptTest, OuterMeasurePipelineWithMultipleBuffers) {
   manager.clear_all();
 
   // Path to mock plugin
-  auto plugin_path = get_test_plugin_path("mock_visa_large_data_plugin");
+  auto plugin_path = get_test_plugin_path("mock_large_data_plugin");
   if (!std::filesystem::exists(plugin_path)) {
     GTEST_SKIP() << "Mock VISA Large Data plugin not found at: " << plugin_path;
   }
@@ -567,7 +565,7 @@ TEST_F(TripleMeasurementScriptTest, OuterMeasurePipelineWithMultipleBuffers) {
   // Register plugin in global PluginRegistry first
   auto &plugin_reg = plugin::PluginRegistry::instance();
   try {
-    plugin_reg.load_plugin("VISA_LARGE", plugin_path.string());
+    plugin_reg.load_plugin("LargeMock", plugin_path.string());
   } catch (const std::exception &e) {
     GTEST_SKIP() << "Large data plugin not available: " << e.what();
   }
@@ -586,7 +584,8 @@ instrument:
   description: "Mock instrument for testing"
 
 protocol:
-  type: VISA_LARGE
+  type: Custom 
+  name: LargeMock
 
 io:
   - name: waveform
@@ -622,7 +621,6 @@ commands:
                                   api_path.string() +
                                   "\n"
                                   "connection:\n"
-                                  "  type: VISA_LARGE\n"
                                   "  address: \"mock://testscope\"\n";
 
   std::filesystem::path config_path = temp_dir / "test_scope_large_data.yaml";
@@ -810,7 +808,6 @@ startup:
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
   worker1_log.does_not_contain_error();
-  worker1_log.does_not_contain_error();
   worker1_log.contains(std::format("Initializing for {}", name));
   worker1_log.contains(std::format("The selected address: {}", addr));
   worker1_log.contains(std::format("The selected baud_rate: {}", baudrate));
@@ -853,7 +850,6 @@ api_ref: ./mock_api.yaml
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
   worker1_log.does_not_contain_error();
-  worker1_log.does_not_contain_error();
   worker1_log.contains(std::format("Initializing for {}", name));
   worker1_log.contains(std::format("The selected address: {}", addr));
   worker1_log.contains(std::format("The selected baud_rate: {}", baudrate));
@@ -862,5 +858,45 @@ api_ref: ./mock_api.yaml
   for (uint8_t i = 0; i < STARTUP_COMMANDS; i++) {
     worker1_log.contains(std::format("Empty init commands string at {}", i));
   }
+  std::filesystem::remove(config_path);
+}
+
+TEST_F(ConfigMeasurementScriptTest, ProperVISACommands) {
+  auto plugin_path = get_test_plugin_path("mock_plugin");
+
+  auto &plugin_reg = plugin::PluginRegistry::instance();
+  try {
+    plugin_reg.load_plugin("VISA", plugin_path.string());
+  } catch (const std::exception &e) {
+    GTEST_SKIP() << "Plugin not available: " << e.what();
+  }
+  auto &registry = InstrumentRegistry::instance();
+  const auto config_path = test_configs_dir_ / "iss_config_default_test.yaml";
+  const std::string name = "MockInstrument1";
+
+  std::ofstream config(config_path);
+  config << std::format(R"yaml(
+name: {}
+api_ref: ./mock_visa_api.yaml
+)yaml",
+                        name);
+  config.close();
+
+  try {
+    registry.create_instrument(config_path.string());
+  } catch (const std::exception &e) {
+    GTEST_SKIP() << "Failed to create instrument: " << e.what();
+  }
+  EXPECT_TRUE(run_script("table_params.lua"));
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  worker1_log.contains("The command selected is 'CONF 1.5,test,ON'");
+  worker1_log.contains("The command selected is 'CONF 2.0,test,ON'");
+  worker1_log.contains("The command selected is 'CONF -2.0,test,ON'");
+
   std::filesystem::remove(config_path);
 }

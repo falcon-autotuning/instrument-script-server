@@ -43,6 +43,27 @@
       }
     },
     {
+      "name": "linux-clang-coverage",
+      "description": "Linux Clang coverage build",
+      "inherits": "default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "VCPKG_TARGET_TRIPLET": "x64-linux-dynamic",
+        "CMAKE_PREFIX_PATH": "${sourceDir}/vcpkg_installed/x64-linux-dynamic/share;${sourceDir}/vcpkg_installed",
+        "CMAKE_EXE_LINKER_FLAGS": "-fuse-ld=lld",
+        "CMAKE_SHARED_LINKER_FLAGS": "-fuse-ld=lld",
+        "BUILD_EXAMPLES": "ON",
+        "ENABLE_PCH": "ON",
+        "ENABLE_COVERAGE": "ON"
+      },
+      "environment": {
+        "CC": "clang",
+        "CXX": "clang++"
+      }
+    },
+    {
       "name": "linux-clang-release",
       "description": "Linux Release build with Clang",
       "inherits": "default",
@@ -147,6 +168,11 @@
       "jobs": 0
     },
     {
+      "name": "linux-clang-coverage",
+      "configurePreset": "linux-clang-coverage",
+      "jobs": 0
+    },
+    {
       "name": "linux-clang-release",
       "configurePreset": "linux-clang-release",
       "jobs": 0
@@ -186,6 +212,10 @@
     {
       "name": "linux-clang-debug",
       "configurePreset": "linux-clang-debug"
+    },
+    {
+      "name": "linux-clang-coverage",
+      "configurePreset": "linux-clang-coverage"
     },
     {
       "name": "linux-clang-release",

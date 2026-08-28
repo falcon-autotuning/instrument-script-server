@@ -91,11 +91,10 @@ class PluginTestFixture : public ::testing::Test {
 protected:
   void SetUp() override {
     auto &plugin_reg = plugin::PluginRegistry::instance();
-    std::filesystem::path plugin_path =
-        get_test_plugin_path("mock_visa_plugin");
+    std::filesystem::path plugin_path = get_test_plugin_path("mock_plugin");
     if (std::filesystem::exists(plugin_path)) {
       try {
-        plugin_reg.load_plugin("VISA", plugin_path.generic_string());
+        plugin_reg.load_plugin("Mock", plugin_path.generic_string());
       } catch (const std::exception &e) {
         std::cerr << "Failed to load VISA plugin from " << plugin_path << ": "
                   << e.what() << '\n';

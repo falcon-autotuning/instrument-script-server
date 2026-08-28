@@ -1,7 +1,92 @@
 #include "instrument-script-server/core/ParsingTools.hpp"
+#include <absl/strings/str_format.h>
+#include <instrument-plugin.h>
+#include <stdexcept>
 #include <yaml-cpp/yaml.h>
 namespace instserver {
 namespace {
+static Notation parseNotation(const YAML::Node &node) {
+  const auto value = node.as<std::string>();
+
+  if (value == "auto") {
+    return Notation::Auto;
+  }
+  if (value == "fixed") {
+    return Notation::Fixed;
+  }
+  if (value == "scientific") {
+    return Notation::Scientific;
+  }
+  if (value == "engineering") {
+    return Notation::Engineering;
+  }
+
+  throw std::runtime_error("Invalid notation: " + value);
+}
+void unpack_format(const YAML::Node &node, IO *io) {
+  const YAML::Node &format = node["format"];
+  if (format["decimal_places"]) {
+    io->form.decimal_places = format["decimal_places"].as<int>();
+  }
+  if (format["significant_digits"]) {
+    io->form.significant_digits = format["significant_digits"].as<int>();
+  }
+  if (format["notation"]) {
+    io->form.notation = parseNotation(format["notation"]);
+  }
+  if (format["exponent_character"]) {
+    io->form.exponent_char = format["exponent_character"].as<char>();
+  }
+  if (format["high_representation"]) {
+    io->form.high_representation =
+        format["high_representation"].as<std::string>();
+  }
+  if (format["low_representation"]) {
+    io->form.low_representation =
+        format["low_representation"].as<std::string>();
+  }
+}
+void unpack_precision(const YAML::Node &node, IO *io) {
+  const YAML::Node &precision = node["precision"];
+
+  if (precision["resolution"]) {
+    io->precision.resolution = precision["resolution"].as<double>();
+  }
+}
+void unpack_minmax(const YAML::Node &node, IO *io, const std::string &minmax) {
+  if (!node[minmax]) {
+    return;
+  }
+
+  auto &dest = (minmax == "min") ? io->min : io->max;
+
+  if (io->type == PARAM_TYPE_DOUBLE) {
+    dest = node[minmax].as<double>();
+  } else if (io->type == PARAM_TYPE_INT64) {
+    dest = node[minmax].as<int64_t>();
+  }
+}
+void unpack_min(const YAML::Node &node, IO *io) {
+  unpack_minmax(node, io, "min");
+}
+void unpack_max(const YAML::Node &node, IO *io) {
+  unpack_minmax(node, io, "max");
+}
+void unpack_optionals(const YAML::Node &node, IO *io) {
+  if (node["precision"]) {
+    unpack_precision(node, io);
+  }
+  if (node["format"]) {
+    unpack_format(node, io);
+  }
+  if (node["min"]) {
+    unpack_min(node, io);
+  }
+  if (node["max"]) {
+    unpack_max(node, io);
+  }
+}
+
 IO makeChannelGroupIO(const YAML::Node &node) {
   if (!node["type"]) {
     throw std::runtime_error("Channel group IO must have 'type'");
@@ -14,7 +99,7 @@ IO makeChannelGroupIO(const YAML::Node &node) {
   io.name = node["name"] ? node["name"].as<std::string>()
                          : node["suffix"].as<std::string>();
   io.type = mapType(node["type"].as<std::string>());
-
+  unpack_optionals(node, &io);
   return io;
 }
 } // namespace
@@ -27,16 +112,16 @@ IO makeIO(const YAML::Node &node) {
   IO io;
   io.name = node["name"].as<std::string>();
   io.type = mapType(node["type"].as<std::string>());
-
+  unpack_optionals(node, &io);
   return io;
 }
 IO makeNamelessIO(const YAML::Node &node) {
   if (!node["type"]) {
     throw std::runtime_error("IO must have 'type'");
   }
-
   IO io;
   io.type = mapType(node["type"].as<std::string>());
+  unpack_optionals(node, &io);
   return io;
 }
 
@@ -66,6 +151,21 @@ std::unordered_map<std::string, Command>
 load_api(const std::filesystem::path &api_path) {
   std::unordered_map<std::string, Command> instrument_commands;
   YAML::Node doc = YAML::LoadFile(api_path.string());
+  if (!doc["protocol"]) {
+    throw std::runtime_error("Missing required api field: protocol");
+  }
+  if (!doc["protocol"]["type"]) {
+    throw std::runtime_error("Missing required api field: protocol type");
+  }
+  bool foundVisa = false;
+  auto type = doc["protocol"]["type"].as<std::string>();
+  if (type != "VISA") {
+    if (!doc["protocol"]["name"]) {
+      throw std::runtime_error("Missing required api field: protocol name");
+    }
+  } else {
+    foundVisa = true;
+  }
 
   // ---------------- IO LOOKUP ----------------
   if (!doc["io"]) {
@@ -172,12 +272,6 @@ load_api(const std::filesystem::path &api_path) {
         cmd.parameters.push_back(parseParam(param, scoped_io_lookup));
       }
     }
-    // TODO REMOVE THIS
-    // std::cout << "The verb is " << cmd.name;
-    //
-    // std::cout << "Command parameters count is: " << param_count;
-    //
-    // std::cout << "Command parameters size is: " << cmd.parameters.size();
 
     // ---- outputs ----
     if (cmdNode["outputs"]) {
@@ -188,6 +282,11 @@ load_api(const std::filesystem::path &api_path) {
         }
         cmd.returns.push_back(scoped_io_lookup.at(ioName));
       }
+    }
+
+    // ---- template ----
+    if (cmdNode["template"]) {
+      cmd.temp = cmdNode["template"].as<std::string>();
     }
 
     instrument_commands.emplace(cmd.name, std::move(cmd));
@@ -210,6 +309,25 @@ InstrumentConfig load_config(const std::filesystem::path &config_path) {
     throw std::runtime_error("Missing required field: api_ref");
   }
   cfg.api_ref = doc["api_ref"].as<std::string>();
+  YAML::Node api = YAML::LoadFile(config_path.parent_path() /
+                                  std::filesystem::path(cfg.api_ref));
+  if (!api["protocol"]) {
+    throw std::runtime_error("Missing required api field: protocol");
+  }
+  if (!api["protocol"]["type"]) {
+    throw std::runtime_error("Missing required api field: protocol type");
+  }
+
+  auto type = api["protocol"]["type"].as<std::string>();
+  if (type == "VISA") {
+    cfg.api_type.type = VISA;
+  } else {
+    cfg.api_type.type = OTHER;
+    if (!api["protocol"]["name"]) {
+      throw std::runtime_error("Missing required api field: protocol name");
+    }
+    cfg.api_type.name = api["protocol"]["name"].as<std::string>();
+  }
 
   // ---- optional connection block ----
   if (doc["connection"]) {

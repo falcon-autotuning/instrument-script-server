@@ -29,10 +29,10 @@ static char instrument_name[PLUGIN_MAX_STRING_LEN] = "";
 PluginMetadata INSTRUMENT_PLUGIN_API plugin_get_metadata(void) {
   PluginMetadata meta = {0};
   meta.api_version = INSTRUMENT_PLUGIN_API_VERSION;
-  strncpy(meta.name, "Mock VISA Large Data", PLUGIN_MAX_STRING_LEN - 1);
+  strncpy(meta.name, "Mock Large Data", PLUGIN_MAX_STRING_LEN - 1);
   strncpy(meta.version, "1.0.0", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(meta.protocol_type, "VISA", PLUGIN_MAX_STRING_LEN - 1);
-  strncpy(meta.description, "Mock VISA plugin for testing large data buffers",
+  strncpy(meta.protocol_type, "LargeMock", PLUGIN_MAX_STRING_LEN - 1);
+  strncpy(meta.description, "Mock plugin for testing large data buffers",
           PLUGIN_MAX_STRING_LEN - 1);
   return meta;
 }

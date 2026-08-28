@@ -56,24 +56,29 @@ TEST_F(CLITestBuffers, ReadBufferMissingArgFails) {
 
 TEST_F(CLITestBuffers, BufferLifecycleCreateListReadRelease) {
   // Create TestScope configuration
-  std::filesystem::path config_path = std::filesystem::temp_directory_path() / "test_scope_cli_large.yaml";
+  std::filesystem::path config_path =
+      std::filesystem::temp_directory_path() / "test_scope_cli_large.yaml";
   std::ofstream ofs(config_path);
   ofs << "name: TestScope\n"
-      << "api_ref: " << (std::filesystem::path(data_dir) / "mock_api.yaml").string() << "\n"
+      << "api_ref: "
+      << (std::filesystem::path(data_dir) / "mock_large_api.yaml").string()
+      << "\n"
       << "connection:\n"
-      << "  type: VISA_LARGE\n"
-      << "  address: \"mock://testscope\"\n";
+      << "  address: \"mock://testscope\"\n"
+      << "io_config:\n";
   ofs.close();
 
   // Start TestScope instrument with the large data visa plugin
-  auto [start_rc, start_out] = run_iss("inst start " + config_path.string() + " --plugin " + mock_large_plugin);
+  auto [start_rc, start_out] = run_iss("inst start " + config_path.string() +
+                                       " --plugin " + mock_large_plugin);
   ASSERT_EQ(start_rc, 0) << "Instrument start failed, output:\n" << start_out;
   std::this_thread::sleep_for(200ms);
 
   // Run the script that triggers buffer creation
   auto [measure_rc, measure_out] = run_iss(
       "measure " +
-      (std::filesystem::path(data_dir) / "test_scripts" / "create_buffers.lua").string() +
+      (std::filesystem::path(data_dir) / "test_scripts" / "create_buffers.lua")
+          .string() +
       " --json");
   EXPECT_EQ(measure_rc, 0) << "measure failed:\n" << measure_out;
 
@@ -81,7 +86,8 @@ TEST_F(CLITestBuffers, BufferLifecycleCreateListReadRelease) {
   auto [list_rc, list_out] = run_iss("buffer list");
   EXPECT_EQ(list_rc, 0) << "buffer list failed:\n" << list_out;
   std::string buffer_id = extract_first_buffer_id(list_out);
-  ASSERT_FALSE(buffer_id.empty()) << "No active buffer found in output:\n" << list_out;
+  ASSERT_FALSE(buffer_id.empty()) << "No active buffer found in output:\n"
+                                  << list_out;
 
   // Query buffer metadata
   auto [meta_rc, meta_out] = run_iss("buffer metadata " + buffer_id);
@@ -112,20 +118,26 @@ TEST_F(CLITestBuffers, BufferLifecycleCreateListReadRelease) {
 }
 
 TEST_F(CLITestBuffers, BufferListTest) {
-  std::filesystem::path config_path = std::filesystem::temp_directory_path() / "test_scope_cli_large.yaml";
+  std::filesystem::path config_path =
+      std::filesystem::temp_directory_path() / "test_scope_cli_large.yaml";
   std::ofstream ofs(config_path);
   ofs << "name: TestScope\n"
-      << "api_ref: " << (std::filesystem::path(data_dir) / "mock_api.yaml").string() << "\n"
+      << "api_ref: "
+      << (std::filesystem::path(data_dir) / "mock_large_api.yaml").string()
+      << "\n"
       << "connection:\n"
-      << "  type: VISA_LARGE\n"
-      << "  address: \"mock://testscope\"\n";
+      << "  address: \"mock://testscope\"\n"
+      << "io_config:\n";
   ofs.close();
 
-  auto [start_rc, start_out] = run_iss("inst start " + config_path.string() + " --plugin " + mock_large_plugin);
+  auto [start_rc, start_out] = run_iss("inst start " + config_path.string() +
+                                       " --plugin " + mock_large_plugin);
   ASSERT_EQ(start_rc, 0);
   std::this_thread::sleep_for(200ms);
 
-  run_iss("measure " + (std::filesystem::path(data_dir) / "test_scripts" / "create_buffers.lua").string());
+  run_iss("measure " + (std::filesystem::path(data_dir) / "test_scripts" /
+                        "create_buffers.lua")
+                           .string());
 
   auto [list_rc, list_out] = run_iss("buffer list");
   EXPECT_EQ(list_rc, 0);
@@ -138,20 +150,26 @@ TEST_F(CLITestBuffers, BufferListTest) {
 }
 
 TEST_F(CLITestBuffers, BufferMetadataTest) {
-  std::filesystem::path config_path = std::filesystem::temp_directory_path() / "test_scope_cli_large.yaml";
+  std::filesystem::path config_path =
+      std::filesystem::temp_directory_path() / "test_scope_cli_large.yaml";
   std::ofstream ofs(config_path);
   ofs << "name: TestScope\n"
-      << "api_ref: " << (std::filesystem::path(data_dir) / "mock_api.yaml").string() << "\n"
+      << "api_ref: "
+      << (std::filesystem::path(data_dir) / "mock_large_api.yaml").string()
+      << "\n"
       << "connection:\n"
-      << "  type: VISA_LARGE\n"
-      << "  address: \"mock://testscope\"\n";
+      << "  address: \"mock://testscope\"\n"
+      << "io_config:\n";
   ofs.close();
 
-  auto [start_rc, start_out] = run_iss("inst start " + config_path.string() + " --plugin " + mock_large_plugin);
+  auto [start_rc, start_out] = run_iss("inst start " + config_path.string() +
+                                       " --plugin " + mock_large_plugin);
   ASSERT_EQ(start_rc, 0);
   std::this_thread::sleep_for(200ms);
 
-  run_iss("measure " + (std::filesystem::path(data_dir) / "test_scripts" / "create_buffers.lua").string());
+  run_iss("measure " + (std::filesystem::path(data_dir) / "test_scripts" /
+                        "create_buffers.lua")
+                           .string());
 
   auto [list_rc, list_out] = run_iss("buffer list");
   std::string buffer_id = extract_first_buffer_id(list_out);
@@ -167,20 +185,26 @@ TEST_F(CLITestBuffers, BufferMetadataTest) {
 }
 
 TEST_F(CLITestBuffers, BufferReadTest) {
-  std::filesystem::path config_path = std::filesystem::temp_directory_path() / "test_scope_cli_large.yaml";
+  std::filesystem::path config_path =
+      std::filesystem::temp_directory_path() / "test_scope_cli_large.yaml";
   std::ofstream ofs(config_path);
   ofs << "name: TestScope\n"
-      << "api_ref: " << (std::filesystem::path(data_dir) / "mock_api.yaml").string() << "\n"
+      << "api_ref: "
+      << (std::filesystem::path(data_dir) / "mock_large_api.yaml").string()
+      << "\n"
       << "connection:\n"
-      << "  type: VISA_LARGE\n"
-      << "  address: \"mock://testscope\"\n";
+      << "  address: \"mock://testscope\"\n"
+      << "io_config:\n";
   ofs.close();
 
-  auto [start_rc, start_out] = run_iss("inst start " + config_path.string() + " --plugin " + mock_large_plugin);
+  auto [start_rc, start_out] = run_iss("inst start " + config_path.string() +
+                                       " --plugin " + mock_large_plugin);
   ASSERT_EQ(start_rc, 0);
   std::this_thread::sleep_for(200ms);
 
-  run_iss("measure " + (std::filesystem::path(data_dir) / "test_scripts" / "create_buffers.lua").string());
+  run_iss("measure " + (std::filesystem::path(data_dir) / "test_scripts" /
+                        "create_buffers.lua")
+                           .string());
 
   auto [list_rc, list_out] = run_iss("buffer list");
   std::string buffer_id = extract_first_buffer_id(list_out);

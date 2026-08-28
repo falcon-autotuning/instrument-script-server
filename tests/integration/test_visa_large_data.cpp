@@ -45,7 +45,7 @@ protected:
     auto &manager = DataBufferManager::instance();
     manager.clear_all();
 
-    plugin_path_ = get_test_plugin_path("mock_visa_large_data_plugin");
+    plugin_path_ = get_test_plugin_path("mock_large_data_plugin");
 
     // Initialize logger
     auto log_path =

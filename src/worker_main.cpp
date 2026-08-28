@@ -1,4 +1,5 @@
 #include "instrument-script-server/core/ErrorCodes.hpp"
+#include "instrument-script-server/core/Formatter.hpp"
 #include "instrument-script-server/core/InstrumentCommand.hpp"
 #include "instrument-script-server/core/ParsingTools.hpp"
 #include "instrument-script-server/core/PluginLoader.hpp"
@@ -7,6 +8,7 @@
 #include <algorithm>
 #include <csignal>
 #include <cstddef>
+#include <cstdint>
 #include <cxxopts.hpp>
 #include <filesystem>
 #include <instrument-data.h>
@@ -16,6 +18,7 @@
 #include <mutex>
 #include <plugin-host.h>
 #include <queue>
+#include <stdexcept>
 #include <thread>
 #include <unordered_map>
 #include <variant>
@@ -77,6 +80,25 @@ void copy_string(char *dst, size_t dst_size, const char *src) {
   }
   std::strncpy(dst, src, dst_size - 1);
   dst[dst_size - 1] = '\0';
+}
+
+std::string readable_param_types(uint8_t param_type) {
+  if (param_type == PARAM_TYPE_INT64) {
+    return "int";
+  }
+  if (param_type == PARAM_TYPE_DOUBLE) {
+    return "float";
+  }
+  if (param_type == PARAM_TYPE_BUFFER) {
+    return "buffer";
+  }
+  if (param_type == PARAM_TYPE_STRING) {
+    return "string";
+  }
+  if (param_type == PARAM_TYPE_BOOL) {
+    return "bool";
+  }
+  return "none";
 }
 
 // Handler for fatal signals (SIGSEGV, SIGABRT, SIGFPE). Writes a brief
@@ -168,6 +190,50 @@ constexpr std::string_view no_error(const ErrorCode code) {
     return "true";
   }
   return "false";
+}
+
+std::string
+expandTemplate(const std::string &input,
+               const std::unordered_map<std::string, std::string> &values) {
+  std::string result;
+  size_t pos = 0;
+
+  while (pos < input.size()) {
+    size_t open = input.find('{', pos);
+
+    if (open == std::string::npos) {
+      result.append(input, pos, std::string::npos);
+      break;
+    }
+
+    result.append(input, pos, open - pos);
+
+    size_t close = input.find('}', open);
+    if (close == std::string::npos) {
+      result.append(input, open, std::string::npos);
+      break;
+    }
+
+    std::string key = input.substr(open + 1, close - open - 1);
+
+    auto it = values.find(key);
+    if (it != values.end()) {
+      result += it->second;
+    } else {
+      result.append(input, open, close - open + 1); // leave unchanged
+    }
+
+    pos = close + 1;
+  }
+
+  return result;
+}
+template <size_t N>
+inline void safe_c_str_copy(char (&dest)[N], std::string_view src) {
+  const size_t bytes_to_copy = std::min(src.size(), N - 1);
+
+  std::memcpy(dest, src.data(), bytes_to_copy);
+  dest[bytes_to_copy] = '\0';
 }
 class InstrumentWorker {
 public:
@@ -520,6 +586,37 @@ private:
 
     execute_command(cmd, first);
   }
+  uint8_t
+  calculate_template_pair(const Variable &var, const Format &fmt,
+                          std::pair<std::string, std::string> *out) const {
+    auto form = Formatter(fmt);
+    out->first = var.name;
+    VariableType type = var.type;
+    if (type == PARAM_TYPE_INT64) {
+      out->second = form.format(var.value.i64_val);
+      return 0;
+    }
+    if (type == PARAM_TYPE_STRING) {
+      out->second = form.format(var.value.str_val);
+      return 0;
+    }
+    if (type == PARAM_TYPE_DOUBLE) {
+      out->second = form.format(var.value.d_val);
+      return 0;
+    }
+    if (type == PARAM_TYPE_BOOL) {
+      out->second = form.format(var.value.b_val);
+      return 0;
+    }
+    if (type == PARAM_TYPE_BUFFER) {
+      log_error("Buffer type found for VISA instrument. VISA instruments "
+                "cannot use buffers as input");
+      return 1;
+    }
+    log_error("Unsupported type %d found when filling out command template",
+              type);
+    return 1;
+  }
 
   void execute_command(const InstrumentCommand &cmd,
                        const ipc::IPCMessage &msg) {
@@ -582,20 +679,32 @@ private:
               "entries",
               actual_size);
 
+    if (config_.api_type.type == instserver::VISA &&
+        !command.temp.has_value()) {
+      log_error("Commmand %s found without template for VISA instrument",
+                command.name.c_str());
+      return;
+    }
+
+    std::unordered_map<std::string, std::string>
+        template_values; // for VISA use
     for (size_t i = 0; i < cmd.params.size(); i++) {
+      const auto expected_parameter = command.parameters[i];
+      Variable actual_parameter = cmd.params[i];
 
-      auto expected_name = command.parameters[i].name;
-      const auto *actual_name = cmd.params[i].name;
+      auto expected_name = expected_parameter.name;
+      const std::string_view actual_name = actual_parameter.name;
 
-      if (std::string_view(actual_name) != expected_name) {
+      if (actual_name != expected_name) {
         log_error("Config command %s parameter name mismatch at index %d: "
                   "expected='%s', got='%s'",
-                  cmd.verb.c_str(), i, expected_name.c_str(), actual_name);
+                  cmd.verb.c_str(), i, expected_name.c_str(),
+                  cmd.params[i].name);
         return;
       }
 
-      auto expected_type = command.parameters[i].type;
-      auto actual_type = cmd.params[i].type;
+      auto expected_type = expected_parameter.type;
+      auto actual_type = actual_parameter.type;
 
       if (actual_type != expected_type) {
         log_error("Config command %s parameter type mismatch at index %d: "
@@ -603,12 +712,84 @@ private:
                   cmd.verb.c_str(), i, expected_type, actual_type);
         return;
       }
+      if (actual_type == PARAM_TYPE_INT64 || actual_type == PARAM_TYPE_DOUBLE) {
+        struct LimitConfig {
+          std::optional<std::variant<int64_t, double>> instserver::IO::*member;
+          const char *label;
+          enum : uint8_t { MIN_LIMIT, MAX_LIMIT } bound_type;
+        };
+        const std::array<LimitConfig, 2> limits{
+            {{.member = &instserver::IO::min,
+              .label = "Min",
+              .bound_type = LimitConfig::MIN_LIMIT},
+             {.member = &instserver::IO::max,
+              .label = "Max",
+              .bound_type = LimitConfig::MAX_LIMIT}}};
+        for (const auto &config : limits) {
+          const auto &limit_opt = expected_parameter.*(config.member);
+          log_info("%s has value=%d", config.label, limit_opt.has_value());
+          if (!limit_opt.has_value()) {
+            continue;
+          }
+          log_debug("Applying %s limit to parameter %s in command %s",
+                    config.label, expected_name.c_str(), cmd.verb.c_str());
+
+          std::visit(
+              [&](const auto &limit_val) {
+                if (actual_type == PARAM_TYPE_DOUBLE) {
+                  const double limit = static_cast<double>(limit_val);
+                  log_info("Before clamp: %f", actual_parameter.value.d_val);
+                  actual_parameter.value.d_val =
+                      (config.bound_type == LimitConfig::MIN_LIMIT)
+                          ? std::max(actual_parameter.value.d_val, limit)
+                          : std::min(actual_parameter.value.d_val, limit);
+                  log_info("After clamp: %f", actual_parameter.value.d_val);
+                } else if (actual_type == PARAM_TYPE_INT64) {
+                  const int64_t limit = static_cast<int64_t>(limit_val);
+
+                  actual_parameter.value.i64_val =
+                      (config.bound_type == LimitConfig::MIN_LIMIT)
+                          ? std::max(actual_parameter.value.i64_val, limit)
+                          : std::min(actual_parameter.value.i64_val, limit);
+                }
+              },
+              *limit_opt);
+        }
+      }
+      if (actual_type == PARAM_TYPE_DOUBLE &&
+          expected_parameter.precision.resolution.has_value()) {
+        log_debug(
+            "Editing parameter %s in command %s precision due to resolution",
+            expected_name.c_str(), command.name.c_str());
+        const double res = expected_parameter.precision.resolution.value();
+        if (res > 0.0) {
+          actual_parameter.value.d_val =
+              std::round(actual_parameter.value.d_val / res) * res;
+        }
+      }
+
+      // push back a fixed template
+      if (config_.api_type.type == instserver::VISA) {
+        auto pair = std::make_pair<std::string, std::string>("", "");
+        if (calculate_template_pair(actual_parameter,
+                                    command.parameters[i].form, &pair) != 0U) {
+          return;
+        }
+        template_values.insert(pair);
+      }
     }
     log_debug("All of the parameters types and names match the API");
+    std::unique_ptr<PluginCommand> pcmd = to_plugin_command(cmd);
+    // If VISA instrument we need to fix the command to be the proper command
+    if (config_.api_type.type == instserver::VISA) {
+      safe_c_str_copy(pcmd->command,
+                      expandTemplate(command.temp.value(), template_values));
+      log_debug("Prepared a template for the instrument plugin: %s",
+                pcmd->command);
+    }
     auto expected_returns_size = command.returns.size();
     PluginResponse *plugin_resp =
         plugin_response_create_with_capacity(expected_returns_size);
-    std::unique_ptr<PluginCommand> pcmd = to_plugin_command(cmd);
     pcmd->is_query = false;
     if (expected_returns_size > 0) {
       pcmd->is_query = true;
@@ -637,14 +818,16 @@ private:
     for (size_t i = 0; i < expected_returns.size(); i++) {
       IO expected_return = expected_returns[i];
       Variable actual_return = actual_returns[i];
-      log_debug("Command %s return type for name %s: expected '%d', got '%d'",
+      log_debug("Command %s return type for name %s: expected '%s', got '%s'",
                 cmd.verb.c_str(), expected_return.name.c_str(),
-                expected_return.type, actual_return.type);
+                readable_param_types(expected_return.type).c_str(),
+                readable_param_types(actual_return.type).c_str());
       if (expected_return.type != actual_return.type) {
         log_error("Command %s return type for name %s mismatch: expected "
-                  "'%d', got '%d'",
+                  "'%s', got '%s'",
                   cmd.verb.c_str(), expected_return.name.c_str(),
-                  expected_return.type, actual_return.type);
+                  readable_param_types(expected_return.type).c_str(),
+                  readable_param_types(actual_return.type).c_str());
         return;
       }
       validated_response_count++;

@@ -4,30 +4,9 @@ instrument:
   model: "MockModel"
   identifier: "MockAPI"
   description: "Mock instrument for testing"
-
 protocol:
   type: Custom
-  name: Mock
-
-channel_groups:
-  - name: channel
-    count: 2
-    description: Analog input channels
-    channel_parameter:
-      type: int
-      min: 1
-      max: 2
-      description: Channel index (1-based)
-    io_types:
-      - suffix: waveform
-        type: string
-        role: output
-        description: Acquired waveform
-      - suffix: sample_rate
-        type: float
-        role: setting
-        description: Per-channel sample rate
-
+  name: LargeMock
 io:
   - name: voltage
     type: float
@@ -99,17 +78,15 @@ commands:
     outputs: [message, current]
 
   SET:
-    template: "SOUR:VOLT {channel} {voltage}"
-    description: "Set voltage on a channel"
-    channel_group: channel
+    template: "SOUR:VOLT {voltage}"
+    description: "Set voltage"
     parameters:
       - io: voltage
     outputs: []
 
   GET:
-    template: "SOUR:VOLT {channel}?"
-    description: "Get voltage setting on a channel"
-    channel_group: channel
+    template: "SOUR:VOLT?"
+    description: "Get voltage setting"
     parameters: []
     outputs: [voltage]
 

@@ -4,10 +4,9 @@ instrument:
   model: "MockModel"
   identifier: "MockAPI"
   description: "Mock instrument for testing"
-
 protocol:
-  type: VISA
-
+  type: Custom
+  name: Mock
 io:
   - name: voltage
     type: float

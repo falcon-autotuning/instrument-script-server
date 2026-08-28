@@ -12,9 +12,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #else
-#include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <unistd.h>
 #endif
 
 using namespace instserver;
@@ -79,7 +79,8 @@ protected:
     try {
       instserver::client::InstrumentServerClient check_client(get_port());
       if (check_client.is_daemon_running()) {
-        std::cerr << "Daemon is already running on port " << get_port() << ". Stopping it...\n";
+        std::cerr << "Daemon is already running on port " << get_port()
+                  << ". Stopping it...\n";
         instserver::client::v1::DaemonStop stop_req;
         check_client.stop_daemon(stop_req);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -110,11 +111,8 @@ protected:
 
     DWORD flags = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP;
 
-    BOOL ok = CreateProcessA(nullptr,
-                             cmd_buf.data(),
-                             NULL, NULL,
-                             FALSE,
-                             flags, NULL, NULL, &si, &pi);
+    BOOL ok = CreateProcessA(nullptr, cmd_buf.data(), NULL, NULL, FALSE, flags,
+                             NULL, NULL, &si, &pi);
 
     if (!ok) {
       DWORD err = GetLastError();
@@ -144,7 +142,8 @@ protected:
       }
 
       std::string daemon_path = ISS_DAEMON_PATH;
-      execl(daemon_path.c_str(), daemon_path.c_str(), "--log-level", "warn", nullptr);
+      execl(daemon_path.c_str(), daemon_path.c_str(), "--log-level", "warn",
+            nullptr);
 
       _exit(1);
     }
@@ -169,7 +168,8 @@ protected:
       FAIL() << "Daemon failed to start";
     }
 
-    client = std::make_unique<instserver::client::InstrumentServerClient>(get_port());
+    client = std::make_unique<instserver::client::InstrumentServerClient>(
+        get_port());
 
     // Register / Start MockInstrument1
     v1::StartInstrumentRequest req;
@@ -178,7 +178,7 @@ protected:
             .generic_string();
     req.set_config_path(config_path);
     std::filesystem::path plugin_path =
-        instserver::test::get_test_plugin_path("mock_visa_plugin");
+        instserver::test::get_test_plugin_path("mock_plugin");
     req.set_plugin_path(plugin_path.generic_string());
     req.set_log_level("warn");
 
@@ -188,7 +188,8 @@ protected:
       instserver::client::v1::DaemonStop daemon_stop_req;
       try {
         client->stop_daemon(daemon_stop_req);
-      } catch (...) {}
+      } catch (...) {
+      }
       FAIL() << "Failed to start MockInstrument1: " << e.what();
     }
   }
@@ -200,12 +201,14 @@ protected:
       stop_req.set_instrument_name("MockInstrument1");
       try {
         client->stop_instrument(stop_req);
-      } catch (...) {}
+      } catch (...) {
+      }
 
       instserver::client::v1::DaemonStop daemon_stop_req;
       try {
         client->stop_daemon(daemon_stop_req);
-      } catch (...) {}
+      } catch (...) {
+      }
       client.reset();
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -331,9 +334,8 @@ connection:
     try {
       v1::StartInstrumentRequest req;
       req.set_config_path(config_path);
-      req.set_plugin_path(
-          instserver::test::get_test_plugin_path("mock_visa_plugin")
-              .generic_string());
+      req.set_plugin_path(instserver::test::get_test_plugin_path("mock_plugin")
+                              .generic_string());
       req.set_log_level("warn");
       client->start_instrument(req);
       instrument_names.push_back("MockInstrument" + std::to_string(i));
@@ -416,8 +418,8 @@ connection:
 
   v1::StartInstrumentRequest req;
   req.set_config_path(config_path);
-  req.set_plugin_path(instserver::test::get_test_plugin_path("mock_visa_plugin")
-                          .generic_string());
+  req.set_plugin_path(
+      instserver::test::get_test_plugin_path("mock_plugin").generic_string());
   req.set_log_level("warn");
   client->start_instrument(req);
 

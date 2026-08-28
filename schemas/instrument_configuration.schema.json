@@ -7,7 +7,6 @@
   "required": [
     "name",
     "api_ref",
-    "connection",
     "io_config"
   ],
   "properties": {
@@ -22,19 +21,8 @@
     },
     "connection": {
       "type": "object",
-      "description": "**Connection Details** (required, object)\n\nHow to access this instrument on the system.",
-      "required": [
-        "type"
-      ],
+      "description": "**Connection Details** (optional, object)\n\nHow to access this instrument on the system.",
       "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
-            "VISA",
-            "Custom"
-          ],
-          "description": "**Connection Type** (required, string)\n\nHow to connect: 'VISA', or 'Custom'."
-        },
         "address": {
           "type": "string",
           "description": "**Address** (optional, string)\n\nVISA resource string, serial port, USB path, or custom address."

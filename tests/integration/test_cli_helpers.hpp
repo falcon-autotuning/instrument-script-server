@@ -47,11 +47,11 @@ inline const std::string pre = "lib";
 inline const std::string bin_path = ISS_BIN_PATH;
 inline const std::string data_dir = TEST_DATA_DIR;
 inline const std::string mock_plugin =
-    (std::filesystem::path(TEST_PLUGIN_DIR) / (pre + "mock_visa_plugin" + ext))
+    (std::filesystem::path(TEST_PLUGIN_DIR) / (pre + "mock_plugin" + ext))
         .generic_string();
 inline const std::string mock_large_plugin =
     (std::filesystem::path(TEST_PLUGIN_DIR) /
-     (pre + "mock_visa_large_data_plugin" + ext))
+     (pre + "mock_large_data_plugin" + ext))
         .generic_string();
 inline std::mutex g_pid_mutex;
 inline std::set<int> g_daemon_pids;
@@ -304,9 +304,11 @@ inline void cleanup_runtime_dir() {
 
 inline uint32_t extract_job_id(const std::string &out) {
   auto pos = out.find("job_id=");
-  if (pos == std::string::npos) return 0;
+  if (pos == std::string::npos)
+    return 0;
   auto end = out.find(")", pos);
-  if (end == std::string::npos) return 0;
+  if (end == std::string::npos)
+    return 0;
   try {
     return std::stoul(out.substr(pos + 7, end - (pos + 7)));
   } catch (...) {

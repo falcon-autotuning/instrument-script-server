@@ -51,7 +51,7 @@ TEST_F(PluginRegistryTest, DiscoverPlugins) {
 }
 
 TEST_F(PluginRegistryTest, RegisterPlugin) {
-  auto plugin_path = get_test_plugin_path("mock_visa_plugin");
+  auto plugin_path = get_test_plugin_path("mock_plugin");
 
   if (!std::filesystem::exists(plugin_path)) {
     GTEST_SKIP() << "Mock plugin not found at: " << plugin_path;
@@ -68,7 +68,7 @@ TEST_F(PluginRegistryTest, RegisterPlugin) {
 }
 
 TEST_F(PluginRegistryTest, GetPluginPath) {
-  auto plugin_path = get_test_plugin_path("mock_visa_plugin");
+  auto plugin_path = get_test_plugin_path("mock_plugin");
 
   if (!std::filesystem::exists(plugin_path)) {
     GTEST_SKIP() << "Mock plugin not found";
@@ -86,7 +86,7 @@ TEST_F(PluginRegistryTest, GetNonexistentPlugin) {
 }
 
 TEST_F(PluginRegistryTest, ListProtocols) {
-  auto plugin_path = get_test_plugin_path("mock_visa_plugin");
+  auto plugin_path = get_test_plugin_path("mock_plugin");
 
   if (!std::filesystem::exists(plugin_path)) {
     GTEST_SKIP() << "Mock plugin not found";

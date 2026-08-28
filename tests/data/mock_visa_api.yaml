@@ -6,27 +6,7 @@ instrument:
   description: "Mock instrument for testing"
 
 protocol:
-  type: Custom
-  name: Mock
-
-channel_groups:
-  - name: channel
-    count: 2
-    description: Analog input channels
-    channel_parameter:
-      type: int
-      min: 1
-      max: 2
-      description: Channel index (1-based)
-    io_types:
-      - suffix: waveform
-        type: string
-        role: output
-        description: Acquired waveform
-      - suffix: sample_rate
-        type: float
-        role: setting
-        description: Per-channel sample rate
+  type: VISA
 
 io:
   - name: voltage
@@ -64,6 +44,13 @@ io:
     type: float
     role: setting
     description: "Configuration parameter 1"
+    format:
+      notation: fixed
+      decimal_places: 1
+    precision:
+      resolution: 0.1
+    max: 2.0
+    min: -2.0
   - name: config_param2
     type: string
     role: setting
@@ -72,6 +59,9 @@ io:
     type: boolean
     role: setting
     description: "Configuration parameter 3"
+    format:
+      high_representation: ON
+      low_representation: OFF
 
 commands:
   IDN:
@@ -99,17 +89,15 @@ commands:
     outputs: [message, current]
 
   SET:
-    template: "SOUR:VOLT {channel} {voltage}"
-    description: "Set voltage on a channel"
-    channel_group: channel
+    template: "SOUR:VOLT {voltage}"
+    description: "Set voltage"
     parameters:
       - io: voltage
     outputs: []
 
   GET:
-    template: "SOUR:VOLT {channel}?"
-    description: "Get voltage setting on a channel"
-    channel_group: channel
+    template: "SOUR:VOLT?"
+    description: "Get voltage setting"
     parameters: []
     outputs: [voltage]
 

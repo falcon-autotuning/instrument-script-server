@@ -22,6 +22,7 @@ add_executable(
   unit/test_plugin_loading.cpp
   unit/test_api_ref_resolution.cpp
   unit/test_plugin_registry.cpp
+  unit/test_formatter.cpp
   unit/test_main_function.cpp)
 
 target_link_libraries(unit_tests
@@ -130,7 +131,7 @@ foreach(tgt ${ALL_TEST_TARGETS})
   target_compile_definitions(${tgt} PRIVATE
     TEST_DATA_DIR="$<JOIN:$<TARGET_FILE_DIR:${tgt}>/data,>"
     ISS_DAEMON_PATH="${DAEMON_PATH_GENEX}"
-    TEST_PLUGIN_DIR="$<TARGET_FILE_DIR:mock_visa_plugin>"
+    TEST_PLUGIN_DIR="$<TARGET_FILE_DIR:mock_plugin>"
     ISS_BIN_PATH="${BIN_PATH_GENEX}"
   )
   add_dependencies(${tgt} instrument-script-server-daemon)
@@ -152,12 +153,12 @@ foreach(tgt ${ALL_TEST_TARGETS})
   endif()
 endforeach()
 
-add_library(mock_visa_plugin SHARED mocks/mock_visa_plugin.c)
-add_library(mock_visa_large_data_plugin SHARED
-  mocks/mock_visa_large_data_plugin.c)
+add_library(mock_plugin SHARED mocks/mock_plugin.c)
+add_library(mock_large_data_plugin SHARED
+  mocks/mock_large_data_plugin.c)
 foreach(plugin_target
-    mock_visa_plugin
-    mock_visa_large_data_plugin
+    mock_plugin
+    mock_large_data_plugin
 )
   target_compile_definitions(${plugin_target} PRIVATE INSTRUMENT_PLUGIN_BUILD)
   target_link_libraries(${plugin_target}
@@ -169,8 +170,8 @@ foreach(plugin_target
 endforeach()
 if(ENABLE_ASAN)
   foreach(plugin_target
-      mock_visa_plugin
-      mock_visa_large_data_plugin
+      mock_plugin
+      mock_large_data_plugin
   )
     target_compile_options(${plugin_target} PRIVATE -fno-sanitize=all)
     target_link_options(${plugin_target} PRIVATE -fno-sanitize=all)
@@ -190,8 +191,8 @@ set(TEST_RUNTIME_TOOLS
 )
 
 set(TEST_PLUGINS
-  mock_visa_plugin
-  mock_visa_large_data_plugin
+  mock_plugin
+  mock_large_data_plugin
 )
 
 if(WIN32)

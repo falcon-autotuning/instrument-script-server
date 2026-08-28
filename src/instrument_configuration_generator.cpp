@@ -10,9 +10,6 @@ void generate_instrument_configuration(const std::string &api_yaml_path,
   YAML::Node config;
   config["name"] = "INSTRUMENT_NAME";
   config["api_ref"] = api_yaml_path;
-  config["connection"]["type"] = "VISA"; // User should customize
-  config["connection"]["address"] =
-      "TCPIP::192.168.0.1::INSTR::0"; // User should customize
 
   YAML::Node io_config;
   for (const auto &io : api["io"]) {

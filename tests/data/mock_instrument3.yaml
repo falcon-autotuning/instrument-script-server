@@ -1,5 +1,4 @@
 name: MockInstrument3
 api_ref: ./mock_api.yaml
 connection:
-  type: VISA
   address: "mock://test3"

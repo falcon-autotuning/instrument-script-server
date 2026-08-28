@@ -34,7 +34,8 @@ instrument:
   model: 1
   identifier: Meter1
 protocol:
-  type: MockMultimeter
+  type: Custom
+  name: MockMultimeter
 channel_groups:
   - name: analog
     channel_parameter:
@@ -84,7 +85,10 @@ commands:
 TEST(ParsingToolsTest, LoadsConfigWithOptionalParams) {
   const auto config_path =
       std::filesystem::temp_directory_path() / "iss_config_test.yaml";
+  const auto isa_path =
+      std::filesystem::temp_directory_path() / "iss_config_test_api.yaml";
   const std::string addr = "VISA1::ADDR12";
+  const std::string type = "VISA";
   const int32_t baudrate = 9600;
   const std::string json = "{\"special\":5}";
   const int32_t delay = 5;
@@ -95,7 +99,7 @@ TEST(ParsingToolsTest, LoadsConfigWithOptionalParams) {
   std::string formatted_yaml =
       std::format(R"yaml(
 name: {}
-api_ref: ./path_to_somewhere
+api_ref: ./iss_config_test_api.yaml
 connection:
   address: {}
   baudrate: {}
@@ -112,6 +116,16 @@ startup:
   std::ofstream config(config_path);
   config << formatted_yaml;
   config.close();
+  std::string formatted_api = std::format(R"yaml(
+protocol:
+  type: {}
+)yaml",
+                                          type);
+  std::cout << "\n--- DEBUG: Generated api YAML ---\n"
+            << formatted_api << "\n-----------------------------\n";
+  std::ofstream api(isa_path);
+  api << formatted_api;
+  api.close();
 
   const auto inst_config = instserver::load_config(config_path);
   ASSERT_EQ(inst_config.address, addr);
@@ -122,4 +136,42 @@ startup:
   ASSERT_EQ(inst_config.init_commands.value()[0], init1);
   ASSERT_EQ(inst_config.init_commands.value()[1], init2);
   std::filesystem::remove(config_path);
+  std::filesystem::remove(isa_path);
+}
+
+TEST(ParsingToolsTest, LoadsConfigWithMinimalParams) {
+  const auto config_path =
+      std::filesystem::temp_directory_path() / "iss_config_test.yaml";
+  const auto isa_path =
+      std::filesystem::temp_directory_path() / "iss_config_test_api.yaml";
+  const std::string type = "Custom";
+  const std::string name = "test_instrument";
+  const std::string special = "Hello";
+
+  std::string formatted_yaml = std::format(R"yaml(
+name: {}
+api_ref: ./iss_config_test_api.yaml
+)yaml",
+                                           name);
+  std::cout << "\n--- DEBUG: Generated YAML ---\n"
+            << formatted_yaml << "\n-----------------------------\n";
+  std::ofstream config(config_path);
+  config << formatted_yaml;
+  config.close();
+  std::string formatted_api = std::format(R"yaml(
+protocol:
+  type: {}
+  name: {}
+)yaml",
+                                          type, special);
+  std::cout << "\n--- DEBUG: Generated api YAML ---\n"
+            << formatted_api << "\n-----------------------------\n";
+  std::ofstream api(isa_path);
+  api << formatted_api;
+  api.close();
+
+  const auto inst_config = instserver::load_config(config_path);
+  ASSERT_EQ(inst_config.name, name);
+  std::filesystem::remove(config_path);
+  std::filesystem::remove(isa_path);
 }

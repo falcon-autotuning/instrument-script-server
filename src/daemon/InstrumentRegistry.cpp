@@ -1,4 +1,5 @@
 #include "instrument-script-server/daemon/InstrumentRegistry.hpp"
+#include "instrument-script-server/core/ParsingTools.hpp"
 #include "instrument-script-server/daemon/ApiRefResolver.hpp"
 #include "instrument-script-server/daemon/InstrumentWorkerProxy.hpp"
 #include "instrument-script-server/daemon/PluginRegistry.hpp"
@@ -79,6 +80,9 @@ bool InstrumentRegistry::create_instrument(const std::string &config_path,
 
   // Get protocol type
   std::string protocol_type = api_def["protocol"]["type"].get<std::string>();
+  if (protocol_type == "Custom") {
+    protocol_type = api_def["protocol"]["name"].get<std::string>();
+  }
 
   // Look up in plugin registry
   auto &plugin_registry = plugin::PluginRegistry::instance();
