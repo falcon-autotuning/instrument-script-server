@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(
   instrument-script-server
-  VERSION 2.0.16
+  VERSION 2.0.17
   LANGUAGES C CXX)
 
 # Git version detection
@@ -433,11 +433,11 @@ install(TARGETS
     validate-instrument-config
     template-expander
     generate-instrument-config
-  EXPORT instrument-script-server-targets
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 if(BUILD_CLI)
   install(TARGETS instrument-script-server
+    EXPORT instrument-script-server-targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
 endif()
