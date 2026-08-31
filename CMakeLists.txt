@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(
   instrument-script-server
-  VERSION 2.0.14
+  VERSION 2.0.15
   LANGUAGES C CXX)
 
 # Git version detection
@@ -144,6 +144,7 @@ find_package(instrument-data CONFIG REQUIRED)
 find_package(instrument-log CONFIG REQUIRED)
 find_package(instrument-call-stack CONFIG REQUIRED)
 find_package(instrument-plugin-api CONFIG REQUIRED)
+find_package(yaml-config-validator CONFIG REQUIRED)
 
 # Platform-specific settings
 if(UNIX AND NOT APPLE)
@@ -162,13 +163,9 @@ set(INSTRUMENT_API_SCHEMA_FILE
 set(INSTRUMENT_CONFIGURATION_SCHEMA_FILE
     "${CMAKE_SOURCE_DIR}/schemas/instrument_configuration.schema.json")
 
-set(QUANTUM_DOT_DEVICE_SCHEMA_FILE
-    "${CMAKE_SOURCE_DIR}/schemas/quantum_dot_device.schema.json")
-
 foreach(schema_file
     INSTRUMENT_API_SCHEMA_FILE
     INSTRUMENT_CONFIGURATION_SCHEMA_FILE
-    QUANTUM_DOT_DEVICE_SCHEMA_FILE
 )
   if(NOT EXISTS "${${schema_file}}")
     message(FATAL_ERROR
@@ -184,11 +181,6 @@ file(READ
 file(READ
   "${INSTRUMENT_CONFIGURATION_SCHEMA_FILE}"
   INSTRUMENT_CONFIGURATION_SCHEMA
-)
-
-file(READ
-  "${QUANTUM_DOT_DEVICE_SCHEMA_FILE}"
-  QUANTUM_DOT_DEVICE_SCHEMA
 )
 
 function(validate_json_schema schema_name schema_contents)
@@ -220,15 +212,9 @@ validate_json_schema(
   "${INSTRUMENT_CONFIGURATION_SCHEMA}"
 )
 
-validate_json_schema(
-  "Quantum-dot device schema"
-  "${QUANTUM_DOT_DEVICE_SCHEMA}"
-)
-
 foreach(schema_variable
     INSTRUMENT_API_SCHEMA
     INSTRUMENT_CONFIGURATION_SCHEMA
-    QUANTUM_DOT_DEVICE_SCHEMA
 )
   string(LENGTH "${${schema_variable}}" schema_length)
 
@@ -242,7 +228,6 @@ set_property(
   PROPERTY CMAKE_CONFIGURE_DEPENDS
     "${INSTRUMENT_API_SCHEMA_FILE}"
     "${INSTRUMENT_CONFIGURATION_SCHEMA_FILE}"
-    "${QUANTUM_DOT_DEVICE_SCHEMA_FILE}"
 )
 
 configure_file(
@@ -256,7 +241,6 @@ add_subdirectory(proto)
 add_library(
   instrument-script-server-core
     SHARED
-      src/SchemaValidator.cpp
       src/version.cpp
       src/ipc/SharedQueue.cpp
       src/ipc/ProcessManager.cpp
@@ -265,7 +249,6 @@ add_library(
       src/core/ParsingTools.cpp
       src/core/GlobalConfig.cpp
       src/core/Formatter.cpp
-      ${CMAKE_BINARY_DIR}/embedded_schemas.cpp
 )
 
 set_target_properties(
@@ -345,11 +328,14 @@ target_include_directories(
 
 add_executable(instrument-script-server-daemon src/daemon/daemon_main.cpp)
 add_executable(instrument-worker src/worker_main.cpp)
-add_executable(validate-instrument-api src/instrument_api_validator_main.cpp)
+add_executable(validate-instrument-api
+  src/instrument_api_validator_main.cpp
+  ${CMAKE_BINARY_DIR}/embedded_schemas.cpp
+)
 add_executable(validate-instrument-config
-                 src/instrument_config_validator_main.cpp)
-add_executable(validate-quantum-dot-config
-                 src/quantum_dot_config_validator_main.cpp)
+  src/instrument_config_validator_main.cpp
+  ${CMAKE_BINARY_DIR}/embedded_schemas.cpp
+)
 add_executable(template-expander src/template_expander.cpp)
 add_executable(generate-instrument-config
                  src/instrument_configuration_generator.cpp)
@@ -367,15 +353,14 @@ target_link_libraries(instrument-worker
 )
 foreach(target
         instrument-script-server-daemon
-        validate-instrument-api
-        validate-instrument-config
-        validate-quantum-dot-config
         template-expander
         generate-instrument-config
         instrument-worker
 )
   target_link_libraries(${target} PRIVATE instrument-script-server-core)
 endforeach()
+target_link_libraries(validate-instrument-api PRIVATE yaml-config-validator::yaml-config-validator)
+target_link_libraries(validate-instrument-config PRIVATE yaml-config-validator::yaml-config-validator)
 if(BUILD_C_CLIENT)
   add_library(instrument-script-server-client STATIC
     src/client/instrument-server-client.cpp
@@ -446,13 +431,14 @@ install(TARGETS
     instrument-worker
     validate-instrument-api
     validate-instrument-config
-    validate-quantum-dot-config
     template-expander
     generate-instrument-config
+  EXPORT instrument-script-server-targets
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 if(BUILD_CLI)
   install(TARGETS instrument-script-server
+    EXPORT instrument-script-server-targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
 endif()

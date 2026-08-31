@@ -381,27 +381,6 @@ TEST(SchemaValidatorTest, ValidateKeysightInstrument) {
   std::cerr << "========\n\n";
 }
 
-TEST(SchemaValidatorTest, ValidateQuantumDotDeviceConfig) {
-  std::cerr << "\n======== TEST: ValidateQuantumDotDeviceConfig ========\n";
-
-  fs::path repo_root = get_test_root();
-  fs::path yaml_path =
-      repo_root / "data" / "one_charge_sensor_quantum_dot_device.yaml";
-
-  debug_log("TEST", "Full YAML path: " + yaml_path.string());
-  debug_log("TEST", "File exists: " +
-                        std::string(fs::exists(yaml_path) ? "YES" : "NO"));
-
-  if (!fs::exists(yaml_path)) {
-    debug_log("TEST", "FAIL - File not found!");
-    FAIL() << "Test file not found: " << yaml_path.string();
-  }
-
-  int ret = run_validator("validate-quantum-dot-config", yaml_path.string());
-  EXPECT_EQ(ret, 0) << "Validation failed for quantum dot device config";
-  std::cerr << "========\n\n";
-}
-
 TEST(SchemaValidatorTest, GenerateAndValidateAgilentInstrumentConfiguration) {
   std::cerr << "\n======== TEST: "
                "GenerateAndValidateAgilentInstrumentConfiguration ========\n";

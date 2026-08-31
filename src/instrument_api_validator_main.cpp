@@ -1,14 +1,20 @@
-#include <instrument-script-server/SchemaValidator.hpp>
 #include <iostream>
-#include <yaml-cpp/yaml.h>
-using namespace instserver;
+#include <yaml-config-validator.hpp>
+
+namespace instserver {
+extern const char INSTRUMENT_API_SCHEMA[];
+}
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     std::cerr << "Usage: " << argv[0] << " <input.yaml>\n";
     return 1;
   }
-  auto result = SchemaValidator::validate_instrument_api(argv[1]);
+  auto result = validator::validate_yaml_file(
+      argv[1], instserver::INSTRUMENT_API_SCHEMA, "Instrument API");
+  for (const auto &warn : result.warnings) {
+    std::cout << "  - " << warn << "\n";
+  }
   if (result.valid) {
     std::cout << "Validation succeeded.\n";
     return 0;
