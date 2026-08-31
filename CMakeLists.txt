@@ -437,7 +437,6 @@ install(TARGETS
 )
 if(BUILD_CLI)
   install(TARGETS instrument-script-server
-    EXPORT instrument-script-server-targets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   )
 endif()
