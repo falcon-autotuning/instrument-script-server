@@ -826,6 +826,13 @@ int run_cli(int argc, char **argv) {
           req.set_log_level(args.get_option("log-level", true, "info"));
           auto resp =
               call_rpc(out, [&] { return client.start_instrument(req); });
+          // BUG: The message "Instrument started successfully" is emitted even
+          // if "Shutting down plugin" shows up in the log, indicating that the
+          // ./instrument_worker will return with a 1
+          // This is problem since we aren't currently checking the lifetime of
+          // the instrument-worker. Currently we are just checking that the
+          // process can be spawned. To confirm success we would need to define
+          // where success occurs and match this up
           if (!resp.has_value()) {
             return;
           }

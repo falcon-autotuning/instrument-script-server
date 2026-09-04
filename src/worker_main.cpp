@@ -727,7 +727,6 @@ private:
               .bound_type = LimitConfig::MAX_LIMIT}}};
         for (const auto &config : limits) {
           const auto &limit_opt = expected_parameter.*(config.member);
-          log_info("%s has value=%d", config.label, limit_opt.has_value());
           if (!limit_opt.has_value()) {
             continue;
           }
@@ -738,12 +737,10 @@ private:
               [&](const auto &limit_val) {
                 if (actual_type == PARAM_TYPE_DOUBLE) {
                   const double limit = static_cast<double>(limit_val);
-                  log_info("Before clamp: %f", actual_parameter.value.d_val);
                   actual_parameter.value.d_val =
                       (config.bound_type == LimitConfig::MIN_LIMIT)
                           ? std::max(actual_parameter.value.d_val, limit)
                           : std::min(actual_parameter.value.d_val, limit);
-                  log_info("After clamp: %f", actual_parameter.value.d_val);
                 } else if (actual_type == PARAM_TYPE_INT64) {
                   const int64_t limit = static_cast<int64_t>(limit_val);
 
