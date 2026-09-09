@@ -1,8 +1,10 @@
 #include "instrument-script-server/client/instrument-server-client.hpp"
+#include "instserver/daemon/v1/daemon_messages.pb.h"
 #include <algorithm>
 #include <charconv>
 #include <cstdint>
 #include <filesystem>
+#include <fmt/format.h>
 #include <google/protobuf/util/json_util.h>
 #include <instrument-data.h>
 #include <instrument-log/inst_logging.h>
@@ -171,54 +173,68 @@ std::optional<double> to_double(std::string_view sv) {
 }
 
 // ---- key=value parsing ----
-std::optional<std::pair<std::string, VariableValue>>
-parse_global_kv(std::string_view input) {
-  auto pos = input.find('=');
-  if (pos == std::string_view::npos) {
-    return std::nullopt;
-  }
-
-  std::string key(input.substr(0, pos));
-  std::string_view value = input.substr(pos + 1);
-
+std::optional<VariableValue>
+build_variable(instserver::daemon::v1::LuaTypes type, std::string_view value) {
   VariableValue v;
 
-  if (auto i = to_int64(value)) {
+  switch (type) {
+  case instserver::daemon::v1::LUA_TYPES_INT64: {
+    auto i = to_int64(value);
+    if (!i.has_value()) {
+      return std::nullopt;
+    }
     v.set_i(*i);
-    return {{key, v}};
+    return v;
   }
 
-  if (auto d = to_double(value)) {
+  case instserver::daemon::v1::LUA_TYPES_DOUBLE: {
+    auto d = to_double(value);
+    if (!d.has_value()) {
+      return std::nullopt;
+    }
     v.set_d(*d);
-    return {{key, v}};
+    return v;
   }
 
-  if (value == "true") {
-    v.set_b(true);
-    return {{key, v}};
-  }
-  if (value == "false") {
-    v.set_b(false);
-    return {{key, v}};
-  }
+  case instserver::daemon::v1::LUA_TYPES_BOOL:
+    if (value == "true") {
+      v.set_b(true);
+      return v;
+    }
+    if (value == "false") {
+      v.set_b(false);
+      return v;
+    }
+    return std::nullopt;
 
-  v.set_s(std::string(value));
-  return {{key, v}};
+  case instserver::daemon::v1::LUA_TYPES_STRING:
+    v.set_s(std::string(value));
+    return v;
+
+  default:
+    return std::nullopt;
+  }
 }
 
 // ---- JSON -> VariableValue ----
 void json_to_variable(const nlohmann::json &j, VariableValue &out) {
   if (j.is_null()) {
     out.set_is_nil(true);
+    std::cout << "Was null" << "\n";
   } else if (j.is_boolean()) {
     out.set_b(j.get<bool>());
+    std::cout << "Was boolean" << "\n";
   } else if (j.is_number_integer()) {
     out.set_i(j.get<int64_t>());
+    std::cout << "Was int" << "\n";
   } else if (j.is_number_float()) {
     out.set_d(j.get<double>());
+    std::cout << "Was double" << "\n";
   } else if (j.is_string()) {
     out.set_s(j.get<std::string>());
+    std::cout << "Was string" << "\n";
   } else if (j.is_array()) {
+    std::cout << "Was array" << "\n";
     if (j.empty()) {
       out.mutable_m_array(); // fallback
       return;
@@ -253,6 +269,7 @@ void json_to_variable(const nlohmann::json &j, VariableValue &out) {
       }
     }
   } else if (j.is_object()) {
+    std::cout << "Was object" << "\n";
     auto *map = out.mutable_m_map()->mutable_values();
     for (const auto &[k, v] : j.items()) {
       VariableValue tmp;
@@ -261,68 +278,109 @@ void json_to_variable(const nlohmann::json &j, VariableValue &out) {
     }
   }
 }
+
 struct ParsedGlobals {
-  std::vector<std::string> kv;
-  std::optional<std::string> json;
+  std::vector<std::tuple<std::string, std::string, std::string>> key_type_value;
 };
 
 std::optional<ParsedGlobals> parse_globals(CliArgs &args, CLIOutput &out) {
   ParsedGlobals result;
 
-  constexpr std::string_view GLOBAL_PREFIX = "--global=";
-  constexpr std::string_view GLOBAL_FLAG = "--global";
-  constexpr std::string_view GLOBALS_JSON_PREFIX = "--globals-json=";
+  constexpr std::string_view INPUT_FLAG = "--input";
 
   auto tail = args.args();
 
   for (size_t i = 0; i < tail.size(); ++i) {
-    std::string_view sv(tail[i]);
-
-    if (sv.starts_with(GLOBAL_PREFIX)) {
-      sv.remove_prefix(GLOBAL_PREFIX.size());
-      result.kv.emplace_back(sv);
-    } else if (sv == GLOBAL_FLAG) {
-      if (i + 1 >= tail.size()) {
-        out.error("Error: --global requires value (key=value)");
-        return std::nullopt;
-      }
-      result.kv.emplace_back(tail[i + 1]);
-      ++i;
-    } else if (sv.starts_with(GLOBALS_JSON_PREFIX)) {
-      sv.remove_prefix(GLOBALS_JSON_PREFIX.size());
-      result.json = std::string(sv);
+    if (tail[i] != INPUT_FLAG) {
+      continue;
     }
+
+    if (i + 3 >= tail.size()) {
+      out.error("Error: --input requires "
+                "<name> <type> <value>");
+      return std::nullopt;
+    }
+
+    result.key_type_value.emplace_back(std::string(tail[i + 1]), // name
+                                       std::string(tail[i + 2]), // type
+                                       std::string(tail[i + 3])  // value
+    );
+
+    i += 3; // skip consumed arguments
   }
 
   return result;
 }
+struct TypePair {
+  instserver::daemon::v1::LuaTypes id;
+  std::string_view name;
+};
+
+constexpr std::array<TypePair, 6> VALID_TYPES{{
+    {.id = instserver::daemon::v1::LUA_TYPES_INT64, .name = "int64"},
+    {.id = instserver::daemon::v1::LUA_TYPES_DOUBLE, .name = "double"},
+    {.id = instserver::daemon::v1::LUA_TYPES_BOOL, .name = "bool"},
+    {.id = instserver::daemon::v1::LUA_TYPES_STRING, .name = "string"},
+    {.id = instserver::daemon::v1::LUA_TYPES_DATA_BUFFER,
+     .name = "data-buffer"},
+    {.id = instserver::daemon::v1::LUA_TYPES_CALL_STACK, .name = "call-stack"},
+}};
+constexpr const TypePair *find_type(std::string_view name) {
+  for (const auto &t : VALID_TYPES) {
+    if (t.name == name) {
+      return &t;
+    }
+  }
+  return nullptr;
+}
+void find_type_error(CLIOutput &out) {
+  std::string msg =
+      "Error: The type in --input <name> <type> <value> must be a valid "
+      "lua type. Valid types are: ";
+
+  for (size_t i = 0; i < VALID_TYPES.size(); ++i) {
+    if (i != 0) {
+      msg += ", ";
+    }
+    msg += VALID_TYPES[i].name;
+  }
+
+  out.error(msg);
+}
+
+void build_variable_error(CLIOutput &out, const TypePair *type,
+                          const std::string &value) {
+  out.error(fmt::format(
+      "Error: The value in --input <name> <type> <value> must be a valid "
+      "value for the specified type. The value '{}' does not match the type "
+      "'{}'",
+      value, type->name));
+}
 bool apply_globals(const ParsedGlobals &g,
                    google::protobuf::Map<std::string, VariableValue> &globals,
+                   instserver::daemon::v1::TypeManifest &manifest,
                    CLIOutput &out) {
-
-  for (const auto &kv : g.kv) {
-    auto parsed = parse_global_kv(kv);
-    if (!parsed) {
-      out.error("Invalid --global: " + kv);
+  auto *parameters = manifest.mutable_parameters();
+  for (const auto &[key, type, value] : g.key_type_value) {
+    if (globals.contains(key)) {
+      out.error("Error: duplicate global '" + key + "'");
       return false;
     }
-    globals[parsed->first] = parsed->second;
-  }
-
-  if (g.json) {
-    try {
-      auto j = nlohmann::json::parse(*g.json);
-      for (const auto &[k, v] : j.items()) {
-        VariableValue val;
-        json_to_variable(v, val);
-        globals[k] = val;
-      }
-    } catch (const std::exception &e) {
-      out.error(std::string("Invalid JSON: ") + e.what());
+    auto *param = parameters->Add();
+    param->set_name(key);
+    const TypePair *found_type = find_type(std::string_view(type));
+    if (found_type == nullptr) {
+      find_type_error(out);
       return false;
     }
+    param->set_type(found_type->id);
+    auto variable = build_variable(found_type->id, value);
+    if (!variable.has_value()) {
+      build_variable_error(out, found_type, value);
+      return false;
+    }
+    globals[key] = variable.value();
   }
-
   return true;
 }
 uint16_t get_port() {
@@ -421,17 +479,15 @@ INSTRUMENT
   inst list                                 List running instruments
 
 MEASUREMENT
-  measure <script>                     Run measurement
-         [--global key=value]          Set simple globals (repeatable)
-         [--globals-json <json>]       Set structured globals
+  measure <script>                          Run measurement
+         [--input <name> <type> <value>]    Set input variables (repeatable)
 
 JOBS
   job list                             List jobs
   job cancel <job-id>                  Cancel job
   job status <job-id>                  Job status
   job measure <script>                 Queue measurement
-         [--global key=value]
-         [--globals-json <json>]
+         [--input <name> <type> <value>]
   job result <job-id>                  Get result
 
 BUFFERS
@@ -455,10 +511,9 @@ EXAMPLE WORKFLOW
   instrument-script-server start scope1.yaml --plugin ./custom.so
   instrument-script-server measure my_measurement.lua
   instrument-script-server job measure test.lua \
-    --global voltage=3.3 \
-    --global enabled=true
-  instrument-script-server job measure test.lua \
-    --globals-json '{"waveform":[1,2,3],"gain":5}'
+    --input voltage double 3.3 \
+    --input enabled bool true
+  instrument-script-server job measure other.lua
   instrument-script-server list
   instrument-script-server status DAC1
   instrument-script-server stop DAC1
@@ -912,8 +967,7 @@ int run_cli(int argc, char **argv) {
         out.error("Error: missing script path\n\n"
                   "Usage:\n"
                   "  instrument-script-server measure <script>\n"
-                  "    [--global key=value] (repeatable)\n"
-                  "    [--globals-json <json>]");
+                  "    [--input <name> <type> <value>] (repeatable)");
         return out.emit();
       }
 
@@ -927,8 +981,9 @@ int run_cli(int argc, char **argv) {
         req.set_script_path(std::string(args.at(2)));
 
         auto *globals = req.mutable_globals()->mutable_map();
+        auto *manifest = req.mutable_type_manifest();
 
-        if (!apply_globals(*parsed_globals, *globals, out)) {
+        if (!apply_globals(*parsed_globals, *globals, *manifest, out)) {
           return;
         }
 
@@ -1053,8 +1108,7 @@ int run_cli(int argc, char **argv) {
           out.error("Error: missing script path\n\n"
                     "Usage:\n"
                     "  instrument-script-server job measure <script>\n"
-                    "    [--global key=value] (repeatable)\n"
-                    "    [--globals-json <json>]");
+                    "    [--input <name> <type> <value>] (repeatable)");
           return out.emit();
         }
 
@@ -1067,9 +1121,10 @@ int run_cli(int argc, char **argv) {
           instserver::client::v1::MeasureJobRequest req;
           req.set_script_path(std::string(args.at(3)));
 
-          auto *globals_ptr = req.mutable_globals()->mutable_map();
+          auto *globals = req.mutable_globals()->mutable_map();
+          auto *manifest = req.mutable_type_manifest();
 
-          if (!apply_globals(*parsed_globals, *globals_ptr, out)) {
+          if (!apply_globals(*parsed_globals, *globals, *manifest, out)) {
             return;
           }
 

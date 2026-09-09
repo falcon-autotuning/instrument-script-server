@@ -3,7 +3,7 @@
 class CLITestMeasure : public ::testing::Test {
 protected:
   void SetUp() override {
-    run_iss("daemon start --json");
+    run_iss("daemon start --log-level trace --json");
     ASSERT_TRUE(wait_for_daemon_started())
         << "Daemon never became reachable in SetUp";
   }
@@ -148,4 +148,91 @@ TEST_F(CLITestMeasure, TwoInstrumentMeasureCompletes) {
 
   stop_mock1();
   stop_mock2();
+}
+
+TEST_F(CLITestMeasure, InputCorrect) {
+  start_mock1();
+  auto [exit_code, out] = run_iss(
+      "measure " +
+      (std::filesystem::path(data_dir) / "test_scripts" / "single_arg_main.lua")
+          .string() +
+      " --input voltage double 1.2 --json");
+  EXPECT_EQ(exit_code, 0) << "Loop measurement failed:\n" << out;
+  EXPECT_NE(out.find("Measurement complete"), std::string::npos)
+      << "Expected 'Measurement complete':\n"
+      << out;
+  stop_mock1();
+}
+TEST_F(CLITestMeasure, InputMultipleCorrect) {
+  start_mock1();
+  auto [exit_code, out] = run_iss(
+      "measure " +
+      (std::filesystem::path(data_dir) / "test_scripts" / "typed_main.lua")
+          .string() +
+      " --input voltage double 1.2 --input sampleRate int64 500 --json");
+  EXPECT_EQ(exit_code, 0) << "Loop measurement failed:\n" << out;
+  EXPECT_NE(out.find("Measurement complete"), std::string::npos)
+      << "Expected 'Measurement complete':\n"
+      << out;
+  stop_mock1();
+}
+TEST_F(CLITestMeasure, ExtraInputOkay) {
+  start_mock1();
+  auto [exit_code, out] = run_iss(
+      "measure " +
+      (std::filesystem::path(data_dir) / "test_scripts" / "single_arg_main.lua")
+          .string() +
+      " --input voltage double 1.2 --input sampleRate int64 500 --json");
+  EXPECT_EQ(exit_code, 0) << "Loop measurement failed:\n" << out;
+  EXPECT_NE(out.find("Measurement complete"), std::string::npos)
+      << "Expected 'Measurement complete':\n"
+      << out;
+}
+TEST_F(CLITestMeasure, InputExtraArgumentNoProblem) {
+  start_mock1();
+  auto [exit_code, out] = run_iss(
+      "measure " +
+      (std::filesystem::path(data_dir) / "test_scripts" / "single_arg_main.lua")
+          .string() +
+      " --input voltage double 1.2 this_is_extra --json");
+  EXPECT_EQ(exit_code, 0) << "Loop measurement failed:\n" << out;
+  EXPECT_NE(out.find("Measurement complete"), std::string::npos)
+      << "Expected 'Measurement complete':\n"
+      << out;
+}
+TEST_F(CLITestMeasure, InputMissingValueCausesError) {
+  start_mock1();
+  auto [exit_code, out] = run_iss(
+      "measure " +
+      (std::filesystem::path(data_dir) / "test_scripts" / "single_arg_main.lua")
+          .string() +
+      " --input voltage double --json");
+  EXPECT_EQ(exit_code, 1) << "Loop did not fail:\n" << out;
+}
+TEST_F(CLITestMeasure, InputInvalidTypeCausesError) {
+  start_mock1();
+  auto [exit_code, out] = run_iss(
+      "measure " +
+      (std::filesystem::path(data_dir) / "test_scripts" / "single_arg_main.lua")
+          .string() +
+      " --input voltage douple 1.2 --json");
+  EXPECT_EQ(exit_code, 1) << "Loop did not fail:\n" << out;
+}
+TEST_F(CLITestMeasure, InputRepeatedNameCausesError) {
+  start_mock1();
+  auto [exit_code, out] = run_iss(
+      "measure " +
+      (std::filesystem::path(data_dir) / "test_scripts" / "single_arg_main.lua")
+          .string() +
+      " --input voltage double 1.2 --input voltage int64 4 --json");
+  EXPECT_EQ(exit_code, 1) << "Loop did not fail:\n" << out;
+}
+TEST_F(CLITestMeasure, InputValueDoesNotMatchTypeCausesError) {
+  start_mock1();
+  auto [exit_code, out] = run_iss(
+      "measure " +
+      (std::filesystem::path(data_dir) / "test_scripts" / "single_arg_main.lua")
+          .string() +
+      " --input voltage double not_a_double --json");
+  EXPECT_EQ(exit_code, 1) << "Loop did not fail:\n" << out;
 }
