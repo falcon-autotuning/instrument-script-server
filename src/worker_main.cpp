@@ -795,13 +795,13 @@ private:
           std::visit(
               [&](const auto &limit_val) {
                 if (actual_type == PARAM_TYPE_DOUBLE) {
-                  const double limit = static_cast<double>(limit_val);
+                  const auto limit = static_cast<double>(limit_val);
                   actual_parameter.value.d_val =
                       (config.bound_type == LimitConfig::MIN_LIMIT)
                           ? std::max(actual_parameter.value.d_val, limit)
                           : std::min(actual_parameter.value.d_val, limit);
                 } else if (actual_type == PARAM_TYPE_INT64) {
-                  const int64_t limit = static_cast<int64_t>(limit_val);
+                  const auto limit = static_cast<int64_t>(limit_val);
 
                   actual_parameter.value.i64_val =
                       (config.bound_type == LimitConfig::MIN_LIMIT)
@@ -872,7 +872,7 @@ private:
     }
     int validated_response_count = 0;
     for (size_t i = 0; i < expected_returns.size(); i++) {
-      IO expected_return = expected_returns[i];
+      const IO &expected_return = expected_returns[i];
       Variable actual_return = actual_returns[i];
       log_debug("Command %s return type for name %s: expected '%s', got '%s'",
                 cmd.verb.c_str(), expected_return.name.c_str(),
