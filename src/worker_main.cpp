@@ -937,7 +937,7 @@ private:
     }
     int validated_response_count = 0;
     for (size_t i = 0; i < expected_returns.size(); i++) {
-      IO expected_return = expected_returns[i];
+      const IO &expected_return = expected_returns[i];
       Variable actual_return = actual_returns[i];
       log_debug("Command %s return type for name %s: expected '%s', got '%s'",
                 cmd.verb.c_str(), expected_return.name.c_str(),
