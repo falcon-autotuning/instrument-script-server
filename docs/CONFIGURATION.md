@@ -345,6 +345,7 @@ instrument:                      # Instrument metadata
   vendor:  "Vendor Name"
   model: "Model Number"
   identifier: "UNIQUE_ID"
+  instrument_type: voltmeter
 protocol:                       # Protocol type
   type: Custom
   name: <UniqueName> 
@@ -401,6 +402,14 @@ commands:                      # Command definitions
 **Description**: Unique identifier for this API definition.
 
 **Examples**: `DMM1`, `SCOPE1`, `DAC_API`
+
+##### `instrument.instrument_type` (required)
+
+**Type**: String (enum: `dc_voltage_source` | `amnmeter` | `magnet` | `lockin` | `voltage_source` | `current_source` | `hf_voltage_source` | `dc_current_source` | `hf_current_source` | `thermometer` | `voltmeter` | `fpga` | `clock` | `discrete`)
+
+**Description**: Canonical falcon-core instrument type for this API. This belongs to the instrument as a whole; IO entries describe capabilities, roles, and units.
+
+**Examples**: `dc_voltage_source`, `voltmeter`
 
 ##### `instrument.desc` (optional)
 
@@ -586,6 +595,7 @@ instrument:
   vendor: "Agilent"
   model: "34401A"
   identifier: "DMM_API"
+  instrument_type: voltmeter
   desc: "6. 5 Digit Digital Multimeter"
 
 protocol:
@@ -667,6 +677,7 @@ instrument:
   vendor: "Keysight"
   model: "DSO9254A"
   identifier: "SCOPE_API"
+  instrument_type: voltmeter
   desc: "High-Performance Oscilloscope"
 
 protocol:

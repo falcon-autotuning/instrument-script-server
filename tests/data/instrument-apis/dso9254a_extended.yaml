@@ -3,6 +3,7 @@ instrument:
   vendor: Keysight
   model: DSO9254A
   identifier: GPI1
+  instrument_type: voltmeter
   description: High-Performance Oscilloscope
 protocol:
   type: VISA

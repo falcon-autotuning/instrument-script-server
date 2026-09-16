@@ -3,6 +3,7 @@
 # Build preset (user can override: make build PRESET=linux-gcc-release)
 PRESET ?= linux-clang-release
 CMAKE_BUILD_DIR := build/$(PRESET)
+INSTALL_PREFIX ?= /opt/falcon
 
 help:
 	@echo "Instrument Script Server Build System"
@@ -15,7 +16,7 @@ help:
 	@echo "  make configure PRESET=<preset>  - Configure build (default: $(PRESET))"
 	@echo "  make build PRESET=<preset>      - Build (default: $(PRESET))"
 	@echo "  make test PRESET=<preset>       - Run tests with Docker (default: $(PRESET))"
-	@echo "  make install PRESET=<preset>    - Install to system"
+	@echo "  make install PRESET=<preset>    - Install to $(INSTALL_PREFIX)"
 	@echo "  make clean                      - Clean all build artifacts"
 	@echo ""
 	@echo "Examples:"
@@ -41,8 +42,8 @@ test: build
 	ctest --preset $(PRESET) -V
 
 install: build
-	@echo "Installing $(PRESET) to system..."
-	cmake --install $(CMAKE_BUILD_DIR)
+	@echo "Installing $(PRESET) to $(INSTALL_PREFIX)..."
+	cmake --install $(CMAKE_BUILD_DIR) --prefix $(INSTALL_PREFIX)
 
 clean:
 	@echo "Cleaning all build artifacts..."

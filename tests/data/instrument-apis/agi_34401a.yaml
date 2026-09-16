@@ -3,6 +3,7 @@ instrument:
   vendor: "Agilent"
   model: "34401A"
   identifier: "API1"
+  instrument_type: voltmeter
   description: "Digital Multimeter"
 protocol:
   type: "VISA"

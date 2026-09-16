@@ -3,6 +3,7 @@ instrument:
   vendor: Acme
   model: OSC1000
   identifier: SCOPE1
+  instrument_type: voltmeter
 protocol:
   type: VISA
 io:
