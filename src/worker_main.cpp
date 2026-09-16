@@ -618,6 +618,57 @@ private:
     return 1;
   }
 
+  const char *variable_type_to_string(VariableType type) {
+    switch (type) {
+    case PARAM_TYPE_NONE:
+      return "NONE";
+    case PARAM_TYPE_INT64:
+      return "INT64";
+    case PARAM_TYPE_DOUBLE:
+      return "DOUBLE";
+    case PARAM_TYPE_BOOL:
+      return "BOOL";
+    case PARAM_TYPE_STRING:
+      return "STRING";
+    case PARAM_TYPE_BUFFER:
+      return "BUFFER";
+    default:
+      return "UNKNOWN";
+    }
+  }
+
+  void log_variable(const Variable &v) {
+    switch (v.type) {
+    case PARAM_TYPE_INT64:
+      log_error("  %s: INT64 = %d", v.name, v.value.i64_val);
+      break;
+
+    case PARAM_TYPE_DOUBLE:
+      log_error("  %s: DOUBLE = %f", v.name, v.value.d_val);
+      break;
+
+    case PARAM_TYPE_BOOL:
+      log_error("  %s: BOOL = %s", v.name, v.value.b_val ? "true" : "false");
+      break;
+
+    case PARAM_TYPE_STRING:
+      log_error("  %s: STRING = '%s'", v.name, v.value.str_val);
+      break;
+
+    case PARAM_TYPE_BUFFER:
+      log_error("  %s: BUFFER = '%s'", v.name, v.value.str_val);
+      break;
+
+    case PARAM_TYPE_NONE:
+      log_error("  %s: NONE", v.name);
+      break;
+
+    default:
+      log_error("  %s: UNKNOWN TYPE (%u)", v.name, v.type);
+      break;
+    }
+  }
+
   void execute_command(const InstrumentCommand &cmd,
                        const ipc::IPCMessage &msg) {
 
@@ -653,9 +704,9 @@ private:
       data_manager_release_buffer(buffer_id.c_str());
       return;
     }
-    log_debug("Before command search");
+    log_trace("Before command search");
     const auto it = commands_.find(cmd.verb);
-    log_debug("After command search");
+    log_trace("After command search");
     if (it == commands_.end()) {
       log_error("Did not find a instruction matching %s", cmd.verb.c_str());
       return;
@@ -671,8 +722,16 @@ private:
 
     if (actual_size != expected_size) {
       log_error("Config command %s parameter mismatch: "
-                "expected size='%d', got='%d'",
+                "expected size='%zu', got='%zu'",
                 cmd.verb.c_str(), expected_size, actual_size);
+
+      log_error("Actual parameters:");
+
+      for (size_t i = 0; i < cmd.params.size(); ++i) {
+        log_error("param[%zu]", i);
+        log_variable(cmd.params[i]);
+      }
+
       return;
     }
     log_debug("The size of the command matches the one in the config with %d "
@@ -727,7 +786,6 @@ private:
               .bound_type = LimitConfig::MAX_LIMIT}}};
         for (const auto &config : limits) {
           const auto &limit_opt = expected_parameter.*(config.member);
-          log_info("%s has value=%d", config.label, limit_opt.has_value());
           if (!limit_opt.has_value()) {
             continue;
           }
@@ -737,15 +795,13 @@ private:
           std::visit(
               [&](const auto &limit_val) {
                 if (actual_type == PARAM_TYPE_DOUBLE) {
-                  const double limit = static_cast<double>(limit_val);
-                  log_info("Before clamp: %f", actual_parameter.value.d_val);
+                  const auto limit = static_cast<double>(limit_val);
                   actual_parameter.value.d_val =
                       (config.bound_type == LimitConfig::MIN_LIMIT)
                           ? std::max(actual_parameter.value.d_val, limit)
                           : std::min(actual_parameter.value.d_val, limit);
-                  log_info("After clamp: %f", actual_parameter.value.d_val);
                 } else if (actual_type == PARAM_TYPE_INT64) {
-                  const int64_t limit = static_cast<int64_t>(limit_val);
+                  const auto limit = static_cast<int64_t>(limit_val);
 
                   actual_parameter.value.i64_val =
                       (config.bound_type == LimitConfig::MIN_LIMIT)
@@ -816,7 +872,7 @@ private:
     }
     int validated_response_count = 0;
     for (size_t i = 0; i < expected_returns.size(); i++) {
-      IO expected_return = expected_returns[i];
+      const IO &expected_return = expected_returns[i];
       Variable actual_return = actual_returns[i];
       log_debug("Command %s return type for name %s: expected '%s', got '%s'",
                 cmd.verb.c_str(), expected_return.name.c_str(),
