@@ -109,6 +109,7 @@ startup:
   init_commands:
     - {}
     - {}
+io_config:
 )yaml",
                   name, addr, baudrate, json, delay, init1, init2);
   std::cout << "\n--- DEBUG: Generated YAML ---\n"
@@ -307,8 +308,8 @@ io:
     auto cfg = instserver::load_config(config_path);
     FAIL() << "Expected std::runtime_error";
   } catch (const std::runtime_error &e) {
-    EXPECT_THAT(std::string(e.what()),
-                ::testing::HasSubstr("Unknown IO in io_config: not_in_api"));
+    EXPECT_NE(std::string(e.what()).find("Unknown IO in io_config: not_in_api"),
+              std::string::npos);
   }
 
   std::filesystem::remove(config_path);

@@ -2,6 +2,7 @@
 #include <absl/strings/str_format.h>
 #include <instrument-plugin.h>
 #include <stdexcept>
+#include <unordered_set>
 #include <yaml-cpp/yaml.h>
 namespace instserver {
 namespace {
@@ -417,6 +418,9 @@ InstrumentConfig load_config(const std::filesystem::path &config_path) {
 
   const YAML::Node &io_config = doc["io_config"];
 
+  if (io_config.IsNull()) {
+    return cfg;
+  }
   if (!io_config.IsMap()) {
     throw std::runtime_error("io_config must be a YAML mapping");
   }
