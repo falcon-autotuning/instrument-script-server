@@ -3,7 +3,6 @@ instrument:
   vendor: "MockVendor"
   model: "MockModel"
   identifier: "MockAPI"
-  instrument_type: voltmeter
   description: "Mock instrument for testing"
 protocol:
   type: Custom

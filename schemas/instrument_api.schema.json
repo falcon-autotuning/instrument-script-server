@@ -22,8 +22,7 @@
       "required": [
         "vendor",
         "model",
-        "identifier",
-        "instrument_type"
+        "identifier"
       ],
       "description": "**Instrument Configuration** (Required)\n\nDefines the physical instrument details including vendor, model, and identifier.",
       "properties": {
@@ -39,26 +38,6 @@
           "type": "string",
           "pattern": "^[A-Z][A-Z0-9_]*$",
           "description": "**Unique Identifier** (Required)\n\nA unique identifier for this instrument instance when comparing against others of the same type (e.g., `SCOPE_1`, `GPI`)."
-        },
-        "instrument_type": {
-          "type": "string",
-          "enum": [
-            "dc_voltage_source",
-            "amnmeter",
-            "magnet",
-            "lockin",
-            "voltage_source",
-            "current_source",
-            "hf_voltage_source",
-            "dc_current_source",
-            "hf_current_source",
-            "thermometer",
-            "voltmeter",
-            "fpga",
-            "clock",
-            "discrete"
-          ],
-          "description": "**Instrument Type** (Required)\n\nCanonical falcon-core instrument type for this API. The value applies to the instrument as a whole; individual IO entries describe capabilities, roles, and units."
         },
         "description": {
           "type": "string",
