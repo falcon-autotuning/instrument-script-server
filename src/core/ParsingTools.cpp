@@ -1,5 +1,6 @@
 #include "instrument-script-server/core/ParsingTools.hpp"
 #include <absl/strings/str_format.h>
+#include <format>
 #include <instrument-plugin.h>
 #include <stdexcept>
 #include <unordered_set>
@@ -311,11 +312,11 @@ parse_io_config_entry(const std::string &io_name, const YAML::Node &node,
                                                               "scale"};
 
   for (const auto &field : node) {
-    const std::string key = field.first.as<std::string>();
+    const auto key = field.first.as<std::string>();
 
     if (!allowed_fields.contains(key)) {
-      throw std::runtime_error(absl::StrFormat(
-          "io_config.%s contains unknown field '%s'", io_name, key));
+      throw std::runtime_error(std::format(
+          "io_config.{} contains unknown field '{}'", io_name, key));
     }
   }
 
@@ -437,7 +438,7 @@ InstrumentConfig load_config(const std::filesystem::path &config_path) {
   }
 
   for (const auto &entry : io_config) {
-    const std::string io_name = entry.first.as<std::string>();
+    const auto io_name = entry.first.as<std::string>();
 
     const YAML::Node &cfg_node = entry.second;
 
