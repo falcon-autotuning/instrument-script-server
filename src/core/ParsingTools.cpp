@@ -293,6 +293,49 @@ load_api(const std::filesystem::path &api_path) {
   }
   return instrument_commands;
 }
+namespace {
+
+IOConfig
+parse_io_config_entry(const std::string &io_name, const YAML::Node &node,
+                      const std::unordered_set<std::string> &valid_ios) {
+  if (!valid_ios.contains(io_name)) {
+    throw std::runtime_error("Unknown IO in io_config: " + io_name);
+  }
+
+  if (!node.IsMap()) {
+    throw std::runtime_error("io_config." + io_name + " must be an object");
+  }
+
+  static const std::unordered_set<std::string> allowed_fields{"unit", "offset",
+                                                              "scale"};
+
+  for (const auto &field : node) {
+    const std::string key = field.first.as<std::string>();
+
+    if (!allowed_fields.contains(key)) {
+      throw std::runtime_error(absl::StrFormat(
+          "io_config.%s contains unknown field '%s'", io_name, key));
+    }
+  }
+
+  IOConfig cfg;
+
+  if (node["unit"]) {
+    cfg.unit = node["unit"].as<std::string>();
+  }
+
+  if (node["offset"]) {
+    cfg.offset = node["offset"].as<double>();
+  }
+
+  if (node["scale"]) {
+    cfg.scale = node["scale"].as<double>();
+  }
+
+  return cfg;
+}
+
+} // namespace
 
 InstrumentConfig load_config(const std::filesystem::path &config_path) {
   InstrumentConfig cfg;
@@ -365,6 +408,37 @@ InstrumentConfig load_config(const std::filesystem::path &config_path) {
         throw std::runtime_error("init_commands must be a YAML sequence/list");
       }
     }
+  }
+
+  // ---- required io_config block ----
+  if (!doc["io_config"]) {
+    throw std::runtime_error("Missing required field: io_config");
+  }
+
+  const YAML::Node &io_config = doc["io_config"];
+
+  if (!io_config.IsMap()) {
+    throw std::runtime_error("io_config must be a YAML mapping");
+  }
+
+  if (!api["io"]) {
+    throw std::runtime_error("Missing required api field: io");
+  }
+
+  std::unordered_set<std::string> valid_ios;
+
+  for (const auto &ioNode : api["io"]) {
+    IO io = makeIO(ioNode);
+    valid_ios.insert(io.name);
+  }
+
+  for (const auto &entry : io_config) {
+    const std::string io_name = entry.first.as<std::string>();
+
+    const YAML::Node &cfg_node = entry.second;
+
+    cfg.io_config.emplace(io_name,
+                          parse_io_config_entry(io_name, cfg_node, valid_ios));
   }
 
   return cfg;

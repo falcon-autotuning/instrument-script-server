@@ -63,25 +63,6 @@
         "^[A-Za-z_][A-Za-z0-9_]*$": {
           "type": "object",
           "properties": {
-            "type": {
-              "type": "string",
-              "enum": [
-                "int",
-                "float",
-                "string",
-                "bool"
-              ],
-              "description": "**IO Data Type** (required, string)\n\nThe data type of the IO port. Must be one of: 'int', 'float', 'string', or 'bool'."
-            },
-            "role": {
-              "type": "string",
-              "enum": [
-                "input",
-                "output",
-                "inout"
-              ],
-              "description": "**IO Role** (required, string)\n\nThe functional role of the IO port. Must be one of: 'input', 'output', or 'inout'."
-            },
             "unit": {
               "type": "string",
               "description": "**Physical Unit** (optional, string)\n\nThe physical unit for the IO port value, such as 'V' for volts, 'Hz' for hertz, or 's' for seconds."
@@ -97,10 +78,6 @@
               "description": "**Scale** (optional, number)\n\nA numeric scale factor to apply to the IO value. If not specified, the default is 1."
             }
           },
-          "required": [
-            "type",
-            "role"
-          ],
           "additionalProperties": false
         }
       },

@@ -149,8 +149,9 @@ TEST(ParsingToolsTest, LoadsConfigWithMinimalParams) {
   const std::string special = "Hello";
 
   std::string formatted_yaml = std::format(R"yaml(
-name: {}
+name: {} 
 api_ref: ./iss_config_test_api.yaml
+io_config: 
 )yaml",
                                            name);
   std::cout << "\n--- DEBUG: Generated YAML ---\n"
@@ -174,4 +175,142 @@ protocol:
   ASSERT_EQ(inst_config.name, name);
   std::filesystem::remove(config_path);
   std::filesystem::remove(isa_path);
+}
+TEST(ParsingToolsTest, LoadsConfigWithIOConfiguration) {
+  const auto config_path =
+      std::filesystem::temp_directory_path() / "iss_config_test.yaml";
+  const auto api_path =
+      std::filesystem::temp_directory_path() / "iss_config_test_api.yaml";
+
+  std::string formatted_yaml = R"yaml(
+name: TEST_INSTRUMENT
+api_ref: ./iss_config_test_api.yaml
+
+io_config:
+  voltage:
+    unit: V
+
+  current:
+    scale: 1000
+
+  temperature:
+    offset: -273.15
+
+  power:
+    unit: W
+    offset: 1.5
+    scale: 2.0
+)yaml";
+
+  std::ofstream config(config_path);
+  config << formatted_yaml;
+  config.close();
+
+  std::string formatted_api = R"yaml(
+protocol:
+  type: Custom
+  name: ExampleProtocol
+
+io:
+  - name: voltage
+    type: float
+
+  - name: current
+    type: float
+
+  - name: temperature
+    type: float
+
+  - name: power
+    type: float
+)yaml";
+
+  std::ofstream api(api_path);
+  api << formatted_api;
+  api.close();
+
+  const auto inst_config = instserver::load_config(config_path);
+
+  ASSERT_EQ(inst_config.io_config.size(), 4u);
+
+  {
+    const auto &cfg = inst_config.io_config.at("voltage");
+    ASSERT_TRUE(cfg.unit.has_value());
+    EXPECT_EQ(*cfg.unit, "V");
+    EXPECT_DOUBLE_EQ(cfg.offset, 0.0);
+    EXPECT_DOUBLE_EQ(cfg.scale, 1.0);
+  }
+
+  {
+    const auto &cfg = inst_config.io_config.at("current");
+    EXPECT_FALSE(cfg.unit.has_value());
+    EXPECT_DOUBLE_EQ(cfg.offset, 0.0);
+    EXPECT_DOUBLE_EQ(cfg.scale, 1000.0);
+  }
+
+  {
+    const auto &cfg = inst_config.io_config.at("temperature");
+    EXPECT_FALSE(cfg.unit.has_value());
+    EXPECT_DOUBLE_EQ(cfg.offset, -273.15);
+    EXPECT_DOUBLE_EQ(cfg.scale, 1.0);
+  }
+
+  {
+    const auto &cfg = inst_config.io_config.at("power");
+    ASSERT_TRUE(cfg.unit.has_value());
+    EXPECT_EQ(*cfg.unit, "W");
+    EXPECT_DOUBLE_EQ(cfg.offset, 1.5);
+    EXPECT_DOUBLE_EQ(cfg.scale, 2.0);
+  }
+
+  std::filesystem::remove(config_path);
+  std::filesystem::remove(api_path);
+}
+TEST(ParsingToolsTest, RejectsUnknownIOInConfig) {
+  const auto config_path =
+      std::filesystem::temp_directory_path() / "iss_config_test.yaml";
+
+  const auto api_path =
+      std::filesystem::temp_directory_path() / "iss_config_test_api.yaml";
+
+  std::string formatted_yaml = R"yaml(
+name: TEST_INSTRUMENT
+api_ref: ./iss_config_test_api.yaml
+
+io_config:
+  not_in_api:
+    unit: V
+)yaml";
+
+  std::ofstream config(config_path);
+  config << formatted_yaml;
+  config.close();
+
+  std::string formatted_api = R"yaml(
+protocol:
+  type: Custom
+  name: ExampleProtocol
+
+io:
+  - name: voltage
+    type: float
+
+  - name: current
+    type: float
+)yaml";
+
+  std::ofstream api(api_path);
+  api << formatted_api;
+  api.close();
+
+  try {
+    auto cfg = instserver::load_config(config_path);
+    FAIL() << "Expected std::runtime_error";
+  } catch (const std::runtime_error &e) {
+    EXPECT_THAT(std::string(e.what()),
+                ::testing::HasSubstr("Unknown IO in io_config: not_in_api"));
+  }
+
+  std::filesystem::remove(config_path);
+  std::filesystem::remove(api_path);
 }

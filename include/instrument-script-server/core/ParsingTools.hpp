@@ -4,14 +4,13 @@
 #include <cstdint>
 #include <filesystem>
 #include <instrument-plugin.h>
+#include <map>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <variant>
 #include <vector>
-#include <yaml-cpp/node/node.h>
 namespace instserver {
 // For unpacking the instrument-api
 struct INSTRUMENT_SERVER_API Precision {
@@ -50,10 +49,16 @@ struct INSTRUMENT_SERVER_API APIType {
   std::optional<std::string> name;
 };
 
+struct IOConfig {
+  std::optional<std::string> unit;
+  double offset = 0.0;
+  double scale = 1.0;
+};
 struct INSTRUMENT_SERVER_API InstrumentConfig {
   std::string name;
   std::string api_ref;
   APIType api_type;
+  std::map<std::string, IOConfig> io_config;
 
   std::optional<std::string> address;
   std::optional<uint32_t> baudrate;
@@ -61,12 +66,6 @@ struct INSTRUMENT_SERVER_API InstrumentConfig {
   std::optional<std::string> custom;
   std::optional<std::vector<std::string>> init_commands;
 };
-
-IO INSTRUMENT_SERVER_API makeIO(const YAML::Node &node);
-
-IO INSTRUMENT_SERVER_API
-parseParam(const YAML::Node &node,
-           const std::unordered_map<std::string, IO> &io_lookup);
 
 std::unordered_map<std::string, Command>
     INSTRUMENT_SERVER_API load_api(const std::filesystem::path &api_path);
