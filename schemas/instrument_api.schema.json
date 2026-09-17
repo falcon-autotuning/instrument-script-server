@@ -211,18 +211,9 @@
             "int",
             "float",
             "string",
-            "bool",
-            "buffer"
+            "bool"
           ],
-          "description": "**Type** (Required)\n\nParameter data type. Supported types: `int`, `float`, `string`, `bool`, `buffer`."
-        },
-        "element_type": {
-          "type": "string",
-          "enum": [
-            "int",
-            "float"
-          ],
-          "description": "Required for buffer parameters. Specifies the type of each element stored in the buffer."
+          "description": "**Type** (Required)\n\nParameter data type. Supported types: `int`, `float`, `string`, `bool`."
         },
         "description": {
           "type": "string",
@@ -336,53 +327,6 @@
         }
       },
       "allOf": [
-        {
-          "if": {
-            "properties": {
-              "type": {
-                "const": "buffer"
-              }
-            }
-          },
-          "then": {
-            "required": [
-              "element_type"
-            ],
-            "properties": {
-              "element_type": {
-                "type": "string",
-                "enum": [
-                  "int",
-                  "float"
-                ]
-              }
-            },
-            "not": {
-              "anyOf": [
-                {
-                  "required": [
-                    "precision"
-                  ]
-                },
-                {
-                  "required": [
-                    "format"
-                  ]
-                },
-                {
-                  "required": [
-                    "min"
-                  ]
-                },
-                {
-                  "required": [
-                    "max"
-                  ]
-                }
-              ]
-            }
-          }
-        },
         {
           "if": {
             "properties": {

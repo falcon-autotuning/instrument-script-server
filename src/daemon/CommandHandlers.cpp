@@ -572,8 +572,8 @@ int handle_measure(const MeasureJobRequest &req,
       std::string global_name = it.first;
       bool found = false;
 
-      for (const auto &param_def : param_defs) {
-        if (param_def.name() == global_name) {
+      for (int i = 0; i < param_defs.size(); ++i) {
+        if (param_defs[i].name() == global_name) {
           found = true;
           break;
         }

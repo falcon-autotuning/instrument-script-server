@@ -9,7 +9,6 @@ find_dependency(gRPC CONFIG REQUIRED)
 find_dependency(yaml-cpp CONFIG REQUIRED)
 find_dependency(sol2 CONFIG REQUIRED)
 find_dependency(cxxopts CONFIG REQUIRED)
-find_dependency(fmt CONFIG REQUIRED)
 find_dependency(Boost REQUIRED COMPONENTS date_time interprocess)
 
 find_dependency(instrument-data CONFIG REQUIRED)
