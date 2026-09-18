@@ -74,7 +74,35 @@ void unpack_min(const YAML::Node &node, IO *io) {
 void unpack_max(const YAML::Node &node, IO *io) {
   unpack_minmax(node, io, "max");
 }
+void unpack_role(const YAML::Node &node, IO *io) {
+  if (!node["role"]) {
+    return;
+  }
+  auto raw = node["role"].as<std::string>();
+  if (raw == "input") {
+    io->role = Role::Input;
+  } else if (raw == "output") {
+    io->role = Role::Output;
+  } else if (raw == "inout") {
+    io->role = Role::InOut;
+  } else if (raw == "trigger-in") {
+    io->role = Role::TriggerIn;
+  } else if (raw == "trigger-out") {
+    io->role = Role::TriggerOut;
+  } else if (raw == "clock-in") {
+    io->role = Role::ClockIn;
+  } else if (raw == "clock-out") {
+    io->role = Role::ClockOut;
+  } else if (raw == "setting") {
+    io->role = Role::Setting;
+  } else {
+    io->role = std::nullopt;
+  }
+}
 void unpack_optionals(const YAML::Node &node, IO *io) {
+  if (node["role"]) {
+    unpack_role(node, io);
+  }
   if (node["precision"]) {
     unpack_precision(node, io);
   }
@@ -149,6 +177,73 @@ IO parseParam(const YAML::Node &node,
   throw std::runtime_error("Invalid parameter format");
 }
 
+static ChannelGroupData load_channel_groups_impl(const YAML::Node &doc) {
+  ChannelGroupData result;
+
+  if (!doc["channel_groups"]) {
+    return result;
+  }
+
+  YAML::Node groups = doc["channel_groups"];
+
+  result.channel_groups.reserve(groups.size());
+  result.channel_group_io_lookup.reserve(groups.size());
+
+  for (const auto &group : groups) {
+    const auto groupName = group["name"].as<std::string>();
+
+    std::vector<IO> params;
+
+    const auto &chParamNode = group["channel_parameter"];
+
+    if (chParamNode.IsSequence()) {
+      for (const auto &p : chParamNode) {
+        IO io = makeNamelessIO(p);
+        io.name = groupName;
+        params.push_back(io);
+      }
+    } else {
+      IO io = makeNamelessIO(chParamNode);
+      io.name = groupName;
+      params.push_back(io);
+    }
+
+    std::unordered_map<std::string, IO> group_io_lookup;
+
+    if (group["io_types"]) {
+      group_io_lookup.reserve(group["io_types"].size());
+
+      for (const auto &ioTypeNode : group["io_types"]) {
+        IO io = makeChannelGroupIO(ioTypeNode);
+        group_io_lookup[io.name] = io;
+      }
+    }
+
+    result.channel_groups.emplace(groupName, std::move(params));
+    result.channel_group_io_lookup.emplace(groupName,
+                                           std::move(group_io_lookup));
+  }
+
+  return result;
+}
+static std::unordered_map<std::string, IO> load_io_impl(const YAML::Node &doc) {
+  std::unordered_map<std::string, IO> io_lookup;
+  for (const auto &ioNode : doc["io"]) {
+    IO io = makeIO(ioNode);
+    io_lookup[io.name] = io;
+  }
+  return io_lookup;
+}
+ChannelGroupData load_channel_groups(const std::filesystem::path &api_path) {
+  YAML::Node doc = YAML::LoadFile(api_path.string());
+  return load_channel_groups_impl(doc);
+}
+std::unordered_map<std::string, IO>
+load_io(const std::filesystem::path &api_path) {
+  YAML::Node doc = YAML::LoadFile(api_path.string());
+  return load_io_impl(doc);
+}
+
 std::unordered_map<std::string, Command>
 load_api(const std::filesystem::path &api_path) {
   std::unordered_map<std::string, Command> instrument_commands;
@@ -173,51 +268,13 @@ load_api(const std::filesystem::path &api_path) {
   if (!doc["io"]) {
     throw std::runtime_error("Missing required field: io");
   }
-
-  std::unordered_map<std::string, IO> io_lookup;
-  for (const auto &ioNode : doc["io"]) {
-    IO io = makeIO(ioNode);
-    io_lookup[io.name] = io;
-  }
+  std::unordered_map<std::string, IO> io_lookup = load_io_impl(doc);
 
   // ---------------- CHANNEL GROUPS ----------------
-  std::unordered_map<std::string, std::vector<IO>> channel_groups;
-  std::unordered_map<std::string, std::unordered_map<std::string, IO>>
-      channel_group_io_lookup;
-  if (doc["channel_groups"]) {
-    YAML::Node groups = doc["channel_groups"];
-    channel_groups.reserve(groups.size());
-    channel_group_io_lookup.reserve(groups.size());
-    for (const auto &group : groups) {
-      auto groupName = group["name"].as<std::string>();
-      std::vector<IO> params;
-      const auto &chParamNode = group["channel_parameter"];
-      if (chParamNode.IsSequence()) {
-        // multiple params
-        for (const auto &p : chParamNode) {
-          IO io = makeNamelessIO(p);
-          io.name = groupName;
-          params.push_back(io);
-        }
-      } else {
-        // single param
-        IO io = makeNamelessIO(chParamNode);
-        io.name = groupName;
-        params.push_back(io);
-      }
+  auto channel_group_data = load_channel_groups_impl(doc);
+  auto &channel_groups = channel_group_data.channel_groups;
+  auto &channel_group_io_lookup = channel_group_data.channel_group_io_lookup;
 
-      std::unordered_map<std::string, IO> group_io_lookup;
-      if (group["io_types"]) {
-        group_io_lookup.reserve(group["io_types"].size());
-        for (const auto &ioTypeNode : group["io_types"]) {
-          IO io = makeChannelGroupIO(ioTypeNode);
-          group_io_lookup[io.name] = io;
-        }
-      }
-      channel_groups.emplace(groupName, std::move(params));
-      channel_group_io_lookup.emplace(groupName, std::move(group_io_lookup));
-    }
-  }
   // ---------------- COMMANDS ----------------
   if (!doc["commands"]) {
     throw std::runtime_error("Missing required field: commands");
@@ -412,6 +469,18 @@ InstrumentConfig load_config(const std::filesystem::path &config_path) {
     }
   }
 
+  std::unordered_set<std::string> valid_ios;
+  for (const auto &ioNode : api["io"]) {
+    IO io = makeIO(ioNode);
+    if (io.role.has_value() && io.role.value() != Role::Setting) {
+      valid_ios.insert(io.name);
+    }
+  }
+  // Build defaults for every valid IO.
+  for (const auto &io_name : valid_ios) {
+    cfg.io_config.emplace(io_name, IOConfig{});
+  }
+
   // ---- required io_config block ----
   if (!doc["io_config"]) {
     throw std::runtime_error("Missing required field: io_config");
@@ -428,13 +497,6 @@ InstrumentConfig load_config(const std::filesystem::path &config_path) {
 
   if (!api["io"]) {
     throw std::runtime_error("Missing required api field: io");
-  }
-
-  std::unordered_set<std::string> valid_ios;
-
-  for (const auto &ioNode : api["io"]) {
-    IO io = makeIO(ioNode);
-    valid_ios.insert(io.name);
   }
 
   for (const auto &entry : io_config) {

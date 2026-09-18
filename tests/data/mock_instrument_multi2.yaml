@@ -2,3 +2,4 @@ name: MockInstrumentMulti2
 api_ref: ./mock_api_multi.yaml
 connection:
   address: "mock://test_multi2"
+io_config:

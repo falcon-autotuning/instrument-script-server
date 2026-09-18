@@ -43,7 +43,7 @@ void deduplicate_io(YAML::Node &root) {
   std::unordered_set<std::string> seen;
   for (const auto &entry : root["io"]) {
     auto name = entry["name"].as<std::string>();
-    if (seen.count(name) == 0) {
+    if (!seen.contains(name)) {
       unique_io.push_back(entry);
       seen.insert(name);
     }

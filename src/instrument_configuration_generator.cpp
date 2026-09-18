@@ -17,8 +17,6 @@ void generate_instrument_configuration(const std::string &api_yaml_path,
     if (role == "input" || role == "output" || role == "inout") {
       auto name = io["name"].as<std::string>();
       YAML::Node io_entry;
-      io_entry["type"] = io["type"].as<std::string>();
-      io_entry["role"] = role;
       if (io["unit"]) {
         io_entry["unit"] = io["unit"].as<std::string>();
       }

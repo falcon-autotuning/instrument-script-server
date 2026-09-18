@@ -244,7 +244,7 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
     plugin_response_push(resp, &var);
     return 0;
   }
-  // ---- MEASUERE ----
+  // ---- MEASURE ----
   if (strcmp(cmd->command, "MEASURE") == 0) {
     Variable var = {0};
     var.type = PARAM_TYPE_DOUBLE;

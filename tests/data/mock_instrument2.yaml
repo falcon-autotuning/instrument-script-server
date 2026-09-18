@@ -2,3 +2,4 @@ name: MockInstrument2
 api_ref: ./mock_api.yaml
 connection:
   address: "mock://test2"
+io_config:

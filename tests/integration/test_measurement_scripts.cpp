@@ -76,7 +76,7 @@ protected:
     inst_log_shutdown();
     log_path_ = kLogFiles[0];
     clear_test_logs(kLogFiles);
-    inst_log_init(log_path_.string().c_str(), INST_LOG_DEBUG, "instrument",
+    inst_log_init(log_path_.string().c_str(), INST_LOG_TRACE, "instrument",
                   1024 * 1024, // 1 MB
                   3);          // rotation count
     test_scripts_dir_ = std::filesystem::path(TEST_DATA_DIR) / "test_scripts";
@@ -234,15 +234,16 @@ protected:
         (test_configs_dir_ / "mock_instrument2.yaml").string();
     std::string config3 =
         (test_configs_dir_ / "mock_instrument3.yaml").string();
+    std::string log_level = "trace";
 
     if (std::filesystem::exists(config1)) {
-      registry.create_instrument(config1);
+      registry.create_instrument(config1, log_level);
     }
     if (std::filesystem::exists(config2)) {
-      registry.create_instrument(config2);
+      registry.create_instrument(config2, log_level);
     }
     if (std::filesystem::exists(config3)) {
-      registry.create_instrument(config3);
+      registry.create_instrument(config3, log_level);
     }
   }
 };
@@ -273,13 +274,15 @@ TEST_F(TripleMeasurementScriptTest, ParallelExecution) {
   worker3_log.does_not_contain_error();
 }
 
-TEST_F(TripleMeasurementScriptTest, LoopMeasurement) {
+TEST_F(TripleMeasurementScriptTest, LoopMeasurementGainAndOffset) {
   EXPECT_TRUE(run_script("loop_measurement.lua"));
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
   worker1_log.does_not_contain_error();
+  worker1_log.contains("Applying offset 1.000000 and scale 2.000000 for the "
+                       "parameter current from 0.010000 to -0.495000");
   auto worker2_log = read_inst2_log();
   worker2_log.does_not_contain_error();
   auto worker3_log = read_inst3_log();
@@ -424,6 +427,10 @@ name: TestScope
 api_ref: {}
 connection:
   address: mock://testscope
+io_config:
+  waveform:
+    offset: 1.5
+    scale: 0.5
 )",
                                               api_path.string());
 
@@ -479,7 +486,7 @@ connection:
       EXPECT_EQ(dtype, INST_DATA_FLOAT32);
       ASSERT_GE(data.size(), 100);
       for (size_t i = 0; i < 100; ++i) {
-        double expected = std::sin(2.0 * PI * i / 100.0);
+        double expected = (std::sin(2.0 * PI * i / 100.0) - 1.5) / 0.5;
         EXPECT_NEAR(data[i], expected, 0.01);
       }
     }
@@ -494,7 +501,7 @@ connection:
       ASSERT_TRUE(read_ok);
       ASSERT_GE(data.size(), 100);
       for (size_t i = 0; i < 100; ++i) {
-        double expected = std::sin(2.0 * PI * i / 100.0);
+        double expected = (std::sin(2.0 * PI * i / 100.0) - 1.5) / 0.5;
         EXPECT_NEAR(data[i], expected, 0.01);
       }
     }
@@ -621,7 +628,8 @@ commands:
                                   api_path.string() +
                                   "\n"
                                   "connection:\n"
-                                  "  address: \"mock://testscope\"\n";
+                                  "  address: \"mock://testscope\"\n"
+                                  "io_config:";
 
   std::filesystem::path config_path = temp_dir / "test_scope_large_data.yaml";
   std::ofstream config_file(config_path);
@@ -792,6 +800,7 @@ startup:
   init_commands:
     - {}
     - {}
+io_config:
 )yaml",
                         name, addr, baudrate, json, delay, init1, init2);
   config.close();
@@ -834,6 +843,7 @@ TEST_F(ConfigMeasurementScriptTest, ConfigInitializationDefaults) {
   config << std::format(R"yaml(
 name: {}
 api_ref: ./mock_api.yaml
+io_config:
 )yaml",
                         name);
   config.close();
@@ -878,6 +888,7 @@ TEST_F(ConfigMeasurementScriptTest, ProperVISACommands) {
   config << std::format(R"yaml(
 name: {}
 api_ref: ./mock_visa_api.yaml
+io_config:
 )yaml",
                         name);
   config.close();

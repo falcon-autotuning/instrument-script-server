@@ -2,3 +2,7 @@ name: MockInstrument1
 api_ref: ./mock_api.yaml
 connection:
   address: "mock://test1"
+io_config:
+  current:
+    offset: 1.0
+    scale: 2.0

@@ -16,6 +16,7 @@
 #include <instrument-plugin.h>
 #include <iostream>
 #include <mutex>
+#include <optional>
 #include <plugin-host.h>
 #include <queue>
 #include <stdexcept>
@@ -238,9 +239,12 @@ inline void safe_c_str_copy(char (&dest)[N], std::string_view src) {
 class InstrumentWorker {
 public:
   InstrumentWorker(InstrumentConfig config, const std::string &plugin_path,
-                   std::unordered_map<std::string, Command> commands)
+                   std::unordered_map<std::string, Command> commands,
+                   std::unordered_map<std::string, IO> ios,
+                   ChannelGroupData groups)
       : config_(std::move(config)), plugin_path_(plugin_path),
-        commands_(std::move(commands)), plugin_(plugin_path) {}
+        commands_(std::move(commands)), plugin_(plugin_path),
+        ios_(std::move(ios)), groups_(std::move(groups)) {}
 
   ~InstrumentWorker() { cleanup(); }
 
@@ -288,6 +292,8 @@ private:
   InstrumentConfig config_;
 
   std::unordered_map<std::string, Command> commands_;
+  std::unordered_map<std::string, IO> ios_;
+  ChannelGroupData groups_;
   std::unordered_map<std::string, std::vector<ipc::IPCMessage>>
       partial_commands_;
   std::mutex partial_commands_mutex_;
@@ -617,6 +623,172 @@ private:
               type);
     return 1;
   }
+  // If a part of a channel group we can extract a channel from config metadata
+  static std::optional<int64_t>
+  find_channel(const Command &truth, const InstrumentCommand &incoming) {
+    if (!truth.group_name.has_value()) {
+      return std::nullopt;
+    }
+    for (auto actual_parameter : incoming.params) {
+      if (actual_parameter.name == truth.group_name.value()) {
+        return actual_parameter.value.i64_val;
+      }
+    }
+    return std::nullopt;
+  }
+  void apply_offset_and_gain(Variable *subject, const Command truth,
+                             const std::optional<uint64_t> channel) {
+    // TODO: need to apply the unit
+    uint8_t type = subject->type;
+    std::string name = subject->name;
+    if (type != PARAM_TYPE_DOUBLE && type != PARAM_TYPE_BUFFER) {
+      return;
+    }
+    log_trace("Checking gain and offset");
+    std::string index_name;
+
+    if (ios_.contains(name)) {
+      if (ios_.at(name).role != Role::Setting) {
+        return;
+      }
+      index_name = name;
+      log_trace("The name to check in the config for the parameter: %s",
+                index_name.c_str());
+    } else if (truth.group_name.has_value()) {
+
+      auto group_it =
+          groups_.channel_group_io_lookup.find(truth.group_name.value());
+
+      if (group_it == groups_.channel_group_io_lookup.end() ||
+          !group_it->second.contains(name)) {
+        return;
+      }
+      if (!channel.has_value()) {
+        log_error("Channel-group IO found but no channel supplied");
+        return;
+      }
+
+      index_name = truth.group_name.value() + std::to_string(channel.value()) +
+                   "_" + name;
+      log_trace("The name to check in the config for the parameter is "
+                "mangled: %s",
+                index_name.c_str());
+    } else {
+      return;
+    }
+    auto config_it = config_.io_config.find(index_name);
+    if (config_it == config_.io_config.end()) {
+      log_error("IO_config missing entry '%s'", index_name.c_str());
+
+      for (const auto &[key, value] : config_.io_config) {
+        log_error("Configured IO: %s", key.c_str());
+      }
+      return;
+    }
+
+    double offset = config_it->second.offset;
+    double scale = config_it->second.scale;
+    if (scale == 0.0) {
+      log_error("Scale is exactly zero. No scale will be applied.");
+      return;
+    }
+    if (std::abs(scale) < std::numeric_limits<double>::epsilon()) {
+      log_error("Scale is extremely close to zero %f. No scale will be applied",
+                scale);
+      return;
+    }
+
+    if (type == PARAM_TYPE_DOUBLE) {
+      double old_value = subject->value.d_val;
+      double adjusted_value = (old_value - offset) / scale;
+      subject->value.d_val = adjusted_value;
+      log_debug("Applying offset %f and scale %f for the parameter %s from "
+                "%f to %f",
+                offset, scale, index_name.c_str(), old_value, adjusted_value);
+      return;
+    }
+    std::string buffer_id = subject->value.str_val;
+    SharedMetadata metadata = {};
+    data_manager_get_metadata(buffer_id.c_str(), &metadata);
+    if (metadata.type != INST_DATA_FLOAT32 &&
+        metadata.type != INST_DATA_FLOAT64) {
+      return;
+    }
+    log_debug("Applying offset %f and scale %f for the data_buffer %s ", offset,
+              scale, index_name.c_str());
+    data_manager_add_offset(buffer_id.c_str(), -offset);
+    data_manager_multiply_gain(buffer_id.c_str(), 1 / scale);
+  }
+  void apply_min_max(Variable *subject, const IO &config_truth) const {
+    uint8_t type = subject->type;
+    std::string name = subject->name;
+    if (type != PARAM_TYPE_INT64 && type != PARAM_TYPE_DOUBLE) {
+      return;
+    }
+    struct LimitConfig {
+      std::optional<std::variant<int64_t, double>> instserver::IO::*member;
+      const char *label;
+      enum : uint8_t { MIN_LIMIT, MAX_LIMIT } bound_type;
+    };
+    const std::array<LimitConfig, 2> limits{
+        {{.member = &instserver::IO::min,
+          .label = "Min",
+          .bound_type = LimitConfig::MIN_LIMIT},
+         {.member = &instserver::IO::max,
+          .label = "Max",
+          .bound_type = LimitConfig::MAX_LIMIT}}};
+    for (const auto &config : limits) {
+      const auto &limit_opt = config_truth.*(config.member);
+      if (!limit_opt.has_value()) {
+        continue;
+      }
+      log_trace("Checking %s limit for parameter %s", config.label,
+                name.c_str());
+
+      std::visit(
+          [&](const auto &limit_val) {
+            if (type == PARAM_TYPE_DOUBLE) {
+              const auto limit = static_cast<double>(limit_val);
+              double old_value = subject->value.d_val;
+              double adjusted_value =
+                  (config.bound_type == LimitConfig::MIN_LIMIT)
+                      ? std::max(old_value, limit)
+                      : std::min(old_value, limit);
+              subject->value.d_val = adjusted_value;
+              log_debug("Applying %s limit to parameter %s from %f to %f",
+                        config.label, name.c_str(), old_value, adjusted_value);
+            } else if (type == PARAM_TYPE_INT64) {
+              const auto limit = static_cast<int64_t>(limit_val);
+              int64_t old_value = subject->value.i64_val;
+              int64_t adjusted_value =
+                  (config.bound_type == LimitConfig::MIN_LIMIT)
+                      ? std::max(old_value, limit)
+                      : std::min(old_value, limit);
+              subject->value.i64_val = adjusted_value;
+              log_debug("Applying %s limit to parameter %s from %d to %d",
+                        config.label, name.c_str(), old_value, adjusted_value);
+            }
+          },
+          *limit_opt);
+    }
+  }
+  void apply_precision(Variable *subject, const IO &truth) const {
+    uint8_t type = subject->type;
+    std::string name = subject->name;
+    if (type == PARAM_TYPE_DOUBLE && truth.precision.resolution.has_value()) {
+      log_trace("Editing parameter %s precision due to resolution",
+                name.c_str());
+      const double res = truth.precision.resolution.value();
+      if (res > 0.0) {
+        double old_value = subject->value.d_val;
+        double adjusted_value = std::round(old_value / res) * res;
+        log_debug("Applying prevision %f for the parameter %s from "
+                  "%f to %f",
+                  res, name.c_str(), old_value, adjusted_value);
+        subject->value.d_val = adjusted_value;
+      }
+    }
+  }
 
   void execute_command(const InstrumentCommand &cmd,
                        const ipc::IPCMessage &msg) {
@@ -688,6 +860,7 @@ private:
 
     std::unordered_map<std::string, std::string>
         template_values; // for VISA use
+    std::optional<int64_t> channel = find_channel(command, cmd);
     for (size_t i = 0; i < cmd.params.size(); i++) {
       const auto expected_parameter = command.parameters[i];
       Variable actual_parameter = cmd.params[i];
@@ -712,61 +885,9 @@ private:
                   cmd.verb.c_str(), i, expected_type, actual_type);
         return;
       }
-      if (actual_type == PARAM_TYPE_INT64 || actual_type == PARAM_TYPE_DOUBLE) {
-        struct LimitConfig {
-          std::optional<std::variant<int64_t, double>> instserver::IO::*member;
-          const char *label;
-          enum : uint8_t { MIN_LIMIT, MAX_LIMIT } bound_type;
-        };
-        const std::array<LimitConfig, 2> limits{
-            {{.member = &instserver::IO::min,
-              .label = "Min",
-              .bound_type = LimitConfig::MIN_LIMIT},
-             {.member = &instserver::IO::max,
-              .label = "Max",
-              .bound_type = LimitConfig::MAX_LIMIT}}};
-        for (const auto &config : limits) {
-          const auto &limit_opt = expected_parameter.*(config.member);
-          log_info("%s has value=%d", config.label, limit_opt.has_value());
-          if (!limit_opt.has_value()) {
-            continue;
-          }
-          log_debug("Applying %s limit to parameter %s in command %s",
-                    config.label, expected_name.c_str(), cmd.verb.c_str());
-
-          std::visit(
-              [&](const auto &limit_val) {
-                if (actual_type == PARAM_TYPE_DOUBLE) {
-                  const double limit = static_cast<double>(limit_val);
-                  log_info("Before clamp: %f", actual_parameter.value.d_val);
-                  actual_parameter.value.d_val =
-                      (config.bound_type == LimitConfig::MIN_LIMIT)
-                          ? std::max(actual_parameter.value.d_val, limit)
-                          : std::min(actual_parameter.value.d_val, limit);
-                  log_info("After clamp: %f", actual_parameter.value.d_val);
-                } else if (actual_type == PARAM_TYPE_INT64) {
-                  const int64_t limit = static_cast<int64_t>(limit_val);
-
-                  actual_parameter.value.i64_val =
-                      (config.bound_type == LimitConfig::MIN_LIMIT)
-                          ? std::max(actual_parameter.value.i64_val, limit)
-                          : std::min(actual_parameter.value.i64_val, limit);
-                }
-              },
-              *limit_opt);
-        }
-      }
-      if (actual_type == PARAM_TYPE_DOUBLE &&
-          expected_parameter.precision.resolution.has_value()) {
-        log_debug(
-            "Editing parameter %s in command %s precision due to resolution",
-            expected_name.c_str(), command.name.c_str());
-        const double res = expected_parameter.precision.resolution.value();
-        if (res > 0.0) {
-          actual_parameter.value.d_val =
-              std::round(actual_parameter.value.d_val / res) * res;
-        }
-      }
+      apply_offset_and_gain(&actual_parameter, command, channel);
+      apply_min_max(&actual_parameter, expected_parameter);
+      apply_precision(&actual_parameter, expected_parameter);
 
       // push back a fixed template
       if (config_.api_type.type == instserver::VISA) {
@@ -837,6 +958,10 @@ private:
                 "got '%d'",
                 cmd.verb.c_str(), expected_returns_size, actual_returns_size);
       return;
+    }
+    for (size_t i = 0; i < expected_returns.size(); i++) {
+      Variable actual_return = actual_returns[i];
+      apply_offset_and_gain(&actual_return, command, channel);
     }
 
     send_command_response(msg, cmd, *plugin_resp, exec_result);
@@ -1017,6 +1142,8 @@ int main(int argc, char **argv) {
                 api_path.string().c_str(), e.what());
       return 1;
     }
+    std::unordered_map<std::string, IO> ios = load_io(api_path);
+    ChannelGroupData groups = load_channel_groups(api_path);
 
     LOG_DEBUG(config.name.c_str(), "WORKER_MAIN", "Worker starting");
     LOG_DEBUG(config.name.c_str(), "WORKER_MAIN", "Plugin: %s", plugin.c_str());
@@ -1041,7 +1168,8 @@ int main(int argc, char **argv) {
     std::signal(SIGTERM, signal_handler);
 
     try {
-      InstrumentWorker worker(config, plugin.string(), instrument_commands);
+      InstrumentWorker worker(config, plugin.string(), instrument_commands, ios,
+                              groups);
 
       int rc = worker.run();
 
