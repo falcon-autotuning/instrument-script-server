@@ -13,23 +13,23 @@ io:
     type: float
     role: input
     description: "Voltage value"
-    unit: "V"
+    unit: V
   - name: current
     type: float
     role: output
     description: "Measured current"
-    unit: "A"
+    unit: A
   - name: channel
     type: integer
     role: setting
     description: "Channel number"
   - name: message
     type: string
-    role: output
+    role: setting
     description: "Text message"
   - name: status
     type: boolean
-    role: output
+    role: setting
     description: "Status flag"
   - name: range
     type: float
@@ -37,8 +37,10 @@ io:
     description: "Measurement range"
     unit: "V"
   - name: waveform
-    type: array
+    type: buffer
+    element_type: float
     role: output
+    unit: V
     description: "Array of measurements"
   - name: config_param1
     type: float

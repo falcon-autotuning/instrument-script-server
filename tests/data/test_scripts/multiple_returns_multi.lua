@@ -30,6 +30,7 @@ function main(ctx)
 	local as = instrument_call_stack.new({
 		instrument = "MockInstrumentMulti1",
 		command = "GET_ARRAY",
+		channel = 1,
 	})
 	local array_val = ctx:call(as)
 	if type(array_val) == "table" then

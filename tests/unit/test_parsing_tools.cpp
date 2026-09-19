@@ -189,7 +189,7 @@ api_ref: ./iss_config_test_api.yaml
 
 io_config:
   voltage:
-    unit: V
+    transformed-unit: V
 
   current:
     scale: 1000
@@ -198,7 +198,7 @@ io_config:
     offset: -273.15
 
   power:
-    unit: W
+    transformed-unit: W
     offset: 1.5
     scale: 2.0
 )yaml";
@@ -214,16 +214,29 @@ protocol:
 
 io:
   - name: voltage
+    role: input
     type: float
+    unit: V
 
   - name: current
+    role: input
     type: float
+    unit: A
 
   - name: temperature
+    role: input
     type: float
+    unit : K
 
   - name: power
+    role: input
     type: float
+    unit: W
+
+  - name: other 
+    role: setting 
+    type: float 
+    unit: W
 )yaml";
 
   std::ofstream api(api_path);
@@ -232,7 +245,7 @@ io:
 
   const auto inst_config = instserver::load_config(config_path);
 
-  ASSERT_EQ(inst_config.io_config.size(), 4u);
+  ASSERT_EQ(inst_config.io_config.size(), 4U);
 
   {
     const auto &cfg = inst_config.io_config.at("voltage");
@@ -280,7 +293,7 @@ api_ref: ./iss_config_test_api.yaml
 
 io_config:
   not_in_api:
-    unit: V
+    transformed-unit: V
 )yaml";
 
   std::ofstream config(config_path);
@@ -294,10 +307,14 @@ protocol:
 
 io:
   - name: voltage
+    role: input
     type: float
+    unit: V
 
   - name: current
+    role: input
     type: float
+    unit: A
 )yaml";
 
   std::ofstream api(api_path);
@@ -311,6 +328,51 @@ io:
     EXPECT_NE(std::string(e.what()).find("Unknown IO in io_config: not_in_api"),
               std::string::npos);
   }
+
+  std::filesystem::remove(config_path);
+  std::filesystem::remove(api_path);
+}
+TEST(ParsingToolsTest, RejectsIOSettingConfig) {
+  const auto config_path =
+      std::filesystem::temp_directory_path() / "iss_config_test.yaml";
+
+  const auto api_path =
+      std::filesystem::temp_directory_path() / "iss_config_test_api.yaml";
+
+  std::string formatted_yaml = R"yaml(
+name: TEST_INSTRUMENT
+api_ref: ./iss_config_test_api.yaml
+io_config:
+)yaml";
+
+  std::ofstream config(config_path);
+  config << formatted_yaml;
+  config.close();
+
+  std::string formatted_api = R"yaml(
+protocol:
+  type: Custom
+  name: ExampleProtocol
+
+io:
+  - name: voltage
+    role: setting 
+    type: float
+    unit: V
+
+  - name: current
+    role: setting 
+    type: float
+    unit: A
+)yaml";
+
+  std::ofstream api(api_path);
+  api << formatted_api;
+  api.close();
+
+  auto cfg = instserver::load_config(config_path);
+  ASSERT_FALSE(cfg.io_config.contains("voltage"));
+  ASSERT_FALSE(cfg.io_config.contains("current"));
 
   std::filesystem::remove(config_path);
   std::filesystem::remove(api_path);

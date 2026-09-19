@@ -30,7 +30,7 @@ struct INSTRUMENT_SERVER_API InstrumentCommand {
 struct INSTRUMENT_SERVER_API InstrumentCommandResponse {
   std::string id;
   ErrorCode error_code{0};
-  std::vector<Variable> returns;
+  std::vector<ipc::VariableWithUnit> returns;
 };
 
 } // namespace instserver

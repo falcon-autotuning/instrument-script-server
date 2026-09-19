@@ -18,7 +18,7 @@ void generate_instrument_configuration(const std::string &api_yaml_path,
       auto name = io["name"].as<std::string>();
       YAML::Node io_entry;
       if (io["unit"]) {
-        io_entry["unit"] = io["unit"].as<std::string>();
+        io_entry["transformed-unit"] = io["unit"].as<std::string>();
       }
       io_entry["offset"] = 0;
       io_entry["scale"] = 1;

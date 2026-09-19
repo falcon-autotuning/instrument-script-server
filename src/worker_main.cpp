@@ -139,49 +139,6 @@ to_plugin_command(const InstrumentCommand &cmd) {
   return pcmd;
 }
 
-static InstrumentCommandResponse
-from_plugin_response(const PluginResponse &presp, std::string id,
-                     std::string instrument_name, ErrorCode error_code) {
-  InstrumentCommandResponse resp{};
-  resp.error_code = error_code;
-  resp.id = std::move(id);
-
-  uint8_t count = plugin_response_count(&presp);
-  resp.returns.reserve(count);
-  for (uint8_t i = 0; i < count; ++i) {
-    const Variable *src = plugin_response_get(&presp, i);
-    if (src == nullptr) {
-      continue;
-    }
-
-    Variable dst{};
-
-    copy_string(dst.name, sizeof(dst.name), src->name);
-    dst.type = src->type;
-    switch (src->type) {
-    case PARAM_TYPE_DOUBLE:
-      dst.value.d_val = src->value.d_val;
-      break;
-    case PARAM_TYPE_INT64:
-      dst.value.i64_val = src->value.i64_val;
-      break;
-    case PARAM_TYPE_STRING:
-    case PARAM_TYPE_BUFFER:
-      copy_string(dst.value.str_val, sizeof(dst.value.str_val),
-                  src->value.str_val);
-      break;
-    case PARAM_TYPE_BOOL:
-      dst.value.b_val = src->value.b_val;
-      break;
-    default:
-      continue;
-    }
-
-    resp.returns.push_back(dst);
-  }
-
-  return resp;
-}
 constexpr size_t chunk_count(size_t total) {
   return (total + instserver::ipc::PARAM_CHUNK - 1) /
          instserver::ipc::PARAM_CHUNK;
@@ -578,14 +535,13 @@ private:
       log_error("Failed to deserialize command ID %s: %s", first.id.data(),
                 e.what());
 
-      const PluginResponse *plugin_resp =
-          plugin_response_create_with_capacity(0);
+      std::vector<ipc::VariableWithUnit> plugin_resp{};
 
       InstrumentCommand stub_cmd{};
       stub_cmd.id = safe_string(first.id.data(), PLUGIN_MAX_STRING_LEN);
       stub_cmd.verb = "unknown";
 
-      send_command_response(first, stub_cmd, *plugin_resp,
+      send_command_response(first, stub_cmd, plugin_resp,
                             ErrorCode::MISSING_MESSAGE_ID);
       return;
     }
@@ -636,20 +592,21 @@ private:
     }
     return std::nullopt;
   }
-  void apply_offset_and_gain(Variable *subject, const Command truth,
-                             const std::optional<uint64_t> channel) {
-    // TODO: need to apply the unit
+  // Returns the unit if set
+  std::string apply_offset_and_gain(Variable *subject, const Command truth,
+                                    const std::optional<uint64_t> channel) {
     uint8_t type = subject->type;
     std::string name = subject->name;
     if (type != PARAM_TYPE_DOUBLE && type != PARAM_TYPE_BUFFER) {
-      return;
+      return "";
     }
     log_trace("Checking gain and offset");
     std::string index_name;
 
     if (ios_.contains(name)) {
-      if (ios_.at(name).role != Role::Setting) {
-        return;
+      IO io = ios_.at(name);
+      if (io.role.has_value() && !is_signal_role(io.role.value())) {
+        return "";
       }
       index_name = name;
       log_trace("The name to check in the config for the parameter: %s",
@@ -661,11 +618,11 @@ private:
 
       if (group_it == groups_.channel_group_io_lookup.end() ||
           !group_it->second.contains(name)) {
-        return;
+        return "";
       }
       if (!channel.has_value()) {
         log_error("Channel-group IO found but no channel supplied");
-        return;
+        return "";
       }
 
       index_name = truth.group_name.value() + std::to_string(channel.value()) +
@@ -674,7 +631,7 @@ private:
                 "mangled: %s",
                 index_name.c_str());
     } else {
-      return;
+      return "";
     }
     auto config_it = config_.io_config.find(index_name);
     if (config_it == config_.io_config.end()) {
@@ -683,19 +640,20 @@ private:
       for (const auto &[key, value] : config_.io_config) {
         log_error("Configured IO: %s", key.c_str());
       }
-      return;
+      return "";
     }
 
     double offset = config_it->second.offset;
     double scale = config_it->second.scale;
+    std::string unit = config_it->second.unit.value_or("");
     if (scale == 0.0) {
       log_error("Scale is exactly zero. No scale will be applied.");
-      return;
+      return "";
     }
     if (std::abs(scale) < std::numeric_limits<double>::epsilon()) {
       log_error("Scale is extremely close to zero %f. No scale will be applied",
                 scale);
-      return;
+      return "";
     }
 
     if (type == PARAM_TYPE_DOUBLE) {
@@ -705,19 +663,24 @@ private:
       log_debug("Applying offset %f and scale %f for the parameter %s from "
                 "%f to %f",
                 offset, scale, index_name.c_str(), old_value, adjusted_value);
-      return;
+      log_debug("Applying unit %s for the parameter %s ", unit.c_str(),
+                index_name.c_str());
+      return unit;
     }
     std::string buffer_id = subject->value.str_val;
     SharedMetadata metadata = {};
     data_manager_get_metadata(buffer_id.c_str(), &metadata);
     if (metadata.type != INST_DATA_FLOAT32 &&
         metadata.type != INST_DATA_FLOAT64) {
-      return;
+      return "";
     }
     log_debug("Applying offset %f and scale %f for the data_buffer %s ", offset,
               scale, index_name.c_str());
     data_manager_add_offset(buffer_id.c_str(), -offset);
     data_manager_multiply_gain(buffer_id.c_str(), 1 / scale);
+    log_debug("Applying unit %s for the parameter %s ", unit.c_str(),
+              index_name.c_str());
+    return unit;
   }
   void apply_min_max(Variable *subject, const IO &config_truth) const {
     uint8_t type = subject->type;
@@ -929,26 +892,34 @@ private:
       return;
     }
     std::vector<IO> expected_returns = command.returns;
-    std::vector<Variable> actual_returns;
+    std::vector<ipc::VariableWithUnit> actual_returns;
     size_t actual_returns_size = actual_returns.size();
     actual_returns.reserve(actual_resp_count);
     for (size_t i = 0; i < actual_resp_count; ++i) {
-      actual_returns.push_back(*plugin_response_get(plugin_resp, i));
+      ipc::VariableWithUnit value{.var = *plugin_response_get(plugin_resp, i)};
+
+      const std::string unit = expected_returns[i].unit.value_or("");
+
+      std::strncpy(value.unit.data(), unit.c_str(),
+                   instserver::ipc::MAX_UNIT_LEN - 1);
+      value.unit[instserver::ipc::MAX_UNIT_LEN - 1] = '\0';
+
+      actual_returns.push_back(value);
     }
     int validated_response_count = 0;
     for (size_t i = 0; i < expected_returns.size(); i++) {
       const IO &expected_return = expected_returns[i];
-      Variable actual_return = actual_returns[i];
+      ipc::VariableWithUnit actual_return = actual_returns[i];
       log_debug("Command %s return type for name %s: expected '%s', got '%s'",
                 cmd.verb.c_str(), expected_return.name.c_str(),
                 readable_param_types(expected_return.type).c_str(),
-                readable_param_types(actual_return.type).c_str());
-      if (expected_return.type != actual_return.type) {
+                readable_param_types(actual_return.var.type).c_str());
+      if (expected_return.type != actual_return.var.type) {
         log_error("Command %s return type for name %s mismatch: expected "
                   "'%s', got '%s'",
                   cmd.verb.c_str(), expected_return.name.c_str(),
                   readable_param_types(expected_return.type).c_str(),
-                  readable_param_types(actual_return.type).c_str());
+                  readable_param_types(actual_return.var.type).c_str());
         return;
       }
       validated_response_count++;
@@ -960,11 +931,17 @@ private:
       return;
     }
     for (size_t i = 0; i < expected_returns.size(); i++) {
-      Variable actual_return = actual_returns[i];
-      apply_offset_and_gain(&actual_return, command, channel);
+      ipc::VariableWithUnit actual_return = actual_returns[i];
+      std::string unit =
+          apply_offset_and_gain(&actual_return.var, command, channel);
+      if (unit != "") {
+        std::strncpy(actual_return.unit.data(), unit.c_str(),
+                     instserver::ipc::MAX_UNIT_LEN - 1);
+        actual_return.unit[instserver::ipc::MAX_UNIT_LEN - 1] = '\0';
+      }
     }
 
-    send_command_response(msg, cmd, *plugin_resp, exec_result);
+    send_command_response(msg, cmd, actual_returns, exec_result);
     param_storage_free(pcmd->params);
     plugin_response_free(plugin_resp);
 
@@ -976,13 +953,15 @@ private:
 
     send_sync_ack(msg, token);
   }
-  void send_command_response(const ipc::IPCMessage &msg,
-                             const InstrumentCommand &cmd,
-                             const PluginResponse &plugin_resp,
-                             ErrorCode error_code) {
-    const InstrumentCommandResponse resp = from_plugin_response(
-        plugin_resp, safe_string(msg.id.data(), PLUGIN_MAX_STRING_LEN),
-        config_.name, error_code);
+  void
+  send_command_response(const ipc::IPCMessage &msg,
+                        const InstrumentCommand &cmd,
+                        const std::vector<ipc::VariableWithUnit> &plugin_resp,
+                        ErrorCode error_code) {
+    InstrumentCommandResponse resp{};
+    resp.error_code = error_code;
+    resp.id = std::move(safe_string(msg.id.data(), PLUGIN_MAX_STRING_LEN));
+    resp.returns = plugin_resp;
     std::vector<ipc::IPCMessage> resp_msgs;
     ipc::fill_ipc_responses(resp_msgs, resp);
     log_info("send_command_response: sending response msg_id=%s verb='%s' "

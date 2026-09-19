@@ -2,6 +2,7 @@
 #include <absl/strings/str_format.h>
 #include <format>
 #include <instrument-plugin.h>
+#include <iostream>
 #include <stdexcept>
 #include <unordered_set>
 #include <yaml-cpp/yaml.h>
@@ -99,9 +100,26 @@ void unpack_role(const YAML::Node &node, IO *io) {
     io->role = std::nullopt;
   }
 }
+void unpack_unit(const YAML::Node &node, IO *io) {
+  if (!node["unit"]) {
+    return;
+  }
+  io->unit = node["unit"].as<std::string>();
+}
 void unpack_optionals(const YAML::Node &node, IO *io) {
   if (node["role"]) {
     unpack_role(node, io);
+    if (io->role.has_value() && is_signal_role(io->role.value()) &&
+        !node["unit"]) {
+      throw std::runtime_error(
+          std::format("IO '{}' with role '{}' must have a unit",
+                      node["name"] ? node["name"].as<std::string>()
+                                   : node["suffix"].as<std::string>(),
+                      node["role"].as<std::string>()));
+    }
+  }
+  if (node["unit"]) {
+    unpack_unit(node, io);
   }
   if (node["precision"]) {
     unpack_precision(node, io);
@@ -365,8 +383,8 @@ parse_io_config_entry(const std::string &io_name, const YAML::Node &node,
     throw std::runtime_error("io_config." + io_name + " must be an object");
   }
 
-  static const std::unordered_set<std::string> allowed_fields{"unit", "offset",
-                                                              "scale"};
+  static const std::unordered_set<std::string> allowed_fields{
+      "transformed-unit", "offset", "scale"};
 
   for (const auto &field : node) {
     const auto key = field.first.as<std::string>();
@@ -379,16 +397,20 @@ parse_io_config_entry(const std::string &io_name, const YAML::Node &node,
 
   IOConfig cfg;
 
-  if (node["unit"]) {
-    cfg.unit = node["unit"].as<std::string>();
+  if (node["transformed-unit"]) {
+    cfg.unit = node["transformed-unit"].as<std::string>();
   }
 
   if (node["offset"]) {
     cfg.offset = node["offset"].as<double>();
+  } else {
+    cfg.offset = 0.0;
   }
 
   if (node["scale"]) {
     cfg.scale = node["scale"].as<double>();
+  } else {
+    cfg.scale = 1.0;
   }
 
   return cfg;
@@ -472,7 +494,8 @@ InstrumentConfig load_config(const std::filesystem::path &config_path) {
   std::unordered_set<std::string> valid_ios;
   for (const auto &ioNode : api["io"]) {
     IO io = makeIO(ioNode);
-    if (io.role.has_value() && io.role.value() != Role::Setting) {
+
+    if (io.role.has_value() && is_signal_role(io.role.value())) {
       valid_ios.insert(io.name);
     }
   }
@@ -501,11 +524,10 @@ InstrumentConfig load_config(const std::filesystem::path &config_path) {
 
   for (const auto &entry : io_config) {
     const auto io_name = entry.first.as<std::string>();
-
     const YAML::Node &cfg_node = entry.second;
 
-    cfg.io_config.emplace(io_name,
-                          parse_io_config_entry(io_name, cfg_node, valid_ios));
+    cfg.io_config.at(io_name) =
+        parse_io_config_entry(io_name, cfg_node, valid_ios);
   }
 
   return cfg;

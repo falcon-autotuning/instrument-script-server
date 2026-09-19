@@ -435,8 +435,9 @@ sol::object RuntimeContext::call(sol::object target, sol::variadic_args args,
 
   int idx = 1;
 
-  for (const auto &v : resp.returns) {
+  for (const auto &var : resp.returns) {
     std::shared_ptr<MeasurementResponse> response;
+    Variable v = var.var;
 
     switch (v.type) {
 
@@ -757,8 +758,10 @@ nlohmann::json RuntimeContext::collect_results_json() const {
                               .count();
     // Return value
     nlohmann::json return_json;
-    for (const auto &v : cr.returns) {
+    for (const auto &var : cr.returns) {
+      Variable v = var.var;
       const auto &key = v.name;
+      return_json[key]["unit"] = var.unit;
       switch (v.type) {
       case PARAM_TYPE_DOUBLE:
         return_json[key]["value"] = v.value.d_val;

@@ -572,8 +572,8 @@ int handle_measure(const MeasureJobRequest &req,
       std::string global_name = it.first;
       bool found = false;
 
-      for (int i = 0; i < param_defs.size(); ++i) {
-        if (param_defs[i].name() == global_name) {
+      for (const auto &param_def : param_defs) {
+        if (param_def.name() == global_name) {
           found = true;
           break;
         }
@@ -649,29 +649,32 @@ int handle_measure(const MeasureJobRequest &req,
       // Return value
       auto *returns = out_chunk->mutable_param();
       returns->Reserve((int)r.returns.size());
-      for (const auto &v : r.returns) {
+      for (const auto &var : r.returns) {
+        Variable v = var.var;
         auto *tparam = returns->Add();
-        VariableValue *var = tparam->mutable_value();
+        VariableValue *varValue = tparam->mutable_value();
         tparam->set_name(v.name);
+        tparam->set_unit(std::string(
+            var.unit.data(), strnlen(var.unit.data(), var.unit.size())));
         switch (v.type) {
         case PARAM_TYPE_DOUBLE:
-          var->set_d(v.value.d_val);
+          varValue->set_d(v.value.d_val);
           tparam->set_type(v1::LUA_TYPES_DOUBLE);
           break;
         case PARAM_TYPE_INT64:
-          var->set_i(v.value.i64_val);
+          varValue->set_i(v.value.i64_val);
           tparam->set_type(v1::LUA_TYPES_INT64);
           break;
         case PARAM_TYPE_STRING:
-          var->set_s(v.value.str_val);
+          varValue->set_s(v.value.str_val);
           tparam->set_type(v1::LUA_TYPES_STRING);
           break;
         case PARAM_TYPE_BOOL:
-          var->set_b(v.value.b_val);
+          varValue->set_b(v.value.b_val);
           tparam->set_type(v1::LUA_TYPES_BOOL);
           break;
         case PARAM_TYPE_BUFFER: {
-          var->set_s(v.value.str_val);
+          varValue->set_s(v.value.str_val);
           tparam->set_type(v1::LUA_TYPES_DATA_BUFFER);
           auto meta =
               DataBufferManager::instance().get_metadata(v.value.str_val);

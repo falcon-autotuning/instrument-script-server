@@ -3,3 +3,10 @@ api_ref: ./mock_api_multi.yaml
 connection:
   address: "mock://test_multi1"
 io_config:
+  current:
+    offset: 1.0
+    scale: 2.0
+  channel1_waveform:
+    offset: 1.0
+    scale: 0.5
+    transformed-unit: A

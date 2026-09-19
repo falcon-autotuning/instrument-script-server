@@ -282,48 +282,35 @@ connection:
   address: "USB0::0x0957::0x179B::MY12345678::INSTR"
 io_config:
   analog1_waveform:
-    type: float
-    role: output
-    unit: V
+    transformed-unit: V
+    offset: 1.0
+    scale: 5.0
   analog2_waveform: 
-    type: float
-    role:  output
-    unit: V
+    transformed-unit: V
   analog3_waveform:
-    type: float
-    role: output
-    unit: V
+    transformed-unit: V
+    offset: 0.0
+    scale: 1.0
   analog4_waveform:
-    type: float
-    role: output
-    unit: V
+    transformed-unit: V
   timebase:
-    type: float
-    role: setting
-    unit: s
+    transformed-unit: s
 ```
 
-#### Example 3: Custom Serial Instrument
+Before a command parameter is sent to the instrument, the configured offset and scale are applied using the following transformation:
 
-```yaml
-name: CUSTOM_DEVICE
-api_ref: apis/custom_serial_device.yaml
-connection:
-  custom: "device:\"/dev/ttyUSB0\";baudrate:115200"
-io_config:
-  setpoint:
-    type: float
-    role: input
-    unit: degC
-    offset: 0
-    scale: 1
-  temperature:
-    type: float
-    role: output
-    unit: degC
-    offset: 0
-    scale:  1
-```
+\[
+\text{instrument\_value} = \frac{\text{value} - \text{offset}}{\text{scale}}
+\]
+
+Where:
+
+- `value` is the value provided by the user or application.
+- `offset` is the configured offset applied to the parameter. The default offset is 0.0.
+- `scale` is the configured scale factor applied to the parameter. The default scale is 1.0.
+- `instrument_value` is the value transmitted to the instrument.
+
+This transformation allows the API to present values in user-defined engineering units while automatically converting them into the units expected by the instrument.
 
 ---
 
@@ -351,7 +338,7 @@ protocol:                       # Protocol type
 io:                             # IO port definitions
   - name: port_name
     type: float
-    role: input|output|setting
+    role: input|output|inout|trigger-in|trigger-out|clock-in|clock-out|setting
     unit: V
     description: "..."
 commands:                      # Command definitions
@@ -488,7 +475,7 @@ Each IO port object has:
 
 **Description**:  Defines groups of channels (e.g., oscilloscope channels 1-4).
 
-See the [dso9254a. yaml. tmpl](../examples/instrument-apis/dso9254a.yaml.tmpl) example for usage.
+See the [dso9254a.yaml.tmpl](../examples/instrument-apis/dso9254a.yaml.tmpl) example for usage.
 
 #### `commands` (required)
 
@@ -506,11 +493,11 @@ See the [dso9254a. yaml. tmpl](../examples/instrument-apis/dso9254a.yaml.tmpl) e
 
 Each command has:
 
-###### `template` (required)
+###### `template` (optional)
 
 **Type**: String
 
-**Description**:  The actual command string sent to the instrument.  Parameters in curly braces `{param}` are substituted at runtime.
+**Description**:  The actual command string sent to the instrument.  Parameters in curly braces `{param}` are substituted at runtime. This is only required for VISA
 
 **VISA/SCPI Examples**:
 
@@ -659,82 +646,6 @@ commands:
     query: true
 ```
 
-#### Example 2: Oscilloscope with Channel Groups
-
-```yaml
-api_version: "1.0.0"
-instrument:
-  vendor: "Keysight"
-  model: "DSO9254A"
-  identifier: "SCOPE_API"
-  desc: "High-Performance Oscilloscope"
-
-protocol:
-  type: "VISA"
-
-channel_groups:
-  - name:  analog
-    description: "Analog input channels"
-    channel_parameter: 
-      name: channel
-      type: int
-      min: 1
-      max: 4
-      description: "Oscilloscope channel number (1-4)"
-    io_types:
-      - suffix: waveform
-        type: float
-        role: output
-        unit: "V"
-        description: "Waveform data"
-      - suffix: voltage_range
-        type: float
-        role: setting
-        unit: "V"
-        description: "Voltage range in volts"
-
-io:
-  - name: timebase
-    type: float
-    role: setting
-    description: "Global timebase setting"
-    unit: "s"
-  
-  # The channel group automatically creates: 
-  # analog1_waveform, analog2_waveform, analog3_waveform, analog4_waveform
-  # analog1_voltage_range, analog2_voltage_range, etc. 
-
-commands:
-  GET_WAVEFORM:
-    template: ":WAV:DATA?  {analog}"
-    description: "Retrieve waveform data from specified channel"
-    parameters:  []
-    channel_group: analog
-    outputs: [waveform]
-    returns: array<float>
-    query: true
-  
-  SET_VOLTAGE_RANGE: 
-    template: ":CHAN{analog}:RANG {value}"
-    description: "Set voltage range for channel"
-    parameters:
-      - name: value
-        type: float
-        description: "Voltage range in volts"
-        unit: "V"
-    channel_group: analog
-    outputs:  [voltage_range]
-    returns:  void
-  
-  SET_TIMEBASE:
-    template: ":TIM:SCAL {timebase}"
-    description: "Set timebase (time per division)"
-    parameters:
-      - io: timebase
-    outputs: []
-    returns: void
-```
-
 ---
 
 ## Configuration Validation
@@ -745,40 +656,11 @@ The server includes built-in validation tools to check your configuration files 
 
 ```bash
 # Validate an instrument configuration
-instrument-script-server validate config path/to/config.yaml
+validate-instrument-config path/to/config.yaml
 
 # Validate an API definition
-instrument-script-server validate api path/to/api.yaml
+validate-instrument-api path/to/api.yaml
 ```
-
-### Common Validation Errors
-
-#### Error: "name must match pattern ^[A-Z][A-Z0-9_]*$"
-
-**Problem**:  Instrument name uses lowercase or special characters.
-
-**Solution**: Use uppercase letters, numbers, and underscores only.  Must start with a letter.
-
-**Bad**: `dmm1`, `DMM-1`, `1DMM`  
-**Good**: `DMM1`, `DMM_PRIMARY`, `SCOPE_A`
-
-#### Error: "Unknown connection type"
-
-**Problem**: `connection.type` is not `VISA` or `Custom`.
-
-**Solution**: Use exactly `VISA` or `Custom` (case-sensitive).
-
-#### Error: "io_config missing required port"
-
-**Problem**: An IO port with role `input`, `output`, or `inout` is defined in the API but not configured.
-
-**Solution**: Add the missing IO port to `io_config` in your configuration file.
-
-#### Error: "Command template missing parameter"
-
-**Problem**: A parameter is referenced in `{braces}` in the template but not defined in `parameters`.
-
-**Solution**: Add the parameter to the `parameters` list.
 
 ---
 

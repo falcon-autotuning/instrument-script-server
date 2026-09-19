@@ -170,8 +170,9 @@ from_ipc_responses(const std::vector<IPCMessage> &in_vec) {
   size_t accumulated = 0;
 
   for (const auto &msg : in_vec) {
-    if (msg.type != IPCMessage::Type::RESPONSE)
+    if (msg.type != IPCMessage::Type::RESPONSE) {
       continue;
+    }
 
     uint8_t count = msg.response.return_count;
 

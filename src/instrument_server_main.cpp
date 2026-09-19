@@ -1011,7 +1011,8 @@ int run_cli(int argc, char **argv) {
                 value = v.s();
               }
 
-              out.message("      " + param.name() + " = " + value);
+              out.message("      " + param.name() + " = " + value + " " +
+                          param.unit());
             }
           }
 

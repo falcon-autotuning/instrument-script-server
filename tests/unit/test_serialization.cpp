@@ -12,9 +12,9 @@ void copy_string(char *dst, size_t dst_size, const std::string &src) {
 }
 static const Variable *find_param(const InstrumentCommand &cmd,
                                   const std::string &name) {
-  for (uint8_t i = 0; i < cmd.params.size(); ++i) {
-    if (cmd.params[i].name == name) {
-      return &cmd.params[i];
+  for (const auto &param : cmd.params) {
+    if (param.name == name) {
+      return &param;
     }
   }
   return nullptr;
@@ -177,10 +177,12 @@ TEST(Serialization, ResponseSuccess) {
   resp.id = "cmd-789";
 
   {
-    Variable var;
-    copy_string(var.name, PLUGIN_MAX_STRING_LEN, "voltage");
-    var.type = PARAM_TYPE_DOUBLE;
-    var.value.d_val = 3.15159;
+    VariableWithUnit var;
+    copy_string(var.var.name, PLUGIN_MAX_STRING_LEN, "voltage");
+    var.var.type = PARAM_TYPE_DOUBLE;
+    var.var.value.d_val = 3.15159;
+    std::strncpy(var.unit.data(), "V", MAX_UNIT_LEN - 1);
+    var.unit[MAX_UNIT_LEN - 1] = '\0';
     resp.returns.push_back(var);
   }
 
@@ -190,8 +192,9 @@ TEST(Serialization, ResponseSuccess) {
 
   EXPECT_EQ(deserialized.id, "cmd-789");
   ASSERT_TRUE(deserialized.returns.size());
-  EXPECT_EQ(deserialized.returns[0].type, PARAM_TYPE_DOUBLE);
-  EXPECT_DOUBLE_EQ(deserialized.returns[0].value.d_val, 3.15159);
+  EXPECT_EQ(deserialized.returns[0].var.type, PARAM_TYPE_DOUBLE);
+  EXPECT_DOUBLE_EQ(deserialized.returns[0].var.value.d_val, 3.15159);
+  EXPECT_STREQ(deserialized.returns[0].unit.data(), "V");
 }
 
 TEST(Serialization, ResponseAllTypesWithChunking) {
@@ -200,37 +203,41 @@ TEST(Serialization, ResponseAllTypesWithChunking) {
 
   // ---- generate mixed types across many entries (forces chunking) ----
   for (int i = 1; i <= 20; ++i) {
-    Variable var;
+    VariableWithUnit var;
 
     std::string name = "var" + std::to_string(i);
-    copy_string(var.name, PLUGIN_MAX_STRING_LEN, name);
+    copy_string(var.var.name, PLUGIN_MAX_STRING_LEN, name);
 
     switch (i % 5) {
     case 0: // double
-      var.type = PARAM_TYPE_DOUBLE;
-      var.value.d_val = static_cast<double>(i) * 1.1;
+      var.var.type = PARAM_TYPE_DOUBLE;
+      var.var.value.d_val = static_cast<double>(i) * 1.1;
+      std::strncpy(var.unit.data(), "V", MAX_UNIT_LEN - 1);
+      var.unit[MAX_UNIT_LEN - 1] = '\0';
       break;
 
     case 1: // int64
-      var.type = PARAM_TYPE_INT64;
-      var.value.i64_val = i;
+      var.var.type = PARAM_TYPE_INT64;
+      var.var.value.i64_val = i;
       break;
 
     case 2: // string
-      var.type = PARAM_TYPE_STRING;
-      copy_string(var.value.str_val, PLUGIN_MAX_STRING_LEN,
+      var.var.type = PARAM_TYPE_STRING;
+      copy_string(var.var.value.str_val, PLUGIN_MAX_STRING_LEN,
                   ("str" + std::to_string(i)).c_str());
       break;
 
     case 3: // buffer
-      var.type = PARAM_TYPE_BUFFER;
-      copy_string(var.value.str_val, PLUGIN_MAX_STRING_LEN,
+      var.var.type = PARAM_TYPE_BUFFER;
+      copy_string(var.var.value.str_val, PLUGIN_MAX_STRING_LEN,
                   ("buf" + std::to_string(i)).c_str());
+      std::strncpy(var.unit.data(), "A", MAX_UNIT_LEN - 1);
+      var.unit[MAX_UNIT_LEN - 1] = '\0';
       break;
 
     case 4: // bool
-      var.type = PARAM_TYPE_BOOL;
-      var.value.b_val = (i % 2 == 0);
+      var.var.type = PARAM_TYPE_BOOL;
+      var.var.value.b_val = (i % 2 == 0);
       break;
     }
 
@@ -254,20 +261,22 @@ TEST(Serialization, ResponseAllTypesWithChunking) {
   for (int i = 1; i <= 20; ++i) {
     std::string name = "var" + std::to_string(i);
 
-    const Variable *v = nullptr;
+    const VariableWithUnit *var = nullptr;
     for (const auto &r : deserialized.returns) {
-      if (r.name == name) {
-        v = &r;
+      if (r.var.name == name) {
+        var = &r;
         break;
       }
     }
 
-    ASSERT_NE(v, nullptr);
+    ASSERT_NE(var, nullptr);
+    const Variable *v = &var->var;
 
     switch (i % 5) {
     case 0:
       EXPECT_EQ(v->type, PARAM_TYPE_DOUBLE);
       EXPECT_DOUBLE_EQ(v->value.d_val, static_cast<double>(i) * 1.1);
+      EXPECT_STREQ(var->unit.data(), "V");
       break;
 
     case 1:
@@ -283,6 +292,7 @@ TEST(Serialization, ResponseAllTypesWithChunking) {
     case 3:
       EXPECT_EQ(v->type, PARAM_TYPE_BUFFER);
       EXPECT_EQ(std::string(v->value.str_val), "buf" + std::to_string(i));
+      EXPECT_STREQ(var->unit.data(), "A");
       break;
 
     case 4:

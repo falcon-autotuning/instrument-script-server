@@ -197,7 +197,8 @@ message TypedParameter {
   string name = 1;
   LuaTypes type = 2;
   VariableValue value = 3;
-  DataBufferMetadata dbmeta = 4; // Additional metadata for DataBuffer
+  string unit = 4;
+  DataBufferMetadata dbmeta = 5; // Additional metadata for DataBuffer
 }
 message CommandResult {
   string instrument_name = 1;

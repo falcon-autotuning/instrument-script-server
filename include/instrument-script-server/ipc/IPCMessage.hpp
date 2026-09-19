@@ -29,6 +29,7 @@ namespace instserver::ipc {
 
 // Tuned so sizeof(IPCMessage) ≈ 2KB for optimal IPC/cache behavior
 constexpr size_t PARAM_CHUNK = 6;
+constexpr size_t MAX_UNIT_LEN = 64;
 
 /**
  * @brief Command sent from server to worker.
@@ -62,6 +63,11 @@ struct INSTRUMENT_SERVER_API IPCCommand {
   std::array<Variable, PARAM_CHUNK> params;
 };
 
+struct VariableWithUnit {
+  Variable var;
+  std::array<char, MAX_UNIT_LEN> unit;
+};
+
 /**
  * @brief Response returned from worker to server.
  *
@@ -87,7 +93,7 @@ struct IPCResponse {
   /**
    * @brief Return values for this chunk.
    */
-  std::array<Variable, PARAM_CHUNK> returns;
+  std::array<VariableWithUnit, PARAM_CHUNK> returns;
 };
 
 /**

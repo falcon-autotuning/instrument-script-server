@@ -35,7 +35,6 @@ LogContents read_inst1_log() { return read_log(kWorkerLogs[0]); }
 LogContents read_inst2_log() { return read_log(kWorkerLogs[1]); }
 LogContents read_inst3_log() { return read_log(kWorkerLogs[2]); }
 } // namespace
-
 class MultiChannelScriptTest : public test::PluginTestFixture {
 protected:
   void SetUp() override {
@@ -69,14 +68,15 @@ protected:
     std::string config3 =
         (test_configs_dir_ / "mock_instrument_multi3.yaml").string();
 
+    std::string log_level = "trace";
     if (std::filesystem::exists(config1)) {
-      registry.create_instrument(config1);
+      registry.create_instrument(config1, log_level);
     }
     if (std::filesystem::exists(config2)) {
-      registry.create_instrument(config2);
+      registry.create_instrument(config2, log_level);
     }
     if (std::filesystem::exists(config3)) {
-      registry.create_instrument(config3);
+      registry.create_instrument(config3, log_level);
     }
   }
 
@@ -278,14 +278,19 @@ TEST_F(MultiChannelScriptTest, MultipleReturns) {
   // Verify we captured returns in order - first should be GET_DOUBLE
   EXPECT_STREQ(instrument_call_stack_get_command(results[0].target.get()),
                "GET_DOUBLE");
-  EXPECT_EQ(results[3].returns[0].type, PARAM_TYPE_BUFFER);
-  const auto &id = results[3].returns[0].value.str_val;
+  EXPECT_EQ(results[3].returns[0].var.type, PARAM_TYPE_BUFFER);
+  const auto &id = results[3].returns[0].var.value.str_val;
   data_manager_release_buffer(id);
   std::this_thread::sleep_for(std::chrono::milliseconds(5));
   auto main_log = read_main_log();
   main_log.does_not_contain_error();
   auto worker1_log = read_inst1_log();
   worker1_log.does_not_contain_error();
+  worker1_log.contains("Applying offset 1.000000 and scale 2.000000 for the "
+                       "parameter current from 3.140000 to 1.070000");
+  worker1_log.contains("Applying offset 1.000000 and scale 0.500000 for the "
+                       "data_buffer channel1_waveform");
+  worker1_log.contains("Applying unit A for the parameter channel1_waveform");
   auto worker2_log = read_inst2_log();
   worker2_log.does_not_contain_error();
   auto worker3_log = read_inst3_log();

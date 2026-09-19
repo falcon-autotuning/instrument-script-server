@@ -114,11 +114,49 @@
       "required": [
         "name",
         "type",
-        "value"
+        "value",
+        "unit"
       ],
       "properties": {
         "name": {
           "type": "string"
+        },
+        "unit": {
+          "type": "string",
+          "oneOf": [
+            {
+              "enum": [
+                "m",
+                "g",
+                "s",
+                "A",
+                "K",
+                "mol",
+                "cd",
+                "Hz",
+                "N",
+                "Pa",
+                "J",
+                "W",
+                "C",
+                "V",
+                "F",
+                "Ohm",
+                "S",
+                "Wb",
+                "T",
+                "H",
+                "min",
+                "h",
+                "eV",
+                "%",
+                "rad"
+              ]
+            },
+            {
+              "pattern": "^(?:[punmkMG])(?:m|g|s|A|K|mol|cd|Hz|N|Pa|J|W|C|V|F|Ohm|S|Wb|T|H|h|eV|rad)$"
+            }
+          ]
         },
         "type": {
           "$ref": "#/$defs/LuaTypes"

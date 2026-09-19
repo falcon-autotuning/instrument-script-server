@@ -390,14 +390,16 @@ protocol:
 
 io:
   - name: waveform
-    type: array
+    type: buffer 
+    element_type: float
     role: output
+    unit: V
     description: "Array of measurements"
   - name: current
     type: float
-    role:  output
+    role: output
     description: "Measured current"
-    unit: "A"
+    unit: A
 
 commands:
   GET_LARGE_DATA:
@@ -458,17 +460,17 @@ io_config:
 
   // First two results should be buffer references
   if (results.size() >= 2) {
-    EXPECT_EQ(results[0].returns[0].type, PARAM_TYPE_BUFFER);
-    EXPECT_EQ(results[1].returns[0].type, PARAM_TYPE_BUFFER);
+    EXPECT_EQ(results[0].returns[0].var.type, PARAM_TYPE_BUFFER);
+    EXPECT_EQ(results[1].returns[0].var.type, PARAM_TYPE_BUFFER);
 
     // Buffer IDs should be different
-    EXPECT_NE(results[0].returns[0].value.str_val,
-              results[1].returns[0].value.str_val);
+    EXPECT_NE(results[0].returns[0].var.value.str_val,
+              results[1].returns[0].var.value.str_val);
   }
 
   // Third result should be regular return value
   if (results.size() >= 3) {
-    EXPECT_EQ(results[2].returns[0].type, PARAM_TYPE_DOUBLE);
+    EXPECT_EQ(results[2].returns[0].var.type, PARAM_TYPE_DOUBLE);
   }
 
   // Robust Integration Test / Data Recovery Verification:
@@ -480,7 +482,7 @@ io_config:
       std::vector<double> data;
       uint64_t count = 0;
       uint32_t dtype = 0;
-      bool read_ok = local_read_buffer(results[0].returns[0].value.str_val,
+      bool read_ok = local_read_buffer(results[0].returns[0].var.value.str_val,
                                        data, count, dtype);
       ASSERT_TRUE(read_ok);
       EXPECT_EQ(dtype, INST_DATA_FLOAT32);
@@ -496,7 +498,7 @@ io_config:
       std::vector<double> data;
       uint64_t count = 0;
       uint32_t dtype = 0;
-      bool read_ok = local_read_buffer(results[1].returns[0].value.str_val,
+      bool read_ok = local_read_buffer(results[1].returns[0].var.value.str_val,
                                        data, count, dtype);
       ASSERT_TRUE(read_ok);
       ASSERT_GE(data.size(), 100);
@@ -513,7 +515,7 @@ io_config:
     //    shared memory buffer to be deallocated cleanly.
     {
       v1::ReleaseBufferRequest release_req;
-      release_req.set_buffer_id(results[0].returns[0].value.str_val);
+      release_req.set_buffer_id(results[0].returns[0].var.value.str_val);
       v1::ReleaseBufferResponse release_resp;
       int rc = handle_release_buffer(release_req, &release_resp);
       EXPECT_EQ(rc, 0);
@@ -522,7 +524,7 @@ io_config:
 
     {
       v1::ReleaseBufferRequest release_req;
-      release_req.set_buffer_id(results[1].returns[0].value.str_val);
+      release_req.set_buffer_id(results[1].returns[0].var.value.str_val);
       v1::ReleaseBufferResponse release_resp;
       int rc = handle_release_buffer(release_req, &release_resp);
       EXPECT_EQ(rc, 0);
@@ -534,7 +536,7 @@ io_config:
       std::vector<double> data;
       uint64_t count = 0;
       uint32_t dtype = 0;
-      bool read_ok = local_read_buffer(results[0].returns[0].value.str_val,
+      bool read_ok = local_read_buffer(results[0].returns[0].var.value.str_val,
                                        data, count, dtype);
       EXPECT_FALSE(read_ok);
     }
@@ -596,14 +598,16 @@ protocol:
 
 io:
   - name: waveform
-    type: array
+    type: buffer 
+    element_type: float
     role: output
+    unit: V
     description: "Array of measurements"
   - name: current
     type: float
     role: output
     description: "Measured current"
-    unit: "A"
+    unit: A
 
 commands:
   GET_LARGE_DATA:

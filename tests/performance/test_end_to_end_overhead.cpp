@@ -408,6 +408,7 @@ api_ref: )" + api_path + R"(
 connection:
   type: VISA
   address: "mock://test2"
+io_config:
 )";
 
   std::string config_path =

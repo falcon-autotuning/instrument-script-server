@@ -30,6 +30,9 @@ void expand_channel_groups(YAML::Node &root) {
         if (io_type["unit"]) {
           io_entry["unit"] = io_type["unit"].as<std::string>();
         }
+        if (io_type["element_type"]) {
+          io_entry["element_type"] = io_type["element_type"].as<std::string>();
+        }
         root["io"].push_back(io_entry);
       }
     }

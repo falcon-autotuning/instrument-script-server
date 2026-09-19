@@ -39,6 +39,14 @@ enum class Role : uint8_t {
   ClockOut,
   Setting
 };
+
+template <typename T, typename... Ts>
+constexpr bool is_one_of(const T &value, const Ts &...candidates) {
+  return ((value == candidates) || ...);
+}
+constexpr bool is_signal_role(Role role) {
+  return is_one_of(role, Role::Input, Role::Output, Role::InOut);
+}
 struct INSTRUMENT_SERVER_API IO {
   uint8_t type{0}; // PARAM_TYPE_<xxx> (as defined by instrument-plugin)
   std::string name;
@@ -47,6 +55,7 @@ struct INSTRUMENT_SERVER_API IO {
   std::optional<std::variant<int64_t, double>> max;
   std::optional<std::variant<int64_t, double>> min;
   std::optional<Role> role;
+  std::optional<std::string> unit;
 };
 struct INSTRUMENT_SERVER_API Command {
   std::string name;

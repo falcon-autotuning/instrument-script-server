@@ -63,9 +63,43 @@
         "^[A-Za-z_][A-Za-z0-9_]*$": {
           "type": "object",
           "properties": {
-            "unit": {
+            "transformed-unit": {
               "type": "string",
-              "description": "**Physical Unit** (optional, string)\n\nThe physical unit for the IO port value, such as 'V' for volts, 'Hz' for hertz, or 's' for seconds."
+              "description": "**Unit** (Optional)\n\nPhysical unit (e.g., 'V', 'Hz', 's').",
+              "oneOf": [
+                {
+                  "enum": [
+                    "m",
+                    "g",
+                    "s",
+                    "A",
+                    "K",
+                    "mol",
+                    "cd",
+                    "Hz",
+                    "N",
+                    "Pa",
+                    "J",
+                    "W",
+                    "C",
+                    "V",
+                    "F",
+                    "Ohm",
+                    "S",
+                    "Wb",
+                    "T",
+                    "H",
+                    "min",
+                    "h",
+                    "eV",
+                    "%",
+                    "rad"
+                  ]
+                },
+                {
+                  "pattern": "^(?:[punmkMG])(?:m|g|s|A|K|mol|cd|Hz|N|Pa|J|W|C|V|F|Ohm|S|Wb|T|H|h|eV|rad)$"
+                }
+              ]
             },
             "offset": {
               "type": "number",

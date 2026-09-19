@@ -101,7 +101,7 @@ struct CallResult {
   std::vector<Variable> params;
   std::chrono::system_clock::time_point executed_at;
 
-  std::vector<Variable> returns;
+  std::vector<ipc::VariableWithUnit> returns;
 
   // Execution status / error
   bool success{false};
