@@ -142,6 +142,7 @@ find_package(gRPC          CONFIG REQUIRED)
 find_package(cxxopts       CONFIG REQUIRED)
 find_package(instrument-data CONFIG REQUIRED)
 find_package(instrument-log CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 find_package(instrument-call-stack CONFIG REQUIRED)
 find_package(instrument-plugin-api CONFIG REQUIRED)
 find_package(yaml-config-validator CONFIG REQUIRED)
@@ -386,6 +387,7 @@ if(BUILD_CLI)
     PRIVATE
       instrument-script-server-client
       instrument-data::instrument-data
+      fmt::fmt
   )
   target_compile_definitions(
     instrument-script-server
