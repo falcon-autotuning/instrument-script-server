@@ -260,6 +260,18 @@ TEST_F(TripleMeasurementScriptTest, SimpleCall) {
   auto worker3_log = read_inst3_log();
   worker3_log.does_not_contain_error();
 }
+TEST_F(TripleMeasurementScriptTest, OSExecute) {
+  EXPECT_TRUE(run_script("os_execute.lua"));
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  auto main_log = read_main_log();
+  main_log.does_not_contain_error();
+  auto worker1_log = read_inst1_log();
+  worker1_log.does_not_contain_error();
+  auto worker2_log = read_inst2_log();
+  worker2_log.does_not_contain_error();
+  auto worker3_log = read_inst3_log();
+  worker3_log.does_not_contain_error();
+}
 
 TEST_F(TripleMeasurementScriptTest, ParallelExecution) {
   EXPECT_TRUE(run_script("parallel_test.lua"));
