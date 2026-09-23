@@ -67,8 +67,6 @@ namespace {
 constexpr auto HEARTBEAT_INTERVAL = std::chrono::milliseconds(500);
 constexpr auto IPC_SEND_TIMEOUT = std::chrono::milliseconds(1000);
 constexpr auto HEARTBEAT_SEND_TIMEOUT = std::chrono::milliseconds(100);
-constexpr std::string_view BARRIER_NOP = "__BARRIER_NOP__";
-constexpr std::string_view RELEASE_BUFFER = "__RELEASE_BUFFER__";
 void signal_handler(int sig) {
   (void)sig;
   g_running = false;
@@ -811,34 +809,7 @@ private:
     log_debug("cmd.verb.data ptr = %p", cmd.verb.data());
     log_info("Received command: %s (id=%s, sync=%llu)", cmd.verb.c_str(),
              cmd.id.c_str(), (unsigned long long)cmd.sync_token.value_or(0));
-    // ---- special commands ----
-    if (cmd.verb == BARRIER_NOP) {
-      return;
-    }
 
-    log_debug("After BARRIER_NOP");
-    if (cmd.verb == RELEASE_BUFFER) {
-      std::string buffer_id;
-
-      for (const auto &p : cmd.params) {
-        if (p.type == PARAM_TYPE_BUFFER) {
-          const auto *const chars = p.value.str_val;
-          buffer_id = std::string(chars, strnlen(chars, PLUGIN_MAX_STRING_LEN));
-          break;
-        }
-      }
-
-      if (buffer_id.empty()) {
-        log_error("Missing buffer_id param");
-        return;
-      }
-
-      log_info("Executing __RELEASE_BUFFER__ for buffer: %s",
-               buffer_id.c_str());
-      // This is releasing the plugin buffer for the user automatically
-      data_manager_release_buffer(buffer_id.c_str());
-      return;
-    }
     log_trace("Before command search");
     const auto it = commands_.find(cmd.verb);
     log_trace("After command search");
@@ -968,7 +939,7 @@ private:
     int validated_response_count = 0;
     for (size_t i = 0; i < expected_returns.size(); i++) {
       const IO &expected_return = expected_returns[i];
-      ipc::VariableWithUnit actual_return = actual_returns[i];
+      auto &actual_return = actual_returns[i];
       log_debug("Command %s return type for name %s: expected '%s', got '%s'",
                 cmd.verb.c_str(), expected_return.name.c_str(),
                 readable_param_types(expected_return.type).c_str(),

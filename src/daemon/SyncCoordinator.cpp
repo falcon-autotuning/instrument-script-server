@@ -76,8 +76,7 @@ SyncCoordinator::get_waiting_instruments(uint64_t sync_token) const {
   std::vector<std::string> waiting;
 
   for (const auto &inst : barrier.expected_instruments) {
-    if (barrier.acked_instruments.find(inst) ==
-        barrier.acked_instruments.end()) {
+    if (!barrier.acked_instruments.contains(inst)) {
       waiting.push_back(inst);
     }
   }
@@ -87,7 +86,7 @@ SyncCoordinator::get_waiting_instruments(uint64_t sync_token) const {
 
 bool SyncCoordinator::has_barrier(uint64_t sync_token) const {
   std::lock_guard lock(mutex_);
-  return barriers_.find(sync_token) != barriers_.end();
+  return barriers_.contains(sync_token);
 }
 
 void SyncCoordinator::clear_barrier(uint64_t sync_token) {
