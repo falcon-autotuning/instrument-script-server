@@ -451,7 +451,6 @@ install(
     PATTERN "*.h"
 )
 
-
 install(
   DIRECTORY schemas/
   DESTINATION share/instrument-script-server/schemas
@@ -463,6 +462,13 @@ install(
   DESTINATION share/doc/instrument-script-server
   FILES_MATCHING
   PATTERN "*.md")
+
+install(
+  DIRECTORY proto/
+  DESTINATION share/instrument-script-server/proto
+  FILES_MATCHING
+    PATTERN "*.proto"
+)
 
 write_basic_package_version_file(
   "${CMAKE_CURRENT_BINARY_DIR}/instrument-script-server-config-version.cmake"
