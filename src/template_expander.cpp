@@ -4,6 +4,11 @@
 #include <unordered_set>
 #include <yaml-cpp/yaml.h>
 
+// BUG: This apparently will only expand the first channel_group and ignores the
+// rest, this needs to be checked
+//
+// We should expand all the channel_group for all channel_groups
+
 namespace {
 void expand_channel_groups(YAML::Node &root) {
   if (!root["io"] || !root["io"].IsSequence()) {
