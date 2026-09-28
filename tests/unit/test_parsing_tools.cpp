@@ -377,3 +377,124 @@ io:
   std::filesystem::remove(config_path);
   std::filesystem::remove(api_path);
 }
+
+TEST(ParsingToolsTest, HandlesMultipleChannelGroupsWithSignalRoles) {
+  const auto config_path =
+      std::filesystem::temp_directory_path() / "iss_multi_channel_group_config.yaml";
+  const auto api_path =
+      std::filesystem::temp_directory_path() / "iss_multi_channel_group_api.yaml";
+
+  // API with multiple channel groups and top-level IO, using proper signal roles (output/input)
+  std::string formatted_api = R"yaml(
+protocol:
+  type: VISA
+
+channel_groups:
+  - name: source
+    channel_parameter:
+      name: channel
+      type: int
+      min: 1
+      max: 2
+    io_types:
+      - suffix: voltage
+        type: float
+        role: output
+        unit: V
+      - suffix: raw_mode
+        type: int
+        role: setting
+
+  - name: generator
+    channel_parameter:
+      name: number
+      type: int
+      min: 1
+      max: 2
+    io_types:
+      - suffix: amplitude
+        type: float
+        role: output
+        unit: V
+      - suffix: repetitions
+        type: int
+        role: setting
+
+io:
+  - name: global_bias
+    role: output
+    type: float
+    unit: V
+  - name: source1_voltage
+    role: output
+    type: float
+    unit: V
+  - name: source2_voltage
+    role: output
+    type: float
+    unit: V
+  - name: generator1_amplitude
+    role: output
+    type: float
+    unit: V
+  - name: generator2_amplitude
+    role: output
+    type: float
+    unit: V
+)yaml";
+
+  std::ofstream api(api_path);
+  api << formatted_api;
+  api.close();
+
+  std::string formatted_yaml = R"yaml(
+name: MyMultiGroupInstrument
+api_ref: ./iss_multi_channel_group_api.yaml
+io_config:
+  global_bias:
+    transformed-unit: V
+    offset: 0.1
+    scale: 1.0
+  source1_voltage:
+    transformed-unit: V
+    offset: 0.0
+    scale: 2.0
+  source2_voltage:
+    transformed-unit: V
+    offset: 0.0
+    scale: 1.0
+  generator1_amplitude:
+    transformed-unit: V
+    offset: 0.5
+    scale: 1.0
+  generator2_amplitude:
+    transformed-unit: V
+    offset: 0.0
+    scale: 1.0
+)yaml";
+
+  std::ofstream config(config_path);
+  config << formatted_yaml;
+  config.close();
+
+  auto cfg = instserver::load_config(config_path);
+
+  // Verify all signal IOs from multiple channel groups and top-level are loaded
+  EXPECT_TRUE(cfg.io_config.contains("global_bias"));
+  EXPECT_TRUE(cfg.io_config.contains("source1_voltage"));
+  EXPECT_TRUE(cfg.io_config.contains("source2_voltage"));
+  EXPECT_TRUE(cfg.io_config.contains("generator1_amplitude"));
+  EXPECT_TRUE(cfg.io_config.contains("generator2_amplitude"));
+
+  // Verify custom config values were applied properly
+  EXPECT_DOUBLE_EQ(cfg.io_config.at("global_bias").offset, 0.1);
+  EXPECT_DOUBLE_EQ(cfg.io_config.at("source1_voltage").scale, 2.0);
+  EXPECT_DOUBLE_EQ(cfg.io_config.at("generator1_amplitude").offset, 0.5);
+
+  // Verify setting roles are NOT loaded into io_config
+  EXPECT_FALSE(cfg.io_config.contains("source1_raw_mode"));
+  EXPECT_FALSE(cfg.io_config.contains("generator1_repetitions"));
+
+  std::filesystem::remove(config_path);
+  std::filesystem::remove(api_path);
+}

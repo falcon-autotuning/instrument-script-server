@@ -1,6 +1,8 @@
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <gtest/gtest.h>
+#include <instrument-script-server/core/ParsingTools.hpp>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -436,6 +438,108 @@ TEST(SchemaValidatorTest, GenerateAndValidateKeysightInstrumentConfiguration) {
     EXPECT_EQ(ret2, 0)
         << "Validation failed for generated Keysight instrument configuration";
   } catch (const std::exception &e) {
+    FAIL() << "Exception: " << e.what();
+  }
+
+  cleanup_temp_files();
+  std::cerr << "========\n\n";
+}
+
+TEST(SchemaValidatorTest, ExpandAndGenerateConfigWithMultipleChannelGroups) {
+  std::cerr << "\n======== TEST: ExpandAndGenerateConfigWithMultipleChannelGroups ========\n";
+
+  fs::path output_dir = get_build_output_dir();
+  fs::path tmpl_path = output_dir / "multi_channel_group_test.yaml.tmpl";
+
+  std::string formatted_tmpl = R"yaml(
+api_version: "1.0.0"
+instrument:
+  vendor: "TestVendor"
+  model: "TestModel"
+  identifier: "TEST_ID"
+  description: "Test instrument with multiple channel groups"
+protocol:
+  type: VISA
+channel_groups:
+  - name: source
+    description: "Voltage source outputs"
+    channel_parameter:
+      name: channel
+      type: int
+      min: 1
+      max: 3
+    io_types:
+      - suffix: voltage
+        type: float
+        role: output
+        unit: V
+      - suffix: raw_mode
+        type: int
+        role: setting
+
+  - name: generator
+    description: "Function generators"
+    channel_parameter:
+      name: number
+      type: int
+      min: 1
+      max: 2
+    io_types:
+      - suffix: amplitude
+        type: float
+        role: output
+        unit: V
+      - suffix: repetitions
+        type: int
+        role: setting
+io:
+  - name: global_bias
+    role: output
+    type: float
+    unit: V
+commands:
+  SET_SOURCE_V:
+    template: 'VSRC {source} {voltage}'
+    description: "Set voltage"
+    channel_group: source
+    parameters:
+      - io: voltage
+    outputs: []
+)yaml";
+
+  std::ofstream fout(tmpl_path);
+  fout << formatted_tmpl;
+  fout.close();
+
+  try {
+    std::string api_path = expand_template(tmpl_path.string());
+    auto config_path = generate_configuration(api_path);
+
+    // Validate generated files
+    auto ret_api = run_validator("validate-instrument-api", api_path);
+    EXPECT_EQ(ret_api, 0) << "API validation failed for expanded multi-group template";
+
+    auto ret_cfg = run_validator("validate-instrument-config", config_path);
+    EXPECT_EQ(ret_cfg, 0) << "Config validation failed for generated multi-group config";
+
+    // Load and verify config contents
+    auto cfg = instserver::load_config(config_path);
+
+    // Verify all channels for both channel groups are present
+    EXPECT_TRUE(cfg.io_config.contains("global_bias"));
+    EXPECT_TRUE(cfg.io_config.contains("source1_voltage"));
+    EXPECT_TRUE(cfg.io_config.contains("source2_voltage"));
+    EXPECT_TRUE(cfg.io_config.contains("source3_voltage"));
+    EXPECT_TRUE(cfg.io_config.contains("generator1_amplitude"));
+    EXPECT_TRUE(cfg.io_config.contains("generator2_amplitude"));
+
+    // Verify non-signal setting roles were NOT included in io_config
+    EXPECT_FALSE(cfg.io_config.contains("source1_raw_mode"));
+    EXPECT_FALSE(cfg.io_config.contains("generator1_repetitions"));
+
+    fs::remove(tmpl_path);
+  } catch (const std::exception &e) {
+    fs::remove(tmpl_path);
     FAIL() << "Exception: " << e.what();
   }
 
