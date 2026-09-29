@@ -5,12 +5,15 @@
 #include "instrument-script-server/daemon/PluginRegistry.hpp"
 #include "instrument-script-server/daemon/RuntimeContext.hpp"
 #include "instrument-script-server/daemon/ServerDaemon.hpp"
+#include "instserver/daemon/v1/daemon_messages.pb.h"
 #include <fmt/format.h>
 #include <fstream>
 #include <instrument-call-stack/instrument-call-stack-lua.h>
 #include <instrument-data.h>
+#include <instrument-domain/instrument-domain-lua.h>
 #include <instrument-log/inst_logging.h>
 #include <instrument-plugin.h>
+#include <instrument-target/instrument-target-lua.h>
 #include <sol/sol.hpp>
 #include <string>
 #include <vector>
@@ -146,6 +149,70 @@ sol::object array_to_lua(sol::state_view lua, const Range &range) {
   }
   return sol::make_object(lua, t);
 }
+
+template <typename Range, typename Converter>
+sol::object array_to_lua(sol::state_view lua, const Range &range,
+                         const Converter converter) {
+  sol::table t = lua.create_table();
+
+  int idx = 1;
+  for (const auto &v : range) {
+    t[idx++] = converter(v);
+  }
+
+  return sol::make_object(lua, t);
+}
+
+sol::object callstack_from_serialized(sol::state_view &lua,
+                                      const std::string &serialized) {
+  lua_State *L = lua.lua_state();
+
+  CallStack *stack = instrument_call_stack_deserialize(serialized.c_str());
+  if (stack == nullptr) {
+    throw std::runtime_error("Failed to deserialize CallStack");
+  }
+
+  push_callstack(L, stack, /*owned=*/1);
+
+  sol::object obj = sol::stack::get<sol::object>(L, -1);
+  lua_pop(L, 1);
+
+  return obj;
+}
+
+sol::object instrument_domain_from_serialized(sol::state_view &lua,
+                                              const std::string &serialized) {
+  lua_State *L = lua.lua_state();
+
+  InstrumentDomain *domain = instrument_domain_deserialize(serialized.c_str());
+  if (domain == nullptr) {
+    throw std::runtime_error("Failed to deserialize InstrumentDomain");
+  }
+
+  push_domain(L, domain, /*owned=*/1);
+
+  sol::object obj = sol::stack::get<sol::object>(L, -1);
+  lua_pop(L, 1);
+
+  return obj;
+}
+
+sol::object instrument_target_from_serialized(sol::state_view &lua,
+                                              const std::string &serialized) {
+  lua_State *L = lua.lua_state();
+
+  InstrumentTarget *target = instrument_target_deserialize(serialized.c_str());
+  if (target == nullptr) {
+    throw std::runtime_error("Failed to deserialize InstrumentTarget");
+  }
+
+  push_target(L, target, /*owned=*/1);
+
+  sol::object obj = sol::stack::get<sol::object>(L, -1);
+  lua_pop(L, 1);
+
+  return obj;
+}
 } // namespace
 
 namespace instserver::daemon {
@@ -185,7 +252,20 @@ sol::object variable_to_lua(sol::state_view lua, const v1::VariableValue *var) {
     return array_to_lua(lua, var->db_array().values());
 
   case v1::VariableValue::kCsArray:
-    return array_to_lua(lua, var->cs_array().values());
+    return array_to_lua(lua, var->cs_array().values(),
+                        [&lua](const std::string &serialized) {
+                          return callstack_from_serialized(lua, serialized);
+                        });
+  case v1::VariableValue::kTArray:
+    return array_to_lua(
+        lua, var->t_array().values(), [&lua](const std::string &serialized) {
+          return instrument_target_from_serialized(lua, serialized);
+        });
+  case v1::VariableValue::kDnArray:
+    return array_to_lua(
+        lua, var->dn_array().values(), [&lua](const std::string &serialized) {
+          return instrument_domain_from_serialized(lua, serialized);
+        });
 
   case v1::VariableValue::kMArray: {
     sol::table t = lua.create_table();
@@ -207,6 +287,24 @@ sol::object variable_to_lua(sol::state_view lua, const v1::VariableValue *var) {
   case v1::VariableValue::VALUE_NOT_SET:
   default:
     return sol::make_object(lua, sol::nil);
+  }
+}
+
+static sol::object typed_variable_to_lua(sol::state_view lua,
+                                         const v1::VariableValue *var,
+                                         v1::LuaTypes type) {
+  switch (type) {
+  case v1::LUA_TYPES_CALL_STACK:
+    return callstack_from_serialized(lua, var->s());
+
+  case v1::LUA_TYPES_DOMAIN:
+    return instrument_domain_from_serialized(lua, var->s());
+
+  case v1::LUA_TYPES_TARGET:
+    return instrument_target_from_serialized(lua, var->s());
+
+  default:
+    return variable_to_lua(lua, var);
   }
 }
 
@@ -399,28 +497,6 @@ int handle_instrument_status(const InstrumentStatusRequest &req,
   return 0;
 }
 
-sol::object callstack_from_serialized(sol::state &lua,
-                                      const std::string &serialized) {
-  lua_State *L = lua.lua_state();
-
-  // Deserialize
-  CallStack *stack = instrument_call_stack_deserialize(serialized.c_str());
-  if (stack == nullptr) {
-    throw std::runtime_error("Failed to deserialize CallStack");
-  }
-
-  // Push userdata (Lua now owns it → GC will free it)
-  push_callstack(L, stack, /*owned=*/1);
-
-  // Convert stack top to sol::object
-  sol::object obj = sol::stack::get<sol::object>(L, -1);
-
-  // Pop from Lua stack (important!)
-  lua_pop(L, 1);
-
-  return obj;
-}
-
 int handle_list_instruments(const ListInstrumentsRequest & /*req*/,
                             ListInstrumentsResponse *resp) {
   auto &registry = InstrumentRegistry::instance();
@@ -465,6 +541,8 @@ int handle_measure(const MeasureJobRequest &req,
                        sol::lib::package);
     load_optional_lua_libs(lua);
     register_instrument_call_stack(lua.lua_state());
+    register_instrument_domain(lua.lua_state());
+    register_instrument_target(lua.lua_state());
     bind_runtime_context(lua, registry, sync);
 
     // Create default context (host-side C++ runtime object)
@@ -535,30 +613,15 @@ int handle_measure(const MeasureJobRequest &req,
       sol::object arg;
       const auto &value = req.globals().map().find(param_name)->second;
       auto type = param.type();
-
-      if (type == v1::LUA_TYPES_CALL_STACK) {
-        // Validate input
-        if (value.value_case() != v1::VariableValue::kS) {
-          stdrp->set_ok(false);
-          err->set_message("CallStack must be a serialized string");
-          err->set_code(v1::ERROR_CODE_RUNTIME);
-          resp->set_status(v1::JOB_STATUS_FAILED);
-          return 1;
-        }
-
-        try {
-          arg = callstack_from_serialized(lua, value.s());
-        } catch (const std::exception &e) {
-          stdrp->set_ok(false);
-          err->set_message(std::string("CallStack deserialization failed: ") +
-                           e.what());
-          err->set_code(v1::ERROR_CODE_RUNTIME);
-          resp->set_status(v1::JOB_STATUS_FAILED);
-          return 1;
-        }
-
-      } else {
-        arg = variable_to_lua(lua, &value);
+      try {
+        // TODO: run tests to make sure that this explicitly works
+        arg = typed_variable_to_lua(lua, &value, type);
+      } catch (const std::exception &e) {
+        stdrp->set_ok(false);
+        err->set_message(std::string("Deserialization failed: ") + e.what());
+        err->set_code(v1::ERROR_CODE_RUNTIME);
+        resp->set_status(v1::JOB_STATUS_FAILED);
+        return 1;
       }
       args.push_back(arg);
 

@@ -37,6 +37,20 @@
       "features": [
         "lua"
       ]
+    },
+    {
+      "name": "instrument-domain",
+      "version>=": "1.0.0",
+      "features": [
+        "lua"
+      ]
+    },
+    {
+      "name": "instrument-target",
+      "version>=": "1.0.0",
+      "features": [
+        "lua"
+      ]
     }
   ]
 }

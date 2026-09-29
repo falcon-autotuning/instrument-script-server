@@ -379,7 +379,7 @@ TEST_F(TypeManifestTest, CallStackDeserializationFailure) {
   EXPECT_FALSE(resp.standard_response().ok());
 
   EXPECT_NE(resp.standard_response().error().message().find(
-                "CallStack deserialization failed"),
+                "Deserialization failed:"),
             std::string::npos);
 }
 
@@ -414,7 +414,7 @@ TEST_F(TypeManifestTest, CallStackWrongJsonType) {
   EXPECT_EQ(result, 1);
   EXPECT_FALSE(resp.standard_response().ok());
 
-  EXPECT_NE(
-      resp.standard_response().error().message().find("CallStack must be"),
-      std::string::npos);
+  EXPECT_NE(resp.standard_response().error().message().find(
+                "Failed to deserialize CallStack"),
+            std::string::npos);
 }

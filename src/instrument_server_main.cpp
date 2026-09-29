@@ -316,7 +316,7 @@ struct TypePair {
   std::string_view name;
 };
 
-constexpr std::array<TypePair, 6> VALID_TYPES{{
+constexpr std::array<TypePair, 8> VALID_TYPES{{
     {.id = instserver::daemon::v1::LUA_TYPES_INT64, .name = "int64"},
     {.id = instserver::daemon::v1::LUA_TYPES_DOUBLE, .name = "double"},
     {.id = instserver::daemon::v1::LUA_TYPES_BOOL, .name = "bool"},
@@ -324,6 +324,8 @@ constexpr std::array<TypePair, 6> VALID_TYPES{{
     {.id = instserver::daemon::v1::LUA_TYPES_DATA_BUFFER,
      .name = "data-buffer"},
     {.id = instserver::daemon::v1::LUA_TYPES_CALL_STACK, .name = "call-stack"},
+    {.id = instserver::daemon::v1::LUA_TYPES_TARGET, .name = "target"},
+    {.id = instserver::daemon::v1::LUA_TYPES_DOMAIN, .name = "domain"},
 }};
 constexpr const TypePair *find_type(std::string_view name) {
   for (const auto &t : VALID_TYPES) {

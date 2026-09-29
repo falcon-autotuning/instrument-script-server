@@ -7,7 +7,8 @@
 namespace instserver::daemon {
 
 namespace {
-grpc::Status to_grpc_status(int rc, const v1::StandardResponse &resp, const std::string &default_fail_msg) {
+grpc::Status to_grpc_status(int rc, const v1::StandardResponse &resp,
+                            const std::string &default_fail_msg) {
   if (rc == 0) {
     return grpc::Status::OK;
   }
@@ -15,20 +16,21 @@ grpc::Status to_grpc_status(int rc, const v1::StandardResponse &resp, const std:
     const auto &err = resp.error();
     std::string msg = err.message().empty() ? default_fail_msg : err.message();
     switch (err.code()) {
-      case v1::ERROR_CODE_INVALID_ARGUMENT:
-        return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, msg);
-      case v1::ERROR_CODE_FILE_DOES_NOT_EXIST:
-      case v1::ERROR_CODE_BUFFER_NOT_FOUND:
-        return grpc::Status(grpc::StatusCode::NOT_FOUND, msg);
-      default:
-        return grpc::Status(grpc::StatusCode::INTERNAL, msg);
+    case v1::ERROR_CODE_INVALID_ARGUMENT:
+      return grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, msg);
+    case v1::ERROR_CODE_FILE_DOES_NOT_EXIST:
+    case v1::ERROR_CODE_BUFFER_NOT_FOUND:
+      return grpc::Status(grpc::StatusCode::NOT_FOUND, msg);
+    default:
+      return grpc::Status(grpc::StatusCode::INTERNAL, msg);
     }
   }
   return grpc::Status(grpc::StatusCode::INTERNAL, default_fail_msg);
 }
 
 template <typename TResponse>
-grpc::Status to_grpc_status(int rc, const TResponse &resp, const std::string &default_fail_msg) {
+grpc::Status to_grpc_status(int rc, const TResponse &resp,
+                            const std::string &default_fail_msg) {
   if (rc == 0) {
     return grpc::Status::OK;
   }
@@ -37,7 +39,7 @@ grpc::Status to_grpc_status(int rc, const TResponse &resp, const std::string &de
   }
   return grpc::Status(grpc::StatusCode::INTERNAL, default_fail_msg);
 }
-}
+} // namespace
 
 class DaemonServiceImpl final : public v1::DaemonService::Service {
 public:
