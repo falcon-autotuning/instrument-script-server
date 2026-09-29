@@ -141,12 +141,6 @@
             "description": "**IO Types** (Required)\n\nList of IO types for each channel in this group. Each IO type describes a property or signal associated with each channel (e.g., waveform, sample_rate, voltage_range, trigger_level).",
             "items": {
               "type": "object",
-              "properties": {
-                "suffix": {
-                  "type": "string",
-                  "description": "**Suffix** (Required)\n\nSuffix for the IO name (e.g., 'waveform', 'sample_rate'). The full IO name for a channel is constructed as '{channel_name}_{suffix}'."
-                }
-              },
               "required": [
                 "suffix"
               ],
@@ -208,13 +202,26 @@
           "description": "**Description** (Optional)\n\nHuman-readable description of the parameter."
         },
         "name": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1,
+          "description": "**Name**\n\nName of the inline parameter."
         },
         "suffix": {
-          "type": "string"
+          "type": "string",
+          "description": "**Suffix** (Required)\n\nSuffix for the IO name (e.g., 'waveform', 'sample_rate'). The full IO name for a channel is constructed as '{channel_name}_{suffix}'."
         },
         "role": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "input",
+            "output",
+            "inout",
+            "trigger-in",
+            "trigger-out",
+            "clock-in",
+            "clock-out",
+            "setting"
+          ]
         },
         "precision": {
           "type": "object",
@@ -617,22 +624,7 @@
         {
           "required": [
             "role"
-          ],
-          "properties": {
-            "role": {
-              "type": "string",
-              "enum": [
-                "input",
-                "output",
-                "inout",
-                "trigger-in",
-                "trigger-out",
-                "clock-in",
-                "clock-out",
-                "setting"
-              ]
-            }
-          }
+          ]
         },
         {
           "if": {
@@ -665,14 +657,7 @@
         {
           "required": [
             "name"
-          ],
-          "properties": {
-            "name": {
-              "type": "string",
-              "minLength": 1,
-              "description": "**Name**\n\nName of the inline parameter."
-            }
-          }
+          ]
         }
       ]
     },
