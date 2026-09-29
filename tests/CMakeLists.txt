@@ -16,6 +16,7 @@ add_executable(
   unit/test_command_handlers.cpp
   unit/test_ipc_queue.cpp
   unit/test_schema_validator.cpp
+  unit/test_handle_measure.cpp
   unit/test_plugin_loader.cpp
   unit/test_api_lookup.cpp
   unit/test_data_buffer_manager.cpp
