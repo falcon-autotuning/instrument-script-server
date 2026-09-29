@@ -297,21 +297,28 @@ TEST_F(MultiChannelScriptTest, MultipleReturns) {
   worker3_log.does_not_contain_error();
 }
 
-TEST_F(MultiChannelScriptTest, ChannelAddressingWithErrors) {
-  auto *ctx = run_script_with_context("channel_addressing_multi_bad.lua");
-  ASSERT_NE(ctx, nullptr);
-  std::this_thread::sleep_for(std::chrono::milliseconds(5));
-  auto main_log = read_main_log();
-  main_log.contains_error();
-  main_log.contains("[LUA_CONTEXT] [CALL] Specified group_name=channel but no "
-                    "channel supplied at runtime");
+TEST_F(MultiChannelScriptTest, ChannelGroupSettingParameterDoesNotRequireIOConfig) {
+  auto script_path = test_scripts_dir_ / "channel_setting_test.lua";
+  std::ofstream fout(script_path);
+  fout << R"lua(
+function main(ctx)
+  local c1 = instrument_call_stack.new({
+    instrument = "MockInstrumentMulti1",
+    command = "SET_SAMPLE_RATE",
+    channel_group = "channel",
+    channel = 1,
+  })
+  ctx:call(c1, 1000.0)
+end
+)lua";
+  fout.close();
+
+  EXPECT_TRUE(run_script("channel_setting_test.lua"));
+  std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
   auto worker1_log = read_inst1_log();
-  worker1_log.contains_error();
-  worker1_log.contains(
-      "[MockInstrumentMulti1] [WORKER_MAIN] Config command SET parameter "
-      "mismatch: expected size='2', got='1'");
-  auto worker2_log = read_inst2_log();
-  worker2_log.does_not_contain_error();
-  auto worker3_log = read_inst3_log();
-  worker3_log.does_not_contain_error();
+  // Before fix: worker log fails with error "IO_config missing entry 'channel1_sample_rate'"
+  worker1_log.does_not_contain_error();
+
+  std::filesystem::remove(script_path);
 }

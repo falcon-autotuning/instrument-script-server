@@ -142,6 +142,13 @@ commands:
     channel_group: channel
     parameters: []
     outputs: [waveform]
+  SET_SAMPLE_RATE:
+    template: SOUR:SRAT {channel} {sample_rate}
+    description: Set sample rate on a channel
+    channel_group: channel
+    parameters:
+      - io: sample_rate
+    outputs: []
   SET_RANGE:
     template: VOLT:RANG {range}
     description: Set measurement range

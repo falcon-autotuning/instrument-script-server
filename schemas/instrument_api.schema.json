@@ -207,6 +207,15 @@
           "type": "string",
           "description": "**Description** (Optional)\n\nHuman-readable description of the parameter."
         },
+        "name": {
+          "type": "string"
+        },
+        "suffix": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
         "precision": {
           "type": "object",
           "description": "Measurement precision and quantization.",
@@ -348,6 +357,7 @@
           ]
         }
       },
+      "additionalProperties": false,
       "allOf": [
         {
           "if": {

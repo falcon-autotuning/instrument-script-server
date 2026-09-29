@@ -115,7 +115,7 @@ uint8_t INSTRUMENT_PLUGIN_API plugin_execute_command(const PluginCommand *cmd,
   }
   VISA_LOG_INFO("The command selected is '%s'", cmd->command);
   // ---- SET_DOUBLE ----
-  if (strcmp(cmd->command, "SET") == 0) {
+  if (strcmp(cmd->command, "SET") == 0 || strcmp(cmd->command, "SET_SAMPLE_RATE") == 0) {
     uint8_t param_count = param_storage_count(cmd->params);
 
     for (size_t i = 0; i < param_count; i++) {

@@ -546,3 +546,57 @@ commands:
   cleanup_temp_files();
   std::cerr << "========\n\n";
 }
+
+TEST(SchemaValidatorTest, RejectsTypoInIOTypeProperties) {
+  std::cerr << "\n======== TEST: RejectsTypoInIOTypeProperties ========\n";
+
+  fs::path output_dir = get_build_output_dir();
+  fs::path api_path = output_dir / "typo_api_test.yaml";
+
+  // API with misspelled "preceision" property in channel_groups io_types
+  std::string formatted_api = R"yaml(
+api_version: "1.0.0"
+instrument:
+  vendor: "TestVendor"
+  model: "TestModel"
+  identifier: "TEST_ID"
+  description: "Test instrument"
+protocol:
+  type: VISA
+channel_groups:
+  - name: generator
+    description: "Waveform generators"
+    channel_parameter:
+      name: number
+      type: int
+      min: 1
+      max: 2
+    io_types:
+      - suffix: period
+        type: float
+        role: setting
+        preceision:
+          resolution: 1
+io:
+  - name: dummy
+    type: int
+    role: setting
+commands:
+  IDN:
+    template: "*IDN?"
+    description: "Query IDN"
+    parameters: []
+    outputs: []
+)yaml";
+
+  std::ofstream fout(api_path);
+  fout << formatted_api;
+  fout.close();
+
+  // Validator should reject the misspelled "preceision" property (non-zero return code)
+  int ret = run_validator("validate-instrument-api", api_path.string());
+  EXPECT_NE(ret, 0) << "Validator should have caught the misspelled 'preceision' property!";
+
+  fs::remove(api_path);
+  std::cerr << "========\n\n";
+}

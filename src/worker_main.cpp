@@ -618,6 +618,10 @@ private:
           !group_it->second.contains(name)) {
         return "";
       }
+      const IO &io = group_it->second.at(name);
+      if (io.role.has_value() && !is_signal_role(io.role.value())) {
+        return "";
+      }
       if (!channel.has_value()) {
         log_error("Channel-group IO found but no channel supplied");
         return "";
