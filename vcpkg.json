@@ -15,8 +15,6 @@
     "boost-date-time",
     "cxxopts",
     "yaml-config-validator",
-    "instrument-domain",
-    "instrument-target",
     {
       "name": "instrument-data",
       "version>=": "1.1.8"
@@ -36,6 +34,20 @@
     {
       "name": "instrument-call-stack",
       "version>=": "1.0.6",
+      "features": [
+        "lua"
+      ]
+    },
+    {
+      "name": "instrument-domain",
+      "version>=": "1.0.0",
+      "features": [
+        "lua"
+      ]
+    },
+    {
+      "name": "instrument-target",
+      "version>=": "1.0.0",
       "features": [
         "lua"
       ]

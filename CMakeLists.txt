@@ -144,6 +144,8 @@ find_package(instrument-data CONFIG REQUIRED)
 find_package(instrument-log CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(instrument-call-stack CONFIG REQUIRED)
+find_package(instrument-domain     CONFIG REQUIRED)
+find_package(instrument-target     CONFIG REQUIRED)
 find_package(instrument-plugin-api CONFIG REQUIRED)
 find_package(yaml-config-validator CONFIG REQUIRED)
 
@@ -315,6 +317,10 @@ target_link_libraries(internal-daemon
     instrument-data::instrument-data
     instrument-call-stack::instrument-call-stack
     instrument-call-stack::instrument-call-stack-lua
+    instrument-domain::instrument-domain
+    instrument-domain::instrument-domain-lua
+    instrument-target::instrument-target
+    instrument-target::instrument-target-lua
     instserver-proto
 )
 
